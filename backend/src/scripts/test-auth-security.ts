@@ -6,6 +6,9 @@ import { AuthService } from '../modules/auth/auth.service';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
 
+// Explicitly enable dev auth only for this sandboxed test suite run
+process.env.ALLOW_DEV_AUTH = 'true';
+
 async function runAuthSecurityTests() {
   console.log('\n=============================================================');
   console.log('   KUMBHAKARAN PLATFORM - AUTH & SECURITY VERIFICATION SUITE');
@@ -232,8 +235,44 @@ async function runAuthSecurityTests() {
     failed++;
   }
 
+  // ---------------------------------------------------------------------------
+  // TEST 7: Production Guard Enforcement (Simulated tokens rejected without ALLOW_DEV_AUTH)
+  // ---------------------------------------------------------------------------
+  try {
+    process.stdout.write('[7/7] Testing Production Dev Token Lockdown (Simulated token rejection)... ');
+    const previousFlag = process.env.ALLOW_DEV_AUTH;
+    process.env.ALLOW_DEV_AUTH = 'false';
+
+    const testPayload = {
+      sub: 'hacker-sub',
+      email: 'attacker@example.com',
+      name: 'Attacker',
+    };
+    const testCredential = `test-token:${Buffer.from(JSON.stringify(testPayload)).toString('base64')}`;
+
+    const res = await fastifyInstance.inject({
+      method: 'POST',
+      url: '/api/v1/auth/google',
+      headers: { 'content-type': 'application/json' },
+      payload: { credential: testCredential },
+    });
+
+    process.env.ALLOW_DEV_AUTH = previousFlag;
+
+    if (res.statusCode === 401) {
+      console.log('✅ PASSED (Dev tokens strictly rejected when ALLOW_DEV_AUTH is not enabled)');
+      passed++;
+    } else {
+      console.log(`❌ FAILED (Expected 401 Unauthorized, got ${res.statusCode})`);
+      failed++;
+    }
+  } catch (err) {
+    console.log(`❌ ERROR: ${(err as Error).message}`);
+    failed++;
+  }
+
   console.log('\n=============================================================');
-  console.log(`   TEST RESULTS: ${passed}/6 PASSED | ${failed}/6 FAILED`);
+  console.log(`   TEST RESULTS: ${passed}/7 PASSED | ${failed}/7 FAILED`);
   console.log('=============================================================\n');
 
   await app.close();

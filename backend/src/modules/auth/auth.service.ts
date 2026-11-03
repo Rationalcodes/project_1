@@ -41,11 +41,27 @@ export class AuthService {
       throw new BadRequestException('Google ID token is required');
     }
 
-    // Safe test token bypass for local/sandbox automated test suites
+    // Development and test token validation - STRICTLY RESTRICTED TO LOCAL NON-PRODUCTION WITH ALLOW_DEV_AUTH=true
     if (idToken.startsWith('test-token:')) {
+      const isProduction =
+        this.configService.get<string>('NODE_ENV') === 'production' ||
+        process.env.NODE_ENV === 'production';
+      const allowDevAuth =
+        this.configService.get<string>('ALLOW_DEV_AUTH') === 'true' ||
+        process.env.ALLOW_DEV_AUTH === 'true';
+
+      if (isProduction || !allowDevAuth) {
+        throw new UnauthorizedException(
+          'Security Policy: Development tokens are strictly disabled in production or when ALLOW_DEV_AUTH is not explicitly enabled',
+        );
+      }
+
       try {
         const rawJson = Buffer.from(idToken.replace('test-token:', ''), 'base64').toString('utf8');
         const parsed = JSON.parse(rawJson);
+        if (!parsed.email || typeof parsed.email !== 'string') {
+          throw new UnauthorizedException('Invalid test token: missing valid email');
+        }
         return {
           sub: parsed.sub || `test-google-id-${Date.now()}`,
           email: parsed.email.toLowerCase().trim(),
