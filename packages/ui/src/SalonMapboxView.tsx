@@ -153,9 +153,11 @@ export const SalonMapboxView: React.FC<SalonMapboxViewProps> = ({
         attributionControl: false,
       });
 
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
-        subdomains: 'abcd',
+        subdomains: ['a', 'b', 'c'],
+        className: 'osm-dark-tiles',
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
       }).addTo(map);
 
       // Custom Amber Marker
@@ -219,6 +221,14 @@ export const SalonMapboxView: React.FC<SalonMapboxViewProps> = ({
 
   return (
     <div className={`relative rounded-3xl overflow-hidden border border-zinc-800 bg-[#0c0c12] shadow-2xl ${className}`}>
+      <style>{`
+        .osm-dark-tiles {
+          filter: invert(100%) hue-rotate(180deg) brightness(92%) contrast(90%) !important;
+        }
+        .leaflet-container {
+          background-color: #0b0f17 !important;
+        }
+      `}</style>
       {/* Map Canvas */}
       <div ref={mapContainerRef} style={{ width: '100%', height }} />
 

@@ -22,6 +22,18 @@ export function getMapboxToken(): string {
   return 'pk.eyJ1Ijoia3VtYmhha2FyYW4iLCJhIjoiY2x6cndnbWNqMGQ1YzJqb21hYnQ3eWhxYyJ9.dummy_fallback';
 }
 
+export function hasValidMapboxToken(): boolean {
+  if (typeof window !== 'undefined' && (window as any).__MAPBOX_TOKEN__) {
+    const t = (window as any).__MAPBOX_TOKEN__;
+    return typeof t === 'string' && t.startsWith('pk.') && !t.includes('dummy');
+  }
+  if (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_MAPBOX_ACCESS_TOKEN) {
+    const t = (import.meta as any).env.VITE_MAPBOX_ACCESS_TOKEN;
+    return typeof t === 'string' && t.startsWith('pk.') && !t.includes('dummy');
+  }
+  return false;
+}
+
 /**
  * Dynamically loads Mapbox GL JS and CSS from official CDN
  */

@@ -226,10 +226,23 @@ export const MapScreen: React.FC = () => {
         attributionControl: false,
       });
 
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-        maxZoom: 19,
-        subdomains: 'abcd',
-      }).addTo(map);
+      // Prioritize Mapbox if token configured, otherwise use high-contrast OpenStreetMap Dark tiles (Zero Watermark, Zero API Key)
+      const mapboxToken = (import.meta as any).env?.VITE_MAPBOX_ACCESS_TOKEN;
+      if (mapboxToken && typeof mapboxToken === 'string' && mapboxToken.startsWith('pk.') && !mapboxToken.includes('dummy')) {
+        L.tileLayer(`https://api.mapbox.com/styles/v1/mapbox/dark-v11/tiles/{z}/{x}/{y}?access_token=${mapboxToken}`, {
+          maxZoom: 19,
+          tileSize: 512,
+          zoomOffset: -1,
+          attribution: '&copy; Mapbox &copy; OpenStreetMap',
+        }).addTo(map);
+      } else {
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          maxZoom: 19,
+          subdomains: ['a', 'b', 'c'],
+          className: 'osm-dark-tiles',
+          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+        }).addTo(map);
+      }
 
       const markersLayer = L.layerGroup().addTo(map);
       leafletMarkersLayerRef.current = markersLayer;
@@ -467,6 +480,14 @@ export const MapScreen: React.FC = () => {
           }`}
         >
           {/* Interactive Google Map / Leaflet Container */}
+          <style>{`
+            .osm-dark-tiles {
+              filter: invert(100%) hue-rotate(180deg) brightness(92%) contrast(90%) !important;
+            }
+            .leaflet-container {
+              background-color: #0b0f17 !important;
+            }
+          `}</style>
           <div ref={mapContainerRef} className="w-full h-full" style={{ zIndex: 1 }} />
 
           {/* Floating "Search This Area" Pill */}

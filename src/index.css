@@ -74,3 +74,12 @@
 .glow-green {
   box-shadow: 0 0 25px -5px rgba(16, 185, 129, 0.25);
 }
+
+/* OpenStreetMap Dark Mode Tile Filter (Zero Watermark, Zero API Key) */
+.osm-dark-tiles {
+  filter: invert(100%) hue-rotate(180deg) brightness(92%) contrast(90%) !important;
+}
+
+.leaflet-container {
+  background-color: #0b0f17 !important;
+}

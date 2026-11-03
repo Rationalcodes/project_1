@@ -64,3 +64,12 @@
 ::-webkit-scrollbar-thumb:hover {
   background: #3f3f50;
 }
+
+/* OpenStreetMap Dark Mode Tile Filter (Zero Watermark, Zero API Key) */
+.osm-dark-tiles {
+  filter: invert(100%) hue-rotate(180deg) brightness(92%) contrast(90%) !important;
+}
+
+.leaflet-container {
+  background-color: #0b0f17 !important;
+}
