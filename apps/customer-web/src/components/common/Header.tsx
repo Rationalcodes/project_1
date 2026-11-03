@@ -34,7 +34,6 @@ export const Header: React.FC = () => {
   const desktopNavItems: { id: CustomerTab; label: string; icon: React.FC<{ className?: string }>; badgeCount?: number }[] = [
     { id: 'home', label: 'Home', icon: Home },
     { id: 'explore', label: 'Explore', icon: Compass },
-    { id: 'map', label: 'Map Radar', icon: MapIcon },
     { id: 'favourites', label: 'Favourites', icon: Heart, badgeCount: userProfile.savedSalons.length },
     { id: 'profile', label: 'Profile', icon: User },
   ];

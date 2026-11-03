@@ -9,7 +9,6 @@ export const BottomNav: React.FC = () => {
   const navItems: { id: CustomerTab; label: string; icon: React.FC<{ className?: string }>; badgeCount?: number }[] = [
     { id: 'home', label: 'Home', icon: Home },
     { id: 'explore', label: 'Explore', icon: Compass },
-    { id: 'map', label: 'Map', icon: MapPin },
     { id: 'favourites', label: 'Saved', icon: Heart, badgeCount: userProfile.savedSalons.length },
     { id: 'profile', label: 'Profile', icon: User },
   ];

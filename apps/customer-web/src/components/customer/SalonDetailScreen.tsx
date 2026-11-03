@@ -23,7 +23,7 @@ import {
 } from 'lucide-react';
 import { useSalon, getEstimatedWaitMinutes, getQueueDisplay, getQueueFreshness } from '../../context/CustomerContext';
 import { Service, Staff } from '@kumbhakaran/shared-types';
-import { redirectToGoogleMaps, openGoogleMapsLocation } from '@kumbhakaran/ui';
+import { redirectToGoogleMaps, openGoogleMapsLocation, SalonMapboxView } from '@kumbhakaran/ui';
 
 interface SalonDetailScreenProps {
   onBack: () => void;
@@ -278,6 +278,27 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
             <strong className="text-zinc-200">No appointments or tokens needed:</strong> Kumbhakaran eliminates blind walk-ins by giving you live visibility. Just check the queue, decide if it suits you, and walk right in.
           </p>
         </div>
+      </section>
+
+      {/* Interactive Mapbox Studio Location */}
+      <section className="bg-zinc-900/40 border border-zinc-800 rounded-3xl p-4 sm:p-5 space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <MapPin className="w-4 h-4 text-amber-400" />
+            <h3 className="text-sm font-bold text-white font-['Syne',sans-serif]">
+              Studio Location & Map
+            </h3>
+          </div>
+          <span className="text-[11px] text-zinc-400 font-medium">
+            {salon.distanceKm} km away • {salon.locality}
+          </span>
+        </div>
+
+        <SalonMapboxView
+          salon={salon}
+          userLocation={userLocation}
+          height="280px"
+        />
       </section>
 
       {/* Tabs navigation: Services, Staff, Reviews, Gallery */}
