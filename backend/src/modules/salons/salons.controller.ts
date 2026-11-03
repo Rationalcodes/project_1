@@ -22,7 +22,8 @@ import { SalonsService } from './salons.service';
 import { RegisterSalonDto } from './dto/register-salon.dto';
 import { UpdateSalonDto } from './dto/update-salon.dto';
 import { UpdateQueueDto } from './dto/update-queue.dto';
-import { PublicSalonResponseDto } from './dto/public-salon-response.dto';
+import { PublicSalonResponseDto, PublicReviewDto } from './dto/public-salon-response.dto';
+import { CreateReviewDto } from './dto/create-review.dto';
 import { SalonOwnerGuard } from './guards/salon-owner.guard';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
@@ -93,6 +94,29 @@ export class SalonsController {
     @Param('id') id: string,
   ): Promise<PublicSalonResponseDto> {
     return this.salonsService.getPublicSalonById(id);
+  }
+
+  @Post(':id/reviews')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({
+    summary: 'Submit a verified review for a salon',
+    description: 'Stores customer review, rating, and criteria in PostgreSQL and recalculates aggregate rating.',
+  })
+  @ApiParam({ name: 'id', example: 'salon-1', description: 'Salon identifier' })
+  @ApiResponse({ status: 201, description: 'Review successfully created and persisted', type: PublicReviewDto })
+  async addReview(
+    @Param('id') salonId: string,
+    @Body() dto: CreateReviewDto,
+  ): Promise<PublicReviewDto> {
+    return this.salonsService.addReview(salonId, dto);
+  }
+
+  @Get(':id/reviews')
+  @ApiOperation({ summary: 'Get all reviews for a salon' })
+  @ApiParam({ name: 'id', example: 'salon-1', description: 'Salon identifier' })
+  @ApiResponse({ status: 200, description: 'List of reviews for the salon' })
+  async getReviews(@Param('id') salonId: string): Promise<PublicReviewDto[]> {
+    return this.salonsService.getReviews(salonId);
   }
 
   @Patch(':id')

@@ -34,7 +34,7 @@ export const WriteReviewModal: React.FC<WriteReviewModalProps> = ({ isOpen, onCl
     onClose();
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!comment.trim()) return;
 
@@ -47,7 +47,7 @@ export const WriteReviewModal: React.FC<WriteReviewModalProps> = ({ isOpen, onCl
       ((haircutQuality + staffBehaviour + cleanliness + pricing + overallExperience) / 5).toFixed(1)
     );
 
-    addReview(selectedSalonForDetail.id, {
+    await addReview(selectedSalonForDetail.id, {
       customerName: finalName,
       customerAvatar: userProfile.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80',
       rating: Math.round(avgScore),
@@ -100,7 +100,7 @@ export const WriteReviewModal: React.FC<WriteReviewModalProps> = ({ isOpen, onCl
 
             <div>
               <span className="text-[10px] uppercase font-black tracking-widest text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20">
-                Added to Kumbhakaran
+                Added to Kumbhkaran Salons
               </span>
               <h3 className="text-lg font-black text-white mt-1.5 font-['Syne',sans-serif]">
                 Review Published Successfully!

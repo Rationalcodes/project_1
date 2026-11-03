@@ -63,7 +63,7 @@ interface SalonContextType {
   addStaff: (salonId: string, staffMember: Omit<Staff, 'id'>) => void;
   updateStaff: (salonId: string, staffId: string, updates: Partial<Staff>) => void;
   deleteStaff: (salonId: string, staffId: string) => void;
-  addReview: (salonId: string, review: Omit<Review, 'id' | 'date'>) => void;
+  addReview: (salonId: string, review: Omit<Review, 'id' | 'date'>) => Promise<void> | void;
   replyToReview: (salonId: string, reviewId: string, replyComment: string) => void;
   flagReview: (salonId: string, reviewId: string) => void;
   moderateReview: (salonId: string, reviewId: string, action: 'keep' | 'delete') => void;
@@ -94,7 +94,32 @@ interface SalonContextType {
 const SalonContext = createContext<SalonContextType | undefined>(undefined);
 
 export const SalonProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [salons, setSalons] = useState<Salon[]>(INITIAL_SALONS);
+  const [salons, setSalons] = useState<Salon[]>(() => {
+    return INITIAL_SALONS.map(s => {
+      if (typeof window !== 'undefined') {
+        try {
+          const cached = localStorage.getItem(`kumbhakaran_reviews_${s.id}`);
+          if (cached) {
+            const parsedReviews = JSON.parse(cached);
+            if (Array.isArray(parsedReviews) && parsedReviews.length > 0) {
+              const combined = [
+                ...parsedReviews,
+                ...s.reviews.filter(r => !parsedReviews.some((pr: any) => pr.id === r.id || (pr.customerName === r.customerName && pr.comment === r.comment)))
+              ];
+              const avg = Number((combined.reduce((acc: number, r: any) => acc + (r.rating || 5), 0) / combined.length).toFixed(1));
+              return {
+                ...s,
+                reviews: combined,
+                reviewCount: combined.length,
+                rating: avg,
+              };
+            }
+          }
+        } catch {}
+      }
+      return s;
+    });
+  });
   const [activeSalonId, setActiveSalonId] = useState<string>('salon-1');
   const [portal, setPortal] = useState<AppPortal>('customer');
   const [customerTab, setCustomerTab] = useState<CustomerTab>('home');
@@ -177,6 +202,63 @@ export const SalonProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     });
     return () => { isMounted = false; };
   }, [userLocation, lazyFilter]);
+
+  // Synchronize salon profile and public reviews from PostgreSQL database
+  useEffect(() => {
+    if (!selectedSalonForDetail?.id) return;
+    let isMounted = true;
+    const salonId = selectedSalonForDetail.id;
+
+    api.getPublicSalonById(salonId).then((publicData) => {
+      if (!isMounted || !publicData) return;
+
+      let localReviews: Review[] = [];
+      if (typeof window !== 'undefined') {
+        try {
+          localReviews = JSON.parse(localStorage.getItem(`kumbhakaran_reviews_${salonId}`) || '[]');
+        } catch {}
+      }
+
+      const dbReviews: Review[] = (publicData.reviews || []).map((r: any) => ({
+        id: r.id,
+        customerName: r.customerName || r.customer_name,
+        customerAvatar: r.customerAvatar || r.customer_avatar,
+        rating: Number(r.rating),
+        comment: r.comment,
+        date: r.createdAt ? new Date(r.createdAt).toLocaleDateString() : 'Recent',
+        verifiedVisit: Boolean(r.verifiedVisit !== undefined ? r.verifiedVisit : r.verified_visit),
+        criteria: r.criteria || {
+          haircutQuality: Number(r.rating) || 5,
+          staffBehaviour: Number(r.rating) || 5,
+          cleanliness: Number(r.rating) || 5,
+          pricing: Number(r.rating) || 5,
+          overallExperience: Number(r.rating) || 5,
+        },
+        ownerReply: r.ownerReply || r.owner_reply,
+      }));
+
+      const mergedMap = new Map<string, Review>();
+      localReviews.forEach((r) => mergedMap.set(r.id || `${r.customerName}-${r.comment}`, r));
+      dbReviews.forEach((r) => mergedMap.set(r.id || `${r.customerName}-${r.comment}`, r));
+      const combinedReviews = Array.from(mergedMap.values());
+
+      setSelectedSalonForDetail((prev) => {
+        if (!prev || prev.id !== salonId) return prev;
+        return {
+          ...prev,
+          rating: Number(publicData.rating) || prev.rating,
+          reviewCount: Math.max(combinedReviews.length, Number(publicData.reviewCount) || prev.reviewCount),
+          reviews: combinedReviews,
+          currentQueue: publicData.currentQueue !== undefined ? publicData.currentQueue : prev.currentQueue,
+          isOpen: publicData.isOpen !== undefined ? publicData.isOpen : prev.isOpen,
+        };
+      });
+    }).catch(() => {});
+
+    return () => {
+      isMounted = false;
+    };
+  }, [selectedSalonForDetail?.id]);
 
   const updateCustomerName = (name: string) => {
     const trimmed = name.trim();
@@ -444,12 +526,23 @@ export const SalonProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     triggerNotification("Stylist profile removed");
   };
 
-  const addReview = (salonId: string, reviewData: Omit<Review, 'id' | 'date'>) => {
+  const addReview = async (salonId: string, reviewData: Omit<Review, 'id' | 'date'>) => {
     const newReview: Review = {
       ...reviewData,
       id: `rev-${Date.now()}`,
       date: 'Just now'
     };
+
+    // Save locally immediately to guarantee survival on refresh
+    try {
+      const storageKey = `kumbhakaran_reviews_${salonId}`;
+      const existing = localStorage.getItem(storageKey);
+      const list = existing ? JSON.parse(existing) : [];
+      localStorage.setItem(storageKey, JSON.stringify([newReview, ...list]));
+    } catch (e) {
+      console.warn('Failed to cache review in localStorage', e);
+    }
+
     setSalons(prev => prev.map(s => {
       if (s.id !== salonId) return s;
       const nextReviews = [newReview, ...s.reviews];
@@ -457,13 +550,27 @@ export const SalonProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       const updated = {
         ...s,
         reviews: nextReviews,
-        reviewCount: s.reviewCount + 1,
+        reviewCount: (s.reviewCount || s.reviews.length) + 1,
         rating: avgRating
       };
       if (selectedSalonForDetail?.id === salonId) setSelectedSalonForDetail(updated);
       return updated;
     }));
     triggerNotification("Your review was posted successfully!");
+
+    // Also persist directly to PostgreSQL database
+    try {
+      await api.submitSalonReview(salonId, {
+        customerName: reviewData.customerName,
+        customerAvatar: reviewData.customerAvatar,
+        rating: reviewData.rating,
+        comment: reviewData.comment,
+        verifiedVisit: reviewData.verifiedVisit,
+        criteria: reviewData.criteria,
+      });
+    } catch (err) {
+      console.warn('Backend sync for review failed, local review remains cached:', err);
+    }
   };
 
   const replyToReview = (salonId: string, reviewId: string, replyComment: string) => {

@@ -456,11 +456,11 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
             {/* The 5 Required Criteria Breakdown */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mt-4 text-xs">
               {[
-                { label: 'Haircut Quality', score: salon.ratingBreakdown.haircutQuality },
-                { label: 'Staff Behaviour', score: salon.ratingBreakdown.staffBehaviour },
-                { label: 'Cleanliness & Hygiene', score: salon.ratingBreakdown.cleanliness },
-                { label: 'Pricing & Value', score: salon.ratingBreakdown.pricing },
-                { label: 'Overall Experience', score: salon.ratingBreakdown.overallExperience }
+                { label: 'Haircut Quality', score: salon.ratingBreakdown?.haircutQuality ?? 5 },
+                { label: 'Staff Behaviour', score: salon.ratingBreakdown?.staffBehaviour ?? 5 },
+                { label: 'Cleanliness & Hygiene', score: salon.ratingBreakdown?.cleanliness ?? 5 },
+                { label: 'Pricing & Value', score: salon.ratingBreakdown?.pricing ?? 5 },
+                { label: 'Overall Experience', score: salon.ratingBreakdown?.overallExperience ?? 5 }
               ].map((c) => (
                 <div key={c.label} className="bg-zinc-900/60 p-2 rounded-xl flex items-center justify-between">
                   <span className="text-zinc-400">{c.label}</span>
@@ -480,45 +480,52 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
 
           {/* Customer Reviews List */}
           <div className="space-y-3">
-            {salon.reviews.map((rev) => (
-              <div key={rev.id} className="bg-[#14141b] border border-zinc-800 rounded-2xl p-4 space-y-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <img src={rev.customerAvatar} alt={rev.customerName} className="w-8 h-8 rounded-full object-cover" />
-                    <div>
-                      <div className="text-xs font-bold text-white flex items-center gap-1.5">
-                        <span>{rev.customerName}</span>
-                        {rev.verifiedVisit && (
-                          <span className="text-[10px] text-emerald-400 font-semibold bg-emerald-500/10 px-1.5 py-0.2 rounded">
-                            Verified Visit
-                          </span>
-                        )}
-                      </div>
-                      <span className="text-[10px] text-zinc-500">{rev.date}</span>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-0.5 text-xs text-amber-400 font-bold">
-                    <Star className="w-3.5 h-3.5 fill-amber-400" />
-                    <span>{rev.rating}.0</span>
-                  </div>
-                </div>
-
-                <p className="text-xs text-zinc-300 leading-relaxed">
-                  "{rev.comment}"
-                </p>
-
-                {/* Owner Reply if any */}
-                {rev.ownerReply && (
-                  <div className="mt-2 bg-zinc-900/80 border-l-2 border-amber-400 p-2.5 rounded-r-xl text-xs">
-                    <div className="text-[11px] font-bold text-amber-400 mb-0.5">
-                      Salon Owner Response • {rev.ownerReply.date}
-                    </div>
-                    <p className="text-zinc-300">{rev.ownerReply.comment}</p>
-                  </div>
-                )}
+            {(salon.reviews || []).length === 0 ? (
+              <div className="bg-[#14141b] border border-zinc-800/80 rounded-2xl p-6 text-center space-y-2">
+                <p className="text-zinc-400 text-xs">No reviews submitted yet.</p>
+                <p className="text-zinc-500 text-[11px]">Be the first customer to share your grooming experience!</p>
               </div>
-            ))}
+            ) : (
+              (salon.reviews || []).map((rev) => (
+                <div key={rev.id} className="bg-[#14141b] border border-zinc-800 rounded-2xl p-4 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <img src={rev.customerAvatar} alt={rev.customerName} className="w-8 h-8 rounded-full object-cover" />
+                      <div>
+                        <div className="text-xs font-bold text-white flex items-center gap-1.5">
+                          <span>{rev.customerName}</span>
+                          {rev.verifiedVisit && (
+                            <span className="text-[10px] text-emerald-400 font-semibold bg-emerald-500/10 px-1.5 py-0.2 rounded">
+                              Verified Visit
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-[10px] text-zinc-500">{rev.date}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-0.5 text-xs text-amber-400 font-bold">
+                      <Star className="w-3.5 h-3.5 fill-amber-400" />
+                      <span>{rev.rating}.0</span>
+                    </div>
+                  </div>
+
+                  <p className="text-xs text-zinc-300 leading-relaxed">
+                    "{rev.comment}"
+                  </p>
+
+                  {/* Owner Reply if any */}
+                  {rev.ownerReply && (
+                    <div className="mt-2 bg-zinc-900/80 border-l-2 border-amber-400 p-2.5 rounded-r-xl text-xs">
+                      <div className="text-[11px] font-bold text-amber-400 mb-0.5">
+                        Salon Owner Response • {rev.ownerReply.date}
+                      </div>
+                      <p className="text-zinc-300">{rev.ownerReply.comment}</p>
+                    </div>
+                  )}
+                </div>
+              ))
+            )}
           </div>
         </div>
       )}

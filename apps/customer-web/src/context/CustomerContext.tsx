@@ -276,7 +276,15 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                 { id: `st-${item.id}-1`, name: 'Master Barber', role: 'Stylist', experience: '5 Years', photo: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80', specialties: ['Fade', 'Beard'], status: 'active', rating: 4.9 },
               ],
               ratingBreakdown: { haircutQuality: 5, staffBehaviour: 5, cleanliness: 5, pricing: 5, overallExperience: 5 },
-              reviews: [],
+              reviews: (() => {
+                let cached: Review[] = [];
+                if (typeof window !== 'undefined') {
+                  try {
+                    cached = JSON.parse(localStorage.getItem(`kumbhakaran_reviews_${item.id}`) || '[]');
+                  } catch {}
+                }
+                return cached;
+              })(),
               isVerified: item.isVerified,
               status: 'active',
               todayCustomersServed: 0,
@@ -302,6 +310,80 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       isMounted = false;
     };
   }, [userLocation, lazyFilter]);
+
+  // Synchronize salon profile and public reviews from PostgreSQL database
+  useEffect(() => {
+    if (!selectedSalonForDetail?.id) return;
+    let isMounted = true;
+    const salonId = selectedSalonForDetail.id;
+
+    defaultApiClient.getPublicSalonById(salonId).then((publicData) => {
+      if (!isMounted || !publicData) return;
+
+      // Read any locally cached customer reviews
+      let localReviews: Review[] = [];
+      if (typeof window !== 'undefined') {
+        try {
+          localReviews = JSON.parse(localStorage.getItem(`kumbhakaran_reviews_${salonId}`) || '[]');
+        } catch {}
+      }
+
+      // Format database reviews
+      const dbReviews: Review[] = (publicData.reviews || []).map((r: any) => ({
+        id: r.id,
+        customerName: r.customerName || r.customer_name,
+        customerAvatar: r.customerAvatar || r.customer_avatar,
+        rating: Number(r.rating),
+        comment: r.comment,
+        date: r.createdAt ? new Date(r.createdAt).toLocaleDateString() : 'Recent',
+        verifiedVisit: Boolean(r.verifiedVisit !== undefined ? r.verifiedVisit : r.verified_visit),
+        criteria: r.criteria || {
+          haircutQuality: Number(r.rating) || 5,
+          staffBehaviour: Number(r.rating) || 5,
+          cleanliness: Number(r.rating) || 5,
+          pricing: Number(r.rating) || 5,
+          overallExperience: Number(r.rating) || 5,
+        },
+        ownerReply: r.ownerReply || r.owner_reply,
+      }));
+
+      // Merge and deduplicate reviews
+      const mergedMap = new Map<string, Review>();
+      localReviews.forEach((r) => mergedMap.set(r.id || `${r.customerName}-${r.comment}`, r));
+      dbReviews.forEach((r) => mergedMap.set(r.id || `${r.customerName}-${r.comment}`, r));
+      const combinedReviews = Array.from(mergedMap.values());
+
+      setSelectedSalonForDetail((prev) => {
+        if (!prev || prev.id !== salonId) return prev;
+        return {
+          ...prev,
+          rating: Number(publicData.rating) || prev.rating,
+          reviewCount: Math.max(combinedReviews.length, Number(publicData.reviewCount) || prev.reviewCount),
+          reviews: combinedReviews,
+          currentQueue: publicData.currentQueue !== undefined ? publicData.currentQueue : prev.currentQueue,
+          isOpen: publicData.isOpen !== undefined ? publicData.isOpen : prev.isOpen,
+        };
+      });
+
+      setSalons((prev) =>
+        prev.map((s) => {
+          if (s.id !== salonId) return s;
+          return {
+            ...s,
+            rating: Number(publicData.rating) || s.rating,
+            reviewCount: Math.max(combinedReviews.length, Number(publicData.reviewCount) || s.reviewCount),
+            reviews: combinedReviews,
+            currentQueue: publicData.currentQueue !== undefined ? publicData.currentQueue : s.currentQueue,
+            isOpen: publicData.isOpen !== undefined ? publicData.isOpen : s.isOpen,
+          };
+        }),
+      );
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [selectedSalonForDetail?.id]);
 
   const updateCustomerName = (name: string) => {
     const trimmed = name.trim();
@@ -334,19 +416,32 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     });
   };
 
-  const addReview = (salonId: string, reviewData: Omit<Review, 'id' | 'date'>) => {
+  const addReview = async (salonId: string, reviewData: Omit<Review, 'id' | 'date'>) => {
     const newReview: Review = {
       ...reviewData,
       id: `rev-${Date.now()}`,
       date: 'Just now',
     };
+
+    // 1. Immediately cache in localStorage for instant resilience across page refreshes
+    if (typeof window !== 'undefined') {
+      try {
+        const key = `kumbhakaran_reviews_${salonId}`;
+        const existing = JSON.parse(localStorage.getItem(key) || '[]');
+        localStorage.setItem(key, JSON.stringify([newReview, ...existing]));
+      } catch (e) {
+        console.warn('Failed to cache review in localStorage:', e);
+      }
+    }
+
+    // 2. Optimistically update local React state
     setSalons((prev) =>
       prev.map((s) => {
         if (s.id !== salonId) return s;
-        const newReviews = [newReview, ...s.reviews];
-        const newCount = s.reviewCount + 1;
+        const newReviews = [newReview, ...(s.reviews || [])];
+        const newCount = (s.reviewCount || 0) + 1;
         const newRating = Number(
-          ((s.rating * s.reviewCount + newReview.rating) / newCount).toFixed(1),
+          (((s.rating || 5) * (s.reviewCount || 0) + newReview.rating) / newCount).toFixed(1),
         );
         const updated = {
           ...s,
@@ -358,7 +453,37 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         return updated;
       }),
     );
+
     triggerNotification('Thank you! Your verified review has been published.');
+
+    // 3. Persist to PostgreSQL backend database
+    try {
+      const persisted = await defaultApiClient.submitSalonReview(salonId, {
+        customerName: reviewData.customerName,
+        customerAvatar: reviewData.customerAvatar,
+        rating: reviewData.rating,
+        comment: reviewData.comment,
+        verifiedVisit: reviewData.verifiedVisit,
+        criteria: reviewData.criteria,
+      });
+
+      if (persisted && persisted.id) {
+        // Update review with official database ID
+        setSalons((prev) =>
+          prev.map((s) => {
+            if (s.id !== salonId) return s;
+            const updatedReviews = s.reviews.map((r) =>
+              r.id === newReview.id ? { ...r, id: persisted.id, date: 'Just now' } : r,
+            );
+            const updated = { ...s, reviews: updatedReviews };
+            if (selectedSalonForDetail?.id === salonId) setSelectedSalonForDetail(updated);
+            return updated;
+          }),
+        );
+      }
+    } catch (err) {
+      console.warn('Backend review submission warning:', err);
+    }
   };
 
   const toggleLiveSimulator = () => {

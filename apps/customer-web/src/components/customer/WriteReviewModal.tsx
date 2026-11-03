@@ -34,7 +34,7 @@ export const WriteReviewModal: React.FC<WriteReviewModalProps> = ({ isOpen, onCl
     onClose();
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!comment.trim()) return;
 
@@ -47,7 +47,7 @@ export const WriteReviewModal: React.FC<WriteReviewModalProps> = ({ isOpen, onCl
       ((haircutQuality + staffBehaviour + cleanliness + pricing + overallExperience) / 5).toFixed(1)
     );
 
-    addReview(selectedSalonForDetail.id, {
+    await addReview(selectedSalonForDetail.id, {
       customerName: finalName,
       customerAvatar: userProfile.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80',
       rating: Math.round(avgScore),

@@ -135,4 +135,52 @@ export const api = {
       return null;
     }
   },
+
+  /**
+   * Submit Customer Review (persisted directly to PostgreSQL database)
+   */
+  async submitSalonReview(salonId: string, review: {
+    customerName: string;
+    customerAvatar?: string;
+    rating: number;
+    comment: string;
+    verifiedVisit?: boolean;
+    criteria?: {
+      haircutQuality?: number;
+      staffBehaviour?: number;
+      cleanliness?: number;
+      pricing?: number;
+      overallExperience?: number;
+    };
+  }) {
+    try {
+      const res = await fetch(`${API_BASE}/salons/${salonId}/reviews`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify(review),
+      });
+      if (!res.ok) return null;
+      return await res.json();
+    } catch {
+      return null;
+    }
+  },
+
+  /**
+   * Get all reviews for a salon
+   */
+  async getSalonReviews(salonId: string) {
+    try {
+      const res = await fetch(`${API_BASE}/salons/${salonId}/reviews`, {
+        headers: { Accept: 'application/json' },
+      });
+      if (!res.ok) return [];
+      return await res.json();
+    } catch {
+      return [];
+    }
+  },
 };

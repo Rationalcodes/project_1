@@ -9,7 +9,8 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { RegisterSalonDto } from './dto/register-salon.dto';
 import { UpdateSalonDto } from './dto/update-salon.dto';
 import { UpdateQueueDto } from './dto/update-queue.dto';
-import { PublicSalonResponseDto } from './dto/public-salon-response.dto';
+import { PublicSalonResponseDto, PublicReviewDto } from './dto/public-salon-response.dto';
+import { CreateReviewDto } from './dto/create-review.dto';
 import { AuthenticatedUser } from '../auth/interfaces/jwt-payload.interface';
 
 @Injectable()
@@ -299,6 +300,118 @@ export class SalonsService {
         ownerReply: r.ownerReply || r.owner_reply,
       })),
     };
+  }
+
+  async addReview(salonId: string, dto: CreateReviewDto): Promise<PublicReviewDto> {
+    const reviewId = `rev-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+    const now = new Date();
+    const rating = Math.max(1, Math.min(5, Math.round(Number(dto.rating) || 5)));
+    const haircutQuality = Math.max(1, Math.min(5, Number(dto.criteria?.haircutQuality || rating)));
+    const staffBehaviour = Math.max(1, Math.min(5, Number(dto.criteria?.staffBehaviour || rating)));
+    const cleanliness = Math.max(1, Math.min(5, Number(dto.criteria?.cleanliness || rating)));
+    const pricing = Math.max(1, Math.min(5, Number(dto.criteria?.pricing || rating)));
+    const overallExperience = Math.max(1, Math.min(5, Number(dto.criteria?.overallExperience || rating)));
+
+    const reviewRecord = {
+      id: reviewId,
+      salonId,
+      customerName: dto.customerName?.trim() || 'Anonymous Customer',
+      customerAvatar: dto.customerAvatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80',
+      rating,
+      comment: dto.comment?.trim() || '',
+      verifiedVisit: dto.verifiedVisit !== false,
+      haircutQuality,
+      staffBehaviour,
+      cleanliness,
+      pricing,
+      overallExperience,
+      createdAt: now,
+    };
+
+    // 1. Try to persist into PostgreSQL
+    try {
+      await this.prisma.salonReview.create({
+        data: reviewRecord,
+      });
+
+      // Recalculate average rating & review count for the salon
+      const agg = await this.prisma.salonReview.aggregate({
+        where: { salonId, flagged: false },
+        _avg: { rating: true },
+        _count: { id: true },
+      });
+
+      const newAvgRating = Number((agg._avg.rating || rating).toFixed(1));
+      const newReviewCount = agg._count.id;
+
+      await this.prisma.salon.update({
+        where: { id: salonId },
+        data: {
+          rating: newAvgRating,
+          reviewCount: newReviewCount,
+        },
+      });
+      this.logger.log(`Review persisted to database for salon ${salonId}: ${reviewId}`);
+    } catch (err) {
+      this.logger.warn(`Could not save review to database (${(err as Error).message}). Updating local memory cache.`);
+    }
+
+    // 2. Also update localSalons cache
+    const localSalon = this.localSalons.get(salonId);
+    if (localSalon) {
+      if (!localSalon.reviews) localSalon.reviews = [];
+      localSalon.reviews.unshift({
+        id: reviewId,
+        customerName: reviewRecord.customerName,
+        customerAvatar: reviewRecord.customerAvatar,
+        rating: reviewRecord.rating,
+        comment: reviewRecord.comment,
+        verifiedVisit: reviewRecord.verifiedVisit,
+        createdAt: now.toISOString(),
+      });
+      const count = (localSalon.reviewCount || 0) + 1;
+      const avg = Number((((localSalon.rating || 5) * (localSalon.reviewCount || 0) + rating) / count).toFixed(1));
+      localSalon.reviewCount = count;
+      localSalon.rating = avg;
+    }
+
+    return {
+      id: reviewId,
+      customerName: reviewRecord.customerName,
+      customerAvatar: reviewRecord.customerAvatar,
+      rating: reviewRecord.rating,
+      comment: reviewRecord.comment,
+      verifiedVisit: reviewRecord.verifiedVisit,
+      createdAt: now.toISOString(),
+    };
+  }
+
+  async getReviews(salonId: string): Promise<PublicReviewDto[]> {
+    try {
+      const dbReviews = await this.prisma.salonReview.findMany({
+        where: { salonId, flagged: false },
+        orderBy: { createdAt: 'desc' },
+        take: 50,
+      });
+
+      if (dbReviews && dbReviews.length > 0) {
+        return dbReviews.map((r) => ({
+          id: r.id,
+          customerName: r.customerName,
+          customerAvatar: r.customerAvatar || undefined,
+          rating: r.rating,
+          comment: r.comment,
+          verifiedVisit: r.verifiedVisit,
+          createdAt: r.createdAt.toISOString(),
+          ownerReply: r.ownerReply || undefined,
+        }));
+      }
+    } catch (err) {
+      this.logger.debug(`Could not read reviews from DB: ${(err as Error).message}`);
+    }
+
+    const localSalon = this.localSalons.get(salonId);
+    return localSalon?.reviews || [];
   }
 
   async updateSalon(id: string, dto: UpdateSalonDto, requesterOwnerId?: string): Promise<any> {

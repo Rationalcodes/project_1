@@ -46,7 +46,7 @@ export interface Review {
   date: string;
   comment: string;
   verifiedVisit: boolean;
-  criteria: ReviewCriteria;
+  criteria?: ReviewCriteria;
   flagged?: boolean;
   ownerReply?: {
     comment: string;
