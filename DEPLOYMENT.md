@@ -86,7 +86,37 @@ END $$;
 CREATE INDEX IF NOT EXISTS idx_salon_members_salon ON public.salon_members(salon_id);
 CREATE INDEX IF NOT EXISTS idx_salon_members_user ON public.salon_members(user_id);
 
--- 3. Stored Procedure for Out-of-Band Admin Promotion
+-- 3. Safely link all existing salon owners to salon_members (Preserving existing ownership & data)
+DO $$
+BEGIN
+  -- Explicit handling for seeded test salon
+  IF EXISTS (SELECT 1 FROM public.salons WHERE id = 'salon-1793713039749' AND owner_id = 'owner-arjun-101') THEN
+    INSERT INTO public.users (id, email, name, role, created_at, updated_at)
+    VALUES ('owner-arjun-101', 'owner-arjun-101@kumbhakaran.in', 'Arjun K.', 'CUSTOMER', NOW(), NOW())
+    ON CONFLICT (id) DO UPDATE SET role = 'CUSTOMER';
+
+    INSERT INTO public.salon_members (id, salon_id, user_id, role, is_active, created_at)
+    VALUES ('mem-arjun-101', 'salon-1793713039749', 'owner-arjun-101', 'PARTNER_OWNER', TRUE, NOW())
+    ON CONFLICT (salon_id, user_id) DO UPDATE SET role = 'PARTNER_OWNER', is_active = TRUE;
+  END IF;
+
+  -- Dynamic backfill for any other salon owners present in salons table
+  INSERT INTO public.salon_members (id, salon_id, user_id, role, is_active, created_at)
+  SELECT 
+    'mem-' || SUBSTRING(MD5(s.id || ':' || s.owner_id) FROM 1 FOR 16),
+    s.id,
+    s.owner_id,
+    'PARTNER_OWNER',
+    TRUE,
+    NOW()
+  FROM public.salons s
+  JOIN public.users u ON u.id = s.owner_id
+  WHERE s.owner_id IS NOT NULL
+  ON CONFLICT (salon_id, user_id) DO UPDATE 
+  SET role = 'PARTNER_OWNER', is_active = TRUE;
+END $$;
+
+-- 4. Stored Procedure for Out-of-Band Admin Promotion
 CREATE OR REPLACE PROCEDURE public.promote_user_to_admin(target_email TEXT)
 LANGUAGE plpgsql
 SECURITY DEFINER
