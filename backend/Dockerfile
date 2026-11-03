@@ -1,47 +1,34 @@
 # Multi-stage production Dockerfile for Kumbhakaran Backend
 # NestJS + Fastify + Prisma + PostGIS
 FROM node:22-alpine AS base
-ENV PNPM_HOME="/pnpm"
-ENV PATH="$PNPM_HOME:$PATH"
-RUN corepack enable
 
 WORKDIR /app
 
-# Copy root workspace configurations
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-COPY backend/package.json ./backend/
-COPY packages/shared-types/package.json ./packages/shared-types/
-COPY packages/api-client/package.json ./packages/api-client/
-COPY packages/ui/package.json ./packages/ui/
+# Install build dependencies
+COPY package.json package-lock.json* ./
+RUN npm install
 
-# Install dependencies
-RUN pnpm install --frozen-lockfile
+# Copy source code and Prisma schema
+COPY tsconfig.json nest-cli.json ./
+COPY prisma ./prisma
+COPY src ./src
 
-# Copy source files
-COPY packages/shared-types ./packages/shared-types
-COPY packages/api-client ./packages/api-client
-COPY backend ./backend
-
-# Generate Prisma Client and Build
-WORKDIR /app/backend
-RUN pnpm prisma generate
-RUN pnpm run build
+# Generate Prisma Client and Build NestJS
+RUN npx prisma generate
+RUN npm run build
 
 # Production runtime stage
 FROM node:22-alpine AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
-ENV PORT=3001
+ENV PORT=10000
 
 COPY --from=base /app/node_modules ./node_modules
-COPY --from=base /app/backend/node_modules ./backend/node_modules
-COPY --from=base /app/backend/dist ./backend/dist
-COPY --from=base /app/backend/prisma ./backend/prisma
-COPY --from=base /app/backend/package.json ./backend/package.json
+COPY --from=base /app/dist ./dist
+COPY --from=base /app/prisma ./prisma
+COPY --from=base /app/package.json ./package.json
 
-WORKDIR /app/backend
-
-EXPOSE 3001
+EXPOSE 10000
 
 CMD ["node", "dist/main.js"]
