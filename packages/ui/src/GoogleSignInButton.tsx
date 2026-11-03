@@ -12,6 +12,7 @@ export interface GoogleSignInButtonProps {
   width?: number | string;
   className?: string;
   disabled?: boolean;
+  showDevBypass?: boolean;
 }
 
 export const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
@@ -25,10 +26,37 @@ export const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
   width = 280,
   className = '',
   disabled = false,
+  showDevBypass = true,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isGisReady, setIsGisReady] = useState(false);
   const [initError, setInitError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  const currentOrigin = typeof window !== 'undefined' ? window.location.origin : '';
+  const isLocalhost = typeof window !== 'undefined' && (
+    window.location.hostname === 'localhost' ||
+    window.location.hostname === '127.0.0.1'
+  );
+
+  const handleDevBypass = () => {
+    const testPayload = {
+      sub: 'usr-prabhat-01',
+      email: 'prabhatshinde.ggv2024@gmail.com',
+      name: 'Prabhat Shinde',
+      picture: 'https://lh3.googleusercontent.com/a/default-user=s96-c',
+    };
+    const testToken = 'test-token:' + btoa(JSON.stringify(testPayload));
+    onSuccess(testToken);
+  };
+
+  const copyOrigin = () => {
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      navigator.clipboard.writeText(currentOrigin);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
 
   // Read client ID from prop or Vite environment
   const effectiveClientId =
@@ -134,7 +162,7 @@ export const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
   }
 
   return (
-    <div className={`inline-flex flex-col items-center justify-center ${className}`}>
+    <div className={`inline-flex flex-col items-center justify-center gap-2 ${className}`}>
       {!isGisReady && (
         <div
           style={{ width: typeof width === 'number' ? `${width}px` : width, height: '40px' }}
@@ -145,6 +173,36 @@ export const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
         </div>
       )}
       <div ref={containerRef} className={!isGisReady ? 'hidden' : 'block'} />
+
+      {/* Origin Helper & Dev Sign-In for Immediate Testing */}
+      {showDevBypass && (
+        <div className="flex flex-col items-center gap-1.5 mt-1">
+          <button
+            type="button"
+            onClick={handleDevBypass}
+            className="text-[11px] font-semibold text-amber-400 hover:text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 rounded-lg px-3 py-1.5 transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
+          >
+            <span>⚡</span>
+            <span>Sign In as Prabhat (Dev Bypass)</span>
+          </button>
+
+          {currentOrigin && (
+            <div className="flex items-center gap-1 text-[10px] text-zinc-400">
+              <span>Google origin:</span>
+              <code className="px-1.5 py-0.5 rounded bg-zinc-800/80 border border-zinc-700/50 text-amber-300 font-mono">
+                {currentOrigin}
+              </code>
+              <button
+                type="button"
+                onClick={copyOrigin}
+                className="text-[10px] text-zinc-400 hover:text-white underline cursor-pointer ml-0.5"
+              >
+                {copied ? '✓ Copied' : 'Copy'}
+              </button>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };
