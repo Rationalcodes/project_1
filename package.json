@@ -1,0 +1,39 @@
+{
+  "name": "kumbhakaran-platform",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev:customer": "pnpm --filter @kumbhakaran/customer-web dev",
+    "dev:partner": "pnpm --filter @kumbhakaran/partner-web dev",
+    "dev:admin": "pnpm --filter @kumbhakaran/admin-web dev",
+    "dev:backend": "pnpm --filter @kumbhakaran/backend start:dev",
+    "build:all": "pnpm -r run build",
+    "build:customer": "pnpm --filter @kumbhakaran/customer-web build",
+    "build:partner": "pnpm --filter @kumbhakaran/partner-web build",
+    "build:admin": "pnpm --filter @kumbhakaran/admin-web build",
+    "build:backend": "pnpm --filter @kumbhakaran/backend build",
+    "backend:test:db": "pnpm --filter @kumbhakaran/backend run test:db",
+    "backend:test:phase2": "pnpm --filter @kumbhakaran/backend run test:phase2",
+    "backend:test:auth": "pnpm --filter @kumbhakaran/backend exec ts-node src/scripts/test-auth-security.ts",
+    "start:dev": "pnpm --filter @kumbhakaran/backend start:dev",
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "lucide-react": "1.61.0",
+    "react": "19.3.1",
+    "react-dom": "19.3.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "4.3.3",
+    "@types/node": "24.19.2",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@vitejs/plugin-react": "6.1.2",
+    "tailwindcss": "4.3.3",
+    "typescript": "6.0.3",
+    "vite": "8.3.1"
+  }
+}

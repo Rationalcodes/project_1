@@ -1,0 +1,135 @@
+import {
+  Controller,
+  Post,
+  Get,
+  Patch,
+  Body,
+  Param,
+  Query,
+  UseGuards,
+  HttpCode,
+  HttpStatus,
+  Req,
+} from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiParam,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
+import { SalonsService } from './salons.service';
+import { RegisterSalonDto } from './dto/register-salon.dto';
+import { UpdateSalonDto } from './dto/update-salon.dto';
+import { UpdateQueueDto } from './dto/update-queue.dto';
+import { PublicSalonResponseDto } from './dto/public-salon-response.dto';
+import { SalonOwnerGuard } from './guards/salon-owner.guard';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { AuthenticatedUser } from '../auth/interfaces/jwt-payload.interface';
+import { DiscoveryService } from '../discovery/discovery.service';
+import { NearbySalonsQueryDto } from '../discovery/dto/nearby-salons-query.dto';
+import { NearbySalonsResponseDto } from '../discovery/dto/nearby-salon-response.dto';
+
+@ApiTags('Salons')
+@Controller('salons')
+export class SalonsController {
+  constructor(
+    private readonly salonsService: SalonsService,
+    private readonly discoveryService: DiscoveryService,
+  ) {}
+
+  @Post('register')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({
+    summary: 'Register a new salon with geographical PostGIS point',
+    description:
+      'Captures salon information, street address, and exact coordinates. Automatically associates authenticated user as PARTNER_OWNER in salon_members.',
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Salon registered successfully',
+  })
+  async registerSalon(
+    @Body() dto: RegisterSalonDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.salonsService.registerSalon(dto, user?.id);
+  }
+
+  @Get('nearby')
+  @ApiOperation({
+    summary: 'Discover nearby salons using PostGIS geographical coordinates',
+    description:
+      'Discovers salons within geographical radius using PostGIS ST_DWithin and ST_Distance calculations. Applies Lazy Mode filters, sorting, and aggregate queue counts.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'List of nearby salons sorted by distance',
+    type: NearbySalonsResponseDto,
+  })
+  async getNearbySalons(
+    @Query() query: NearbySalonsQueryDto,
+  ): Promise<NearbySalonsResponseDto> {
+    return this.discoveryService.getNearbySalons(query);
+  }
+
+  @Get(':id')
+  @ApiOperation({
+    summary: 'Get public salon profile by ID',
+    description:
+      'Returns verified public salon information, services, pricing, and aggregate walk-in queue counter. Strictly excludes internal customer names and financial data.',
+  })
+  @ApiParam({ name: 'id', example: 'salon-1', description: 'Salon identifier' })
+  @ApiResponse({
+    status: 200,
+    description: 'Public salon profile',
+    type: PublicSalonResponseDto,
+  })
+  @ApiResponse({ status: 404, description: 'Salon not found or suspended' })
+  async getPublicSalonById(
+    @Param('id') id: string,
+  ): Promise<PublicSalonResponseDto> {
+    return this.salonsService.getPublicSalonById(id);
+  }
+
+  @Patch(':id')
+  @UseGuards(JwtAuthGuard, SalonOwnerGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Update salon profile or location coordinates (Owner Only)',
+    description:
+      'Protected by JwtAuthGuard and SalonOwnerGuard. Prevents unauthorized salon modifications. Updates PostGIS geography point if coordinates change.',
+  })
+  @ApiParam({ name: 'id', example: 'salon-1' })
+  @ApiResponse({ status: 200, description: 'Salon updated successfully' })
+  @ApiResponse({ status: 403, description: 'Forbidden: Requester does not own this salon' })
+  async updateSalon(
+    @Param('id') id: string,
+    @Body() dto: UpdateSalonDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.salonsService.updateSalon(id, dto, user.id);
+  }
+
+  @Patch(':id/queue')
+  @UseGuards(JwtAuthGuard, SalonOwnerGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Update physical walk-in queue counter (Owner Only)',
+    description:
+      'Transactionally increments, decrements, or manually overrides the public walk-in waiting counter.',
+  })
+  @ApiParam({ name: 'id', example: 'salon-1' })
+  @ApiResponse({ status: 200, description: 'Queue updated successfully' })
+  @ApiResponse({ status: 403, description: 'Forbidden: Requester does not own this salon' })
+  async updateQueue(
+    @Param('id') id: string,
+    @Body() dto: UpdateQueueDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.salonsService.updateQueue(id, dto, user.id);
+  }
+}

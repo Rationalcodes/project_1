@@ -1,0 +1,167 @@
+// ==============================================================================
+// KUMBHAKARAN PLATFORM - PRISMA SCHEMA FOR SUPABASE POSTGIS
+// ==============================================================================
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = []
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// 1. Salons Entity
+model Salon {
+  id                      String   @id @db.VarChar(64)
+  name                    String   @db.VarChar(255)
+  tagline                 String?
+  ownerName               String   @map("owner_name") @db.VarChar(255)
+  ownerId                 String?  @map("owner_id") @db.VarChar(64)
+  phone                   String   @db.VarChar(50)
+  email                   String?  @db.VarChar(255)
+  address                 String
+  locality                String   @db.VarChar(100)
+  city                    String   @db.VarChar(100)
+  state                   String?  @db.VarChar(100)
+  pincode                 String   @db.VarChar(20)
+
+  // Spatial coordinates
+  latitude                Float
+  longitude               Float
+  // PostGIS Point column mapped as Unsupported in Prisma.
+  // Queried and mutated via parameterized raw PostGIS SQL functions (ST_DWithin, ST_Distance, ST_MakePoint).
+  location                Unsupported("geography(Point, 4326)")
+
+  coverImage              String?  @map("cover_image")
+  openingHoursOpen        String?  @default("09:00 AM") @map("opening_hours_open") @db.VarChar(20)
+  openingHoursClose       String?  @default("09:30 PM") @map("opening_hours_close") @db.VarChar(20)
+  openingHoursFormatted   String?  @default("09:00 AM – 09:30 PM (All Days)") @map("opening_hours_formatted") @db.VarChar(100)
+
+  // Live walk-in queue telemetry
+  currentQueue            Int      @default(0) @map("current_queue")
+  avgServiceTimeMinutes   Int      @default(20) @map("avg_service_time_minutes")
+  activeBarbers           Int      @default(2) @map("active_barbers")
+  isOpen                  Boolean  @default(true) @map("is_open")
+  lastQueueUpdate         DateTime @default(now()) @map("last_queue_update") @db.Timestamptz
+
+  // Platform governance
+  rating                  Decimal  @default(5.0) @db.Decimal(2, 1)
+  reviewCount             Int      @default(0) @map("review_count")
+  startingPrice           Decimal  @default(150.0) @map("starting_price") @db.Decimal(10, 2)
+  isVerified              Boolean  @default(false) @map("is_verified")
+  status                  String   @default("active") @db.VarChar(20)
+
+  todayCustomersServed    Int      @default(0) @map("today_customers_served")
+  todayRevenue            Decimal  @default(0.0) @map("today_revenue") @db.Decimal(12, 2)
+  monthlyRevenue          Decimal  @default(0.0) @map("monthly_revenue") @db.Decimal(12, 2)
+  createdAt               DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  // Relations
+  services                SalonService[]
+  staff                   SalonStaff[]
+  reviews                 SalonReview[]
+  members                 SalonMember[]
+
+  @@map("salons")
+}
+
+// 2. Salon Services Entity
+model SalonService {
+  id              String   @id @db.VarChar(64)
+  salonId         String   @map("salon_id") @db.VarChar(64)
+  name            String   @db.VarChar(255)
+  category        String   @db.VarChar(50)
+  price           Decimal  @db.Decimal(10, 2)
+  durationMinutes Int      @default(20) @map("duration_minutes")
+  description     String?
+  isAvailable     Boolean  @default(true) @map("is_available")
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  salon           Salon    @relation(fields: [salonId], references: [id], onDelete: Cascade)
+
+  @@index([salonId, category], map: "idx_services_salon_category")
+  @@map("salon_services")
+}
+
+// 3. Salon Staff Entity
+model SalonStaff {
+  id          String   @id @db.VarChar(64)
+  salonId     String   @map("salon_id") @db.VarChar(64)
+  name        String   @db.VarChar(255)
+  role        String?  @default("Master Barber") @db.VarChar(100)
+  experience  String?  @db.VarChar(50)
+  specialties String[]
+  photo       String?
+  status      String   @default("active") @db.VarChar(20)
+  rating      Decimal  @default(4.9) @db.Decimal(2, 1)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  salon       Salon    @relation(fields: [salonId], references: [id], onDelete: Cascade)
+
+  @@map("salon_staff")
+}
+
+// 4. Salon Reviews Entity (Customer Name only)
+model SalonReview {
+  id                String    @id @db.VarChar(64)
+  salonId           String    @map("salon_id") @db.VarChar(64)
+  customerName      String    @map("customer_name") @db.VarChar(100)
+  customerAvatar    String?   @map("customer_avatar")
+  rating            Int
+  comment           String
+  verifiedVisit     Boolean   @default(true) @map("verified_visit")
+
+  haircutQuality    Int       @default(5) @map("haircut_quality")
+  staffBehaviour    Int       @default(5) @map("staff_behaviour")
+  cleanliness       Int       @default(5) @map("cleanliness")
+  pricing           Int       @default(5) @map("pricing")
+  overallExperience Int       @default(5) @map("overall_experience")
+
+  ownerReply        String?   @map("owner_reply")
+  ownerReplyDate    DateTime? @map("owner_reply_date") @db.Timestamptz
+  flagged           Boolean   @default(false)
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  salon             Salon     @relation(fields: [salonId], references: [id], onDelete: Cascade)
+
+  @@map("salon_reviews")
+}
+
+// 5. Users Entity (Global Platform Role: CUSTOMER or ADMIN)
+model User {
+  id           String        @id @db.VarChar(64)
+  googleId     String?       @unique @map("google_id") @db.VarChar(128)
+  email        String        @unique @db.VarChar(255)
+  name         String        @db.VarChar(255)
+  avatarUrl    String?       @map("avatar_url")
+  phone        String?       @db.VarChar(50)
+  role         String        @default("CUSTOMER") @db.VarChar(20)
+  lastLogoutAt DateTime?     @map("last_logout_at") @db.Timestamptz
+  createdAt    DateTime      @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt    DateTime      @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  memberships  SalonMember[]
+
+  @@map("users")
+}
+
+// 6. Salon Memberships Entity (Salon-specific role: PARTNER_OWNER or PARTNER_STAFF)
+model SalonMember {
+  id        String   @id @db.VarChar(64)
+  salonId   String   @map("salon_id") @db.VarChar(64)
+  userId    String   @map("user_id") @db.VarChar(64)
+  role      String   @db.VarChar(30)
+  status    String   @default("ACTIVE") @db.VarChar(20)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  salon     Salon    @relation(fields: [salonId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([salonId, userId], map: "uq_salon_member")
+  @@index([salonId], map: "idx_salon_members_salon")
+  @@index([userId], map: "idx_salon_members_user")
+  @@map("salon_members")
+}

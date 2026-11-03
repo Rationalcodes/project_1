@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: kumbhakaran-backend
+    runtime: node
+    plan: free
+    region: frankfurt
+    buildCommand: pnpm install --frozen-lockfile && pnpm --filter @kumbhakaran/backend build
+    startCommand: node backend/dist/main.js
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: DATABASE_URL
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        value: 871471875670-5erjemuob83qh5a4nmlm20s305fk0gof.apps.googleusercontent.com
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 24h
