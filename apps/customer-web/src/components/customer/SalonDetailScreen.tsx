@@ -27,7 +27,7 @@ import { Service, Staff } from '@kumbhakaran/shared-types';
 interface SalonDetailScreenProps {
   onBack: () => void;
   onOpenReviewModal: () => void;
-  onOpenDirectionsModal: () => void;
+  onOpenDirectionsModal?: () => void;
 }
 
 export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
@@ -195,11 +195,11 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
               </a>
 
               <button
-                onClick={onOpenDirectionsModal}
+                onClick={() => {}}
                 className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-amber-500 text-black font-bold hover:bg-amber-400 transition-colors"
               >
                 <Navigation className="w-3.5 h-3.5" />
-                <span>Directions ({salon.distanceKm} km)</span>
+                <span>{salon.distanceKm} km away</span>
               </button>
             </div>
           </div>

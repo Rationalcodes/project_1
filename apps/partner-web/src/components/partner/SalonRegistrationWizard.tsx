@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useSalon } from '../../context/PartnerContext';
-import { InteractiveMapPicker } from '../common/InteractiveMapPicker';
+// Address & Location step
 import {
   Store,
   MapPin,
@@ -245,7 +245,7 @@ export const SalonRegistrationWizard: React.FC<SalonRegistrationWizardProps> = (
                 }}
                 className="px-6 py-2.5 rounded-xl bg-amber-500 text-black font-bold text-xs hover:bg-amber-400 flex items-center gap-2 shadow-lg shadow-amber-500/20"
               >
-                <span>Next: Location & Pin Drop</span>
+                <span>Next: Salon Address & Location</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
             </div>
@@ -257,19 +257,15 @@ export const SalonRegistrationWizard: React.FC<SalonRegistrationWizardProps> = (
           <div className="space-y-4 animate-in fade-in">
             <div>
               <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                <MapPin className="w-4 h-4 text-amber-400" /> Step 2: Pin Exact Location on Map
+                <MapPin className="w-4 h-4 text-amber-400" /> Step 2: Salon Address & Location
               </h3>
               <p className="text-xs text-zinc-400 mt-0.5">
                 Search your address or click directly on the interactive map to position your salon marker.
               </p>
             </div>
 
-            {/* Interactive Map Picker Component */}
-            <InteractiveMapPicker
-              initialLat={coordinates.lat}
-              initialLng={coordinates.lng}
-              onCoordinatesChange={handleCoordinatesChange}
-            />
+            {/* Location selector */}
+            <div className="p-3 rounded-2xl bg-zinc-900/60 border border-zinc-800 text-xs text-zinc-400">Fill in your physical location details below.</div>
 
             {/* Detailed Street Address */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
@@ -544,3 +540,4 @@ export const SalonRegistrationWizard: React.FC<SalonRegistrationWizardProps> = (
     </div>
   );
 };
+

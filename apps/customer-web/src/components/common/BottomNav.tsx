@@ -1,5 +1,5 @@
 import React from 'react';
-import { Home, Compass, Map, Heart, User } from 'lucide-react';
+import { Home, Compass, Heart, User } from 'lucide-react';
 import { useSalon } from '../../context/CustomerContext';
 import { CustomerTab } from '@kumbhakaran/shared-types';
 
@@ -9,7 +9,6 @@ export const BottomNav: React.FC = () => {
   const navItems: { id: CustomerTab; label: string; icon: React.FC<{ className?: string }>; badgeCount?: number }[] = [
     { id: 'home', label: 'Home', icon: Home },
     { id: 'explore', label: 'Explore', icon: Compass },
-    { id: 'map', label: 'Map', icon: Map },
     { id: 'favourites', label: 'Favourites', icon: Heart, badgeCount: userProfile.savedSalons.length },
     { id: 'profile', label: 'Profile', icon: User }
   ];

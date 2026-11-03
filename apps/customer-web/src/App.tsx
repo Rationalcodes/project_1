@@ -6,12 +6,10 @@ import { NotificationToast } from './components/common/NotificationToast';
 import { CompareModal } from './components/common/CompareModal';
 import { HomeScreen } from './components/customer/HomeScreen';
 import { ExploreScreen } from './components/customer/ExploreScreen';
-import { MapScreen } from './components/customer/MapScreen';
 import { SalonDetailScreen } from './components/customer/SalonDetailScreen';
 import { FavouritesScreen } from './components/customer/FavouritesScreen';
 import { ProfileScreen } from './components/customer/ProfileScreen';
 import { WriteReviewModal } from './components/customer/WriteReviewModal';
-import { DirectionsModal } from './components/customer/DirectionsModal';
 import { Smartphone, Wifi, Battery, Signal } from 'lucide-react';
 
 const CustomerMainContent: React.FC = () => {
@@ -42,7 +40,7 @@ const CustomerMainContent: React.FC = () => {
       case 'explore':
         return <ExploreScreen />;
       case 'map':
-        return <MapScreen />;
+        return <ExploreScreen />;
       case 'favourites':
         return <FavouritesScreen />;
       case 'profile':
@@ -103,10 +101,6 @@ const CustomerMainContent: React.FC = () => {
       <WriteReviewModal
         isOpen={isReviewModalOpen}
         onClose={() => setIsReviewModalOpen(false)}
-      />
-      <DirectionsModal
-        isOpen={isDirectionsModalOpen}
-        onClose={() => setIsDirectionsModalOpen(false)}
       />
     </div>
   );
