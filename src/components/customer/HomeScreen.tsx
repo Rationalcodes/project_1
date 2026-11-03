@@ -350,7 +350,9 @@ export const HomeScreen: React.FC = () => {
               All Nearby Salons ({filteredSalons.length})
             </h2>
             <p className="text-[11px] text-zinc-400">
-              Sorted by distance from {userLocation.name.split(',')[0]}
+              {userLocation
+                ? `Sorted by distance from ${userLocation.name.split(',')[0]}`
+                : 'Showing verified studios (Set location for live distance)'}
             </p>
           </div>
           <button

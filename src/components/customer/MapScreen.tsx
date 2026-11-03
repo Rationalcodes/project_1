@@ -48,9 +48,11 @@ export const MapScreen: React.FC = () => {
   const [isGoogleLoaded, setIsGoogleLoaded] = useState(false);
   const [isLeafletLoaded, setIsLeafletLoaded] = useState(false);
   const [hasMapMoved, setHasMapMoved] = useState(false);
+  const fallbackCoords = { lat: 12.9716, lng: 77.5946 };
+  const currentCoords = userLocation ? { lat: userLocation.lat, lng: userLocation.lng } : fallbackCoords;
   const [mapCenterCoords, setMapCenterCoords] = useState<{ lat: number; lng: number }>({
-    lat: userLocation.lat,
-    lng: userLocation.lng,
+    lat: currentCoords.lat,
+    lng: currentCoords.lng,
   });
 
   const mapContainerRef = useRef<HTMLDivElement>(null);
@@ -68,15 +70,17 @@ export const MapScreen: React.FC = () => {
   const visibleSalons = salons
     .map((s) => ({
       ...s,
-      computedDistance: calculateHaversineDistance(
-        userLocation.lat,
-        userLocation.lng,
-        s.coordinates.lat,
-        s.coordinates.lng,
-      ),
+      computedDistance: userLocation
+        ? calculateHaversineDistance(
+            userLocation.lat,
+            userLocation.lng,
+            s.coordinates.lat,
+            s.coordinates.lng,
+          )
+        : s.distanceKm,
     }))
     .filter((s) => {
-      if (s.computedDistance > radiusKm) return false;
+      if (userLocation && s.computedDistance > radiusKm) return false;
       if (mapSearch.trim()) {
         const q = mapSearch.toLowerCase();
         return (
@@ -121,7 +125,7 @@ export const MapScreen: React.FC = () => {
 
     if (!googleMapRef.current) {
       const map = new gmaps.Map(mapContainerRef.current, {
-        center: { lat: userLocation.lat, lng: userLocation.lng },
+        center: { lat: currentCoords.lat, lng: currentCoords.lng },
         zoom: 14,
         styles: mapLayerType === 'dark' ? KUMBHAKARAN_MAP_STYLES : [],
         mapTypeId: mapLayerType === 'satellite' ? 'hybrid' : 'roadmap',
@@ -143,7 +147,7 @@ export const MapScreen: React.FC = () => {
         }
       });
     } else {
-      googleMapRef.current.setCenter({ lat: userLocation.lat, lng: userLocation.lng });
+      googleMapRef.current.setCenter({ lat: currentCoords.lat, lng: currentCoords.lng });
       googleMapRef.current.setMapTypeId(mapLayerType === 'satellite' ? 'hybrid' : 'roadmap');
       if (mapLayerType === 'dark') {
         googleMapRef.current.setOptions({ styles: KUMBHAKARAN_MAP_STYLES });
@@ -151,7 +155,7 @@ export const MapScreen: React.FC = () => {
         googleMapRef.current.setOptions({ styles: [] });
       }
     }
-  }, [mapEngine, isGoogleLoaded, mapLayerType, userLocation.lat, userLocation.lng]);
+  }, [mapEngine, isGoogleLoaded, mapLayerType, currentCoords.lat, currentCoords.lng]);
 
   // 2B. Synchronize Google Maps Markers
   useEffect(() => {
@@ -163,22 +167,24 @@ export const MapScreen: React.FC = () => {
     googleMarkersRef.current.forEach((m) => m.setMap(null));
     googleMarkersRef.current = [];
 
-    // User Location Beacon
+    // User Location Beacon (only if location is set)
     if (googleUserMarkerRef.current) googleUserMarkerRef.current.setMap(null);
-    googleUserMarkerRef.current = new gmaps.Marker({
-      position: { lat: userLocation.lat, lng: userLocation.lng },
-      map: googleMapRef.current,
-      title: 'Your Location',
-      icon: {
-        path: gmaps.SymbolPath.CIRCLE,
-        scale: 9,
-        fillColor: '#38bdf8',
-        fillOpacity: 1,
-        strokeColor: '#ffffff',
-        strokeWeight: 2.5,
-      },
-      zIndex: 999,
-    });
+    if (userLocation) {
+      googleUserMarkerRef.current = new gmaps.Marker({
+        position: { lat: userLocation.lat, lng: userLocation.lng },
+        map: googleMapRef.current,
+        title: 'Your Location',
+        icon: {
+          path: gmaps.SymbolPath.CIRCLE,
+          scale: 9,
+          fillColor: '#38bdf8',
+          fillOpacity: 1,
+          strokeColor: '#ffffff',
+          strokeWeight: 2.5,
+        },
+        zIndex: 999,
+      });
+    }
 
     // Salon Markers
     visibleSalons.forEach((salon) => {
@@ -220,7 +226,7 @@ export const MapScreen: React.FC = () => {
 
     if (!leafletMapRef.current) {
       const map = L.map(mapContainerRef.current, {
-        center: [userLocation.lat, userLocation.lng],
+        center: [currentCoords.lat, currentCoords.lng],
         zoom: 14,
         zoomControl: false,
         attributionControl: false,
@@ -259,7 +265,7 @@ export const MapScreen: React.FC = () => {
 
       leafletMapRef.current = map;
     } else {
-      leafletMapRef.current.setView([userLocation.lat, userLocation.lng], 14);
+      leafletMapRef.current.setView([currentCoords.lat, currentCoords.lng], 14);
     }
 
     return () => {
@@ -269,7 +275,7 @@ export const MapScreen: React.FC = () => {
         leafletMarkersLayerRef.current = null;
       }
     };
-  }, [mapEngine, isLeafletLoaded, userLocation.lat, userLocation.lng]);
+  }, [mapEngine, isLeafletLoaded, currentCoords.lat, currentCoords.lng]);
 
   // 3B. Synchronize Leaflet Markers
   useEffect(() => {
@@ -280,20 +286,22 @@ export const MapScreen: React.FC = () => {
     const layer = leafletMarkersLayerRef.current;
     layer.clearLayers();
 
-    // User Beacon
-    const userBeaconHtml = `
-      <div style="position: relative; width: 24px; height: 24px;">
-        <div style="position: absolute; inset: -4px; background: rgba(59, 130, 246, 0.4); border-radius: 9999px; animation: ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;"></div>
-        <div style="position: absolute; inset: 2px; background: #3b82f6; border: 2.5px solid #ffffff; border-radius: 9999px; box-shadow: 0 0 12px #3b82f6;"></div>
-      </div>
-    `;
-    const userIcon = L.divIcon({
-      className: 'user-beacon-marker',
-      html: userBeaconHtml,
-      iconSize: [24, 24],
-      iconAnchor: [12, 12],
-    });
-    L.marker([userLocation.lat, userLocation.lng], { icon: userIcon, title: 'Your Location' }).addTo(layer);
+    // User Beacon (only if location is set)
+    if (userLocation) {
+      const userBeaconHtml = `
+        <div style="position: relative; width: 24px; height: 24px;">
+          <div style="position: absolute; inset: -4px; background: rgba(59, 130, 246, 0.4); border-radius: 9999px; animation: ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;"></div>
+          <div style="position: absolute; inset: 2px; background: #3b82f6; border: 2.5px solid #ffffff; border-radius: 9999px; box-shadow: 0 0 12px #3b82f6;"></div>
+        </div>
+      `;
+      const userIcon = L.divIcon({
+        className: 'user-beacon-marker',
+        html: userBeaconHtml,
+        iconSize: [24, 24],
+        iconAnchor: [12, 12],
+      });
+      L.marker([userLocation.lat, userLocation.lng], { icon: userIcon, title: 'Your Location' }).addTo(layer);
+    }
 
     // Salon Markers
     visibleSalons.forEach((salon) => {
@@ -338,14 +346,16 @@ export const MapScreen: React.FC = () => {
 
   // Center on user GPS position
   const handlePanToUser = async () => {
-    await requestDeviceLocation();
-    if (mapEngine === 'google' && googleMapRef.current) {
-      googleMapRef.current.panTo({ lat: userLocation.lat, lng: userLocation.lng });
-      googleMapRef.current.setZoom(15);
-      setHasMapMoved(false);
-    } else if (mapEngine === 'leaflet' && leafletMapRef.current) {
-      leafletMapRef.current.setView([userLocation.lat, userLocation.lng], 15);
-      setHasMapMoved(false);
+    const success = await requestDeviceLocation();
+    if (success && userLocation) {
+      if (mapEngine === 'google' && googleMapRef.current) {
+        googleMapRef.current.panTo({ lat: userLocation.lat, lng: userLocation.lng });
+        googleMapRef.current.setZoom(15);
+        setHasMapMoved(false);
+      } else if (mapEngine === 'leaflet' && leafletMapRef.current) {
+        leafletMapRef.current.setView([userLocation.lat, userLocation.lng], 15);
+        setHasMapMoved(false);
+      }
     }
   };
 
@@ -505,7 +515,7 @@ export const MapScreen: React.FC = () => {
           <div className="absolute top-4 right-4 z-20 hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-black/80 backdrop-blur-md border border-zinc-800 text-[11px] font-bold text-zinc-300">
             <span className="text-amber-400">Google Maps</span>
             <button
-              onClick={() => openGoogleMapsLocation(userLocation.lat, userLocation.lng)}
+              onClick={() => openGoogleMapsLocation(currentCoords.lat, currentCoords.lng)}
               className="text-zinc-400 hover:text-white flex items-center gap-1"
               title="Launch in Google Maps"
             >
@@ -570,7 +580,7 @@ export const MapScreen: React.FC = () => {
                             name: selectedMarkerSalon.name,
                             address: selectedMarkerSalon.address,
                           },
-                          userLocation,
+                          userLocation || undefined,
                         )
                       }
                       className="px-2.5 py-1 rounded-lg bg-amber-500 text-black font-extrabold text-[10px] flex items-center gap-1 hover:bg-amber-400 transition-colors shadow-md"
@@ -675,7 +685,7 @@ export const MapScreen: React.FC = () => {
                               name: salon.name,
                               address: salon.address,
                             },
-                            userLocation,
+                            userLocation || undefined,
                           );
                         }}
                         className="text-[10px] font-bold text-amber-400 hover:text-amber-300 flex items-center gap-1"

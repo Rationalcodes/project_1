@@ -19,7 +19,7 @@ export interface SalonMapboxViewProps {
   userLocation?: {
     lat: number;
     lng: number;
-  };
+  } | null;
   className?: string;
   height?: string;
 }

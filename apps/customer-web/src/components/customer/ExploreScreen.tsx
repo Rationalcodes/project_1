@@ -313,7 +313,7 @@ export const ExploreScreen: React.FC = () => {
                               name: salon.name,
                               address: salon.address,
                             },
-                            userLocation,
+                            userLocation || undefined,
                           );
                         }}
                         className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-black/70 hover:bg-black text-[10px] font-bold text-amber-400 border border-amber-400/30 backdrop-blur-sm transition-colors"

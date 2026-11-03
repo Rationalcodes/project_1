@@ -29,6 +29,7 @@ export const HomeScreen: React.FC = () => {
     lazyFilter,
     userLocation,
     setUserLocation,
+    requestDeviceLocation,
     isLoadingSalons,
     userProfile,
     toggleFavorite,
@@ -158,7 +159,39 @@ export const HomeScreen: React.FC = () => {
         )}
       </section>
 
-            {/* Empty State when no salons are in range */}
+      {/* Set Location Banner when user hasn't set their location yet */}
+      {!userLocation && (
+        <div className="mb-5 p-4 sm:p-5 rounded-3xl bg-gradient-to-r from-amber-500/15 via-zinc-900 to-[#121218] border border-amber-500/35 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3.5 shadow-xl">
+          <div className="flex items-center gap-3.5">
+            <div className="w-11 h-11 rounded-2xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center shrink-0 shadow-lg shadow-amber-500/10">
+              <MapPin className="w-5 h-5 text-amber-400" />
+            </div>
+            <div>
+              <h3 className="text-sm font-extrabold text-white">
+                Set your location to see salons near you
+              </h3>
+              <p className="text-xs text-zinc-400 mt-0.5">
+                Take location directly from your device GPS or select your locality for accurate queues and distance.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <button
+              type="button"
+              onClick={async () => {
+                await requestDeviceLocation();
+              }}
+              className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-black font-extrabold text-xs flex items-center justify-center gap-1.5 transition-all shadow-md shadow-amber-500/20 active:scale-95"
+            >
+              <Navigation className="w-3.5 h-3.5 fill-black animate-pulse" />
+              <span>Use Current Location</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Empty State when no salons are in range */}
       {salons.length === 0 && !isLoadingSalons && (
         <section className="bg-gradient-to-b from-[#181822] via-[#121218] to-[#0c0c10] border border-zinc-800/90 rounded-3xl p-6 sm:p-8 text-center shadow-2xl relative overflow-hidden">
           <div className="absolute top-0 right-1/2 translate-x-1/2 -mt-16 w-60 h-60 rounded-full bg-amber-500/10 blur-3xl pointer-events-none" />
@@ -174,7 +207,7 @@ export const HomeScreen: React.FC = () => {
             Be the first salon to join Kumbhakaran in your area.
           </p>
           <p className="text-xs text-zinc-400 max-w-md mx-auto mt-2 leading-relaxed">
-            Kumbhakaran only displays verified, registered salon partners with genuine real-time walk-in queues. Currently, no active approved studios are registered in {userLocation.name}.
+            Kumbhakaran only displays verified, registered salon partners with genuine real-time walk-in queues. Currently, no active approved studios are registered {userLocation ? `in ${userLocation.name}` : 'in this area'}.
           </p>
 
           <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3">
@@ -208,8 +241,8 @@ export const HomeScreen: React.FC = () => {
                   key={loc.name}
                   onClick={() => setUserLocation(loc)}
                   className={`px-3 py-1 rounded-xl text-xs transition-all ${
-                    userLocation.name === loc.name
-                      ? 'bg-amber-500 text-black font-bold'
+                    userLocation?.name === loc.name
+                      ? 'bg-amber-500 text-black font-bold shadow-md shadow-amber-500/20'
                       : 'bg-zinc-900/90 border border-zinc-800 text-zinc-300 hover:border-zinc-700 hover:text-white'
                   }`}
                 >
@@ -225,7 +258,7 @@ export const HomeScreen: React.FC = () => {
       {isLoadingSalons && (
         <div className="py-12 text-center text-xs text-zinc-400 flex items-center justify-center gap-2">
           <div className="w-4 h-4 border-2 border-amber-400 border-t-transparent rounded-full animate-spin" />
-          <span>Searching for registered salons near {userLocation.name.split(',')[0]}...</span>
+          <span>Searching for registered salons {userLocation ? `near ${userLocation.name.split(',')[0]}...` : 'on Kumbhakaran...'}</span>
         </div>
       )}
 
@@ -427,7 +460,9 @@ export const HomeScreen: React.FC = () => {
               All Nearby Salons ({filteredSalons.length})
             </h2>
             <p className="text-[11px] text-zinc-400">
-              Sorted by distance from {userLocation.name.split(',')[0]}
+              {userLocation
+                ? `Sorted by distance from ${userLocation.name.split(',')[0]}`
+                : 'Showing verified studios (Set location for live distance)'}
             </p>
           </div>
           <button
@@ -512,14 +547,14 @@ export const HomeScreen: React.FC = () => {
                               name: salon.name,
                               address: salon.address,
                             },
-                            userLocation,
+                            userLocation || undefined,
                           );
                         }}
                         className="text-amber-400 font-bold bg-black/80 hover:bg-black px-2 py-0.5 rounded-full backdrop-blur-sm flex items-center gap-1 border border-amber-400/30 transition-colors cursor-pointer"
                         title="Get directions in Google Maps"
                       >
                         <Navigation className="w-2.5 h-2.5 fill-amber-400" />
-                        <span>{salon.distanceKm} km ↗</span>
+                        <span>{userLocation ? `${salon.distanceKm} km ↗` : 'Directions ↗'}</span>
                       </button>
                     </div>
                   </div>

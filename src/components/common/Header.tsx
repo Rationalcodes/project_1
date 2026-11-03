@@ -9,6 +9,7 @@ export const Header: React.FC = () => {
   const {
     userLocation,
     setUserLocation,
+    clearUserLocation,
     triggerNotification,
   } = useSalon();
 
@@ -41,11 +42,16 @@ export const Header: React.FC = () => {
         <div className="relative min-w-0 shrink">
           <button
             onClick={() => setLocationDropdownOpen(!locationDropdownOpen)}
-            className="flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-zinc-900/90 border border-zinc-700 hover:border-amber-400 text-xs text-white transition-all shadow-sm max-w-[150px] xs:max-w-[190px] sm:max-w-[240px]"
+            className={`flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl transition-all shadow-sm max-w-[150px] xs:max-w-[190px] sm:max-w-[240px] ${
+              userLocation
+                ? 'bg-zinc-900/90 border border-zinc-700 hover:border-amber-400 text-xs text-white'
+                : 'bg-amber-500/15 border border-amber-500/40 hover:border-amber-400 text-xs text-amber-300 font-bold'
+            }`}
+            title={userLocation ? `Current location: ${userLocation.name}` : 'Set your location'}
           >
             <MapPin className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-            <span className="font-medium truncate max-w-[70px] xs:max-w-[100px] sm:max-w-[180px]">
-              {userLocation.name.split(',')[0]}
+            <span className={`font-semibold truncate max-w-[70px] xs:max-w-[100px] sm:max-w-[180px] ${!userLocation ? 'text-amber-400 font-bold' : ''}`}>
+              {userLocation ? userLocation.name.split(',')[0] : 'Set Location'}
             </span>
             <ChevronDown className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
           </button>
@@ -65,18 +71,32 @@ export const Header: React.FC = () => {
                       triggerNotification(`Location set to ${loc.name}`);
                     }}
                     className={`w-full text-left px-3 py-2 text-xs rounded-xl flex items-center justify-between transition-colors ${
-                      userLocation.name === loc.name
+                      userLocation?.name === loc.name
                         ? 'bg-amber-500/20 text-amber-300 font-bold'
                         : 'text-zinc-300 hover:bg-zinc-800'
                     }`}
                   >
                     <span className="truncate">{loc.name}</span>
-                    {userLocation.name === loc.name && (
+                    {userLocation?.name === loc.name && (
                       <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />
                     )}
                   </button>
                 ))}
               </div>
+
+              {userLocation && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    clearUserLocation();
+                    setLocationDropdownOpen(false);
+                    triggerNotification('Location reset. Showing all salons.');
+                  }}
+                  className="w-full mt-2 pt-2 border-t border-zinc-800 text-center text-[11px] text-zinc-400 hover:text-amber-400 transition-colors"
+                >
+                  Clear Location
+                </button>
+              )}
             </div>
           )}
         </div>

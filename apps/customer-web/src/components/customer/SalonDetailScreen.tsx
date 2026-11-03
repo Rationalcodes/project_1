@@ -202,7 +202,7 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
                   lng: salon.coordinates.lng,
                   name: salon.name,
                   address: salon.address
-                }, userLocation)}
+                }, userLocation || undefined)}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500 text-black font-bold hover:bg-amber-400 transition-all shadow-md active:scale-95"
                 title="Navigate in Google Maps"
               >

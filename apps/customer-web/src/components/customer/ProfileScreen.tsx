@@ -237,7 +237,7 @@ export const ProfileScreen: React.FC = () => {
         <div className="flex items-center justify-between text-xs py-1 border-b border-zinc-800/80">
           <div>
             <div className="text-zinc-200 font-semibold">Active Area</div>
-            <div className="text-[10px] text-zinc-500">{userLocation.name}</div>
+            <div className="text-[10px] text-zinc-500">{userLocation ? userLocation.name : 'Not set'}</div>
           </div>
           <span className="text-[11px] text-amber-400 font-medium">GPS Coordinates active</span>
         </div>

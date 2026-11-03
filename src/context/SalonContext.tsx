@@ -69,8 +69,9 @@ interface SalonContextType {
   moderateReview: (salonId: string, reviewId: string, action: 'keep' | 'delete') => void;
   verifySalon: (salonId: string, isVerified: boolean) => void;
   updateSalonStatus: (salonId: string, status: 'active' | 'suspended' | 'pending') => void;
-  userLocation: LocationOption;
+  userLocation: LocationOption | null;
   setUserLocation: (loc: LocationOption) => void;
+  clearUserLocation: () => void;
   lazyFilter: LazyFilter;
   setLazyFilter: (filter: LazyFilter) => void;
   searchQuery: string;
@@ -101,7 +102,32 @@ export const SalonProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [adminTab, setAdminTab] = useState<AdminTab>('overview');
   const [selectedSalonForDetail, setSelectedSalonForDetail] = useState<Salon | null>(null);
   const [userProfile, setUserProfile] = useState<CustomerProfile>(INITIAL_USER);
-  const [userLocation, setUserLocation] = useState<LocationOption>(POPULAR_LOCATIONS[0]);
+  const [userLocation, setUserLocationState] = useState<LocationOption | null>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('kumbhakaran_user_location');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (parsed?.lat && parsed?.lng && parsed?.name) return parsed;
+        }
+      } catch {}
+    }
+    return null;
+  });
+
+  const setUserLocation = (loc: LocationOption) => {
+    setUserLocationState(loc);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('kumbhakaran_user_location', JSON.stringify(loc));
+    }
+  };
+
+  const clearUserLocation = () => {
+    setUserLocationState(null);
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('kumbhakaran_user_location');
+    }
+  };
   const [lazyFilter, setLazyFilter] = useState<LazyFilter>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedServiceFilter, setSelectedServiceFilter] = useState<string>('All');
@@ -124,7 +150,11 @@ export const SalonProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   // Synchronize discovery with NestJS PostGIS Backend
   useEffect(() => {
     let isMounted = true;
-    api.getNearbySalons(userLocation.lat, userLocation.lng, 25, lazyFilter).then(res => {
+    const queryLat = userLocation?.lat ?? 12.9716;
+    const queryLng = userLocation?.lng ?? 77.5946;
+    const queryRadius = userLocation ? 25 : 50;
+
+    api.getNearbySalons(queryLat, queryLng, queryRadius, lazyFilter).then(res => {
       if (res && res.salons && isMounted) {
         setSalons(prev => {
           const updated = [...prev];
@@ -161,18 +191,21 @@ export const SalonProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const registerSalon = (data: SalonRegistrationInput): Salon => {
     const newId = `salon-partner-${Date.now()}`;
 
-    // Haversine distance formula from user's active discovery location
-    const R = 6371;
-    const dLat = ((data.coordinates.lat - userLocation.lat) * Math.PI) / 180;
-    const dLon = ((data.coordinates.lng - userLocation.lng) * Math.PI) / 180;
-    const a =
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos((userLocation.lat * Math.PI) / 180) *
-        Math.cos((data.coordinates.lat * Math.PI) / 180) *
-        Math.sin(dLon / 2) *
-        Math.sin(dLon / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    const dist = Number((R * c).toFixed(1));
+    // Haversine distance formula from user's active discovery location (if set)
+    let dist = 1.0;
+    if (userLocation) {
+      const R = 6371;
+      const dLat = ((data.coordinates.lat - userLocation.lat) * Math.PI) / 180;
+      const dLon = ((data.coordinates.lng - userLocation.lng) * Math.PI) / 180;
+      const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos((userLocation.lat * Math.PI) / 180) *
+          Math.cos((data.coordinates.lat * Math.PI) / 180) *
+          Math.sin(dLon / 2) *
+          Math.sin(dLon / 2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      dist = Number((R * c).toFixed(1));
+    }
 
     const startingPrice =
       data.services && data.services.length > 0
@@ -585,6 +618,7 @@ export const SalonProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         updateSalonStatus,
         userLocation,
         setUserLocation,
+        clearUserLocation,
         lazyFilter,
         setLazyFilter,
         searchQuery,

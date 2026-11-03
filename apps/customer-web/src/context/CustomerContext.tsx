@@ -51,8 +51,9 @@ interface CustomerContextType {
   toggleFavorite: (salonId: string) => void;
   addToRecentlyViewed: (salonId: string) => void;
   addReview: (salonId: string, review: Omit<Review, 'id' | 'date'>) => void;
-  userLocation: LocationOption;
+  userLocation: LocationOption | null;
   setUserLocation: (loc: LocationOption) => void;
+  clearUserLocation: () => void;
   requestDeviceLocation: () => Promise<boolean>;
   lazyFilter: LazyFilter;
   setLazyFilter: (filter: LazyFilter) => void;
@@ -80,17 +81,18 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [selectedSalonForDetail, setSelectedSalonForDetail] = useState<Salon | null>(null);
   const [userProfile, setUserProfile] = useState<CustomerProfile>(INITIAL_USER);
   const [authUser, setAuthUser] = useState<AuthUser | null>(null);
-  const [userLocation, setUserLocationState] = useState<LocationOption>(() => {
+  // Strictly take location from user only — never assume or force a default locality
+  const [userLocation, setUserLocationState] = useState<LocationOption | null>(() => {
     if (typeof window !== 'undefined') {
       try {
         const saved = localStorage.getItem('kumbhakaran_user_location');
         if (saved) {
           const parsed = JSON.parse(saved);
-          if (parsed?.lat && parsed?.lng) return parsed;
+          if (parsed?.lat && parsed?.lng && parsed?.name) return parsed;
         }
       } catch {}
     }
-    return POPULAR_LOCATIONS[0];
+    return null;
   });
   const [lazyFilter, setLazyFilter] = useState<LazyFilter>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -105,6 +107,13 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setUserLocationState(loc);
     if (typeof window !== 'undefined') {
       localStorage.setItem('kumbhakaran_user_location', JSON.stringify(loc));
+    }
+  };
+
+  const clearUserLocation = () => {
+    setUserLocationState(null);
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('kumbhakaran_user_location');
     }
   };
 
@@ -212,18 +221,24 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     let isMounted = true;
     setIsLoadingSalons(true);
 
-    defaultApiClient.getNearbySalons(userLocation.lat, userLocation.lng, 25, lazyFilter)
+    const queryLat = userLocation?.lat ?? 12.9716;
+    const queryLng = userLocation?.lng ?? 77.5946;
+    const queryRadius = userLocation ? 25 : 50;
+
+    defaultApiClient.getNearbySalons(queryLat, queryLng, queryRadius, lazyFilter)
       .then((res) => {
         if (!isMounted) return;
         if (res && res.salons && res.salons.length > 0) {
           const mapped: Salon[] = res.salons.map((item) => {
-            const calculatedDist = calculateHaversineDistance(
-              userLocation.lat,
-              userLocation.lng,
-              item.latitude,
-              item.longitude,
-            );
-            const dist = calculatedDist || item.distanceKm;
+            const calculatedDist = userLocation
+              ? calculateHaversineDistance(
+                  userLocation.lat,
+                  userLocation.lng,
+                  item.latitude,
+                  item.longitude,
+                )
+              : null;
+            const dist = calculatedDist ?? item.distanceKm;
 
             return {
               id: item.id,
@@ -391,6 +406,7 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         addReview,
         userLocation,
         setUserLocation,
+        clearUserLocation,
         requestDeviceLocation,
         lazyFilter,
         setLazyFilter,

@@ -68,7 +68,7 @@ export const LocationPermissionBanner: React.FC = () => {
                   Precision Discovery
                 </span>
                 <span className="text-[11px] sm:text-xs text-zinc-400 truncate max-w-[160px] sm:max-w-[240px]">
-                  Current: {userLocation.name}
+                  {userLocation ? `Current: ${userLocation.name}` : 'Location: Not set'}
                 </span>
               </div>
               <h4 className="text-xs sm:text-sm font-bold text-white mt-1">
