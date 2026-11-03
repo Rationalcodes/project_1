@@ -435,7 +435,7 @@ export const SalonRegistrationWizard: React.FC<SalonRegistrationWizardProps> = (
 
             {/* Salon Photograph Presets */}
             <div>
-              <label className="text-xs font-semibold text-zinc-300 block mb-1.5 flex items-center gap-1.5">
+              <label className="text-xs font-semibold text-zinc-300 flex items-center gap-1.5 mb-1.5">
                 <Camera className="w-3.5 h-3.5 text-amber-400" /> Select Studio Photograph Style
               </label>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">

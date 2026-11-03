@@ -84,7 +84,7 @@ export const WriteReviewModal: React.FC<WriteReviewModalProps> = ({ isOpen, onCl
         <form onSubmit={handleSubmit} className="mt-4 space-y-4">
           {/* Frictionless: Customer Name Only */}
           <div>
-            <label className="text-xs font-semibold text-zinc-300 block mb-1 flex items-center gap-1.5">
+            <label className="text-xs font-semibold text-zinc-300 flex items-center gap-1.5 mb-1">
               <User className="w-3.5 h-3.5 text-amber-400" /> Your Name
             </label>
             <input
