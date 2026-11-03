@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { MapPin, Navigation, Search, CheckCircle2, Crosshair, AlertCircle, Sparkles } from 'lucide-react';
+import { MapPin, Navigation, Search, CheckCircle2, Crosshair, AlertCircle, Sparkles, ExternalLink } from 'lucide-react';
+import { openGoogleMapsLocation } from '@kumbhakaran/ui';
 
 interface InteractiveMapPickerProps {
   initialLat?: number;
@@ -195,9 +196,15 @@ export const InteractiveMapPicker: React.FC<InteractiveMapPickerProps> = ({
             </span>
           </div>
 
-          <span className="text-[10px] text-zinc-500">
-            Saved as PostGIS POINT({lng} {lat})
-          </span>
+          <button
+            type="button"
+            onClick={() => openGoogleMapsLocation(lat, lng)}
+            className="text-[10px] text-amber-400 hover:text-white flex items-center gap-1 font-semibold"
+            title="Open in Google Maps"
+          >
+            <span>Verify in Google Maps</span>
+            <ExternalLink className="w-3 h-3" />
+          </button>
         </div>
       </div>
     </div>

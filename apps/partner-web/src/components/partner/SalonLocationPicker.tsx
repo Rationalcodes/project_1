@@ -11,6 +11,9 @@ import {
 } from 'lucide-react';
 import {
   loadLeafletScript,
+  loadGoogleMapsScript,
+  isGoogleMapsLoaded,
+  KUMBHAKARAN_MAP_STYLES,
   openGoogleMapsLocation,
 } from '@kumbhakaran/ui';
 
@@ -55,11 +58,19 @@ export const SalonLocationPicker: React.FC<SalonLocationPickerProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [isGpsLoading, setIsGpsLoading] = useState(false);
   const [isConfirmed, setIsConfirmed] = useState(false);
-  const [isMapReady, setIsMapReady] = useState(false);
+  const [mapEngine, setMapEngine] = useState<'google' | 'leaflet'>('google');
+  const [isGoogleReady, setIsGoogleReady] = useState(false);
+  const [isLeafletReady, setIsLeafletReady] = useState(false);
 
   const mapContainerRef = useRef<HTMLDivElement>(null);
+  
+  // Google Maps references
+  const googleMapRef = useRef<any>(null);
+  const googleMarkerRef = useRef<any>(null);
+
+  // Leaflet references
   const leafletMapRef = useRef<any>(null);
-  const markerRef = useRef<any>(null);
+  const leafletMarkerRef = useRef<any>(null);
 
   // Popular Hub Presets for Quick Location in India
   const hubPresets = [
@@ -71,22 +82,99 @@ export const SalonLocationPicker: React.FC<SalonLocationPickerProps> = ({
     { name: 'Jubilee Hills, Road No 36, Hyderabad', locality: 'Jubilee Hills', city: 'Hyderabad', state: 'Telangana', pincode: '500033', lat: 17.4319, lng: 78.4073 },
   ];
 
-  // 1. Initialize open-source Leaflet map (zero keys, zero cost, 100% reliable)
+  // 1. Initialize Map Engines (Google Maps with Leaflet fallback)
   useEffect(() => {
     let isMounted = true;
-    loadLeafletScript().then((loaded) => {
-      if (isMounted) {
-        setIsMapReady(loaded || Boolean((window as any).L));
+    loadGoogleMapsScript().then((loaded) => {
+      if (!isMounted) return;
+      if (loaded || isGoogleMapsLoaded()) {
+        setIsGoogleReady(true);
+        setMapEngine('google');
+      } else {
+        loadLeafletScript().then((lLoaded) => {
+          if (!isMounted) return;
+          setIsLeafletReady(lLoaded || Boolean((window as any).L));
+          setMapEngine('leaflet');
+        });
       }
     });
+
     return () => {
       isMounted = false;
     };
   }, []);
 
-  // 2. Mount and Synchronize Leaflet Map & Draggable Pin
+  // 2A. Mount Google Maps when available
   useEffect(() => {
-    if (!isMapReady || !mapContainerRef.current) return;
+    if (mapEngine !== 'google' || !isGoogleReady || !mapContainerRef.current) return;
+    const gmaps = (window as any).google?.maps;
+    if (!gmaps) return;
+
+    if (!googleMapRef.current) {
+      const map = new gmaps.Map(mapContainerRef.current, {
+        center: { lat, lng },
+        zoom: 16,
+        styles: KUMBHAKARAN_MAP_STYLES,
+        disableDefaultUI: true,
+        gestureHandling: 'greedy',
+        zoomControl: false,
+      });
+
+      const marker = new gmaps.Marker({
+        position: { lat, lng },
+        map,
+        draggable: true,
+        title: 'Drag to salon entrance',
+        icon: {
+          path: 'M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z',
+          fillColor: '#f59e0b',
+          fillOpacity: 1,
+          strokeColor: '#ffffff',
+          strokeWeight: 2,
+          scale: 1.8,
+          anchor: new gmaps.Point(12, 22),
+        },
+      });
+
+      marker.addListener('dragend', () => {
+        const pos = marker.getPosition();
+        if (pos) {
+          const newLat = Number(pos.lat().toFixed(6));
+          const newLng = Number(pos.lng().toFixed(6));
+          setLat(newLat);
+          setLng(newLng);
+          setManualLatStr(newLat.toString());
+          setManualLngStr(newLng.toString());
+          setIsConfirmed(false);
+        }
+      });
+
+      map.addListener('click', (e: any) => {
+        if (e.latLng) {
+          const newLat = Number(e.latLng.lat().toFixed(6));
+          const newLng = Number(e.latLng.lng().toFixed(6));
+          marker.setPosition(e.latLng);
+          setLat(newLat);
+          setLng(newLng);
+          setManualLatStr(newLat.toString());
+          setManualLngStr(newLng.toString());
+          setIsConfirmed(false);
+        }
+      });
+
+      googleMapRef.current = map;
+      googleMarkerRef.current = marker;
+    } else {
+      googleMapRef.current.setCenter({ lat, lng });
+      if (googleMarkerRef.current) {
+        googleMarkerRef.current.setPosition({ lat, lng });
+      }
+    }
+  }, [mapEngine, isGoogleReady]);
+
+  // 2B. Mount Leaflet Map as resilient fallback
+  useEffect(() => {
+    if (mapEngine !== 'leaflet' || !isLeafletReady || !mapContainerRef.current) return;
     const L = (window as any).L;
     if (!L) return;
 
@@ -153,11 +241,11 @@ export const SalonLocationPicker: React.FC<SalonLocationPickerProps> = ({
       });
 
       leafletMapRef.current = map;
-      markerRef.current = marker;
+      leafletMarkerRef.current = marker;
     } else {
       leafletMapRef.current.setView([lat, lng], 16);
-      if (markerRef.current) {
-        markerRef.current.setLatLng([lat, lng]);
+      if (leafletMarkerRef.current) {
+        leafletMarkerRef.current.setLatLng([lat, lng]);
       }
     }
 
@@ -165,10 +253,10 @@ export const SalonLocationPicker: React.FC<SalonLocationPickerProps> = ({
       if (leafletMapRef.current) {
         leafletMapRef.current.remove();
         leafletMapRef.current = null;
-        markerRef.current = null;
+        leafletMarkerRef.current = null;
       }
     };
-  }, [isMapReady]);
+  }, [mapEngine, isLeafletReady]);
 
   // Update marker position when lat/lng change from presets or manual inputs
   const updateMapPosition = (newLat: number, newLng: number) => {
@@ -178,9 +266,12 @@ export const SalonLocationPicker: React.FC<SalonLocationPickerProps> = ({
     setManualLngStr(newLng.toString());
     setIsConfirmed(false);
 
-    if (leafletMapRef.current && markerRef.current) {
+    if (mapEngine === 'google' && googleMapRef.current && googleMarkerRef.current) {
+      googleMapRef.current.panTo({ lat: newLat, lng: newLng });
+      googleMarkerRef.current.setPosition({ lat: newLat, lng: newLng });
+    } else if (mapEngine === 'leaflet' && leafletMapRef.current && leafletMarkerRef.current) {
       leafletMapRef.current.setView([newLat, newLng], 16);
-      markerRef.current.setLatLng([newLat, newLng]);
+      leafletMarkerRef.current.setLatLng([newLat, newLng]);
     }
   };
 
@@ -252,19 +343,22 @@ export const SalonLocationPicker: React.FC<SalonLocationPickerProps> = ({
 
   return (
     <div className="space-y-4">
-      {/* 4-Option Navigation Tabs */}
-      <div className="flex flex-wrap p-1 rounded-2xl bg-zinc-950 border border-zinc-800 text-xs font-semibold gap-1">
+      {/* 4 Flexible Input Options */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
         <button
           type="button"
           onClick={() => setActiveOption('search')}
-          className={`flex-1 min-w-[120px] py-2 px-3 rounded-xl flex items-center justify-center gap-1.5 transition-all ${
+          className={`p-2.5 rounded-xl border text-left transition-all ${
             activeOption === 'search'
-              ? 'bg-amber-500 text-black shadow-md shadow-amber-500/20'
-              : 'text-zinc-400 hover:text-white hover:bg-zinc-900'
+              ? 'bg-amber-500/10 border-amber-500/50 text-amber-400'
+              : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white'
           }`}
         >
-          <Search className="w-3.5 h-3.5" />
-          <span>Option 1: Search</span>
+          <div className="flex items-center gap-1.5 text-xs font-bold">
+            <Search className="w-3.5 h-3.5" />
+            <span>Popular Hubs</span>
+          </div>
+          <p className="text-[10px] text-zinc-500 mt-0.5">Select top city localities</p>
         </button>
 
         <button
@@ -273,197 +367,197 @@ export const SalonLocationPicker: React.FC<SalonLocationPickerProps> = ({
             setActiveOption('gps');
             handleUseCurrentLocation();
           }}
-          className={`flex-1 min-w-[120px] py-2 px-3 rounded-xl flex items-center justify-center gap-1.5 transition-all ${
+          className={`p-2.5 rounded-xl border text-left transition-all ${
             activeOption === 'gps'
-              ? 'bg-amber-500 text-black shadow-md shadow-amber-500/20'
-              : 'text-zinc-400 hover:text-white hover:bg-zinc-900'
+              ? 'bg-amber-500/10 border-amber-500/50 text-amber-400'
+              : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white'
           }`}
         >
-          <Navigation className="w-3.5 h-3.5" />
-          <span>Option 2: GPS</span>
+          <div className="flex items-center gap-1.5 text-xs font-bold">
+            <Navigation className="w-3.5 h-3.5" />
+            <span>Current GPS</span>
+          </div>
+          <p className="text-[10px] text-zinc-500 mt-0.5">Use salon device location</p>
         </button>
 
         <button
           type="button"
           onClick={() => setActiveOption('pin')}
-          className={`flex-1 min-w-[120px] py-2 px-3 rounded-xl flex items-center justify-center gap-1.5 transition-all ${
+          className={`p-2.5 rounded-xl border text-left transition-all ${
             activeOption === 'pin'
-              ? 'bg-amber-500 text-black shadow-md shadow-amber-500/20'
-              : 'text-zinc-400 hover:text-white hover:bg-zinc-900'
+              ? 'bg-amber-500/10 border-amber-500/50 text-amber-400'
+              : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white'
           }`}
         >
-          <Move className="w-3.5 h-3.5" />
-          <span>Option 3: Move Pin</span>
+          <div className="flex items-center gap-1.5 text-xs font-bold">
+            <Move className="w-3.5 h-3.5" />
+            <span>Drag Pin</span>
+          </div>
+          <p className="text-[10px] text-zinc-500 mt-0.5">Pinpoint exact entrance</p>
         </button>
 
         <button
           type="button"
           onClick={() => setActiveOption('coords')}
-          className={`flex-1 min-w-[120px] py-2 px-3 rounded-xl flex items-center justify-center gap-1.5 transition-all ${
+          className={`p-2.5 rounded-xl border text-left transition-all ${
             activeOption === 'coords'
-              ? 'bg-amber-500 text-black shadow-md shadow-amber-500/20'
-              : 'text-zinc-400 hover:text-white hover:bg-zinc-900'
+              ? 'bg-amber-500/10 border-amber-500/50 text-amber-400'
+              : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white'
           }`}
         >
-          <Crosshair className="w-3.5 h-3.5" />
-          <span>Option 4: Coords</span>
+          <div className="flex items-center gap-1.5 text-xs font-bold">
+            <Crosshair className="w-3.5 h-3.5" />
+            <span>Coordinates</span>
+          </div>
+          <p className="text-[10px] text-zinc-500 mt-0.5">Enter Lat / Long values</p>
         </button>
       </div>
 
-      {/* Sub-panel based on chosen option */}
+      {/* Option Panel 1: Search & Hub Presets */}
       {activeOption === 'search' && (
-        <div className="space-y-3">
-          <div className="relative">
-            <Search className="w-4 h-4 text-amber-400 absolute left-3.5 top-3" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Filter quick presets or enter salon locality..."
-              className="w-full pl-10 pr-4 py-2.5 bg-zinc-900 border border-zinc-700/80 rounded-2xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-amber-400 shadow-inner"
-            />
-          </div>
-
-          <div>
-            <div className="text-[10px] uppercase font-bold text-zinc-400 mb-1.5">Quick Location Presets</div>
-            <div className="flex flex-wrap gap-1.5">
-              {hubPresets
-                .filter(h => !searchQuery || h.name.toLowerCase().includes(searchQuery.toLowerCase()))
-                .map((hub) => (
-                  <button
-                    key={hub.name}
-                    type="button"
-                    onClick={() => handleSelectPreset(hub)}
-                    className="px-2.5 py-1 rounded-xl bg-zinc-900 border border-zinc-800 text-[11px] text-zinc-300 hover:border-amber-400 hover:text-white transition-colors"
-                  >
-                    📍 {hub.locality} ({hub.city})
-                  </button>
-                ))}
-            </div>
+        <div className="p-3 bg-zinc-900/60 rounded-2xl border border-zinc-800 space-y-2">
+          <label className="text-[11px] font-semibold text-zinc-400">Quick Select Prime Commercial Hubs:</label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 max-h-40 overflow-y-auto">
+            {hubPresets.map((hub, idx) => (
+              <button
+                key={idx}
+                type="button"
+                onClick={() => handleSelectPreset(hub)}
+                className="text-left p-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 hover:border-zinc-700 text-xs text-zinc-300 transition-colors"
+              >
+                <div className="font-bold text-white truncate">{hub.name}</div>
+                <div className="text-[10px] text-zinc-500">{hub.locality}, {hub.city}</div>
+              </button>
+            ))}
           </div>
         </div>
       )}
 
-      {activeOption === 'gps' && (
-        <div className="p-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-between gap-3 text-xs">
-          <div className="flex items-center gap-2">
-            <Navigation className={`w-4 h-4 text-amber-400 ${isGpsLoading ? 'animate-spin' : ''}`} />
-            <span className="text-zinc-300">
-              {isGpsLoading ? 'Acquiring high-accuracy GPS coordinates...' : 'Device GPS position acquired.'}
-            </span>
-          </div>
-          <button
-            type="button"
-            onClick={handleUseCurrentLocation}
-            className="px-3 py-1.5 rounded-xl bg-amber-500 text-black font-bold text-xs hover:bg-amber-400 shrink-0"
-          >
-            Re-locate
-          </button>
-        </div>
-      )}
-
-      {activeOption === 'pin' && (
-        <div className="p-3 rounded-2xl bg-zinc-900 border border-zinc-800 text-xs text-zinc-400 flex items-center gap-2">
-          <Move className="w-4 h-4 text-amber-400 shrink-0" />
-          <span>Click anywhere on the map or drag the amber pin to place it exactly at your salon entrance.</span>
-        </div>
-      )}
-
+      {/* Option Panel 4: Manual Coordinates Form */}
       {activeOption === 'coords' && (
-        <form onSubmit={handleApplyManualCoords} className="space-y-2">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        <form onSubmit={handleApplyManualCoords} className="p-3 bg-zinc-900/60 rounded-2xl border border-zinc-800 space-y-2.5">
+          <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="text-[10px] text-zinc-400 block mb-1">Latitude (-90.000000 to +90.000000)</label>
+              <label className="text-[10px] font-semibold text-zinc-400 block mb-1">Latitude (°N/S)</label>
               <input
                 type="text"
                 value={manualLatStr}
                 onChange={(e) => setManualLatStr(e.target.value)}
-                placeholder="12.934400"
-                className="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-xl text-xs text-white"
+                placeholder="12.9344"
+                className="w-full p-2 bg-zinc-900 border border-zinc-700 rounded-xl text-xs text-white"
               />
             </div>
             <div>
-              <label className="text-[10px] text-zinc-400 block mb-1">Longitude (-180.000000 to +180.000000)</label>
+              <label className="text-[10px] font-semibold text-zinc-400 block mb-1">Longitude (°E/W)</label>
               <input
                 type="text"
                 value={manualLngStr}
                 onChange={(e) => setManualLngStr(e.target.value)}
-                placeholder="77.625800"
-                className="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-xl text-xs text-white"
+                placeholder="77.6258"
+                className="w-full p-2 bg-zinc-900 border border-zinc-700 rounded-xl text-xs text-white"
               />
             </div>
           </div>
-          {coordsError && <p className="text-[11px] text-rose-400 font-medium">{coordsError}</p>}
+          {coordsError && <p className="text-[11px] text-red-400 font-medium">{coordsError}</p>}
           <button
             type="submit"
-            className="px-3 py-1.5 rounded-xl bg-amber-500 text-black font-bold text-xs hover:bg-amber-400"
+            className="w-full py-2 bg-zinc-800 hover:bg-zinc-700 text-amber-400 text-xs font-bold rounded-xl transition-colors"
           >
-            Apply Coordinates
+            Apply Coordinates to Map Pin
           </button>
         </form>
       )}
 
-      {/* Interactive Leaflet Map Preview Container (Zero API keys required) */}
-      <div className="relative w-full h-56 sm:h-72 rounded-2xl overflow-hidden border border-zinc-800 bg-[#0c0c11]">
+      {/* Interactive Map with Live Draggable Entrance Marker */}
+      <div className="relative rounded-2xl overflow-hidden border border-zinc-800 bg-[#0c0c12] h-64 sm:h-72">
         <div ref={mapContainerRef} className="w-full h-full" style={{ zIndex: 1 }} />
+        
+        {/* Top Hint Badge */}
+        <div className="absolute top-2.5 left-2.5 z-10 px-2.5 py-1 rounded-lg bg-black/80 backdrop-blur-md border border-zinc-800 text-[10px] font-semibold text-zinc-300 flex items-center gap-1.5">
+          <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>
+          <span>{mapEngine === 'google' ? 'Google Maps Draggable Pin' : 'Draggable Pin active'}</span>
+        </div>
 
-        {/* Live Coordinate Pill Overlay */}
-        <div className="absolute bottom-3 left-3 z-20 px-3 py-1.5 rounded-xl bg-black/85 backdrop-blur-md border border-zinc-800 text-[11px] text-zinc-300 font-mono shadow-xl flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-          <span>{lat.toFixed(5)}, {lng.toFixed(5)}</span>
+        {/* Google Maps Verification Action */}
+        <div className="absolute top-2.5 right-2.5 z-10">
+          <button
+            type="button"
+            onClick={() => openGoogleMapsLocation(lat, lng)}
+            className="px-2.5 py-1 rounded-lg bg-black/80 backdrop-blur-md border border-zinc-800 text-[10px] font-bold text-amber-400 hover:text-white flex items-center gap-1 transition-colors"
+            title="Verify location in Google Maps app"
+          >
+            <span>Verify in Google Maps</span>
+            <ExternalLink className="w-3 h-3" />
+          </button>
         </div>
       </div>
 
-      {/* Confirmation & Address Summary Card */}
-      <div className="p-4 rounded-2xl bg-zinc-900/90 border border-zinc-800 space-y-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <MapPin className="w-4 h-4 text-amber-400" />
-            <span className="text-xs font-bold text-white">Selected Salon Location</span>
-          </div>
-          {isConfirmed ? (
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 flex items-center gap-1">
-              <Check className="w-3 h-3" /> Confirmed
-            </span>
-          ) : (
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40">
-              Needs Confirmation
-            </span>
-          )}
+      {/* Address Details Fields */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+        <div>
+          <label className="text-[11px] font-semibold text-zinc-400 block mb-1">Locality / Area Name *</label>
+          <input
+            type="text"
+            required
+            value={locality}
+            onChange={(e) => setLocality(e.target.value)}
+            placeholder="e.g. Koramangala 4th Block"
+            className="w-full p-2.5 bg-zinc-900 border border-zinc-700 rounded-xl text-xs text-white"
+          />
         </div>
 
-        <div className="text-xs text-zinc-300 space-y-1">
-          <div><span className="text-zinc-500">Address:</span> {address || `${locality}, ${city}`}</div>
-          <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-zinc-400">
-            <span>Locality: <strong className="text-zinc-200">{locality}</strong></span>
-            <span>City: <strong className="text-zinc-200">{city}</strong></span>
-            <span>State: <strong className="text-zinc-200">{state}</strong></span>
-            <span>PIN: <strong className="text-zinc-200">{pincode}</strong></span>
-          </div>
+        <div>
+          <label className="text-[11px] font-semibold text-zinc-400 block mb-1">Postal PIN Code *</label>
+          <input
+            type="text"
+            required
+            value={pincode}
+            onChange={(e) => setPincode(e.target.value)}
+            placeholder="e.g. 560034"
+            className="w-full p-2.5 bg-zinc-900 border border-zinc-700 rounded-xl text-xs text-white"
+          />
         </div>
 
-        {/* Direct Google Maps Location Verification */}
-        <button
-          type="button"
-          onClick={() => openGoogleMapsLocation(lat, lng)}
-          className="w-full py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-amber-400 text-xs font-bold border border-zinc-700/80 flex items-center justify-center gap-1.5 transition-colors"
-          title="Verify exact coordinates on official Google Maps satellite/street view"
-        >
-          <ExternalLink className="w-3.5 h-3.5 text-amber-400" />
-          <span>Verify Exact Location on Google Maps ↗</span>
-        </button>
+        <div className="sm:col-span-2">
+          <label className="text-[11px] font-semibold text-zinc-400 block mb-1">Building, Floor, Landmark *</label>
+          <input
+            type="text"
+            required
+            value={address}
+            onChange={(e) => setAddress(e.target.value)}
+            placeholder="e.g. #42, 2nd Floor, 80ft Road, Next to Sony Signal"
+            className="w-full p-2.5 bg-zinc-900 border border-zinc-700 rounded-xl text-xs text-white"
+          />
+        </div>
+      </div>
+
+      {/* Confirmation & Status Bar */}
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
+        <div className="text-xs text-zinc-400">
+          <span className="font-semibold text-zinc-300">Selected GPS: </span>
+          <span className="font-mono text-amber-400">{lat.toFixed(5)}, {lng.toFixed(5)}</span>
+        </div>
 
         <button
           type="button"
           onClick={handleConfirmLocation}
-          className={`w-full py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-lg ${
+          className={`px-4 py-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-lg ${
             isConfirmed
-              ? 'bg-emerald-500 text-black shadow-emerald-500/20'
-              : 'bg-amber-500 text-black hover:bg-amber-400 shadow-amber-500/20'
+              ? 'bg-emerald-500 text-black'
+              : 'bg-amber-500 hover:bg-amber-400 text-black'
           }`}
         >
-          <CheckCircle2 className="w-4 h-4" />
-          <span>{isConfirmed ? 'Location Confirmed ✓' : 'Confirm Salon Location'}</span>
+          {isConfirmed ? (
+            <>
+              <Check className="w-4 h-4" />
+              <span>Location Verified & Confirmed</span>
+            </>
+          ) : (
+            <>
+              <MapPin className="w-4 h-4 fill-black" />
+              <span>Confirm Salon Location</span>
+            </>
+          )}
         </button>
       </div>
     </div>

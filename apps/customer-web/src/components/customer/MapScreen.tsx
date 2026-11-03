@@ -12,6 +12,8 @@ import {
   X,
   Crosshair,
   RefreshCw,
+  Layers,
+  ExternalLink,
 } from 'lucide-react';
 import {
   useCustomer,
@@ -21,7 +23,11 @@ import { Salon } from '@kumbhakaran/shared-types';
 import {
   calculateHaversineDistance,
   redirectToGoogleMaps,
+  openGoogleMapsLocation,
+  loadGoogleMapsScript,
   loadLeafletScript,
+  KUMBHAKARAN_MAP_STYLES,
+  isGoogleMapsLoaded,
 } from '@kumbhakaran/ui';
 
 export const MapScreen: React.FC = () => {
@@ -37,7 +43,10 @@ export const MapScreen: React.FC = () => {
   const [mapSearch, setMapSearch] = useState('');
   const [radiusKm, setRadiusKm] = useState<number>(10);
   const [viewMode, setViewMode] = useState<'map' | 'list'>('map');
-  const [isLeafletReady, setIsLeafletReady] = useState(false);
+  const [mapEngine, setMapEngine] = useState<'google' | 'leaflet'>('google');
+  const [mapLayerType, setMapLayerType] = useState<'dark' | 'satellite'>('dark');
+  const [isGoogleLoaded, setIsGoogleLoaded] = useState(false);
+  const [isLeafletLoaded, setIsLeafletLoaded] = useState(false);
   const [hasMapMoved, setHasMapMoved] = useState(false);
   const [mapCenterCoords, setMapCenterCoords] = useState<{ lat: number; lng: number }>({
     lat: userLocation.lat,
@@ -45,10 +54,17 @@ export const MapScreen: React.FC = () => {
   });
 
   const mapContainerRef = useRef<HTMLDivElement>(null);
-  const leafletMapRef = useRef<any>(null);
-  const markersLayerRef = useRef<any>(null);
+  
+  // Google Maps references
+  const googleMapRef = useRef<any>(null);
+  const googleMarkersRef = useRef<any[]>([]);
+  const googleUserMarkerRef = useRef<any>(null);
 
-  // Filter salons by radius & search, calculating distance dynamically with Haversine formula
+  // Leaflet references
+  const leafletMapRef = useRef<any>(null);
+  const leafletMarkersLayerRef = useRef<any>(null);
+
+  // Dynamic distance computation with independent Haversine formula
   const visibleSalons = salons
     .map((s) => ({
       ...s,
@@ -73,27 +89,136 @@ export const MapScreen: React.FC = () => {
     })
     .sort((a, b) => a.computedDistance - b.computedDistance);
 
-  // 1. Load Leaflet script and CSS dynamically (zero API keys, open-source dark tiles)
+  // 1. Initialize Google Maps with Leaflet fallback
   useEffect(() => {
     let isMounted = true;
-    loadLeafletScript().then((loaded) => {
-      if (isMounted) {
-        setIsLeafletReady(loaded || Boolean((window as any).L));
+
+    loadGoogleMapsScript().then((gmapsSuccess) => {
+      if (!isMounted) return;
+      if (gmapsSuccess || isGoogleMapsLoaded()) {
+        setIsGoogleLoaded(true);
+        setMapEngine('google');
+      } else {
+        // Fallback to Leaflet dark tiles
+        loadLeafletScript().then((leafletSuccess) => {
+          if (!isMounted) return;
+          setIsLeafletLoaded(leafletSuccess || Boolean((window as any).L));
+          setMapEngine('leaflet');
+        });
       }
     });
+
     return () => {
       isMounted = false;
     };
   }, []);
 
-  // 2. Instantiate and mount Leaflet map
+  // 2A. Mount Google Maps when available
   useEffect(() => {
-    if (!isLeafletReady || !mapContainerRef.current) return;
+    if (mapEngine !== 'google' || !isGoogleLoaded || !mapContainerRef.current) return;
+    const gmaps = (window as any).google?.maps;
+    if (!gmaps) return;
+
+    if (!googleMapRef.current) {
+      const map = new gmaps.Map(mapContainerRef.current, {
+        center: { lat: userLocation.lat, lng: userLocation.lng },
+        zoom: 14,
+        styles: mapLayerType === 'dark' ? KUMBHAKARAN_MAP_STYLES : [],
+        mapTypeId: mapLayerType === 'satellite' ? 'hybrid' : 'roadmap',
+        disableDefaultUI: true,
+        gestureHandling: 'greedy',
+        zoomControl: false,
+        mapTypeControl: false,
+        streetViewControl: false,
+        fullscreenControl: false,
+      });
+
+      googleMapRef.current = map;
+
+      map.addListener('dragend', () => {
+        const center = map.getCenter();
+        if (center) {
+          setMapCenterCoords({ lat: center.lat(), lng: center.lng() });
+          setHasMapMoved(true);
+        }
+      });
+    } else {
+      googleMapRef.current.setCenter({ lat: userLocation.lat, lng: userLocation.lng });
+      googleMapRef.current.setMapTypeId(mapLayerType === 'satellite' ? 'hybrid' : 'roadmap');
+      if (mapLayerType === 'dark') {
+        googleMapRef.current.setOptions({ styles: KUMBHAKARAN_MAP_STYLES });
+      } else {
+        googleMapRef.current.setOptions({ styles: [] });
+      }
+    }
+  }, [mapEngine, isGoogleLoaded, mapLayerType, userLocation.lat, userLocation.lng]);
+
+  // 2B. Synchronize Google Maps Markers
+  useEffect(() => {
+    if (mapEngine !== 'google' || !googleMapRef.current) return;
+    const gmaps = (window as any).google?.maps;
+    if (!gmaps) return;
+
+    // Clear previous markers
+    googleMarkersRef.current.forEach((m) => m.setMap(null));
+    googleMarkersRef.current = [];
+
+    // User Location Beacon
+    if (googleUserMarkerRef.current) googleUserMarkerRef.current.setMap(null);
+    googleUserMarkerRef.current = new gmaps.Marker({
+      position: { lat: userLocation.lat, lng: userLocation.lng },
+      map: googleMapRef.current,
+      title: 'Your Location',
+      icon: {
+        path: gmaps.SymbolPath.CIRCLE,
+        scale: 9,
+        fillColor: '#38bdf8',
+        fillOpacity: 1,
+        strokeColor: '#ffffff',
+        strokeWeight: 2.5,
+      },
+      zIndex: 999,
+    });
+
+    // Salon Markers
+    visibleSalons.forEach((salon) => {
+      const isSelected = selectedMarkerSalon?.id === salon.id;
+
+      const marker = new gmaps.Marker({
+        position: { lat: salon.coordinates.lat, lng: salon.coordinates.lng },
+        map: googleMapRef.current,
+        title: `${salon.name} • ${salon.currentQueue} waiting`,
+        icon: {
+          path: 'M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z',
+          fillColor: isSelected ? '#f59e0b' : salon.isOpen ? '#fbbf24' : '#6b7280',
+          fillOpacity: 1,
+          strokeColor: '#000000',
+          strokeWeight: 1.5,
+          scale: isSelected ? 1.8 : 1.4,
+          anchor: new gmaps.Point(12, 22),
+        },
+        zIndex: isSelected ? 100 : 10,
+      });
+
+      marker.addListener('click', () => {
+        setSelectedMarkerSalon(salon);
+        googleMapRef.current.panTo({
+          lat: salon.coordinates.lat,
+          lng: salon.coordinates.lng,
+        });
+      });
+
+      googleMarkersRef.current.push(marker);
+    });
+  }, [mapEngine, visibleSalons, selectedMarkerSalon, userLocation]);
+
+  // 3A. Mount Leaflet fallback when Google Maps SDK key is not configured
+  useEffect(() => {
+    if (mapEngine !== 'leaflet' || !isLeafletLoaded || !mapContainerRef.current) return;
     const L = (window as any).L;
     if (!L) return;
 
     if (!leafletMapRef.current) {
-      // Create map instance
       const map = L.map(mapContainerRef.current, {
         center: [userLocation.lat, userLocation.lng],
         zoom: 14,
@@ -101,20 +226,20 @@ export const MapScreen: React.FC = () => {
         attributionControl: false,
       });
 
-      // CartoDB Dark Matter tiles (sleek, high-contrast dark radar theme)
       L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
         maxZoom: 19,
         subdomains: 'abcd',
       }).addTo(map);
 
-      // Layer group for dynamic markers
       const markersLayer = L.layerGroup().addTo(map);
-      markersLayerRef.current = markersLayer;
+      leafletMarkersLayerRef.current = markersLayer;
 
       map.on('moveend', () => {
         const c = map.getCenter();
         if (c) {
-          setMapCenterCoords({ lat: c.lat(), lng: c.lng });
+          const lat = typeof c.lat === 'function' ? c.lat() : c.lat;
+          const lng = typeof c.lng === 'function' ? c.lng() : c.lng;
+          setMapCenterCoords({ lat, lng });
           setHasMapMoved(true);
         }
       });
@@ -128,21 +253,21 @@ export const MapScreen: React.FC = () => {
       if (leafletMapRef.current) {
         leafletMapRef.current.remove();
         leafletMapRef.current = null;
-        markersLayerRef.current = null;
+        leafletMarkersLayerRef.current = null;
       }
     };
-  }, [isLeafletReady, userLocation.lat, userLocation.lng]);
+  }, [mapEngine, isLeafletLoaded, userLocation.lat, userLocation.lng]);
 
-  // 3. Render and synchronize salon markers & user position beacon
+  // 3B. Synchronize Leaflet Markers
   useEffect(() => {
-    if (!leafletMapRef.current || !markersLayerRef.current) return;
+    if (mapEngine !== 'leaflet' || !leafletMapRef.current || !leafletMarkersLayerRef.current) return;
     const L = (window as any).L;
     if (!L) return;
 
-    const layer = markersLayerRef.current;
+    const layer = leafletMarkersLayerRef.current;
     layer.clearLayers();
 
-    // A. User GPS Beacon (Blue pulsing radar marker)
+    // User Beacon
     const userBeaconHtml = `
       <div style="position: relative; width: 24px; height: 24px;">
         <div style="position: absolute; inset: -4px; background: rgba(59, 130, 246, 0.4); border-radius: 9999px; animation: ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;"></div>
@@ -157,7 +282,7 @@ export const MapScreen: React.FC = () => {
     });
     L.marker([userLocation.lat, userLocation.lng], { icon: userIcon, title: 'Your Location' }).addTo(layer);
 
-    // B. Salon markers with live queue count & name
+    // Salon Markers
     visibleSalons.forEach((salon) => {
       const isSelected = selectedMarkerSalon?.id === salon.id;
       const salonBadgeHtml = `
@@ -177,32 +302,35 @@ export const MapScreen: React.FC = () => {
       });
 
       const marker = L.marker([salon.coordinates.lat, salon.coordinates.lng], { icon: salonIcon });
-
       marker.on('click', () => {
         setSelectedMarkerSalon(salon);
         if (leafletMapRef.current) {
           leafletMapRef.current.panTo([salon.coordinates.lat, salon.coordinates.lng]);
         }
       });
-
       marker.addTo(layer);
     });
-  }, [visibleSalons, selectedMarkerSalon, userLocation, isLeafletReady]);
+  }, [mapEngine, visibleSalons, selectedMarkerSalon, userLocation, isLeafletLoaded]);
 
-  // Handle zooming
+  // Handle Zoom In/Out across both engines
   const handleZoom = (delta: number) => {
-    if (!leafletMapRef.current) return;
-    if (delta > 0) {
-      leafletMapRef.current.zoomIn();
-    } else {
-      leafletMapRef.current.zoomOut();
+    if (mapEngine === 'google' && googleMapRef.current) {
+      const curZoom = googleMapRef.current.getZoom() || 14;
+      googleMapRef.current.setZoom(curZoom + delta);
+    } else if (mapEngine === 'leaflet' && leafletMapRef.current) {
+      if (delta > 0) leafletMapRef.current.zoomIn();
+      else leafletMapRef.current.zoomOut();
     }
   };
 
   // Center on user GPS position
   const handlePanToUser = async () => {
     await requestDeviceLocation();
-    if (leafletMapRef.current) {
+    if (mapEngine === 'google' && googleMapRef.current) {
+      googleMapRef.current.panTo({ lat: userLocation.lat, lng: userLocation.lng });
+      googleMapRef.current.setZoom(15);
+      setHasMapMoved(false);
+    } else if (mapEngine === 'leaflet' && leafletMapRef.current) {
       leafletMapRef.current.setView([userLocation.lat, userLocation.lng], 15);
       setHasMapMoved(false);
     }
@@ -216,7 +344,13 @@ export const MapScreen: React.FC = () => {
 
   const handleSelectSalonClick = (salon: Salon) => {
     setSelectedMarkerSalon(salon);
-    if (leafletMapRef.current) {
+    if (mapEngine === 'google' && googleMapRef.current) {
+      googleMapRef.current.panTo({
+        lat: salon.coordinates.lat,
+        lng: salon.coordinates.lng,
+      });
+      googleMapRef.current.setZoom(15);
+    } else if (mapEngine === 'leaflet' && leafletMapRef.current) {
       leafletMapRef.current.panTo([salon.coordinates.lat, salon.coordinates.lng]);
       leafletMapRef.current.setZoom(15);
     }
@@ -228,8 +362,9 @@ export const MapScreen: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">
-            <span className="text-[10px] uppercase tracking-widest font-extrabold px-2 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30">
-              Interactive Radar
+            <span className="text-[10px] uppercase tracking-widest font-extrabold px-2 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+              {mapEngine === 'google' ? 'Google Maps Live' : 'Google Maps Radar'}
             </span>
             <span className="text-xs text-zinc-400 font-medium">
               {visibleSalons.length} studios within {radiusKm} km
@@ -240,8 +375,32 @@ export const MapScreen: React.FC = () => {
           </h1>
         </div>
 
-        {/* Radius & View Mode pills */}
-        <div className="flex items-center gap-2">
+        {/* Radius, Layer & View Mode pills */}
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Layer switcher for Google Maps */}
+          {mapEngine === 'google' && (
+            <div className="flex items-center bg-zinc-900 border border-zinc-800 rounded-xl p-0.5 text-xs font-semibold">
+              <button
+                onClick={() => setMapLayerType('dark')}
+                className={`px-2 py-1 rounded-lg transition-colors ${
+                  mapLayerType === 'dark' ? 'bg-amber-500 text-black font-bold' : 'text-zinc-400 hover:text-white'
+                }`}
+                title="Dark theme radar"
+              >
+                Dark
+              </button>
+              <button
+                onClick={() => setMapLayerType('satellite')}
+                className={`px-2 py-1 rounded-lg transition-colors ${
+                  mapLayerType === 'satellite' ? 'bg-amber-500 text-black font-bold' : 'text-zinc-400 hover:text-white'
+                }`}
+                title="Satellite hybrid"
+              >
+                Satellite
+              </button>
+            </div>
+          )}
+
           {/* Radius Filter */}
           <div className="flex items-center bg-zinc-900 border border-zinc-800 rounded-xl p-0.5 text-xs font-semibold">
             {[2, 5, 10, 20].map((r) => (
@@ -307,7 +466,7 @@ export const MapScreen: React.FC = () => {
             viewMode === 'list' ? 'hidden sm:block' : 'block'
           }`}
         >
-          {/* Interactive Leaflet Dark Map (Zero API keys required) */}
+          {/* Interactive Google Map / Leaflet Container */}
           <div ref={mapContainerRef} className="w-full h-full" style={{ zIndex: 1 }} />
 
           {/* Floating "Search This Area" Pill */}
@@ -320,6 +479,18 @@ export const MapScreen: React.FC = () => {
               <span>Search This Area</span>
             </button>
           )}
+
+          {/* Google Maps Official Open in App shortcut badge */}
+          <div className="absolute top-4 right-4 z-20 hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-black/80 backdrop-blur-md border border-zinc-800 text-[11px] font-bold text-zinc-300">
+            <span className="text-amber-400">Google Maps</span>
+            <button
+              onClick={() => openGoogleMapsLocation(userLocation.lat, userLocation.lng)}
+              className="text-zinc-400 hover:text-white flex items-center gap-1"
+              title="Launch in Google Maps"
+            >
+              <ExternalLink className="w-3 h-3" />
+            </button>
+          </div>
 
           {/* Map Controls (Zoom in/out + My Location) */}
           <div className="absolute bottom-6 right-4 z-20 flex flex-col gap-2">
@@ -367,7 +538,7 @@ export const MapScreen: React.FC = () => {
                   <h4 className="text-xs font-bold text-white truncate">{selectedMarkerSalon.name}</h4>
                   <p className="text-[11px] text-zinc-400 truncate">{selectedMarkerSalon.locality}</p>
                   
-                  <div className="flex items-center gap-2 mt-1.5">
+                  <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                     {/* Google Maps Directions Redirection Button */}
                     <button
                       onClick={() =>
@@ -385,7 +556,7 @@ export const MapScreen: React.FC = () => {
                       title="Navigate turn-by-turn in Google Maps"
                     >
                       <Navigation className="w-3 h-3 fill-black" />
-                      <span>Directions ↗</span>
+                      <span>Google Maps Directions ↗</span>
                     </button>
 
                     {/* View Details button */}
@@ -454,63 +625,55 @@ export const MapScreen: React.FC = () => {
                         className="w-16 h-16 rounded-xl object-cover shrink-0 border border-zinc-800"
                       />
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between gap-1">
+                        <div className="flex items-center justify-between">
                           <h4 className="text-xs font-bold text-white truncate">{salon.name}</h4>
-                          <span className="text-[10px] font-bold text-amber-400 flex items-center gap-0.5 shrink-0">
-                            <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-                            {salon.rating}
+                          <span className="text-[10px] font-bold text-amber-400 shrink-0">
+                            {salon.rating} ★
                           </span>
                         </div>
-                        <p className="text-[11px] text-zinc-400 truncate mt-0.5">
-                          {salon.locality} • {salon.distanceKm} km away
-                        </p>
+                        <p className="text-[11px] text-zinc-400 truncate mt-0.5">{salon.locality}</p>
 
-                        <div className="flex items-center gap-2 mt-2">
-                          <span
-                            className={`text-[10px] font-bold px-2 py-0.5 rounded ${
-                              salon.currentQueue === 0
-                                ? 'bg-emerald-500/20 text-emerald-300'
-                                : 'bg-amber-500/20 text-amber-300'
-                            }`}
-                          >
-                            {salon.currentQueue === 0
-                              ? 'Zero wait'
-                              : `${salon.currentQueue} waiting (~${waitTime}m)`}
+                        <div className="flex items-center gap-3 text-[10px] text-zinc-400 mt-1">
+                          <span className="font-semibold text-zinc-300">{salon.distanceKm} km away</span>
+                          <span>•</span>
+                          <span className={`${salon.isOpen ? 'text-emerald-400' : 'text-zinc-500'} font-medium`}>
+                            {salon.isOpen ? `${salon.currentQueue} in queue (${waitTime}m)` : 'Closed'}
                           </span>
-
-                          {/* Google Maps Directions button */}
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              redirectToGoogleMaps(
-                                {
-                                  lat: salon.coordinates.lat,
-                                  lng: salon.coordinates.lng,
-                                  name: salon.name,
-                                  address: salon.address,
-                                },
-                                userLocation,
-                              );
-                            }}
-                            className="ml-auto text-[10px] font-bold px-2 py-1 rounded-lg bg-zinc-800 hover:bg-amber-500 hover:text-black text-amber-400 transition-colors flex items-center gap-1"
-                            title="Navigate in Google Maps"
-                          >
-                            <Navigation className="w-2.5 h-2.5" />
-                            <span>Maps ↗</span>
-                          </button>
-
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelectedSalonForDetail(salon);
-                            }}
-                            className="text-[11px] font-bold text-zinc-300 hover:text-white flex items-center gap-0.5"
-                          >
-                            <span>Open</span>
-                            <ArrowRight className="w-3 h-3" />
-                          </button>
                         </div>
                       </div>
+                    </div>
+
+                    <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-zinc-800/60">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          redirectToGoogleMaps(
+                            {
+                              lat: salon.coordinates.lat,
+                              lng: salon.coordinates.lng,
+                              name: salon.name,
+                              address: salon.address,
+                            },
+                            userLocation,
+                          );
+                        }}
+                        className="text-[10px] font-bold text-amber-400 hover:text-amber-300 flex items-center gap-1"
+                        title="Open in Google Maps"
+                      >
+                        <Navigation className="w-3 h-3 fill-amber-400" />
+                        <span>Google Maps Directions ↗</span>
+                      </button>
+
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedSalonForDetail(salon);
+                        }}
+                        className="text-[10px] font-semibold text-zinc-400 hover:text-white flex items-center gap-1"
+                      >
+                        <span>Details</span>
+                        <ArrowRight className="w-3 h-3" />
+                      </button>
                     </div>
                   </div>
                 );

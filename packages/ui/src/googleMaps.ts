@@ -117,6 +117,29 @@ export function loadLeafletScript(): Promise<boolean> {
 // Google Maps Dynamic Loader & Dark Theme Styles (Optional Fallback)
 // ==============================================================================
 
+/**
+ * Generates an official zero-key Google Maps interactive Embed URL
+ */
+export function getGoogleMapsEmbedUrl(lat: number, lng: number, zoom = 15): string {
+  return `https://maps.google.com/maps?q=${lat},${lng}&hl=en&z=${zoom}&output=embed`;
+}
+
+/**
+ * Mobile-friendly Google Maps deep link
+ */
+export function openNativeGoogleMaps(lat: number, lng: number, label?: string): void {
+  const isMobile = typeof navigator !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+  if (isMobile) {
+    const geoUrl = `geo:${lat},${lng}?q=${lat},${lng}${label ? `(${encodeURIComponent(label)})` : ''}`;
+    window.location.href = geoUrl;
+    setTimeout(() => {
+      openGoogleMapsLocation(lat, lng);
+    }, 500);
+  } else {
+    openGoogleMapsLocation(lat, lng);
+  }
+}
+
 let mapsLoadingPromise: Promise<boolean> | null = null;
 
 export function isGoogleMapsLoaded(): boolean {
@@ -131,6 +154,7 @@ export function loadGoogleMapsScript(apiKeyOverride?: string): Promise<boolean> 
 
   const key =
     apiKeyOverride ||
+    (typeof window !== 'undefined' && (window as any).__GOOGLE_MAPS_KEY__) ||
     (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_GOOGLE_MAPS_API_KEY) ||
     '';
 
