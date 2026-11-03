@@ -3,6 +3,15 @@ import { Salon, AdminTab } from '@kumbhakaran/shared-types';
 import { defaultApiClient, AuthUser } from '@kumbhakaran/api-client';
 import { INITIAL_SALONS } from '../data/mockSalons';
 
+// Explicitly sync API client base URL with Vite environment or production fallback
+const configuredApiBaseUrl =
+  (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_API_BASE_URL) ||
+  (typeof window !== 'undefined' && window.location?.hostname && !['localhost', '127.0.0.1'].includes(window.location.hostname)
+    ? 'https://kumbhakaran-salons.onrender.com/api/v1'
+    : 'http://localhost:3001/api/v1');
+
+defaultApiClient.setBaseUrl(configuredApiBaseUrl);
+
 interface AdminContextType {
   adminUser: AuthUser | null;
   isAuthenticated: boolean;
@@ -62,10 +71,18 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       if (res && res.accessToken) {
         localStorage.setItem('kumbhakaran_admin_token', res.accessToken);
         setAdminUser(res.user);
-        triggerNotification(`Signed in as ${res.user.email}`);
+        if (res.user.role === 'ADMIN') {
+          triggerNotification(`Welcome to Kumbhakaran HQ, ${res.user.name}`);
+        } else {
+          triggerNotification(`Signed in as ${res.user.email} (Role: ${res.user.role})`);
+        }
         return true;
       }
-    } catch {}
+    } catch (err: any) {
+      console.error('Admin authentication error:', err);
+      triggerNotification(err?.message || 'Admin authentication failed. Please try again.');
+      return false;
+    }
     triggerNotification('Admin authentication failed. Please try again.');
     return false;
   };

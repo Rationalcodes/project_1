@@ -73,13 +73,21 @@ export class AuthService {
       }
     }
 
-    const expectedAudience =
-      audienceOverride || this.configService.get<string>('GOOGLE_CLIENT_ID');
+    const configuredAudience = this.configService.get<string>('GOOGLE_CLIENT_ID')?.trim();
+    const audienceList = Array.from(
+      new Set(
+        [
+          configuredAudience,
+          audienceOverride?.trim(),
+          '871471875670-5erjemuob83qh5a4nmlm20s305fk0gof.apps.googleusercontent.com',
+        ].filter(Boolean) as string[],
+      ),
+    );
 
     try {
       const ticket = await this.googleClient.verifyIdToken({
         idToken,
-        audience: expectedAudience,
+        audience: audienceList.length > 0 ? audienceList : undefined,
       });
 
       const payload = ticket.getPayload();

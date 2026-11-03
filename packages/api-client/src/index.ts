@@ -49,24 +49,56 @@ export interface AuthResponse {
   memberships: SalonMembership[];
 }
 
+export function getDefaultApiBaseUrl(): string {
+  // 1. Explicit window-level override
+  if (typeof window !== 'undefined' && (window as any).__API_BASE_URL__) {
+    return (window as any).__API_BASE_URL__;
+  }
+
+  // 2. Vite build-time environment variable
+  try {
+    if (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_API_BASE_URL) {
+      return (import.meta as any).env.VITE_API_BASE_URL;
+    }
+  } catch {}
+
+  // 3. Node / SSR environment variable
+  try {
+    const proc = (globalThis as any).process;
+    if (proc && proc.env?.VITE_API_BASE_URL) {
+      return proc.env.VITE_API_BASE_URL;
+    }
+  } catch {}
+
+  // 4. In browser runtime on production / remote domains (e.g. *.vercel.app), default to live Render backend
+  if (
+    typeof window !== 'undefined' &&
+    window.location?.hostname &&
+    !['localhost', '127.0.0.1'].includes(window.location.hostname)
+  ) {
+    return 'https://kumbhakaran-salons.onrender.com/api/v1';
+  }
+
+  // 5. Default local development backend
+  return 'http://localhost:3001/api/v1';
+}
+
 export class KumbhakaranApiClient {
   private baseUrl: string;
   private authToken: string | null = null;
 
   constructor(baseUrl?: string) {
-    if (baseUrl) {
-      this.baseUrl = baseUrl;
-    } else if (typeof window !== 'undefined' && (window as any).__API_BASE_URL__) {
-      this.baseUrl = (window as any).__API_BASE_URL__;
-    } else if (typeof globalThis !== 'undefined' && (globalThis as any).process?.env?.VITE_API_BASE_URL) {
-      this.baseUrl = (globalThis as any).process.env.VITE_API_BASE_URL;
-    } else {
-      this.baseUrl = 'http://localhost:3001/api/v1';
-    }
+    this.baseUrl = baseUrl || getDefaultApiBaseUrl();
   }
 
   setBaseUrl(url: string) {
-    this.baseUrl = url;
+    if (url && typeof url === 'string') {
+      this.baseUrl = url.replace(/\/+$/, '');
+    }
+  }
+
+  getBaseUrl(): string {
+    return this.baseUrl;
   }
 
   setAuthToken(token: string | null) {
@@ -95,9 +127,10 @@ export class KumbhakaranApiClient {
   /**
    * Authenticate with Google OAuth Credential (ID Token)
    */
-  async loginWithGoogle(credential: string, clientId?: string): Promise<AuthResponse | null> {
+  async loginWithGoogle(credential: string, clientId?: string): Promise<AuthResponse> {
+    let res: Response;
     try {
-      const res = await fetch(`${this.baseUrl}/auth/google`, {
+      res = await fetch(`${this.baseUrl}/auth/google`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -105,15 +138,28 @@ export class KumbhakaranApiClient {
         },
         body: JSON.stringify({ credential, clientId }),
       });
-      if (!res.ok) return null;
-      const data = await res.json();
-      if (data?.accessToken) {
-        this.setAuthToken(data.accessToken);
-      }
-      return data;
-    } catch {
-      return null;
+    } catch (networkErr: any) {
+      const msg = `Unable to reach backend API at ${this.baseUrl}: ${networkErr?.message || 'Network error'}`;
+      console.error(msg, networkErr);
+      throw new Error(msg);
     }
+
+    if (!res.ok) {
+      let serverMsg = `Authentication rejected (HTTP ${res.status})`;
+      try {
+        const body = await res.json();
+        if (body?.message) {
+          serverMsg = Array.isArray(body.message) ? body.message.join(', ') : body.message;
+        }
+      } catch {}
+      throw new Error(serverMsg);
+    }
+
+    const data: AuthResponse = await res.json();
+    if (data?.accessToken) {
+      this.setAuthToken(data.accessToken);
+    }
+    return data;
   }
 
   /**

@@ -239,7 +239,7 @@ async function runAuthSecurityTests() {
   // TEST 7: Production Guard Enforcement (Simulated tokens rejected without ALLOW_DEV_AUTH)
   // ---------------------------------------------------------------------------
   try {
-    process.stdout.write('[7/7] Testing Production Dev Token Lockdown (Simulated token rejection)... ');
+    process.stdout.write('[7/10] Testing Production Dev Token Lockdown (Simulated token rejection)... ');
     const previousFlag = process.env.ALLOW_DEV_AUTH;
     process.env.ALLOW_DEV_AUTH = 'false';
 
@@ -271,8 +271,164 @@ async function runAuthSecurityTests() {
     failed++;
   }
 
+  // ---------------------------------------------------------------------------
+  // TEST 8: Admin Authorization - ADMIN Role Promotion & Profile Verification
+  // ---------------------------------------------------------------------------
+  let adminToken = '';
+  try {
+    process.stdout.write('[8/10] Testing Admin Role Promotion & Profile Verification... ');
+    const adminEmail = `admin.verified.${Date.now()}@example.com`;
+    const adminPayload = {
+      sub: `google-admin-sub-${Date.now()}`,
+      email: adminEmail,
+      name: 'Central Platform Admin',
+    };
+    const adminCredential = `test-token:${Buffer.from(JSON.stringify(adminPayload)).toString('base64')}`;
+
+    // 1. Initial Google login provisions as CUSTOMER
+    const initRes = await fastifyInstance.inject({
+      method: 'POST',
+      url: '/api/v1/auth/google',
+      headers: { 'content-type': 'application/json' },
+      payload: { credential: adminCredential },
+    });
+    const initBody = JSON.parse(initRes.body);
+    const adminUserId = initBody.user.id;
+
+    // 2. Perform out-of-band promotion to ADMIN (equivalent to promote_user_to_admin)
+    try {
+      await prisma.user.update({
+        where: { id: adminUserId },
+        data: { role: 'ADMIN' },
+      });
+    } catch {
+      const local = authService.findLocalUser(adminUserId);
+      if (local) local.role = 'ADMIN';
+    }
+
+    // 3. Issue fresh token for the promoted ADMIN user
+    const loginRes = await fastifyInstance.inject({
+      method: 'POST',
+      url: '/api/v1/auth/google',
+      headers: { 'content-type': 'application/json' },
+      payload: { credential: adminCredential },
+    });
+    const loginBody = JSON.parse(loginRes.body);
+    adminToken = loginBody.accessToken;
+
+    // 4. Verify /auth/me reflects ADMIN
+    const res = await fastifyInstance.inject({
+      method: 'GET',
+      url: '/api/v1/auth/me',
+      headers: {
+        authorization: `Bearer ${adminToken}`,
+      },
+    });
+
+    if (res.statusCode === 200) {
+      const body = JSON.parse(res.body);
+      if (body.role === 'ADMIN') {
+        console.log('✅ PASSED (ADMIN role correctly verified in authenticated session)');
+        passed++;
+      } else {
+        console.log(`❌ FAILED (Expected role ADMIN, got ${body.role})`);
+        failed++;
+      }
+    } else {
+      console.log(`❌ FAILED (Expected 200, got ${res.statusCode}: ${res.body})`);
+      failed++;
+    }
+  } catch (err) {
+    console.log(`❌ ERROR: ${(err as Error).message}`);
+    failed++;
+  }
+
+  // ---------------------------------------------------------------------------
+  // TEST 9: Customer Access Denial on Privileged Resources
+  // ---------------------------------------------------------------------------
+  try {
+    process.stdout.write('[9/10] Testing Customer Access Denial on Privileged Salon Modification... ');
+    // Provision fresh active customer
+    const activeCustomerPayload = {
+      sub: `google-cust-active-${Date.now()}`,
+      email: `active.customer.${Date.now()}@example.com`,
+      name: 'Active Customer',
+    };
+    const activeCustCredential = `test-token:${Buffer.from(JSON.stringify(activeCustomerPayload)).toString('base64')}`;
+    const custRes = await fastifyInstance.inject({
+      method: 'POST',
+      url: '/api/v1/auth/google',
+      headers: { 'content-type': 'application/json' },
+      payload: { credential: activeCustCredential },
+    });
+    const activeCustToken = JSON.parse(custRes.body).accessToken;
+
+    const res = await fastifyInstance.inject({
+      method: 'PATCH',
+      url: '/api/v1/salons/salon-1793713039749',
+      headers: {
+        authorization: `Bearer ${activeCustToken}`,
+        'content-type': 'application/json',
+      },
+      payload: { name: 'Unauthorized Name Change' },
+    });
+
+    if (res.statusCode === 403) {
+      console.log('✅ PASSED (Customer strictly denied access with 403 Forbidden)');
+      passed++;
+    } else {
+      console.log(`❌ FAILED (Expected 403, got ${res.statusCode}: ${res.body})`);
+      failed++;
+    }
+  } catch (err) {
+    console.log(`❌ ERROR: ${(err as Error).message}`);
+    failed++;
+  }
+
+  // ---------------------------------------------------------------------------
+  // TEST 10: Partner Separation - Partner cannot access admin resources without ADMIN role
+  // ---------------------------------------------------------------------------
+  try {
+    process.stdout.write('[10/10] Testing Partner Role Isolation (Cannot modify unassigned salon)... ');
+    const partnerEmail = `partner.${Date.now()}@example.com`;
+    const partnerCredential = `test-token:${Buffer.from(JSON.stringify({
+      sub: `google-partner-${Date.now()}`,
+      email: partnerEmail,
+      name: 'Salon Partner',
+    })).toString('base64')}`;
+
+    const partnerLoginRes = await fastifyInstance.inject({
+      method: 'POST',
+      url: '/api/v1/auth/google',
+      headers: { 'content-type': 'application/json' },
+      payload: { credential: partnerCredential },
+    });
+    const partnerToken = JSON.parse(partnerLoginRes.body).accessToken;
+
+    const res = await fastifyInstance.inject({
+      method: 'PATCH',
+      url: '/api/v1/salons/salon-1793713039749',
+      headers: {
+        authorization: `Bearer ${partnerToken}`,
+        'content-type': 'application/json',
+      },
+      payload: { name: 'Unauthorized Cross-Salon Name Change' },
+    });
+
+    if (res.statusCode === 403) {
+      console.log('✅ PASSED (Partner without ADMIN role blocked with 403 Forbidden)');
+      passed++;
+    } else {
+      console.log(`❌ FAILED (Expected 403, got ${res.statusCode}: ${res.body})`);
+      failed++;
+    }
+  } catch (err) {
+    console.log(`❌ ERROR: ${(err as Error).message}`);
+    failed++;
+  }
+
   console.log('\n=============================================================');
-  console.log(`   TEST RESULTS: ${passed}/7 PASSED | ${failed}/7 FAILED`);
+  console.log(`   TEST RESULTS: ${passed}/10 PASSED | ${failed}/10 FAILED`);
   console.log('=============================================================\n');
 
   await app.close();

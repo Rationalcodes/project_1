@@ -10,6 +10,15 @@ import {
 import { defaultApiClient, AuthUser, SalonMembership } from '@kumbhakaran/api-client';
 import { INITIAL_SALONS } from '../data/mockSalons';
 
+// Explicitly sync API client base URL with Vite environment or production fallback
+const configuredApiBaseUrl =
+  (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_API_BASE_URL) ||
+  (typeof window !== 'undefined' && window.location?.hostname && !['localhost', '127.0.0.1'].includes(window.location.hostname)
+    ? 'https://kumbhakaran-salons.onrender.com/api/v1'
+    : 'http://localhost:3001/api/v1');
+
+defaultApiClient.setBaseUrl(configuredApiBaseUrl);
+
 interface PartnerContextType {
   partnerUser: AuthUser | null;
   memberships: SalonMembership[];
@@ -90,8 +99,10 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
         triggerNotification(`Welcome, ${res.user.name}!`);
         return true;
       }
-    } catch {
-      // Ignored
+    } catch (err: any) {
+      console.error('Partner login error:', err);
+      triggerNotification(err?.message || 'Google Sign-In failed. Please try again.');
+      return false;
     }
     triggerNotification('Google Sign-In failed. Please try again.');
     return false;
