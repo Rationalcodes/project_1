@@ -13,6 +13,10 @@ import {
   loadLeafletScript,
   loadGoogleMapsScript,
   isGoogleMapsLoaded,
+  loadMapboxScript,
+  hasValidMapboxToken,
+  getMapboxToken,
+  MAPBOX_DARK_STYLE,
   KUMBHAKARAN_MAP_STYLES,
   openGoogleMapsLocation,
 } from '@kumbhakaran/ui';
@@ -58,12 +62,17 @@ export const SalonLocationPicker: React.FC<SalonLocationPickerProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [isGpsLoading, setIsGpsLoading] = useState(false);
   const [isConfirmed, setIsConfirmed] = useState(false);
-  const [mapEngine, setMapEngine] = useState<'google' | 'leaflet'>('google');
+  const [mapEngine, setMapEngine] = useState<'mapbox' | 'google' | 'leaflet'>('mapbox');
+  const [isMapboxReady, setIsMapboxReady] = useState(false);
   const [isGoogleReady, setIsGoogleReady] = useState(false);
   const [isLeafletReady, setIsLeafletReady] = useState(false);
 
   const mapContainerRef = useRef<HTMLDivElement>(null);
   
+  // Mapbox GL references
+  const mapboxMapRef = useRef<any>(null);
+  const mapboxMarkerRef = useRef<any>(null);
+
   // Google Maps references
   const googleMapRef = useRef<any>(null);
   const googleMarkerRef = useRef<any>(null);
@@ -82,27 +91,118 @@ export const SalonLocationPicker: React.FC<SalonLocationPickerProps> = ({
     { name: 'Jubilee Hills, Road No 36, Hyderabad', locality: 'Jubilee Hills', city: 'Hyderabad', state: 'Telangana', pincode: '500033', lat: 17.4319, lng: 78.4073 },
   ];
 
-  // 1. Initialize Map Engines (Google Maps with Leaflet fallback)
+  // 1. Initialize Map Engines (Mapbox GL prioritized when token configured, else Google Maps or Leaflet)
   useEffect(() => {
     let isMounted = true;
-    loadGoogleMapsScript().then((loaded) => {
-      if (!isMounted) return;
-      if (loaded || isGoogleMapsLoaded()) {
-        setIsGoogleReady(true);
-        setMapEngine('google');
-      } else {
-        loadLeafletScript().then((lLoaded) => {
-          if (!isMounted) return;
-          setIsLeafletReady(lLoaded || Boolean((window as any).L));
-          setMapEngine('leaflet');
-        });
-      }
-    });
+
+    if (hasValidMapboxToken()) {
+      loadMapboxScript().then((mLoaded) => {
+        if (!isMounted) return;
+        if (mLoaded || Boolean((window as any).mapboxgl)) {
+          setIsMapboxReady(true);
+          setMapEngine('mapbox');
+          return;
+        }
+        initFallback();
+      });
+    } else {
+      initFallback();
+    }
+
+    function initFallback() {
+      loadGoogleMapsScript().then((loaded) => {
+        if (!isMounted) return;
+        if (loaded || isGoogleMapsLoaded()) {
+          setIsGoogleReady(true);
+          setMapEngine('google');
+        } else {
+          loadLeafletScript().then((lLoaded) => {
+            if (!isMounted) return;
+            setIsLeafletReady(lLoaded || Boolean((window as any).L));
+            setMapEngine('leaflet');
+          });
+        }
+      });
+    }
 
     return () => {
       isMounted = false;
     };
   }, []);
+
+  // 2A. Mount Mapbox GL Map when active
+  useEffect(() => {
+    if (mapEngine !== 'mapbox' || !isMapboxReady || !mapContainerRef.current) return;
+    const mapboxgl = (window as any).mapboxgl;
+    if (!mapboxgl) return;
+
+    try {
+      mapboxgl.accessToken = getMapboxToken();
+
+      if (!mapboxMapRef.current) {
+        const map = new mapboxgl.Map({
+          container: mapContainerRef.current,
+          style: MAPBOX_DARK_STYLE,
+          center: [lng, lat],
+          zoom: 16,
+          pitch: 25,
+          attributionControl: false,
+        });
+
+        const marker = new mapboxgl.Marker({
+          draggable: true,
+          color: '#f59e0b',
+        })
+          .setLngLat([lng, lat])
+          .addTo(map);
+
+        marker.on('dragend', () => {
+          const pos = marker.getLngLat();
+          if (pos) {
+            const newLat = Number(pos.lat.toFixed(6));
+            const newLng = Number(pos.lng.toFixed(6));
+            setLat(newLat);
+            setLng(newLng);
+            setManualLatStr(newLat.toString());
+            setManualLngStr(newLng.toString());
+            setIsConfirmed(false);
+          }
+        });
+
+        map.on('click', (e: any) => {
+          if (e.lngLat) {
+            const newLat = Number(e.lngLat.lat.toFixed(6));
+            const newLng = Number(e.lngLat.lng.toFixed(6));
+            marker.setLngLat(e.lngLat);
+            setLat(newLat);
+            setLng(newLng);
+            setManualLatStr(newLat.toString());
+            setManualLngStr(newLng.toString());
+            setIsConfirmed(false);
+          }
+        });
+
+        mapboxMapRef.current = map;
+        mapboxMarkerRef.current = marker;
+      } else {
+        mapboxMapRef.current.flyTo({ center: [lng, lat], zoom: 16 });
+        if (mapboxMarkerRef.current) {
+          mapboxMarkerRef.current.setLngLat([lng, lat]);
+        }
+      }
+    } catch (e) {
+      console.warn('Mapbox mount fallback to Leaflet:', e);
+      setMapEngine('leaflet');
+    }
+
+    return () => {
+      if (mapboxMapRef.current) {
+        mapboxMapRef.current.remove();
+        mapboxMapRef.current = null;
+        mapboxMarkerRef.current = null;
+      }
+    };
+  }, [mapEngine, isMapboxReady]);
 
   // 2A. Mount Google Maps when available
   useEffect(() => {
@@ -279,7 +379,10 @@ export const SalonLocationPicker: React.FC<SalonLocationPickerProps> = ({
     setManualLngStr(newLng.toString());
     setIsConfirmed(false);
 
-    if (mapEngine === 'google' && googleMapRef.current && googleMarkerRef.current) {
+    if (mapEngine === 'mapbox' && mapboxMapRef.current && mapboxMarkerRef.current) {
+      mapboxMapRef.current.flyTo({ center: [newLng, newLat], zoom: 16 });
+      mapboxMarkerRef.current.setLngLat([newLng, newLat]);
+    } else if (mapEngine === 'google' && googleMapRef.current && googleMarkerRef.current) {
       googleMapRef.current.panTo({ lat: newLat, lng: newLng });
       googleMarkerRef.current.setPosition({ lat: newLat, lng: newLng });
     } else if (mapEngine === 'leaflet' && leafletMapRef.current && leafletMarkerRef.current) {
@@ -496,7 +599,13 @@ export const SalonLocationPicker: React.FC<SalonLocationPickerProps> = ({
         {/* Top Hint Badge */}
         <div className="absolute top-2.5 left-2.5 z-10 px-2.5 py-1 rounded-lg bg-black/80 backdrop-blur-md border border-zinc-800 text-[10px] font-semibold text-zinc-300 flex items-center gap-1.5">
           <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>
-          <span>{mapEngine === 'google' ? 'Google Maps Draggable Pin' : 'Draggable Pin active'}</span>
+          <span>
+            {mapEngine === 'mapbox'
+              ? 'Mapbox Draggable Pin'
+              : mapEngine === 'google'
+              ? 'Google Maps Draggable Pin'
+              : 'Draggable Pin active'}
+          </span>
         </div>
 
         {/* Google Maps Verification Action */}
