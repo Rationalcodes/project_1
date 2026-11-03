@@ -27,7 +27,7 @@ Open your **[Supabase Dashboard](https://supabase.com/dashboard)** -> Navigate t
 
 ### Run Migration 003 (`backend/migrations/003_secure_auth_and_roles.sql`)
 ```sql
--- 1. Ensure users table has constraints and columns
+-- 1. Ensure users table has all necessary columns
 CREATE TABLE IF NOT EXISTS public.users (
   id VARCHAR(64) PRIMARY KEY,
   google_id VARCHAR(128) UNIQUE,
@@ -35,7 +35,7 @@ CREATE TABLE IF NOT EXISTS public.users (
   name VARCHAR(255) NOT NULL,
   avatar_url TEXT,
   phone VARCHAR(50),
-  role VARCHAR(20) NOT NULL DEFAULT 'CUSTOMER' CHECK (role IN ('CUSTOMER', 'ADMIN')),
+  role VARCHAR(20) NOT NULL DEFAULT 'CUSTOMER',
   last_logout_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -46,17 +46,42 @@ ALTER TABLE public.users ADD COLUMN IF NOT EXISTS google_id VARCHAR(128);
 CREATE INDEX IF NOT EXISTS idx_users_email ON public.users(email);
 CREATE INDEX IF NOT EXISTS idx_users_google_id ON public.users(google_id);
 
--- 2. Multi-Salon membership table
+-- Safely normalize legacy roles to 'CUSTOMER'
+UPDATE public.users 
+SET role = 'CUSTOMER', updated_at = NOW() 
+WHERE role NOT IN ('CUSTOMER', 'ADMIN');
+
+-- Apply role check constraint safely
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'chk_users_global_role'
+  ) THEN
+    ALTER TABLE public.users 
+    ADD CONSTRAINT chk_users_global_role CHECK (role IN ('CUSTOMER', 'ADMIN'));
+  END IF;
+END $$;
+
+-- 2. Multi-Salon membership table (Matches live schema: is_active BOOLEAN)
 CREATE TABLE IF NOT EXISTS public.salon_members (
   id VARCHAR(64) PRIMARY KEY,
   salon_id VARCHAR(64) NOT NULL REFERENCES public.salons(id) ON DELETE CASCADE,
   user_id VARCHAR(64) NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
-  role VARCHAR(30) NOT NULL CHECK (role IN ('PARTNER_OWNER', 'PARTNER_STAFF')),
-  status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE' CHECK (status IN ('ACTIVE', 'INACTIVE', 'INVITED')),
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  CONSTRAINT uq_salon_member UNIQUE (salon_id, user_id)
+  role VARCHAR(30) NOT NULL DEFAULT 'PARTNER_STAFF',
+  is_active BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+-- Unique constraint on (salon_id, user_id)
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'uq_salon_member'
+  ) THEN
+    ALTER TABLE public.salon_members 
+    ADD CONSTRAINT uq_salon_member UNIQUE (salon_id, user_id);
+  END IF;
+END $$;
 
 CREATE INDEX IF NOT EXISTS idx_salon_members_salon ON public.salon_members(salon_id);
 CREATE INDEX IF NOT EXISTS idx_salon_members_user ON public.salon_members(user_id);
@@ -95,7 +120,7 @@ Deploy the backend first so you have its live URL (e.g. `https://kumbhakaran-bac
 3. Connect your repository. Render automatically reads [`render.yaml`](file:///e:/KSalon/render.yaml).
 4. Set the `DATABASE_URL` environment variable to your Supabase connection string:
    ```
-   postgresql://postgres.mgblemlqjnmkhhcfibpb:Prabhat09112004@aws-0-eu-west-1.pooler.supabase.com:5432/postgres
+   postgresql://postgres.mgblemlqjnmkhhcfibpb:[YOUR_NEW_SUPABASE_PASSWORD]@aws-0-eu-west-1.pooler.supabase.com:5432/postgres
    ```
 5. Click **Apply**.
 
@@ -108,7 +133,7 @@ Deploy the backend first so you have its live URL (e.g. `https://kumbhakaran-bac
 * **Environment Variables**:
   * `NODE_ENV`: `production`
   * `PORT`: `10000`
-  * `DATABASE_URL`: `postgresql://postgres.mgblemlqjnmkhhcfibpb:Prabhat09112004@aws-0-eu-west-1.pooler.supabase.com:5432/postgres`
+  * `DATABASE_URL`: `postgresql://postgres.mgblemlqjnmkhhcfibpb:[YOUR_NEW_SUPABASE_PASSWORD]@aws-0-eu-west-1.pooler.supabase.com:5432/postgres`
   * `GOOGLE_CLIENT_ID`: `871471875670-5erjemuob83qh5a4nmlm20s305fk0gof.apps.googleusercontent.com`
   * `JWT_SECRET`: `kumbhakaran-production-jwt-secret-key-32chars`
   * `JWT_EXPIRES_IN`: `24h`

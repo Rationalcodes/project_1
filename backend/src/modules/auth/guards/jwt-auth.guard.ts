@@ -51,8 +51,8 @@ export class JwtAuthGuard implements CanActivate {
         where: { id: payload.sub },
         include: {
           memberships: {
-            where: { status: 'ACTIVE' },
-            select: { salonId: true, role: true, status: true },
+            where: { isActive: true },
+            select: { salonId: true, role: true, isActive: true },
           },
         },
       });
@@ -91,7 +91,8 @@ export class JwtAuthGuard implements CanActivate {
     const memberships: SalonMembershipItem[] = (user.memberships || []).map((m: any) => ({
       salonId: m.salonId,
       role: m.role as 'PARTNER_OWNER' | 'PARTNER_STAFF',
-      status: m.status as 'ACTIVE' | 'INACTIVE' | 'INVITED',
+      isActive: m.isActive ?? (m.status === 'ACTIVE'),
+      status: m.isActive ? 'ACTIVE' : (m.status || 'ACTIVE'),
     }));
 
     const authenticatedUser: AuthenticatedUser = {

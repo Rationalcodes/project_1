@@ -254,8 +254,8 @@ export class SalonsService {
       if (newSalonRecord.ownerId) {
         const membershipId = `mem-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
         await this.prisma.$executeRawUnsafe(
-          `INSERT INTO salon_members (id, salon_id, user_id, role, status, created_at, updated_at)
-           VALUES ($1, $2, $3, 'PARTNER_OWNER', 'ACTIVE', NOW(), NOW())
+          `INSERT INTO salon_members (id, salon_id, user_id, role, is_active, created_at)
+           VALUES ($1, $2, $3, 'PARTNER_OWNER', TRUE, NOW())
            ON CONFLICT (salon_id, user_id) DO NOTHING;`,
           membershipId,
           newSalonRecord.id,

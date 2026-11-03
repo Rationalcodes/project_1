@@ -10,7 +10,8 @@
     "prisma:generate": "prisma generate",
     "prisma:db:pull": "prisma db pull",
     "test:db": "ts-node src/scripts/test-db.ts",
-    "test:phase2": "ts-node src/scripts/test-phase2.ts"
+    "test:phase2": "ts-node src/scripts/test-phase2.ts",
+    "test:auth": "ts-node src/scripts/test-auth-security.ts"
   },
   "dependencies": {
     "@fastify/cors": "^10.0.2",

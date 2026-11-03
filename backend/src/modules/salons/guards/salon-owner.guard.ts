@@ -78,7 +78,7 @@ export class SalonOwnerGuard implements CanActivate {
           where: {
             salonId: salonId,
             userId: user.id,
-            status: 'ACTIVE',
+            isActive: true,
           },
         });
         isMemberOwner = memberRecord?.role === 'PARTNER_OWNER';
@@ -95,7 +95,10 @@ export class SalonOwnerGuard implements CanActivate {
     const isDirectOwner = salon.ownerId === user.id;
     if (!isMemberOwner) {
       isMemberOwner = (user.memberships || []).some(
-        (m) => m.salonId === salonId && m.role === 'PARTNER_OWNER' && m.status === 'ACTIVE',
+        (m) =>
+          m.salonId === salonId &&
+          m.role === 'PARTNER_OWNER' &&
+          (m.isActive === true || m.status === 'ACTIVE'),
       );
     }
 

@@ -39,7 +39,8 @@ export interface AuthUser {
 export interface SalonMembership {
   salonId: string;
   role: 'PARTNER_OWNER' | 'PARTNER_STAFF';
-  status: 'ACTIVE' | 'INACTIVE' | 'INVITED';
+  isActive: boolean;
+  status?: string;
 }
 
 export interface AuthResponse {

@@ -152,10 +152,9 @@ model SalonMember {
   id        String   @id @db.VarChar(64)
   salonId   String   @map("salon_id") @db.VarChar(64)
   userId    String   @map("user_id") @db.VarChar(64)
-  role      String   @db.VarChar(30)
-  status    String   @default("ACTIVE") @db.VarChar(20)
+  role      String   @default("PARTNER_STAFF") @db.VarChar(30)
+  isActive  Boolean  @default(true) @map("is_active")
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
 
   salon     Salon    @relation(fields: [salonId], references: [id], onDelete: Cascade)
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
