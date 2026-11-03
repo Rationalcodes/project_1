@@ -67,7 +67,7 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
   const handleShare = () => {
     if (navigator.share) {
       navigator.share({
-        title: `${salon.name} - Kumbhakaran Live Queue`,
+        title: `${salon.name} - Kumbhkaran Salons Live Queue`,
         text: `Check out live queue at ${salon.name}: ${salon.currentQueue} people waiting right now!`,
         url: window.location.href
       }).catch(() => {});
@@ -275,7 +275,7 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
         <div className="mt-4 pt-3 border-t border-zinc-800/80 flex items-start gap-2.5 text-xs text-zinc-400 bg-black/40 p-3 rounded-2xl">
           <Info className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
           <p>
-            <strong className="text-zinc-200">No appointments or tokens needed:</strong> Kumbhakaran eliminates blind walk-ins by giving you live visibility. Just check the queue, decide if it suits you, and walk right in.
+            <strong className="text-zinc-200">No appointments or tokens needed:</strong> Kumbhkaran Salons eliminates blind walk-ins by giving you live visibility. Just check the queue, decide if it suits you, and walk right in.
           </p>
         </div>
       </section>

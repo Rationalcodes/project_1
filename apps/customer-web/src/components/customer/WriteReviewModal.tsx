@@ -100,7 +100,7 @@ export const WriteReviewModal: React.FC<WriteReviewModalProps> = ({ isOpen, onCl
 
             <div>
               <span className="text-[10px] uppercase font-black tracking-widest text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20">
-                Added to Kumbhakaran
+                Added to Kumbhkaran Salons
               </span>
               <h3 className="text-lg font-black text-white mt-1.5 font-['Syne',sans-serif]">
                 Review Published Successfully!

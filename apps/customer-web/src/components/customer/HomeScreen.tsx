@@ -204,10 +204,10 @@ export const HomeScreen: React.FC = () => {
             No salons nearby yet.
           </h2>
           <p className="text-sm text-zinc-300 font-semibold mt-1">
-            Be the first salon to join Kumbhakaran in your area.
+            Be the first salon to join Kumbhkaran Salons in your area.
           </p>
           <p className="text-xs text-zinc-400 max-w-md mx-auto mt-2 leading-relaxed">
-            Kumbhakaran only displays verified, registered salon partners with genuine real-time walk-in queues. Currently, no active approved studios are registered {userLocation ? `in ${userLocation.name}` : 'in this area'}.
+            Kumbhkaran Salons only displays verified, registered salon partners with genuine real-time walk-in queues. Currently, no active approved studios are registered {userLocation ? `in ${userLocation.name}` : 'in this area'}.
           </p>
 
           <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3">
@@ -258,7 +258,7 @@ export const HomeScreen: React.FC = () => {
       {isLoadingSalons && (
         <div className="py-12 text-center text-xs text-zinc-400 flex items-center justify-center gap-2">
           <div className="w-4 h-4 border-2 border-amber-400 border-t-transparent rounded-full animate-spin" />
-          <span>Searching for registered salons {userLocation ? `near ${userLocation.name.split(',')[0]}...` : 'on Kumbhakaran...'}</span>
+          <span>Searching for registered salons {userLocation ? `near ${userLocation.name.split(',')[0]}...` : 'on Kumbhkaran Salons...'}</span>
         </div>
       )}
 

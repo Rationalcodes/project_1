@@ -267,7 +267,7 @@ export const ProfileScreen: React.FC = () => {
       <div className="p-4 rounded-2xl bg-zinc-900/50 border border-zinc-800 flex items-start gap-3">
         <ShieldCheck className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
         <div className="text-xs text-zinc-400 space-y-1">
-          <div className="font-bold text-zinc-200">The Kumbhakaran Customer Promise</div>
+          <div className="font-bold text-zinc-200">The Kumbhkaran Salons Promise</div>
           <div>
             We never share your private phone number or email with salons. No booking fees, no upfront payments, and no marketing spam. Just pure walk-in transparency.
           </div>

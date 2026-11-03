@@ -93,7 +93,7 @@ export const AdminApp: React.FC = () => {
             <span className="text-xs text-zinc-400">HQ Dashboard</span>
           </div>
           <h1 className="text-xl sm:text-2xl font-black text-white mt-1 font-['Syne',sans-serif]">
-            Kumbhakaran Multi-Salon Ecosystem
+            Kumbhkaran Salons Platform Ecosystem
           </h1>
           <p className="text-xs text-zinc-400">
             Real-time multi-tenant monitoring, walk-in integrity & salon SaaS operations
@@ -385,7 +385,7 @@ export const AdminApp: React.FC = () => {
           <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 text-xs">
             <h3 className="font-bold text-white mb-1">Salon Verification Desk</h3>
             <p className="text-zinc-400">
-              Verified salons receive the official Kumbhakaran Gold Badge, boosting walk-in trustworthiness.
+              Verified salons receive the official Kumbhkaran Salons Gold Badge, boosting walk-in trustworthiness.
             </p>
           </div>
 
@@ -489,7 +489,7 @@ export const AdminApp: React.FC = () => {
         <div className="bg-[#14141c] border border-zinc-800 rounded-3xl p-6 text-xs space-y-4">
           <h3 className="text-sm font-bold text-white">Platform Usage & Network Growth</h3>
           <p className="text-zinc-400">
-            Kumbhakaran platform telemetry: Daily queue update frequency is 98.4% within fresh 10-minute thresholds.
+            Kumbhkaran Salons platform telemetry: Daily queue update frequency is 98.4% within fresh 10-minute thresholds.
           </p>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-3 border-t border-zinc-800">
             <div>
@@ -548,7 +548,7 @@ export const AdminApp: React.FC = () => {
                   <li>Partner ownership memberships for this specific salon</li>
                 </ul>
                 <div className="text-[10px] text-zinc-500 pt-1">
-                  * Note: The owner account will NOT be deleted if they own another business or use Kumbhakaran as a customer.
+                  * Note: The owner account will NOT be deleted if they own another business or use Kumbhkaran Salons as a customer.
                 </div>
               </div>
             </div>

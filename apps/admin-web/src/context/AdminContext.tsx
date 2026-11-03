@@ -132,7 +132,7 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         localStorage.setItem('kumbhakaran_admin_token', res.accessToken);
         setAdminUser(res.user);
         if (res.user.role === 'ADMIN') {
-          triggerNotification(`Welcome to Kumbhakaran HQ, ${res.user.name}`);
+          triggerNotification(`Welcome to Kumbhkaran Salons HQ, ${res.user.name}`);
           refreshSalons();
         } else {
           triggerNotification(`Signed in as ${res.user.email} (Role: ${res.user.role})`);

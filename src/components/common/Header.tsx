@@ -25,8 +25,11 @@ export const Header: React.FC = () => {
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-1.5 sm:gap-2">
-              <span className="font-extrabold tracking-wider text-slate-100 uppercase text-xs sm:text-[13px] font-['Syne',sans-serif] truncate">
-                Kumbhakaran
+              <span className="font-extrabold tracking-wider text-slate-100 uppercase text-xs sm:text-[14px] font-['Syne',sans-serif]">
+                Kumbhkaran
+              </span>
+              <span className="font-bold tracking-widest text-amber-400 uppercase text-[10px] sm:text-[12px] font-['Syne',sans-serif]">
+                Salons
               </span>
               <span className="hidden sm:inline text-[10px] uppercase tracking-widest px-1.5 py-0.2 rounded bg-amber-500/15 text-amber-400 font-bold border border-amber-500/30 shrink-0">
                 Customer App

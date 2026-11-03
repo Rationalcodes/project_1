@@ -27,11 +27,14 @@ const AdminMainContent: React.FC = () => {
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-1.5 sm:gap-2">
-                <span className="font-extrabold tracking-wider text-slate-100 uppercase text-xs sm:text-[13px] font-['Syne',sans-serif] truncate">
-                  <span className="hidden xs:inline">Kumbhakaran </span>HQ Console
+                <span className="font-extrabold tracking-wider text-slate-100 uppercase text-xs sm:text-[14px] font-['Syne',sans-serif]">
+                  Kumbhkaran
+                </span>
+                <span className="font-bold tracking-widest text-amber-400 uppercase text-[10px] sm:text-[12px] font-['Syne',sans-serif]">
+                  Salons
                 </span>
                 <span className="hidden sm:inline text-[10px] uppercase tracking-widest px-1.5 py-0.2 rounded bg-amber-500/15 text-amber-400 font-bold border border-amber-500/30 shrink-0">
-                  Central Admin
+                  Admin HQ
                 </span>
               </div>
               <p className="text-[10px] text-zinc-400 hidden md:block">
@@ -109,7 +112,7 @@ const AdminMainContent: React.FC = () => {
                 Restricted Access
               </span>
               <h1 className="text-xl sm:text-2xl font-black text-white font-['Syne',sans-serif]">
-                Kumbhakaran HQ Console
+                Kumbhkaran Salons HQ
               </h1>
               <p className="text-xs text-zinc-400 max-w-sm mx-auto">
                 Platform administration, partner verification, review moderation, and system telemetry.
