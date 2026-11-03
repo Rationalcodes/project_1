@@ -105,6 +105,10 @@ export const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
       // Clear any previous render inside container
       containerRef.current.innerHTML = '';
 
+      // Constrain button width so it never exceeds available screen on small mobile devices
+      const screenMaxWidth = typeof window !== 'undefined' ? Math.max(200, window.innerWidth - 48) : 280;
+      const targetWidth = typeof width === 'number' ? Math.min(width, screenMaxWidth) : width;
+
       window.google!.accounts.id.renderButton(containerRef.current, {
         type: 'standard',
         theme,
@@ -112,7 +116,7 @@ export const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
         text,
         shape,
         logo_alignment: 'left',
-        width,
+        width: targetWidth,
       });
     } catch (err) {
       const msg = `GIS initialization error: ${(err as Error).message}`;
@@ -134,17 +138,17 @@ export const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
   }
 
   return (
-    <div className={`inline-flex flex-col items-center justify-center ${className}`}>
+    <div className={`inline-flex flex-col items-center justify-center max-w-full overflow-hidden ${className}`}>
       {!isGisReady && (
         <div
-          style={{ width: typeof width === 'number' ? `${width}px` : width, height: '40px' }}
+          style={{ width: typeof width === 'number' ? `${width}px` : width, maxWidth: '100%', height: '40px' }}
           className="rounded-lg bg-zinc-800/80 animate-pulse border border-zinc-700/60 flex items-center justify-center gap-2 text-zinc-400 text-xs"
         >
           <div className="w-4 h-4 border-2 border-amber-400 border-t-transparent rounded-full animate-spin" />
           <span>Connecting Google...</span>
         </div>
       )}
-      <div ref={containerRef} className={!isGisReady ? 'hidden' : 'block'} />
+      <div ref={containerRef} className={`max-w-full ${isGisReady ? 'block' : 'hidden'}`} />
     </div>
   );
 };

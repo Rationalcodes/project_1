@@ -41,7 +41,7 @@ export const PartnerPortal: React.FC = () => {
   // If partner is not authenticated, render dedicated Partner Authentication Gate
   if (!isAuthenticated) {
     return (
-      <div className="max-w-xl mx-auto my-12 p-8 bg-gradient-to-b from-[#181824] via-[#12121a] to-[#0c0c10] border border-amber-500/30 rounded-3xl shadow-2xl text-center space-y-6">
+      <div className="max-w-xl mx-auto my-8 sm:my-12 p-4 sm:p-8 bg-gradient-to-b from-[#181824] via-[#12121a] to-[#0c0c10] border border-amber-500/30 rounded-3xl shadow-2xl text-center space-y-6">
         <div className="w-16 h-16 rounded-3xl bg-amber-500/20 border border-amber-500/40 text-amber-400 flex items-center justify-center mx-auto shadow-xl shadow-amber-500/10">
           <Store className="w-8 h-8 text-amber-400" />
         </div>
@@ -58,12 +58,12 @@ export const PartnerPortal: React.FC = () => {
           </p>
         </div>
 
-        <div className="pt-2 flex flex-col items-center justify-center">
+        <div className="pt-2 flex flex-col items-center justify-center max-w-full">
           <GoogleSignInButton
             onSuccess={(cred) => loginWithGoogle(cred)}
             text="signin_with"
             theme="outline"
-            width={300}
+            width={280}
           />
         </div>
 

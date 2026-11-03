@@ -8,53 +8,54 @@ const PartnerMainContent: React.FC = () => {
   const { partnerUser, isAuthenticated, logout } = usePartner();
 
   return (
-    <div className="min-h-screen bg-[#09090c] text-slate-100 flex flex-col font-sans selection:bg-amber-500/30 selection:text-amber-300">
+    <div className="min-h-screen bg-[#09090c] text-slate-100 flex flex-col font-sans selection:bg-amber-500/30 selection:text-amber-300 w-full max-w-full overflow-x-hidden">
       {/* Partner OS Top Bar */}
-      <header className="sticky top-0 z-40 bg-[#0c0c10]/95 backdrop-blur-md border-b border-zinc-800/80 px-4 py-3 transition-all">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-amber-400 via-amber-500 to-amber-700 flex items-center justify-center shadow-lg shadow-amber-500/20">
-              <Store className="w-4 h-4 text-black" />
+      <header className="sticky top-0 z-40 bg-[#0c0c10]/95 backdrop-blur-md border-b border-zinc-800/80 px-3 sm:px-4 py-2.5 sm:py-3 transition-all w-full max-w-full overflow-hidden">
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0 shrink">
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-gradient-to-br from-amber-400 via-amber-500 to-amber-700 flex items-center justify-center shadow-lg shadow-amber-500/20 shrink-0">
+              <Store className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-black" />
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="font-extrabold tracking-wider text-slate-100 uppercase text-[13px] font-['Syne',sans-serif]">
-                  Kumbhakaran Partner OS
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <span className="font-extrabold tracking-wider text-slate-100 uppercase text-xs sm:text-[13px] font-['Syne',sans-serif] truncate">
+                  <span className="hidden xs:inline">Kumbhakaran </span>Partner OS
                 </span>
-                <span className="text-[10px] uppercase tracking-widest px-1.5 py-0.2 rounded bg-amber-500/15 text-amber-400 font-bold border border-amber-500/30">
+                <span className="hidden sm:inline text-[10px] uppercase tracking-widest px-1.5 py-0.2 rounded bg-amber-500/15 text-amber-400 font-bold border border-amber-500/30 shrink-0">
                   Salon OS
                 </span>
               </div>
-              <p className="text-[10px] text-zinc-400 hidden sm:block">
+              <p className="text-[10px] text-zinc-400 hidden md:block">
                 Zero-booking walk-in transparency SaaS for salons
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-3 text-xs">
+          <div className="flex items-center gap-2 sm:gap-3 text-xs shrink-0">
             <a
               href={import.meta.env.VITE_CUSTOMER_APP_URL || 'http://localhost:5173'}
               target="_blank"
               rel="noreferrer"
-              className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-300 hover:text-white transition-colors"
+              className="flex items-center gap-1 px-2.5 sm:px-3 py-1.5 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-300 hover:text-white transition-colors"
             >
-              <span>View Customer App</span>
-              <ExternalLink className="w-3 h-3 text-zinc-400" />
+              <span className="hidden sm:inline">View </span>
+              <span>Customer App</span>
+              <ExternalLink className="w-3 h-3 text-zinc-400 shrink-0" />
             </a>
 
             {isAuthenticated && (
-              <div className="flex items-center gap-2 pl-2 border-l border-zinc-800">
+              <div className="flex items-center gap-1.5 sm:gap-2 pl-2 border-l border-zinc-800 shrink-0">
                 <div className="flex items-center gap-1.5 px-2 py-1 rounded-xl bg-zinc-900 border border-zinc-800 text-xs">
                   {partnerUser?.avatarUrl ? (
                     <img
                       src={partnerUser.avatarUrl}
                       alt=""
-                      className="w-4 h-4 rounded-full object-cover"
+                      className="w-4 h-4 rounded-full object-cover shrink-0"
                     />
                   ) : (
-                    <User className="w-3.5 h-3.5 text-amber-400" />
+                    <User className="w-3.5 h-3.5 text-amber-400 shrink-0" />
                   )}
-                  <span className="font-semibold text-white max-w-[120px] truncate hidden md:inline">
+                  <span className="font-semibold text-white max-w-[100px] truncate hidden md:inline">
                     {partnerUser?.name}
                   </span>
                 </div>
@@ -73,7 +74,7 @@ const PartnerMainContent: React.FC = () => {
       </header>
 
       {/* Main Partner Content */}
-      <main className="flex-1 w-full px-3 py-6 sm:px-6 max-w-7xl mx-auto">
+      <main className="flex-1 w-full max-w-7xl mx-auto px-3 py-4 sm:px-6 sm:py-6 overflow-x-hidden">
         <PartnerPortal />
       </main>
 

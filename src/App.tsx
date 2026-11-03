@@ -14,7 +14,6 @@ import { WriteReviewModal } from './components/customer/WriteReviewModal';
 import { DirectionsModal } from './components/customer/DirectionsModal';
 import { PartnerPortal } from './components/partner/PartnerPortal';
 import { AdminApp } from './components/admin/AdminApp';
-import { Smartphone, Wifi, Battery, Signal } from 'lucide-react';
 
 const MainContent: React.FC = () => {
   const {
@@ -22,7 +21,6 @@ const MainContent: React.FC = () => {
     customerTab,
     selectedSalonForDetail,
     setSelectedSalonForDetail,
-    deviceViewMode
   } = useSalon();
 
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
@@ -57,63 +55,25 @@ const MainContent: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#09090c] text-slate-100 flex flex-col font-sans selection:bg-amber-500/30 selection:text-amber-300">
-      {/* Top Header */}
+    <div className="min-h-screen bg-[#09090c] text-slate-100 flex flex-col font-sans selection:bg-amber-500/30 selection:text-amber-300 w-full max-w-full overflow-x-hidden">
+      {/* Universal Responsive Header */}
       <Header />
 
-      {/* Main Experience Viewport */}
-      <main className="flex-1 w-full px-3 py-4 sm:px-6 max-w-7xl mx-auto">
+      {/* Fluid Responsive Main Content (No artificial phone bezel frame) */}
+      <main className="flex-1 w-full max-w-7xl mx-auto px-3 py-4 sm:px-6 lg:px-8 overflow-x-hidden">
         {portal === 'customer' ? (
-          deviceViewMode === 'mobile-frame' ? (
-            /* Smartphone Frame for Customer App */
-            <div className="flex flex-col items-center justify-center py-2 sm:py-6">
-              <div className="w-full max-w-[420px] bg-[#0c0c11] border-[5px] border-zinc-800 rounded-[44px] shadow-2xl overflow-hidden relative min-h-[780px] flex flex-col ring-1 ring-zinc-700/50">
-                {/* Mobile Top Status Bar & Camera Island */}
-                <div className="pt-3 px-6 pb-2 flex items-center justify-between text-[11px] text-zinc-400 font-semibold select-none bg-[#0c0c11] z-20">
-                  <span>9:41</span>
-                  <div className="w-20 h-4 bg-black rounded-full flex items-center justify-center">
-                    <span className="w-2 h-2 rounded-full bg-zinc-800" />
-                  </div>
-                  <div className="flex items-center gap-1.5 text-zinc-400">
-                    <Signal className="w-3 h-3" />
-                    <Wifi className="w-3 h-3" />
-                    <Battery className="w-3.5 h-3.5" />
-                  </div>
-                </div>
-
-                {/* Mobile Content Scroll View */}
-                <div className="flex-1 overflow-y-auto px-4 pt-2 pb-16 no-scrollbar">
-                  {renderCustomerContent()}
-                </div>
-
-                {/* Smartphone Fixed Bottom Home Indicator & Nav */}
-                <div className="relative">
-                  <BottomNav />
-                  <div className="w-32 h-1 bg-zinc-600 rounded-full mx-auto my-1.5 opacity-60" />
-                </div>
-              </div>
-
-              {/* Mobile View Disclaimer */}
-              <div className="mt-3 text-center text-xs text-zinc-400 flex items-center gap-2">
-                <Smartphone className="w-3.5 h-3.5 text-amber-400" />
-                <span>Customer Mobile Discovery View • Switch to desktop responsive via top right button</span>
-              </div>
-            </div>
-          ) : (
-            /* Expansive Desktop Responsive View */
-            <div className="max-w-5xl mx-auto">
-              {renderCustomerContent()}
-              <BottomNav />
-            </div>
-          )
+          <div className="w-full">
+            {renderCustomerContent()}
+          </div>
         ) : portal === 'partner' ? (
-          /* Dedicated Salon Partner Portal (Registration Wizard + Live Queue SaaS) */
           <PartnerPortal />
         ) : (
-          /* Central Administrator Panel */
           <AdminApp />
         )}
       </main>
+
+      {/* Mobile Navigation */}
+      {portal === 'customer' && <BottomNav />}
 
       {/* Global Modals & Notifications */}
       <NotificationToast />

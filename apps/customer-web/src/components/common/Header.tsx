@@ -64,29 +64,29 @@ export const Header: React.FC = () => {
   };
 
   return (
-    <header className="sticky top-0 z-40 bg-[#0c0c10]/95 backdrop-blur-md border-b border-zinc-800/80 px-3 sm:px-6 py-2.5 sm:py-3 transition-all">
-      <div className="max-w-7xl mx-auto flex items-center justify-between gap-3 text-xs">
+    <header className="sticky top-0 z-40 bg-[#0c0c10]/95 backdrop-blur-md border-b border-zinc-800/80 px-2.5 sm:px-6 py-2 sm:py-3 transition-all w-full max-w-full overflow-hidden">
+      <div className="max-w-7xl mx-auto flex items-center justify-between gap-2 sm:gap-3 text-xs w-full">
         {/* Brand */}
         <div
           onClick={() => {
             setSelectedSalonForDetail(null);
             setCustomerTab('home');
           }}
-          className="flex items-center gap-2.5 cursor-pointer select-none"
+          className="flex items-center gap-2 sm:gap-2.5 cursor-pointer select-none shrink-0 min-w-0"
         >
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-amber-400 via-amber-500 to-amber-700 flex items-center justify-center shadow-lg shadow-amber-500/20 shrink-0">
-            <span className="font-black text-black text-sm tracking-tighter">K</span>
+          <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-gradient-to-br from-amber-400 via-amber-500 to-amber-700 flex items-center justify-center shadow-lg shadow-amber-500/20 shrink-0">
+            <span className="font-black text-black text-xs sm:text-sm tracking-tighter">K</span>
           </div>
-          <div>
+          <div className="min-w-0">
             <div className="flex items-center gap-1.5">
-              <span className="font-extrabold tracking-wider text-slate-100 uppercase text-[13px] font-['Syne',sans-serif]">
+              <span className="font-extrabold tracking-wider text-slate-100 uppercase text-xs sm:text-[13px] font-['Syne',sans-serif]">
                 Kumbhakaran
               </span>
-              <span className="text-[10px] uppercase tracking-widest px-1.5 py-0.2 rounded bg-amber-500/15 text-amber-400 font-bold border border-amber-500/30">
+              <span className="hidden sm:inline text-[9px] sm:text-[10px] uppercase tracking-widest px-1.5 py-0.2 rounded bg-amber-500/15 text-amber-400 font-bold border border-amber-500/30 shrink-0">
                 Customer
               </span>
             </div>
-            <p className="text-[10px] text-zinc-400 font-medium hidden sm:block">
+            <p className="text-[10px] text-zinc-400 font-medium hidden md:block">
               Too lazy to call. Too smart to wait.
             </p>
           </div>
@@ -128,23 +128,23 @@ export const Header: React.FC = () => {
         </nav>
 
         {/* Right Section: Location Dropdown & Profile Pill */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink min-w-0">
           {/* Location Selector Dropdown */}
-          <div className="relative">
+          <div className="relative min-w-0">
             <button
               onClick={() => setLocationDropdownOpen(!locationDropdownOpen)}
-              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-zinc-900/90 border border-zinc-700/80 hover:border-amber-400 text-xs text-white transition-all shadow-sm"
+              className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 rounded-xl bg-zinc-900/90 border border-zinc-700/80 hover:border-amber-400 text-xs text-white transition-all shadow-sm max-w-[140px] xs:max-w-[180px] sm:max-w-[240px]"
               title="Change your current locality"
             >
               <MapPin className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-              <span className="font-medium truncate max-w-[110px] sm:max-w-[180px]">
-                {userLocation.name}
+              <span className="font-medium truncate max-w-[65px] xs:max-w-[95px] sm:max-w-[180px]">
+                {userLocation.name.split(',')[0]}
               </span>
               <ChevronDown className="w-3 h-3 text-zinc-400 shrink-0" />
             </button>
 
             {locationDropdownOpen && (
-              <div className="absolute right-0 mt-2 w-72 bg-zinc-900 border border-zinc-700 rounded-2xl shadow-2xl p-2 z-50">
+              <div className="absolute right-0 mt-2 w-72 max-w-[calc(100vw-24px)] bg-zinc-900 border border-zinc-700 rounded-2xl shadow-2xl p-2 z-50">
                 {/* Option to use live device GPS */}
                 <button
                   type="button"
@@ -207,7 +207,7 @@ export const Header: React.FC = () => {
               setSelectedSalonForDetail(null);
               setCustomerTab('profile');
             }}
-            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-all border ${
+            className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-all border shrink-0 ${
               isAuthenticated
                 ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/20'
                 : 'bg-zinc-900 border-zinc-700/80 hover:border-amber-400 text-zinc-300'

@@ -50,12 +50,12 @@ const CustomerMainContent: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#09090c] text-slate-100 flex flex-col font-sans selection:bg-amber-500/30 selection:text-amber-300">
+    <div className="min-h-screen bg-[#09090c] text-slate-100 flex flex-col font-sans selection:bg-amber-500/30 selection:text-amber-300 w-full max-w-full overflow-x-hidden">
       {/* Universal Responsive Header */}
       <Header />
 
-      {/* Fluid Responsive Main Content (No artificial phone bezel frame) */}
-      <main className="flex-1 w-full px-3 py-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+      {/* Fluid Responsive Main Content (Mobile-first, No artificial phone bezel frame) */}
+      <main className="flex-1 w-full max-w-7xl mx-auto px-3 py-4 sm:px-6 lg:px-8 overflow-x-hidden">
         <LocationPermissionBanner />
         {renderContent()}
       </main>
