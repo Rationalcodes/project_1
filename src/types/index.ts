@@ -87,6 +87,8 @@ export interface Salon {
   todayRevenue: number;
   monthlyRevenue: number;
   queueStatusNote?: string;
+  googlePlaceId?: string;
+  googleReviewUrl?: string;
 }
 
 export interface SalonRegistrationInput {
@@ -104,6 +106,8 @@ export interface SalonRegistrationInput {
     lat: number;
     lng: number;
   };
+  googlePlaceId?: string;
+  googleReviewUrl?: string;
   coverImage?: string;
   openingHours: {
     open: string;

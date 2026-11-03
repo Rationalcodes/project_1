@@ -75,7 +75,8 @@ export const OwnerApp: React.FC = () => {
     phone: activeSalon.phone,
     address: activeSalon.address,
     openingHours: activeSalon.openingHours.formatted,
-    isOpen: activeSalon.isOpen
+    isOpen: activeSalon.isOpen,
+    googlePlaceId: (activeSalon as any).googlePlaceId || ''
   });
 
   const queueInfo = getQueueDisplay(activeSalon.currentQueue, activeSalon.isOpen);
@@ -143,6 +144,7 @@ export const OwnerApp: React.FC = () => {
       phone: salonForm.phone,
       address: salonForm.address,
       isOpen: salonForm.isOpen,
+      googlePlaceId: salonForm.googlePlaceId,
       openingHours: {
         ...activeSalon.openingHours,
         formatted: salonForm.openingHours
@@ -911,6 +913,20 @@ export const OwnerApp: React.FC = () => {
               onChange={(e) => setSalonForm({ ...salonForm, address: e.target.value })}
               className="w-full p-2.5 bg-zinc-900 border border-zinc-700 rounded-xl text-white"
             />
+          </div>
+
+          <div>
+            <label className="text-zinc-400 block mb-1">Google Maps Place ID or Review URL (Optional)</label>
+            <input
+              type="text"
+              value={salonForm.googlePlaceId}
+              onChange={(e) => setSalonForm({ ...salonForm, googlePlaceId: e.target.value })}
+              placeholder="e.g. ChIJN1t_tDeuEmsRUsoyG83frY4 or https://g.page/r/.../review"
+              className="w-full p-2.5 bg-zinc-900 border border-zinc-700 rounded-xl text-white"
+            />
+            <p className="text-[10px] text-zinc-500 mt-1">
+              Directs verified Kumbhakaran customers to your official Google Business Profile review dialog after leaving feedback.
+            </p>
           </div>
 
           <div className="pt-3 border-t border-zinc-800 flex justify-end">
