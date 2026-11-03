@@ -24,6 +24,7 @@ import {
   Sparkles
 } from 'lucide-react';
 import { AdminTab, Salon } from '@kumbhakaran/shared-types';
+import { openGoogleMapsLocation } from '@kumbhakaran/ui';
 
 export const AdminApp: React.FC = () => {
   const {
@@ -214,7 +215,20 @@ export const AdminApp: React.FC = () => {
                         <img src={salon.coverImage} alt={salon.name} className="w-7 h-7 rounded-lg object-cover" />
                         <span className="font-bold text-white">{salon.name}</span>
                       </td>
-                      <td className="py-3 text-zinc-400">{salon.locality}</td>
+                      <td className="py-3 text-zinc-400">
+                        <div className="flex items-center gap-1.5">
+                          <span>{salon.locality}</span>
+                          {salon.coordinates && (
+                            <button
+                              onClick={() => openGoogleMapsLocation(salon.coordinates.lat, salon.coordinates.lng)}
+                              className="text-[10px] text-amber-400 hover:text-amber-300 underline font-semibold cursor-pointer"
+                              title="View exact location on Google Maps"
+                            >
+                              Map ↗
+                            </button>
+                          )}
+                        </div>
+                      </td>
                       <td className="py-3">
                         <span className="font-black text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded">
                           {salon.currentQueue} waiting

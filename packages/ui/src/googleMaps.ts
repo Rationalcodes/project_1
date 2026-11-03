@@ -1,5 +1,120 @@
 // ==============================================================================
-// Kumbhakaran Platform - Google Maps Dynamic Loader & Dark Theme Styles
+// Kumbhakaran Platform - Independent Distance Engine & Google Maps Redirection
+// ==============================================================================
+
+/**
+ * Haversine formula: Spherical distance in kilometers between two GPS coordinates.
+ * Completely independent of Google Maps API (zero API keys, zero billing).
+ */
+export function calculateHaversineDistance(
+  lat1: number,
+  lon1: number,
+  lat2: number,
+  lon2: number
+): number {
+  const R = 6371.0; // Earth radius in km
+  const dLat = ((lat2 - lat1) * Math.PI) / 180.0;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180.0;
+  const a =
+    Math.sin(dLat / 2.0) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180.0) *
+      Math.cos((lat2 * Math.PI) / 180.0) *
+      Math.sin(dLon / 2.0) ** 2;
+  const c = 2.0 * Math.atan2(Math.sqrt(a), Math.sqrt(1.0 - a));
+  return Math.round(R * c * 100.0) / 100.0;
+}
+
+/**
+ * Generates an official Google Maps turn-by-turn directions URL
+ */
+export function getGoogleMapsDirectionsUrl(
+  destination: { lat: number; lng: number; name?: string; address?: string },
+  origin?: { lat: number; lng: number }
+): string {
+  const destParam =
+    destination.lat && destination.lng
+      ? `${destination.lat},${destination.lng}`
+      : encodeURIComponent(`${destination.name || ''} ${destination.address || ''}`);
+
+  let url = `https://www.google.com/maps/dir/?api=1&destination=${destParam}`;
+  if (origin?.lat && origin?.lng) {
+    url += `&origin=${origin.lat},${origin.lng}`;
+  }
+  return url;
+}
+
+/**
+ * Generates an official Google Maps search/pin URL for exact location
+ */
+export function getGoogleMapsSearchUrl(lat: number, lng: number): string {
+  return `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
+}
+
+/**
+ * Redirects the user's browser directly to Google Maps for exact navigation
+ */
+export function redirectToGoogleMaps(
+  destination: { lat: number; lng: number; name?: string; address?: string },
+  origin?: { lat: number; lng: number }
+): void {
+  const url = getGoogleMapsDirectionsUrl(destination, origin);
+  window.open(url, '_blank', 'noopener,noreferrer');
+}
+
+/**
+ * Opens exact coordinates on Google Maps in a new tab
+ */
+export function openGoogleMapsLocation(lat: number, lng: number): void {
+  const url = getGoogleMapsSearchUrl(lat, lng);
+  window.open(url, '_blank', 'noopener,noreferrer');
+}
+
+// ==============================================================================
+// Leaflet & OpenStreetMap Dynamic Loader (Open Source, Zero API Key)
+// ==============================================================================
+
+let leafletLoadingPromise: Promise<boolean> | null = null;
+
+export function loadLeafletScript(): Promise<boolean> {
+  if (typeof window === 'undefined') return Promise.resolve(false);
+  if ((window as any).L) return Promise.resolve(true);
+
+  if (leafletLoadingPromise) return leafletLoadingPromise;
+
+  leafletLoadingPromise = new Promise((resolve) => {
+    // 1. Add Leaflet CSS
+    if (!document.querySelector('link[href*="leaflet.css"]')) {
+      const link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+      document.head.appendChild(link);
+    }
+
+    // 2. Add Leaflet JS
+    const existing = document.querySelector('script[src*="leaflet.js"]');
+    if (existing) {
+      existing.addEventListener('load', () => resolve(true));
+      existing.addEventListener('error', () => resolve(false));
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+    script.async = true;
+    script.onload = () => resolve(true);
+    script.onerror = () => {
+      console.warn('Leaflet OpenStreetMap script failed to load.');
+      resolve(false);
+    };
+
+    document.head.appendChild(script);
+  });
+
+  return leafletLoadingPromise;
+}
+
+// ==============================================================================
+// Google Maps Dynamic Loader & Dark Theme Styles (Optional Fallback)
 // ==============================================================================
 
 let mapsLoadingPromise: Promise<boolean> | null = null;

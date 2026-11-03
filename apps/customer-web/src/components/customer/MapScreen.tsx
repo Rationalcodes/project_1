@@ -3,33 +3,31 @@ import {
   MapPin,
   Search,
   Star,
-  Users,
-  Clock,
   Navigation,
   ArrowRight,
   List,
   Map as MapIcon,
-  Compass,
   Plus,
   Minus,
-  SlidersHorizontal,
   X,
-  ExternalLink,
-  ShieldCheck,
-  CheckCircle2,
   Crosshair,
-  Layers,
   RefreshCw,
 } from 'lucide-react';
-import { useCustomer, getEstimatedWaitMinutes, getQueueDisplay, getQueueFreshness } from '../../context/CustomerContext';
+import {
+  useCustomer,
+  getEstimatedWaitMinutes,
+} from '../../context/CustomerContext';
 import { Salon } from '@kumbhakaran/shared-types';
-import { loadGoogleMapsScript, KUMBHAKARAN_MAP_STYLES, isGoogleMapsLoaded } from '@kumbhakaran/ui';
+import {
+  calculateHaversineDistance,
+  redirectToGoogleMaps,
+  loadLeafletScript,
+} from '@kumbhakaran/ui';
 
 export const MapScreen: React.FC = () => {
   const {
     salons,
     userLocation,
-    setUserLocation,
     setSelectedSalonForDetail,
     requestDeviceLocation,
     triggerNotification,
@@ -37,40 +35,50 @@ export const MapScreen: React.FC = () => {
 
   const [selectedMarkerSalon, setSelectedMarkerSalon] = useState<Salon | null>(salons[0] || null);
   const [mapSearch, setMapSearch] = useState('');
-  const [radiusKm, setRadiusKm] = useState<number>(5);
+  const [radiusKm, setRadiusKm] = useState<number>(10);
   const [viewMode, setViewMode] = useState<'map' | 'list'>('map');
-  const [isGoogleMapsReady, setIsGoogleMapsReady] = useState(false);
+  const [isLeafletReady, setIsLeafletReady] = useState(false);
   const [hasMapMoved, setHasMapMoved] = useState(false);
   const [mapCenterCoords, setMapCenterCoords] = useState<{ lat: number; lng: number }>({
     lat: userLocation.lat,
     lng: userLocation.lng,
   });
 
-  const googleMapContainerRef = useRef<HTMLDivElement>(null);
-  const googleMapInstance = useRef<any>(null);
-  const markersRef = useRef<any[]>([]);
-  const userMarkerRef = useRef<any>(null);
+  const mapContainerRef = useRef<HTMLDivElement>(null);
+  const leafletMapRef = useRef<any>(null);
+  const markersLayerRef = useRef<any>(null);
 
-  // Filter salons by search text and radius
-  const visibleSalons = salons.filter((s) => {
-    if (s.distanceKm > radiusKm) return false;
-    if (mapSearch.trim()) {
-      const q = mapSearch.toLowerCase();
-      return (
-        s.name.toLowerCase().includes(q) ||
-        s.locality.toLowerCase().includes(q) ||
-        s.pincode.includes(q)
-      );
-    }
-    return true;
-  });
+  // Filter salons by radius & search, calculating distance dynamically with Haversine formula
+  const visibleSalons = salons
+    .map((s) => ({
+      ...s,
+      computedDistance: calculateHaversineDistance(
+        userLocation.lat,
+        userLocation.lng,
+        s.coordinates.lat,
+        s.coordinates.lng,
+      ),
+    }))
+    .filter((s) => {
+      if (s.computedDistance > radiusKm) return false;
+      if (mapSearch.trim()) {
+        const q = mapSearch.toLowerCase();
+        return (
+          s.name.toLowerCase().includes(q) ||
+          s.locality.toLowerCase().includes(q) ||
+          s.pincode.includes(q)
+        );
+      }
+      return true;
+    })
+    .sort((a, b) => a.computedDistance - b.computedDistance);
 
-  // 1. Initialize Google Maps JavaScript SDK
+  // 1. Load Leaflet script and CSS dynamically (zero API keys, open-source dark tiles)
   useEffect(() => {
     let isMounted = true;
-    loadGoogleMapsScript().then((loaded) => {
+    loadLeafletScript().then((loaded) => {
       if (isMounted) {
-        setIsGoogleMapsReady(loaded || isGoogleMapsLoaded());
+        setIsLeafletReady(loaded || Boolean((window as any).L));
       }
     });
     return () => {
@@ -78,133 +86,139 @@ export const MapScreen: React.FC = () => {
     };
   }, []);
 
-  // 2. Instantiate and mount Google Map
+  // 2. Instantiate and mount Leaflet map
   useEffect(() => {
-    if (!isGoogleMapsReady || !googleMapContainerRef.current) return;
-    const gmaps = (window as any).google?.maps;
-    if (!gmaps) return;
+    if (!isLeafletReady || !mapContainerRef.current) return;
+    const L = (window as any).L;
+    if (!L) return;
 
-    if (!googleMapInstance.current) {
-      const map = new gmaps.Map(googleMapContainerRef.current, {
-        center: { lat: userLocation.lat, lng: userLocation.lng },
+    if (!leafletMapRef.current) {
+      // Create map instance
+      const map = L.map(mapContainerRef.current, {
+        center: [userLocation.lat, userLocation.lng],
         zoom: 14,
-        styles: KUMBHAKARAN_MAP_STYLES,
-        disableDefaultUI: true,
-        gestureHandling: 'greedy', // Smooth mobile gestures
         zoomControl: false,
-        mapTypeControl: false,
-        streetViewControl: false,
-        fullscreenControl: false,
+        attributionControl: false,
       });
 
-      googleMapInstance.current = map;
+      // CartoDB Dark Matter tiles (sleek, high-contrast dark radar theme)
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        maxZoom: 19,
+        subdomains: 'abcd',
+      }).addTo(map);
 
-      // Track pan/drag to enable "Search This Area"
-      map.addListener('dragend', () => {
-        const center = map.getCenter();
-        if (center) {
-          setMapCenterCoords({ lat: center.lat(), lng: center.lng() });
+      // Layer group for dynamic markers
+      const markersLayer = L.layerGroup().addTo(map);
+      markersLayerRef.current = markersLayer;
+
+      map.on('moveend', () => {
+        const c = map.getCenter();
+        if (c) {
+          setMapCenterCoords({ lat: c.lat(), lng: c.lng });
           setHasMapMoved(true);
         }
       });
+
+      leafletMapRef.current = map;
     } else {
-      googleMapInstance.current.setCenter({ lat: userLocation.lat, lng: userLocation.lng });
+      leafletMapRef.current.setView([userLocation.lat, userLocation.lng], 14);
     }
-  }, [isGoogleMapsReady, userLocation]);
 
-  // 3. Render and Synchronize Salon Markers
+    return () => {
+      if (leafletMapRef.current) {
+        leafletMapRef.current.remove();
+        leafletMapRef.current = null;
+        markersLayerRef.current = null;
+      }
+    };
+  }, [isLeafletReady, userLocation.lat, userLocation.lng]);
+
+  // 3. Render and synchronize salon markers & user position beacon
   useEffect(() => {
-    if (!isGoogleMapsReady || !googleMapInstance.current) return;
-    const gmaps = (window as any).google?.maps;
-    if (!gmaps) return;
+    if (!leafletMapRef.current || !markersLayerRef.current) return;
+    const L = (window as any).L;
+    if (!L) return;
 
-    // Clear previous markers
-    markersRef.current.forEach((m) => m.setMap(null));
-    markersRef.current = [];
+    const layer = markersLayerRef.current;
+    layer.clearLayers();
 
-    // Add User Current Location Marker
-    if (userMarkerRef.current) userMarkerRef.current.setMap(null);
-    userMarkerRef.current = new gmaps.Marker({
-      position: { lat: userLocation.lat, lng: userLocation.lng },
-      map: googleMapInstance.current,
-      title: 'Your Location',
-      icon: {
-        path: gmaps.SymbolPath.CIRCLE,
-        scale: 9,
-        fillColor: '#38bdf8',
-        fillOpacity: 1,
-        strokeColor: '#ffffff',
-        strokeWeight: 3,
-      },
-      zIndex: 999,
+    // A. User GPS Beacon (Blue pulsing radar marker)
+    const userBeaconHtml = `
+      <div style="position: relative; width: 24px; height: 24px;">
+        <div style="position: absolute; inset: -4px; background: rgba(59, 130, 246, 0.4); border-radius: 9999px; animation: ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;"></div>
+        <div style="position: absolute; inset: 2px; background: #3b82f6; border: 2.5px solid #ffffff; border-radius: 9999px; box-shadow: 0 0 12px #3b82f6;"></div>
+      </div>
+    `;
+    const userIcon = L.divIcon({
+      className: 'user-beacon-marker',
+      html: userBeaconHtml,
+      iconSize: [24, 24],
+      iconAnchor: [12, 12],
     });
+    L.marker([userLocation.lat, userLocation.lng], { icon: userIcon, title: 'Your Location' }).addTo(layer);
 
-    // Add Salon Markers
+    // B. Salon markers with live queue count & name
     visibleSalons.forEach((salon) => {
       const isSelected = selectedMarkerSalon?.id === salon.id;
+      const salonBadgeHtml = `
+        <div style="background: ${isSelected ? '#f59e0b' : '#14141e'}; color: ${isSelected ? '#000' : '#fff'}; border: 2px solid #f59e0b; border-radius: 9999px; padding: 4px 10px; font-size: 11px; font-weight: 800; font-family: 'Syne', sans-serif; display: flex; align-items: center; gap: 5px; box-shadow: 0 4px 16px rgba(0,0,0,0.8); cursor: pointer; transition: transform 0.15s ease; white-space: nowrap;">
+          <span>✂ ${salon.name.length > 14 ? salon.name.slice(0, 14) + '…' : salon.name}</span>
+          <span style="background: ${isSelected ? '#000' : '#f59e0b'}; color: ${isSelected ? '#f59e0b' : '#000'}; border-radius: 9999px; padding: 1px 6px; font-size: 10px; font-weight: 900;">
+            ${salon.currentQueue}Q
+          </span>
+        </div>
+      `;
 
-      // Pin icon with SVG
-      const marker = new gmaps.Marker({
-        position: { lat: salon.coordinates.lat, lng: salon.coordinates.lng },
-        map: googleMapInstance.current,
-        title: salon.name,
-        icon: {
-          path: 'M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z',
-          fillColor: isSelected ? '#f59e0b' : salon.isOpen ? '#fbbf24' : '#6b7280',
-          fillOpacity: 1,
-          strokeColor: '#000000',
-          strokeWeight: 1.5,
-          scale: isSelected ? 1.8 : 1.4,
-          anchor: new gmaps.Point(12, 22),
-        },
-        zIndex: isSelected ? 100 : 10,
+      const salonIcon = L.divIcon({
+        className: 'salon-radar-marker',
+        html: salonBadgeHtml,
+        iconSize: [130, 30],
+        iconAnchor: [65, 15],
       });
 
-      marker.addListener('click', () => {
+      const marker = L.marker([salon.coordinates.lat, salon.coordinates.lng], { icon: salonIcon });
+
+      marker.on('click', () => {
         setSelectedMarkerSalon(salon);
-        googleMapInstance.current.panTo({
-          lat: salon.coordinates.lat,
-          lng: salon.coordinates.lng,
-        });
+        if (leafletMapRef.current) {
+          leafletMapRef.current.panTo([salon.coordinates.lat, salon.coordinates.lng]);
+        }
       });
 
-      markersRef.current.push(marker);
+      marker.addTo(layer);
     });
-  }, [isGoogleMapsReady, visibleSalons, selectedMarkerSalon, userLocation]);
+  }, [visibleSalons, selectedMarkerSalon, userLocation, isLeafletReady]);
 
+  // Handle zooming
   const handleZoom = (delta: number) => {
-    if (!googleMapInstance.current) return;
-    const curZoom = googleMapInstance.current.getZoom() || 14;
-    googleMapInstance.current.setZoom(curZoom + delta);
+    if (!leafletMapRef.current) return;
+    if (delta > 0) {
+      leafletMapRef.current.zoomIn();
+    } else {
+      leafletMapRef.current.zoomOut();
+    }
   };
 
+  // Center on user GPS position
   const handlePanToUser = async () => {
     await requestDeviceLocation();
-    if (googleMapInstance.current) {
-      googleMapInstance.current.panTo({ lat: userLocation.lat, lng: userLocation.lng });
-      googleMapInstance.current.setZoom(15);
+    if (leafletMapRef.current) {
+      leafletMapRef.current.setView([userLocation.lat, userLocation.lng], 15);
       setHasMapMoved(false);
     }
   };
 
+  // Center on searched area
   const handleSearchThisArea = () => {
-    setUserLocation({
-      name: `Map Center (${mapCenterCoords.lat.toFixed(3)}, ${mapCenterCoords.lng.toFixed(3)})`,
-      lat: mapCenterCoords.lat,
-      lng: mapCenterCoords.lng,
-    });
     setHasMapMoved(false);
-    triggerNotification('Searching salons in visible map area...');
+    triggerNotification(`Scanning studios around (${mapCenterCoords.lat.toFixed(3)}, ${mapCenterCoords.lng.toFixed(3)})`);
   };
 
   const handleSelectSalonClick = (salon: Salon) => {
     setSelectedMarkerSalon(salon);
-    if (googleMapInstance.current) {
-      googleMapInstance.current.panTo({
-        lat: salon.coordinates.lat,
-        lng: salon.coordinates.lng,
-      });
-      googleMapInstance.current.setZoom(15);
+    if (leafletMapRef.current) {
+      leafletMapRef.current.panTo([salon.coordinates.lat, salon.coordinates.lng]);
+      leafletMapRef.current.setZoom(15);
     }
   };
 
@@ -293,34 +307,8 @@ export const MapScreen: React.FC = () => {
             viewMode === 'list' ? 'hidden sm:block' : 'block'
           }`}
         >
-          {/* Real Google Maps Container */}
-          <div ref={googleMapContainerRef} className="w-full h-full" />
-
-          {/* Fallback Display if Google Maps Key is missing */}
-          {!isGoogleMapsReady && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center bg-[#0d0d14]/90 z-10 backdrop-blur-sm">
-              <div className="w-14 h-14 rounded-3xl bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center justify-center mb-3 shadow-lg shadow-amber-500/10">
-                <Compass className="w-7 h-7 text-amber-400" />
-              </div>
-              <h3 className="text-base font-bold text-white font-['Syne',sans-serif]">
-                Google Maps JavaScript API Radar
-              </h3>
-              <p className="text-xs text-zinc-400 max-w-sm mt-1">
-                To render live street & satellite tiles, set <code className="text-amber-300">VITE_GOOGLE_MAPS_API_KEY</code> in Vercel. Showing live spatial studio positions below.
-              </p>
-              <div className="mt-4 flex flex-wrap justify-center gap-2 max-w-md">
-                {visibleSalons.slice(0, 4).map((s) => (
-                  <button
-                    key={s.id}
-                    onClick={() => setSelectedMarkerSalon(s)}
-                    className="px-3 py-1.5 rounded-xl bg-zinc-900 border border-zinc-700 text-xs text-zinc-200 hover:border-amber-400 transition-colors"
-                  >
-                    📍 {s.name} ({s.distanceKm}km)
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
+          {/* Interactive Leaflet Dark Map (Zero API keys required) */}
+          <div ref={mapContainerRef} className="w-full h-full" style={{ zIndex: 1 }} />
 
           {/* Floating "Search This Area" Pill */}
           {hasMapMoved && (
@@ -361,9 +349,9 @@ export const MapScreen: React.FC = () => {
             </div>
           </div>
 
-          {/* Selected Salon Floating Card (Mobile view overlay) */}
+          {/* Selected Salon Floating Card (Mobile/Overlay) */}
           {selectedMarkerSalon && (
-            <div className="lg:hidden absolute bottom-4 left-3 right-16 z-20 animate-in slide-in-from-bottom-3 duration-200">
+            <div className="absolute bottom-4 left-3 right-16 z-20 animate-in slide-in-from-bottom-3 duration-200">
               <div className="bg-[#12121a]/95 backdrop-blur-md border border-amber-500/40 rounded-2xl p-3 shadow-2xl flex items-center gap-3">
                 <img
                   src={selectedMarkerSalon.coverImage}
@@ -378,15 +366,34 @@ export const MapScreen: React.FC = () => {
                   </div>
                   <h4 className="text-xs font-bold text-white truncate">{selectedMarkerSalon.name}</h4>
                   <p className="text-[11px] text-zinc-400 truncate">{selectedMarkerSalon.locality}</p>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className="text-[10px] font-extrabold px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300">
-                      Queue: {selectedMarkerSalon.currentQueue}
-                    </span>
+                  
+                  <div className="flex items-center gap-2 mt-1.5">
+                    {/* Google Maps Directions Redirection Button */}
+                    <button
+                      onClick={() =>
+                        redirectToGoogleMaps(
+                          {
+                            lat: selectedMarkerSalon.coordinates.lat,
+                            lng: selectedMarkerSalon.coordinates.lng,
+                            name: selectedMarkerSalon.name,
+                            address: selectedMarkerSalon.address,
+                          },
+                          userLocation,
+                        )
+                      }
+                      className="px-2.5 py-1 rounded-lg bg-amber-500 text-black font-extrabold text-[10px] flex items-center gap-1 hover:bg-amber-400 transition-colors shadow-md"
+                      title="Navigate turn-by-turn in Google Maps"
+                    >
+                      <Navigation className="w-3 h-3 fill-black" />
+                      <span>Directions ↗</span>
+                    </button>
+
+                    {/* View Details button */}
                     <button
                       onClick={() => setSelectedSalonForDetail(selectedMarkerSalon)}
-                      className="text-[10px] font-bold text-amber-400 hover:underline flex items-center gap-0.5"
+                      className="text-[10px] font-bold text-amber-400 hover:text-amber-300 underline flex items-center gap-0.5"
                     >
-                      View Details →
+                      Studio Info →
                     </button>
                   </div>
                 </div>
@@ -470,16 +477,34 @@ export const MapScreen: React.FC = () => {
                               ? 'Zero wait'
                               : `${salon.currentQueue} waiting (~${waitTime}m)`}
                           </span>
-                          <span className="text-[10px] text-zinc-500">
-                            From ₹{salon.startingPrice}
-                          </span>
+
+                          {/* Google Maps Directions button */}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              redirectToGoogleMaps(
+                                {
+                                  lat: salon.coordinates.lat,
+                                  lng: salon.coordinates.lng,
+                                  name: salon.name,
+                                  address: salon.address,
+                                },
+                                userLocation,
+                              );
+                            }}
+                            className="ml-auto text-[10px] font-bold px-2 py-1 rounded-lg bg-zinc-800 hover:bg-amber-500 hover:text-black text-amber-400 transition-colors flex items-center gap-1"
+                            title="Navigate in Google Maps"
+                          >
+                            <Navigation className="w-2.5 h-2.5" />
+                            <span>Maps ↗</span>
+                          </button>
 
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
                               setSelectedSalonForDetail(salon);
                             }}
-                            className="ml-auto text-[11px] font-bold text-amber-400 hover:text-amber-300 flex items-center gap-1"
+                            className="text-[11px] font-bold text-zinc-300 hover:text-white flex items-center gap-0.5"
                           >
                             <span>Open</span>
                             <ArrowRight className="w-3 h-3" />

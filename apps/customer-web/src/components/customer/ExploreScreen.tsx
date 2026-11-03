@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { useSalon, getEstimatedWaitMinutes, getQueueDisplay, getQueueFreshness } from '../../context/CustomerContext';
 import { Salon } from '@kumbhakaran/shared-types';
+import { redirectToGoogleMaps } from '@kumbhakaran/ui';
 
 type SortOption = 'distance' | 'queue' | 'rating' | 'price';
 
@@ -30,7 +31,8 @@ export const ExploreScreen: React.FC = () => {
     userProfile,
     comparisonList,
     toggleCompareSalon,
-    setIsCompareOpen
+    setIsCompareOpen,
+    userLocation
   } = useSalon();
 
   const [sortBy, setSortBy] = useState<SortOption>('queue');
@@ -266,9 +268,30 @@ export const ExploreScreen: React.FC = () => {
                         <CheckCircle2 className="w-4 h-4 text-amber-400" />
                       )}
                     </div>
-                    <p className="text-xs text-zinc-300 drop-shadow line-clamp-1 mt-0.5">
-                      {salon.locality} • {salon.distanceKm} km from you
-                    </p>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <span className="text-xs text-zinc-300 drop-shadow line-clamp-1">
+                        {salon.locality} • {salon.distanceKm} km
+                      </span>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          redirectToGoogleMaps(
+                            {
+                              lat: salon.coordinates.lat,
+                              lng: salon.coordinates.lng,
+                              name: salon.name,
+                              address: salon.address,
+                            },
+                            userLocation,
+                          );
+                        }}
+                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-black/70 hover:bg-black text-[10px] font-bold text-amber-400 border border-amber-400/30 backdrop-blur-sm transition-colors"
+                        title="Open directions in Google Maps"
+                      >
+                        <Navigation className="w-2.5 h-2.5 fill-amber-400" />
+                        <span>Directions ↗</span>
+                      </button>
+                    </div>
                   </div>
 
                   <div className="flex items-center gap-1 bg-black/80 backdrop-blur-md px-2.5 py-1 rounded-xl text-amber-400 font-bold text-xs border border-amber-400/30">

@@ -5,13 +5,14 @@ import {
   Search,
   CheckCircle2,
   Crosshair,
-  AlertCircle,
-  Sparkles,
   Move,
-  Compass,
   Check,
+  ExternalLink,
 } from 'lucide-react';
-import { loadGoogleMapsScript, KUMBHAKARAN_MAP_STYLES, isGoogleMapsLoaded } from '@kumbhakaran/ui';
+import {
+  loadLeafletScript,
+  openGoogleMapsLocation,
+} from '@kumbhakaran/ui';
 
 export interface LocationPickerResult {
   address: string;
@@ -54,12 +55,11 @@ export const SalonLocationPicker: React.FC<SalonLocationPickerProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [isGpsLoading, setIsGpsLoading] = useState(false);
   const [isConfirmed, setIsConfirmed] = useState(false);
-  const [isGoogleMapsReady, setIsGoogleMapsReady] = useState(false);
+  const [isMapReady, setIsMapReady] = useState(false);
 
   const mapContainerRef = useRef<HTMLDivElement>(null);
-  const searchInputRef = useRef<HTMLInputElement>(null);
-  const googleMapInstance = useRef<any>(null);
-  const markerInstance = useRef<any>(null);
+  const leafletMapRef = useRef<any>(null);
+  const markerRef = useRef<any>(null);
 
   // Popular Hub Presets for Quick Location in India
   const hubPresets = [
@@ -71,12 +71,12 @@ export const SalonLocationPicker: React.FC<SalonLocationPickerProps> = ({
     { name: 'Jubilee Hills, Road No 36, Hyderabad', locality: 'Jubilee Hills', city: 'Hyderabad', state: 'Telangana', pincode: '500033', lat: 17.4319, lng: 78.4073 },
   ];
 
-  // 1. Initialize Google Maps JavaScript SDK
+  // 1. Initialize open-source Leaflet map (zero keys, zero cost, 100% reliable)
   useEffect(() => {
     let isMounted = true;
-    loadGoogleMapsScript().then((loaded) => {
+    loadLeafletScript().then((loaded) => {
       if (isMounted) {
-        setIsGoogleMapsReady(loaded || isGoogleMapsLoaded());
+        setIsMapReady(loaded || Boolean((window as any).L));
       }
     });
     return () => {
@@ -84,151 +84,93 @@ export const SalonLocationPicker: React.FC<SalonLocationPickerProps> = ({
     };
   }, []);
 
-  // 2. Mount and Synchronize Google Map & Draggable Pin
+  // 2. Mount and Synchronize Leaflet Map & Draggable Pin
   useEffect(() => {
-    if (!isGoogleMapsReady || !mapContainerRef.current) return;
-    const gmaps = (window as any).google?.maps;
-    if (!gmaps) return;
+    if (!isMapReady || !mapContainerRef.current) return;
+    const L = (window as any).L;
+    if (!L) return;
 
-    if (!googleMapInstance.current) {
-      const map = new gmaps.Map(mapContainerRef.current, {
-        center: { lat, lng },
+    if (!leafletMapRef.current) {
+      const map = L.map(mapContainerRef.current, {
+        center: [lat, lng],
         zoom: 16,
-        styles: KUMBHAKARAN_MAP_STYLES,
-        disableDefaultUI: true,
-        gestureHandling: 'greedy',
+        zoomControl: false,
+        attributionControl: false,
       });
 
-      const marker = new gmaps.Marker({
-        position: { lat, lng },
-        map,
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        maxZoom: 19,
+        subdomains: 'abcd',
+      }).addTo(map);
+
+      // Custom draggable amber entrance pin
+      const pinHtml = `
+        <div style="position: relative; width: 34px; height: 34px; transform: translate(-50%, -100%); cursor: grab;">
+          <div style="position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 8px; height: 8px; background: #000; border-radius: 50%; opacity: 0.4;"></div>
+          <div style="width: 32px; height: 32px; background: #f59e0b; border: 3px solid #ffffff; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.6);">
+            <div style="width: 10px; height: 10px; background: #000; border-radius: 50%;"></div>
+          </div>
+        </div>
+      `;
+
+      const markerIcon = L.divIcon({
+        className: 'draggable-entrance-marker',
+        html: pinHtml,
+        iconSize: [34, 34],
+        iconAnchor: [17, 34],
+      });
+
+      const marker = L.marker([lat, lng], {
+        icon: markerIcon,
         draggable: true,
         title: 'Drag to salon entrance',
-        animation: gmaps.Animation.DROP,
-      });
+      }).addTo(map);
 
-      marker.addListener('dragend', () => {
-        const pos = marker.getPosition();
+      marker.on('dragend', () => {
+        const pos = marker.getLatLng();
         if (pos) {
-          const newLat = Number(pos.lat().toFixed(6));
-          const newLng = Number(pos.lng().toFixed(6));
+          const newLat = Number(pos.lat.toFixed(6));
+          const newLng = Number(pos.lng.toFixed(6));
           setLat(newLat);
           setLng(newLng);
           setManualLatStr(newLat.toString());
           setManualLngStr(newLng.toString());
           setIsConfirmed(false);
-          reverseGeocodeCoords(newLat, newLng);
         }
       });
 
-      map.addListener('click', (e: any) => {
-        if (e.latLng) {
-          const newLat = Number(e.latLng.lat().toFixed(6));
-          const newLng = Number(e.latLng.lng().toFixed(6));
-          marker.setPosition(e.latLng);
+      map.on('click', (e: any) => {
+        if (e.latlng) {
+          const newLat = Number(e.latlng.lat.toFixed(6));
+          const newLng = Number(e.latlng.lng.toFixed(6));
+          marker.setLatLng(e.latlng);
           setLat(newLat);
           setLng(newLng);
           setManualLatStr(newLat.toString());
           setManualLngStr(newLng.toString());
           setIsConfirmed(false);
-          reverseGeocodeCoords(newLat, newLng);
         }
       });
 
-      googleMapInstance.current = map;
-      markerInstance.current = marker;
-
-      // Initialize Places Autocomplete on input if available
-      if (searchInputRef.current && gmaps.places?.Autocomplete) {
-        const autocomplete = new gmaps.places.Autocomplete(searchInputRef.current, {
-          types: ['establishment', 'geocode'],
-          componentRestrictions: { country: 'in' },
-        });
-
-        autocomplete.addListener('place_changed', () => {
-          const place = autocomplete.getPlace();
-          if (place && place.geometry?.location) {
-            const placeLat = Number(place.geometry.location.lat().toFixed(6));
-            const placeLng = Number(place.geometry.location.lng().toFixed(6));
-            setLat(placeLat);
-            setLng(placeLng);
-            setManualLatStr(placeLat.toString());
-            setManualLngStr(placeLng.toString());
-            if (place.place_id) setPlaceId(place.place_id);
-            if (place.formatted_address) setAddress(place.formatted_address);
-
-            // Extract locality, city, state, postal code from address components
-            if (place.address_components) {
-              extractAddressComponents(place.address_components);
-            }
-
-            map.panTo(place.geometry.location);
-            map.setZoom(17);
-            marker.setPosition(place.geometry.location);
-            setIsConfirmed(false);
-          }
-        });
-      }
+      leafletMapRef.current = map;
+      markerRef.current = marker;
     } else {
-      googleMapInstance.current.setCenter({ lat, lng });
-      if (markerInstance.current) {
-        markerInstance.current.setPosition({ lat, lng });
-      }
-    }
-  }, [isGoogleMapsReady]);
-
-  // Helper to extract address components from Google Places
-  const extractAddressComponents = (components: any[]) => {
-    let sublocality = '';
-    let localityVal = '';
-    let cityVal = '';
-    let stateVal = '';
-    let pinVal = '';
-
-    for (const c of components) {
-      if (c.types.includes('sublocality') || c.types.includes('sublocality_level_1')) {
-        sublocality = c.long_name;
-      }
-      if (c.types.includes('locality')) {
-        localityVal = c.long_name;
-      }
-      if (c.types.includes('administrative_area_level_2') || (!localityVal && c.types.includes('locality'))) {
-        cityVal = c.long_name;
-      }
-      if (c.types.includes('administrative_area_level_1')) {
-        stateVal = c.long_name;
-      }
-      if (c.types.includes('postal_code')) {
-        pinVal = c.long_name;
+      leafletMapRef.current.setView([lat, lng], 16);
+      if (markerRef.current) {
+        markerRef.current.setLatLng([lat, lng]);
       }
     }
 
-    if (sublocality) setLocality(sublocality);
-    else if (localityVal) setLocality(localityVal);
-    if (cityVal || localityVal) setCity(cityVal || localityVal);
-    if (stateVal) setState(stateVal);
-    if (pinVal) setPincode(pinVal);
-  };
-
-  // Helper for reverse geocoding via Google Geocoder
-  const reverseGeocodeCoords = (targetLat: number, targetLng: number) => {
-    const gmaps = (window as any).google?.maps;
-    if (!gmaps?.Geocoder) return;
-
-    const geocoder = new gmaps.Geocoder();
-    geocoder.geocode({ location: { lat: targetLat, lng: targetLng } }, (results: any[], status: string) => {
-      if (status === 'OK' && results && results[0]) {
-        const result = results[0];
-        setAddress(result.formatted_address);
-        if (result.place_id) setPlaceId(result.place_id);
-        if (result.address_components) {
-          extractAddressComponents(result.address_components);
-        }
+    return () => {
+      if (leafletMapRef.current) {
+        leafletMapRef.current.remove();
+        leafletMapRef.current = null;
+        markerRef.current = null;
       }
-    });
-  };
+    };
+  }, [isMapReady]);
 
-  // Update map viewport to target lat/lng
+  // Update marker position when lat/lng change from presets or manual inputs
   const updateMapPosition = (newLat: number, newLng: number) => {
     setLat(newLat);
     setLng(newLng);
@@ -236,73 +178,68 @@ export const SalonLocationPicker: React.FC<SalonLocationPickerProps> = ({
     setManualLngStr(newLng.toString());
     setIsConfirmed(false);
 
-    if (googleMapInstance.current) {
-      googleMapInstance.current.panTo({ lat: newLat, lng: newLng });
-      if (markerInstance.current) {
-        markerInstance.current.setPosition({ lat: newLat, lng: newLng });
-      }
+    if (leafletMapRef.current && markerRef.current) {
+      leafletMapRef.current.setView([newLat, newLng], 16);
+      markerRef.current.setLatLng([newLat, newLng]);
     }
   };
 
-  // OPTION 1: Select Preset Hub or Address
+  // Option 1: Select preset location
   const handleSelectPreset = (hub: typeof hubPresets[0]) => {
+    updateMapPosition(hub.lat, hub.lng);
     setLocality(hub.locality);
     setCity(hub.city);
     setState(hub.state);
     setPincode(hub.pincode);
     setAddress(hub.name);
-    setSearchQuery(hub.name);
-    updateMapPosition(hub.lat, hub.lng);
   };
 
-  // OPTION 2: Acquire Device GPS
+  // Option 2: Use Device GPS
   const handleUseCurrentLocation = () => {
-    if (typeof window === 'undefined' || !navigator.geolocation) {
-      alert('Geolocation is not supported by your browser.');
+    if (!navigator.geolocation) {
+      alert('Geolocation is not supported by your browser');
       return;
     }
-
     setIsGpsLoading(true);
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         setIsGpsLoading(false);
-        const curLat = Number(pos.coords.latitude.toFixed(6));
-        const curLng = Number(pos.coords.longitude.toFixed(6));
-        updateMapPosition(curLat, curLng);
-        reverseGeocodeCoords(curLat, curLng);
+        const newLat = Number(pos.coords.latitude.toFixed(6));
+        const newLng = Number(pos.coords.longitude.toFixed(6));
+        updateMapPosition(newLat, newLng);
       },
       (err) => {
         setIsGpsLoading(false);
-        alert(`Location permission denied or timeout: ${err.message}. Please use search or enter coordinates.`);
+        alert(`Could not fetch device location: ${err.message}`);
       },
-      { enableHighAccuracy: true, timeout: 10000 },
+      { enableHighAccuracy: true, timeout: 10000 }
     );
   };
 
-  // OPTION 4: Validate and Apply Coordinates Manually
+  // Option 4: Apply manual coordinates
   const handleApplyManualCoords = (e: React.FormEvent) => {
     e.preventDefault();
     setCoordsError(null);
-    const parsedLat = parseFloat(manualLatStr);
-    const parsedLng = parseFloat(manualLngStr);
+    const parsedLat = parseFloat(manualLatStr.trim());
+    const parsedLng = parseFloat(manualLngStr.trim());
 
     if (isNaN(parsedLat) || parsedLat < -90 || parsedLat > 90) {
-      setCoordsError('Latitude must be a valid number between -90 and +90.');
+      setCoordsError('Latitude must be a valid number between -90.0 and +90.0');
       return;
     }
     if (isNaN(parsedLng) || parsedLng < -180 || parsedLng > 180) {
-      setCoordsError('Longitude must be a valid number between -180 and +180.');
+      setCoordsError('Longitude must be a valid number between -180.0 and +180.0');
       return;
     }
 
     updateMapPosition(parsedLat, parsedLng);
-    reverseGeocodeCoords(parsedLat, parsedLng);
   };
 
-  // Final Confirmation Action
+  // Confirm final location
   const handleConfirmLocation = () => {
-    const finalData: LocationPickerResult = {
-      address: address.trim() || `${locality}, ${city}, ${state} - ${pincode}`,
+    setIsConfirmed(true);
+    onLocationConfirmed({
+      address: address.trim() || `${locality}, ${city}`,
       locality: locality.trim(),
       city: city.trim(),
       state: state.trim(),
@@ -310,15 +247,13 @@ export const SalonLocationPicker: React.FC<SalonLocationPickerProps> = ({
       latitude: lat,
       longitude: lng,
       placeId,
-    };
-    setIsConfirmed(true);
-    onLocationConfirmed(finalData);
+    });
   };
 
   return (
-    <div className="space-y-4 rounded-3xl bg-[#0f0f15] border border-zinc-800 p-4 sm:p-5 shadow-2xl">
-      {/* Tab Selector for 4 Location Options */}
-      <div className="flex flex-wrap items-center gap-1.5 p-1 bg-black/60 border border-zinc-800/80 rounded-2xl text-xs font-bold">
+    <div className="space-y-4">
+      {/* 4-Option Navigation Tabs */}
+      <div className="flex flex-wrap p-1 rounded-2xl bg-zinc-950 border border-zinc-800 text-xs font-semibold gap-1">
         <button
           type="button"
           onClick={() => setActiveOption('search')}
@@ -344,7 +279,7 @@ export const SalonLocationPicker: React.FC<SalonLocationPickerProps> = ({
               : 'text-zinc-400 hover:text-white hover:bg-zinc-900'
           }`}
         >
-          <Navigation className={`w-3.5 h-3.5 ${isGpsLoading ? 'animate-spin' : ''}`} />
+          <Navigation className="w-3.5 h-3.5" />
           <span>Option 2: GPS</span>
         </button>
 
@@ -381,11 +316,10 @@ export const SalonLocationPicker: React.FC<SalonLocationPickerProps> = ({
           <div className="relative">
             <Search className="w-4 h-4 text-amber-400 absolute left-3.5 top-3" />
             <input
-              ref={searchInputRef}
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Enter salon name, street, locality or Google Place..."
+              placeholder="Filter quick presets or enter salon locality..."
               className="w-full pl-10 pr-4 py-2.5 bg-zinc-900 border border-zinc-700/80 rounded-2xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-amber-400 shadow-inner"
             />
           </div>
@@ -393,16 +327,18 @@ export const SalonLocationPicker: React.FC<SalonLocationPickerProps> = ({
           <div>
             <div className="text-[10px] uppercase font-bold text-zinc-400 mb-1.5">Quick Location Presets</div>
             <div className="flex flex-wrap gap-1.5">
-              {hubPresets.map((hub) => (
-                <button
-                  key={hub.name}
-                  type="button"
-                  onClick={() => handleSelectPreset(hub)}
-                  className="px-2.5 py-1 rounded-xl bg-zinc-900 border border-zinc-800 text-[11px] text-zinc-300 hover:border-amber-400 hover:text-white transition-colors"
-                >
-                  📍 {hub.locality} ({hub.city})
-                </button>
-              ))}
+              {hubPresets
+                .filter(h => !searchQuery || h.name.toLowerCase().includes(searchQuery.toLowerCase()))
+                .map((hub) => (
+                  <button
+                    key={hub.name}
+                    type="button"
+                    onClick={() => handleSelectPreset(hub)}
+                    className="px-2.5 py-1 rounded-xl bg-zinc-900 border border-zinc-800 text-[11px] text-zinc-300 hover:border-amber-400 hover:text-white transition-colors"
+                  >
+                    📍 {hub.locality} ({hub.city})
+                  </button>
+                ))}
             </div>
           </div>
         </div>
@@ -413,7 +349,7 @@ export const SalonLocationPicker: React.FC<SalonLocationPickerProps> = ({
           <div className="flex items-center gap-2">
             <Navigation className={`w-4 h-4 text-amber-400 ${isGpsLoading ? 'animate-spin' : ''}`} />
             <span className="text-zinc-300">
-              {isGpsLoading ? 'Acquiring high-accuracy GPS coordinates...' : 'Device GPS position locked.'}
+              {isGpsLoading ? 'Acquiring high-accuracy GPS coordinates...' : 'Device GPS position acquired.'}
             </span>
           </div>
           <button
@@ -429,7 +365,7 @@ export const SalonLocationPicker: React.FC<SalonLocationPickerProps> = ({
       {activeOption === 'pin' && (
         <div className="p-3 rounded-2xl bg-zinc-900 border border-zinc-800 text-xs text-zinc-400 flex items-center gap-2">
           <Move className="w-4 h-4 text-amber-400 shrink-0" />
-          <span>Click anywhere on the map or drag the amber pin to place it exactly at your salon door.</span>
+          <span>Click anywhere on the map or drag the amber pin to place it exactly at your salon entrance.</span>
         </div>
       )}
 
@@ -467,19 +403,9 @@ export const SalonLocationPicker: React.FC<SalonLocationPickerProps> = ({
         </form>
       )}
 
-      {/* Interactive Google Map Preview Container */}
+      {/* Interactive Leaflet Map Preview Container (Zero API keys required) */}
       <div className="relative w-full h-56 sm:h-72 rounded-2xl overflow-hidden border border-zinc-800 bg-[#0c0c11]">
-        <div ref={mapContainerRef} className="w-full h-full" />
-
-        {!isGoogleMapsReady && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center p-4 text-center bg-[#0d0d14]/90 backdrop-blur-sm z-10">
-            <Compass className="w-8 h-8 text-amber-400 mb-2" />
-            <h5 className="text-xs font-bold text-white">Interactive Spatial Coordinates Active</h5>
-            <p className="text-[11px] text-zinc-400 max-w-xs mt-1">
-              Lat: <code className="text-amber-300">{lat}</code> • Lng: <code className="text-amber-300">{lng}</code>
-            </p>
-          </div>
-        )}
+        <div ref={mapContainerRef} className="w-full h-full" style={{ zIndex: 1 }} />
 
         {/* Live Coordinate Pill Overlay */}
         <div className="absolute bottom-3 left-3 z-20 px-3 py-1.5 rounded-xl bg-black/85 backdrop-blur-md border border-zinc-800 text-[11px] text-zinc-300 font-mono shadow-xl flex items-center gap-2">
@@ -515,6 +441,17 @@ export const SalonLocationPicker: React.FC<SalonLocationPickerProps> = ({
             <span>PIN: <strong className="text-zinc-200">{pincode}</strong></span>
           </div>
         </div>
+
+        {/* Direct Google Maps Location Verification */}
+        <button
+          type="button"
+          onClick={() => openGoogleMapsLocation(lat, lng)}
+          className="w-full py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-amber-400 text-xs font-bold border border-zinc-700/80 flex items-center justify-center gap-1.5 transition-colors"
+          title="Verify exact coordinates on official Google Maps satellite/street view"
+        >
+          <ExternalLink className="w-3.5 h-3.5 text-amber-400" />
+          <span>Verify Exact Location on Google Maps ↗</span>
+        </button>
 
         <button
           type="button"

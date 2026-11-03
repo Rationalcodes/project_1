@@ -8,6 +8,7 @@ import {
   LocationOption,
 } from '@kumbhakaran/shared-types';
 import { defaultApiClient, AuthUser } from '@kumbhakaran/api-client';
+import { calculateHaversineDistance } from '@kumbhakaran/ui';
 import { INITIAL_SALONS, INITIAL_USER } from '../data/mockSalons';
 
 // Explicitly sync API client base URL with Vite environment or production fallback
@@ -204,20 +205,44 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     triggerNotification('Signed out successfully');
   };
 
-  // Synchronize discovery with NestJS PostGIS Backend
+  // Synchronize discovery with NestJS PostGIS Backend & dynamic Haversine distance engine
   useEffect(() => {
     let isMounted = true;
+
+    // 1. Immediately update distance for all existing salons based on current user location
+    setSalons((prev) =>
+      prev.map((s) => {
+        if (!s.coordinates?.lat || !s.coordinates?.lng) return s;
+        const d = calculateHaversineDistance(
+          userLocation.lat,
+          userLocation.lng,
+          s.coordinates.lat,
+          s.coordinates.lng,
+        );
+        return { ...s, distanceKm: d };
+      }),
+    );
+
+    // 2. Fetch live salons from backend and merge
     defaultApiClient.getNearbySalons(userLocation.lat, userLocation.lng, 25, lazyFilter).then((res) => {
       if (res && res.salons && isMounted) {
         setSalons((prev) => {
           const updated = [...prev];
           for (const item of res.salons) {
+            const calculatedDist = calculateHaversineDistance(
+              userLocation.lat,
+              userLocation.lng,
+              item.latitude,
+              item.longitude,
+            );
+            const dist = calculatedDist || item.distanceKm;
+
             const matchIdx = updated.findIndex((s) => s.id === item.id);
             if (matchIdx !== -1) {
               updated[matchIdx] = {
                 ...updated[matchIdx],
                 currentQueue: item.currentQueue,
-                distanceKm: item.distanceKm,
+                distanceKm: dist,
                 lastQueueUpdate: item.lastQueueUpdate,
                 rating: item.rating,
                 isOpen: item.isOpen,
@@ -236,7 +261,7 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                 currentQueue: item.currentQueue,
                 avgServiceTimeMinutes: 20,
                 activeBarbers: 2,
-                distanceKm: item.distanceKm,
+                distanceKm: dist,
                 startingPrice: item.startingPrice || 150,
                 isOpen: item.isOpen,
                 openingHours: {

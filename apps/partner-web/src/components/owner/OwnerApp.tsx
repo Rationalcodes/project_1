@@ -25,9 +25,11 @@ import {
   MapPin,
   Phone,
   Sparkles,
-  Info
+  Info,
+  ExternalLink
 } from 'lucide-react';
 import { OwnerTab, Service, Staff } from '@kumbhakaran/shared-types';
+import { openGoogleMapsLocation } from '@kumbhakaran/ui';
 
 export const OwnerApp: React.FC = () => {
   const {
@@ -912,6 +914,24 @@ export const OwnerApp: React.FC = () => {
               className="w-full p-2.5 bg-zinc-900 border border-zinc-700 rounded-xl text-white"
             />
           </div>
+
+          {activeSalon.coordinates && (
+            <div className="p-3 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-between text-xs">
+              <div>
+                <span className="text-zinc-500 block text-[10px] uppercase font-bold">GPS Coordinates</span>
+                <span className="text-zinc-300 font-mono">{activeSalon.coordinates.lat.toFixed(5)}, {activeSalon.coordinates.lng.toFixed(5)}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => openGoogleMapsLocation(activeSalon.coordinates.lat, activeSalon.coordinates.lng)}
+                className="px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-amber-400 font-bold flex items-center gap-1 border border-zinc-700/80 transition-colors"
+                title="Open coordinates in Google Maps"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                <span>Verify on Google Maps ↗</span>
+              </button>
+            </div>
+          )}
 
           <div className="pt-3 border-t border-zinc-800 flex justify-end">
             <button

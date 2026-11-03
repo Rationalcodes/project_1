@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { useSalon, getEstimatedWaitMinutes, getQueueDisplay, getQueueFreshness } from '../../context/CustomerContext';
 import { Service, Staff } from '@kumbhakaran/shared-types';
+import { redirectToGoogleMaps, openGoogleMapsLocation } from '@kumbhakaran/ui';
 
 interface SalonDetailScreenProps {
   onBack: () => void;
@@ -41,7 +42,8 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
     userProfile,
     toggleCompareSalon,
     comparisonList,
-    triggerNotification
+    triggerNotification,
+    userLocation
   } = useSalon();
 
   const [activeTab, setActiveTab] = useState<'services' | 'staff' | 'reviews' | 'gallery'>('services');
@@ -195,11 +197,25 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
               </a>
 
               <button
-                onClick={() => {}}
-                className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-amber-500 text-black font-bold hover:bg-amber-400 transition-colors"
+                onClick={() => redirectToGoogleMaps({
+                  lat: salon.coordinates.lat,
+                  lng: salon.coordinates.lng,
+                  name: salon.name,
+                  address: salon.address
+                }, userLocation)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500 text-black font-bold hover:bg-amber-400 transition-all shadow-md active:scale-95"
+                title="Navigate in Google Maps"
               >
-                <Navigation className="w-3.5 h-3.5" />
-                <span>{salon.distanceKm} km away</span>
+                <Navigation className="w-3.5 h-3.5 fill-black" />
+                <span>{salon.distanceKm} km • Navigate ↗</span>
+              </button>
+              <button
+                onClick={() => openGoogleMapsLocation(salon.coordinates.lat, salon.coordinates.lng)}
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-zinc-900 border border-zinc-700 text-amber-400 hover:text-amber-300 text-xs font-semibold"
+                title="View exact pin on Google Maps"
+              >
+                <ExternalLink className="w-3 h-3" />
+                <span className="hidden sm:inline">Maps Pin ↗</span>
               </button>
             </div>
           </div>

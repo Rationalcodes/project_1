@@ -18,6 +18,7 @@ import {
 import { useSalon, getEstimatedWaitMinutes, getQueueDisplay, getQueueFreshness } from '../../context/CustomerContext';
 import { LazyModeSelector } from '../common/LazyModeSelector';
 import { Salon } from '@kumbhakaran/shared-types';
+import { redirectToGoogleMaps } from '@kumbhakaran/ui';
 
 export const HomeScreen: React.FC = () => {
   const {
@@ -425,9 +426,25 @@ export const HomeScreen: React.FC = () => {
                       <span className="font-medium text-emerald-400 bg-black/60 px-2 py-0.5 rounded-full backdrop-blur-sm">
                         ~{waitTime}m est. wait
                       </span>
-                      <span className="text-zinc-300 font-semibold bg-black/60 px-2 py-0.5 rounded-full backdrop-blur-sm">
-                        {salon.distanceKm} km
-                      </span>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          redirectToGoogleMaps(
+                            {
+                              lat: salon.coordinates.lat,
+                              lng: salon.coordinates.lng,
+                              name: salon.name,
+                              address: salon.address,
+                            },
+                            userLocation,
+                          );
+                        }}
+                        className="text-amber-400 font-bold bg-black/80 hover:bg-black px-2 py-0.5 rounded-full backdrop-blur-sm flex items-center gap-1 border border-amber-400/30 transition-colors cursor-pointer"
+                        title="Get directions in Google Maps"
+                      >
+                        <Navigation className="w-2.5 h-2.5 fill-amber-400" />
+                        <span>{salon.distanceKm} km ↗</span>
+                      </button>
                     </div>
                   </div>
 
