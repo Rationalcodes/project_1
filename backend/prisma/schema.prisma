@@ -164,3 +164,20 @@ model SalonMember {
   @@index([userId], map: "idx_salon_members_user")
   @@map("salon_members")
 }
+
+// 7. Administrator Audit Logs
+model AdminAuditLog {
+  id         String   @id @db.VarChar(64)
+  actorId    String   @map("actor_id") @db.VarChar(64)
+  actorEmail String   @map("actor_email") @db.VarChar(255)
+  action     String   @db.VarChar(50)
+  targetType String   @map("target_type") @db.VarChar(50)
+  targetId   String   @map("target_id") @db.VarChar(64)
+  targetName String?  @map("target_name") @db.VarChar(255)
+  details    Json?
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  @@index([actorId], map: "idx_audit_actor")
+  @@index([targetId], map: "idx_audit_target")
+  @@map("admin_audit_logs")
+}

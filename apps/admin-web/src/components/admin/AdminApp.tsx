@@ -31,6 +31,7 @@ export const AdminApp: React.FC = () => {
     salons,
     verifySalon,
     updateSalonStatus,
+    deleteSalon,
     adminTab,
     setAdminTab,
     moderateReview,
@@ -39,6 +40,9 @@ export const AdminApp: React.FC = () => {
 
   const [adminSearch, setAdminSearch] = useState('');
   const [salonStatusFilter, setSalonStatusFilter] = useState<'all' | 'active' | 'suspended' | 'pending'>('all');
+  const [deleteTargetSalon, setDeleteTargetSalon] = useState<Salon | null>(null);
+  const [deleteConfirmInput, setDeleteConfirmInput] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Stats calculation
   const totalSalons = salons.length;
@@ -245,15 +249,27 @@ export const AdminApp: React.FC = () => {
                         </span>
                       </td>
                       <td className="py-3 text-right">
-                        <button
-                          onClick={() => {
-                            const newStatus = salon.status === 'active' ? 'suspended' : 'active';
-                            updateSalonStatus(salon.id, newStatus);
-                          }}
-                          className="px-2.5 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-[11px] font-semibold"
-                        >
-                          {salon.status === 'active' ? 'Suspend' : 'Activate'}
-                        </button>
+                        <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            onClick={() => {
+                              const newStatus = salon.status === 'active' ? 'suspended' : 'active';
+                              updateSalonStatus(salon.id, newStatus);
+                            }}
+                            className="px-2.5 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-[11px] font-semibold"
+                          >
+                            {salon.status === 'active' ? 'Suspend' : 'Activate'}
+                          </button>
+                          <button
+                            onClick={() => {
+                              setDeleteTargetSalon(salon);
+                              setDeleteConfirmInput('');
+                            }}
+                            className="p-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/25 text-rose-400 border border-rose-500/30 transition-colors"
+                            title="Permanently Delete Salon"
+                          >
+                            <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -343,6 +359,18 @@ export const AdminApp: React.FC = () => {
                     }`}
                   >
                     {salon.status === 'active' ? 'Suspend' : 'Activate'}
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setDeleteTargetSalon(salon);
+                      setDeleteConfirmInput('');
+                    }}
+                    className="px-3 py-1.5 rounded-xl font-bold border bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border-rose-500/40 flex items-center gap-1 transition-colors"
+                    title="Permanently Delete Salon"
+                  >
+                    <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+                    <span>Delete</span>
                   </button>
                 </div>
               </div>
@@ -483,6 +511,102 @@ export const AdminApp: React.FC = () => {
           </div>
         </div>
       )}
+    
+      {/* PERMANENT SALON DELETION CONFIRMATION DIALOG */}
+      {deleteTargetSalon && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-[#14141c] border-2 border-rose-500/40 rounded-3xl p-6 max-w-lg w-full shadow-2xl space-y-4 animate-in zoom-in-95 duration-200">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-2xl bg-rose-500/20 text-rose-400 border border-rose-500/30 flex items-center justify-center shrink-0">
+                <AlertTriangle className="w-6 h-6 text-rose-400" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-white font-['Syne',sans-serif]">
+                  Permanently Delete Salon
+                </h3>
+                <p className="text-xs text-zinc-400">
+                  This action is irreversible and requires explicit confirmation.
+                </p>
+              </div>
+            </div>
+
+            <div className="p-3.5 rounded-2xl bg-rose-950/20 border border-rose-500/30 text-xs text-rose-200 space-y-2">
+              <div className="font-bold text-rose-300">Target Business:</div>
+              <div className="text-sm font-black text-white">{deleteTargetSalon.name}</div>
+              <div className="text-[11px] text-zinc-400">
+                Locality: {deleteTargetSalon.locality} • ID: <code className="text-rose-300">{deleteTargetSalon.id}</code>
+              </div>
+              
+              <div className="pt-2 border-t border-rose-500/20 text-[11px] text-zinc-300 space-y-1">
+                <div className="font-semibold text-rose-300">The following associated records will be permanently removed:</div>
+                <ul className="list-disc list-inside text-zinc-400 space-y-0.5">
+                  <li>Salon profile & PostGIS geographical coordinates</li>
+                  <li>All catalog services and pricing items ({deleteTargetSalon.services.length} services)</li>
+                  <li>Barber & staff roster assignments ({deleteTargetSalon.staff.length} staff)</li>
+                  <li>Live queue history and physical counter telemetry</li>
+                  <li>Customer reviews and ratings breakdown ({deleteTargetSalon.reviews.length} reviews)</li>
+                  <li>Partner ownership memberships for this specific salon</li>
+                </ul>
+                <div className="text-[10px] text-zinc-500 pt-1">
+                  * Note: The owner account will NOT be deleted if they own another business or use Kumbhakaran as a customer.
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-zinc-300 block">
+                To confirm permanent deletion, enter the exact salon name:
+              </label>
+              <div className="text-xs font-mono font-bold text-amber-400 px-3 py-1.5 bg-zinc-900 rounded-xl border border-zinc-800 select-all">
+                {deleteTargetSalon.name}
+              </div>
+              <input
+                type="text"
+                value={deleteConfirmInput}
+                onChange={(e) => setDeleteConfirmInput(e.target.value)}
+                placeholder="Type exact salon name here to unlock deletion..."
+                className="w-full px-3.5 py-2.5 bg-zinc-900 border border-zinc-700 rounded-xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-rose-400"
+                autoFocus
+              />
+            </div>
+
+            <div className="flex items-center justify-end gap-2.5 pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setDeleteTargetSalon(null);
+                  setDeleteConfirmInput('');
+                }}
+                disabled={isDeleting}
+                className="px-4 py-2 rounded-xl bg-zinc-900 border border-zinc-700 text-zinc-300 text-xs font-semibold hover:text-white transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={
+                  isDeleting ||
+                  deleteConfirmInput.trim().toLowerCase() !== deleteTargetSalon.name.trim().toLowerCase()
+                }
+                onClick={async () => {
+                  setIsDeleting(true);
+                  const success = await deleteSalon(deleteTargetSalon.id, deleteConfirmInput.trim());
+                  setIsDeleting(false);
+                  if (success) {
+                    setDeleteTargetSalon(null);
+                    setDeleteConfirmInput('');
+                  }
+                }}
+                className="px-5 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 disabled:opacity-40 disabled:hover:bg-rose-600 text-white text-xs font-extrabold shadow-lg shadow-rose-600/30 flex items-center gap-1.5 transition-all"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>{isDeleting ? 'Deleting Permanently...' : 'Permanently Delete Salon'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };

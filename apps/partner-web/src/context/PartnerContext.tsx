@@ -28,7 +28,7 @@ interface PartnerContextType {
   salons: Salon[];
   activeSalonId: string;
   setActiveSalonId: (id: string) => void;
-  activeSalon: Salon;
+  activeSalon: Salon | null;
   partnerView: PartnerView;
   setPartnerView: (view: PartnerView) => void;
   ownerTab: PartnerView;
@@ -51,13 +51,13 @@ const PartnerContext = createContext<PartnerContextType | undefined>(undefined);
 
 export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [salons, setSalons] = useState<Salon[]>(INITIAL_SALONS);
-  const [activeSalonId, setActiveSalonId] = useState<string>('salon-1');
+  const [activeSalonId, setActiveSalonId] = useState<string>('');
   const [partnerView, setPartnerView] = useState<PartnerView>('live-queue');
   const [partnerUser, setPartnerUser] = useState<AuthUser | null>(null);
   const [memberships, setMemberships] = useState<SalonMembership[]>([]);
   const [notificationMessage, setNotificationMessage] = useState<string | null>(null);
 
-  const activeSalon = salons.find((s) => s.id === activeSalonId) || salons[0];
+  const activeSalon = salons.find((s) => s.id === activeSalonId) || salons[0] || null;
 
   const triggerNotification = (msg: string) => {
     setNotificationMessage(msg);
@@ -76,7 +76,17 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
         if (isMounted) {
           if (res?.user) {
             setPartnerUser(res.user);
-            setMemberships(res.memberships || []);
+                        setMemberships(res.memberships || []);
+            if (res.memberships && res.memberships.length > 0) {
+              Promise.all(res.memberships.map((m: any) => defaultApiClient.getPublicSalonById(m.salonId)))
+                .then((fetched) => {
+                  const valid = fetched.filter(Boolean) as Salon[];
+                  if (valid.length > 0) {
+                    setSalons(valid);
+                    setActiveSalonId(valid[0].id);
+                  }
+                });
+            }
           } else {
             localStorage.removeItem('kumbhakaran_partner_token');
             defaultApiClient.setAuthToken(null);

@@ -13,9 +13,10 @@ import {
   CheckCircle2,
   AlertTriangle,
   Heart,
-  SlidersHorizontal
+  SlidersHorizontal,
+  Store
 } from 'lucide-react';
-import { useSalon, getEstimatedWaitMinutes, getQueueDisplay, getQueueFreshness } from '../../context/CustomerContext';
+import { useSalon, getEstimatedWaitMinutes, getQueueDisplay, getQueueFreshness, POPULAR_LOCATIONS } from '../../context/CustomerContext';
 import { LazyModeSelector } from '../common/LazyModeSelector';
 import { Salon } from '@kumbhakaran/shared-types';
 import { redirectToGoogleMaps } from '@kumbhakaran/ui';
@@ -27,6 +28,8 @@ export const HomeScreen: React.FC = () => {
     setSearchQuery,
     lazyFilter,
     userLocation,
+    setUserLocation,
+    isLoadingSalons,
     userProfile,
     toggleFavorite,
     addToRecentlyViewed,
@@ -155,48 +158,121 @@ export const HomeScreen: React.FC = () => {
         )}
       </section>
 
-      {/* Lazy Mode Filter Component */}
-      <LazyModeSelector />
+            {/* Empty State when no salons are in range */}
+      {salons.length === 0 && !isLoadingSalons && (
+        <section className="bg-gradient-to-b from-[#181822] via-[#121218] to-[#0c0c10] border border-zinc-800/90 rounded-3xl p-6 sm:p-8 text-center shadow-2xl relative overflow-hidden">
+          <div className="absolute top-0 right-1/2 translate-x-1/2 -mt-16 w-60 h-60 rounded-full bg-amber-500/10 blur-3xl pointer-events-none" />
 
-      {/* Popular Grooming Services Category Filter */}
-      <section>
-        <div className="flex items-center justify-between mb-2.5">
-          <h2 className="text-xs font-bold text-zinc-300 uppercase tracking-wider flex items-center gap-1.5">
-            <Scissors className="w-3.5 h-3.5 text-amber-400" />
-            Popular Grooming Services
+          <div className="w-16 h-16 rounded-3xl bg-amber-500/15 border border-amber-500/30 text-amber-400 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-amber-500/10">
+            <Store className="w-8 h-8 text-amber-400" />
+          </div>
+
+          <h2 className="text-xl sm:text-2xl font-black text-white font-['Syne',sans-serif]">
+            No salons nearby yet.
           </h2>
-          {selectedServiceFilter !== 'All' && (
-            <button
-              onClick={() => setSelectedServiceFilter('All')}
-              className="text-[11px] text-amber-400 hover:underline"
+          <p className="text-sm text-zinc-300 font-semibold mt-1">
+            Be the first salon to join Kumbhakaran in your area.
+          </p>
+          <p className="text-xs text-zinc-400 max-w-md mx-auto mt-2 leading-relaxed">
+            Kumbhakaran only displays verified, registered salon partners with genuine real-time walk-in queues. Currently, no active approved studios are registered in {userLocation.name}.
+          </p>
+
+          <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3">
+            <a
+              href="https://project-1-xq1k.vercel.app"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full sm:w-auto px-6 py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-400 text-black font-extrabold text-xs shadow-xl shadow-amber-500/20 hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-2"
             >
-              View All
+              <Store className="w-4 h-4 fill-black" />
+              <span>Register Your Salon Business ↗</span>
+            </a>
+
+            <button
+              onClick={() => setCustomerTab('map')}
+              className="w-full sm:w-auto px-5 py-3 rounded-2xl bg-zinc-900 border border-zinc-700 hover:border-amber-400 text-zinc-200 font-bold text-xs transition-all flex items-center justify-center gap-2"
+            >
+              <MapPin className="w-4 h-4 text-amber-400" />
+              <span>Explore Surrounding Area on Map</span>
             </button>
-          )}
-        </div>
+          </div>
 
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
-          {groomingCategories.map((cat) => {
-            const Icon = cat.icon;
-            const isSelected = selectedServiceFilter === cat.name;
+          {/* Quick Locality Switcher */}
+          <div className="mt-6 pt-5 border-t border-zinc-800/80">
+            <span className="text-[11px] font-semibold text-zinc-500 uppercase tracking-wider block mb-2">
+              Or check registered studios in nearby localities:
+            </span>
+            <div className="flex flex-wrap justify-center gap-1.5">
+              {POPULAR_LOCATIONS.map((loc) => (
+                <button
+                  key={loc.name}
+                  onClick={() => setUserLocation(loc)}
+                  className={`px-3 py-1 rounded-xl text-xs transition-all ${
+                    userLocation.name === loc.name
+                      ? 'bg-amber-500 text-black font-bold'
+                      : 'bg-zinc-900/90 border border-zinc-800 text-zinc-300 hover:border-zinc-700 hover:text-white'
+                  }`}
+                >
+                  📍 {loc.name.split(',')[0]}
+                </button>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
-            return (
-              <button
-                key={cat.name}
-                onClick={() => setSelectedServiceFilter(cat.name)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs whitespace-nowrap transition-all border ${
-                  isSelected
-                    ? 'bg-amber-500 text-black font-bold border-amber-400 shadow-lg shadow-amber-500/20'
-                    : 'bg-zinc-900/80 text-zinc-300 border-zinc-800 hover:border-zinc-700 hover:text-white'
-                }`}
-              >
-                <Icon className={`w-3 h-3 ${isSelected ? 'text-black' : 'text-amber-400'}`} />
-                <span>{cat.name}</span>
-              </button>
-            );
-          })}
+      {/* Loading Skeleton */}
+      {isLoadingSalons && (
+        <div className="py-12 text-center text-xs text-zinc-400 flex items-center justify-center gap-2">
+          <div className="w-4 h-4 border-2 border-amber-400 border-t-transparent rounded-full animate-spin" />
+          <span>Searching for registered salons near {userLocation.name.split(',')[0]}...</span>
         </div>
-      </section>
+      )}
+
+      {/* Dynamic Sections when real salons exist */}
+      {salons.length > 0 && (
+        <>
+          <LazyModeSelector />
+
+          {/* Popular Grooming Services Category Filter */}
+          <section>
+            <div className="flex items-center justify-between mb-2.5">
+              <h2 className="text-xs font-bold text-zinc-300 uppercase tracking-wider flex items-center gap-1.5">
+                <Scissors className="w-3.5 h-3.5 text-amber-400" />
+                Popular Grooming Services
+              </h2>
+              {selectedServiceFilter !== 'All' && (
+                <button
+                  onClick={() => setSelectedServiceFilter('All')}
+                  className="text-[11px] text-amber-400 hover:underline"
+                >
+                  View All
+                </button>
+              )}
+            </div>
+
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
+              {groomingCategories.map((cat) => {
+                const Icon = cat.icon;
+                const isSelected = selectedServiceFilter === cat.name;
+
+                return (
+                  <button
+                    key={cat.name}
+                    onClick={() => setSelectedServiceFilter(cat.name)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs whitespace-nowrap transition-all border ${
+                      isSelected
+                        ? 'bg-amber-500 text-black font-bold border-amber-400 shadow-lg shadow-amber-500/20'
+                        : 'bg-zinc-900/80 text-zinc-300 border-zinc-800 hover:border-zinc-700 hover:text-white'
+                    }`}
+                  >
+                    <Icon className={`w-3 h-3 ${isSelected ? 'text-black' : 'text-amber-400'}`} />
+                    <span>{cat.name}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </section>
 
       {/* Salons with Shortest Queues (Quick Walk-Ins) */}
       <section>
@@ -597,6 +673,8 @@ export const HomeScreen: React.FC = () => {
           </div>
         </section>
       )}
+    </>
+    )}
     </div>
   );
 };

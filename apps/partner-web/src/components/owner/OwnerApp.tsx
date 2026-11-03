@@ -71,6 +71,8 @@ export const OwnerApp: React.FC = () => {
   const [replyTextMap, setReplyTextMap] = useState<{ [key: string]: string }>({});
 
   // Local state for salon settings form
+  if (!activeSalon) return null;
+
   const [salonForm, setSalonForm] = useState({
     name: activeSalon.name,
     tagline: activeSalon.tagline,

@@ -10,6 +10,7 @@ import { RegisterSalonDto } from './dto/register-salon.dto';
 import { UpdateSalonDto } from './dto/update-salon.dto';
 import { UpdateQueueDto } from './dto/update-queue.dto';
 import { PublicSalonResponseDto } from './dto/public-salon-response.dto';
+import { AuthenticatedUser } from '../auth/interfaces/jwt-payload.interface';
 
 @Injectable()
 export class SalonsService {
@@ -18,98 +19,7 @@ export class SalonsService {
   // In-memory backing store for local testing / offline development
   private localSalons: Map<string, any> = new Map();
 
-  constructor(private readonly prisma: PrismaService) {
-    this.seedInitialSalons();
-  }
-
-  private seedInitialSalons() {
-    const initial = [
-      {
-        id: 'salon-1',
-        name: 'The Gentleman Studio',
-        tagline: 'Precision cuts, beard sculpting & timeless grooming',
-        ownerName: 'Vikram Malhotra',
-        ownerId: 'owner-1',
-        phone: '+91 98450 12890',
-        email: 'vikram@gentlemanstudio.in',
-        address: '42, 80 Feet Road, 4th Block, Koramangala',
-        locality: 'Koramangala',
-        city: 'Bengaluru',
-        state: 'Karnataka',
-        pincode: '560034',
-        latitude: 12.9344,
-        longitude: 77.6258,
-        coverImage: 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=1200&q=80',
-        openingHoursFormatted: '09:00 AM – 09:30 PM (All Days)',
-        currentQueue: 3,
-        avgServiceTimeMinutes: 20,
-        activeBarbers: 3,
-        startingPrice: 150.0,
-        isOpen: true,
-        isVerified: true,
-        status: 'active',
-        rating: 4.8,
-        reviewCount: 342,
-        lastQueueUpdate: new Date().toISOString(),
-        todayCustomersServed: 24,
-        todayRevenue: 3600.0,
-        monthlyRevenue: 85000.0,
-        services: [
-          { id: 'svc-1', name: 'Signature Fade', category: 'Hair', price: 180, durationMinutes: 25, isAvailable: true },
-          { id: 'svc-2', name: 'Beard Trim & Sculpt', category: 'Beard', price: 120, durationMinutes: 15, isAvailable: true },
-        ],
-        reviews: [
-          {
-            id: 'rev-1',
-            customerName: 'Karthik R.',
-            rating: 5,
-            comment: 'Zero wait time, walked straight in! Master fade cut.',
-            verifiedVisit: true,
-            createdAt: new Date().toISOString(),
-          },
-        ],
-      },
-      {
-        id: 'salon-2',
-        name: 'Urban Blade Barbershop',
-        tagline: 'Modern street fades, textured crops & urban styling',
-        ownerName: 'David Lee',
-        ownerId: 'owner-2',
-        phone: '+91 97312 88410',
-        email: 'david@urbanblade.in',
-        address: '15, 12th Main Road, Indiranagar',
-        locality: 'Indiranagar',
-        city: 'Bengaluru',
-        state: 'Karnataka',
-        pincode: '560038',
-        latitude: 12.9719,
-        longitude: 77.6412,
-        coverImage: 'https://images.unsplash.com/photo-1512690459411-b9245aed614b?auto=format&fit=crop&w=1200&q=80',
-        openingHoursFormatted: '09:00 AM – 09:00 PM (All Days)',
-        currentQueue: 1,
-        avgServiceTimeMinutes: 20,
-        activeBarbers: 4,
-        startingPrice: 180.0,
-        isOpen: true,
-        isVerified: true,
-        status: 'active',
-        rating: 4.9,
-        reviewCount: 488,
-        lastQueueUpdate: new Date().toISOString(),
-        todayCustomersServed: 31,
-        todayRevenue: 5580.0,
-        monthlyRevenue: 112000.0,
-        services: [
-          { id: 'svc-3', name: 'Textured Crop Fade', category: 'Hair', price: 200, durationMinutes: 30, isAvailable: true },
-        ],
-        reviews: [],
-      },
-    ];
-
-    for (const s of initial) {
-      this.localSalons.set(s.id, s);
-    }
-  }
+  constructor(private readonly prisma: PrismaService) {}
 
   async registerSalon(dto: RegisterSalonDto, resolvedOwnerId?: string): Promise<any> {
     const salonId = `salon-${Date.now()}`;
@@ -504,4 +414,210 @@ export class SalonsService {
   getAllLocalSalons(): any[] {
     return Array.from(this.localSalons.values());
   }
+
+  // ==========================================================================
+  // ADMINISTRATOR SALON GOVERNANCE & SAFE DELETION
+  // ==========================================================================
+
+  async getAllSalonsForAdmin(): Promise<any[]> {
+    try {
+      const dbSalons = await this.prisma.salon.findMany({
+        include: {
+          services: true,
+          staff: true,
+          members: true,
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      return dbSalons.map((s) => ({
+        id: s.id,
+        name: s.name,
+        tagline: s.tagline,
+        ownerName: s.ownerName,
+        ownerId: s.ownerId,
+        phone: s.phone,
+        email: s.email,
+        address: s.address,
+        locality: s.locality,
+        city: s.city,
+        state: s.state,
+        pincode: s.pincode,
+        coordinates: { lat: s.latitude, lng: s.longitude },
+        currentQueue: s.currentQueue,
+        isVerified: s.isVerified,
+        status: s.status,
+        rating: Number(s.rating),
+        reviewCount: s.reviewCount,
+        startingPrice: Number(s.startingPrice),
+        isOpen: s.isOpen,
+        servicesCount: s.services.length,
+        staffCount: s.staff.length,
+        membersCount: s.members.length,
+        createdAt: s.createdAt,
+        coverImage: s.coverImage,
+      }));
+    } catch (err: any) {
+      this.logger.error(`Failed to load salons for admin: ${err.message}`);
+      return Array.from(this.localSalons.values());
+    }
+  }
+
+  async verifySalon(id: string, isVerified: boolean, actor: AuthenticatedUser): Promise<any> {
+    const salon = await this.prisma.salon.findUnique({ where: { id } });
+    if (!salon) {
+      throw new NotFoundException(`Salon with ID "${id}" not found`);
+    }
+
+    const updated = await this.prisma.salon.update({
+      where: { id },
+      data: { isVerified },
+    });
+
+    if (this.localSalons.has(id)) {
+      this.localSalons.get(id).isVerified = isVerified;
+    }
+
+    // Audit log
+    await this.prisma.adminAuditLog.create({
+      data: {
+        id: `audit-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+        actorId: actor.id,
+        actorEmail: actor.email,
+        action: isVerified ? 'APPROVE_SALON' : 'UNVERIFY_SALON',
+        targetType: 'SALON',
+        targetId: id,
+        targetName: salon.name,
+        details: { isVerified, verifiedBy: actor.email },
+      },
+    });
+
+    this.logger.log(`[AUDIT] Salon "${salon.name}" (${id}) verification updated to ${isVerified} by Admin ${actor.email}`);
+
+    return {
+      success: true,
+      salonId: id,
+      isVerified: updated.isVerified,
+      message: `Salon "${salon.name}" verification status updated to ${isVerified ? 'VERIFIED' : 'PENDING'}.`,
+    };
+  }
+
+  async updateAdminSalonStatus(id: string, status: string, actor: AuthenticatedUser): Promise<any> {
+    if (!['active', 'suspended', 'pending'].includes(status)) {
+      throw new BadRequestException('Invalid status. Must be active, suspended, or pending.');
+    }
+
+    const salon = await this.prisma.salon.findUnique({ where: { id } });
+    if (!salon) {
+      throw new NotFoundException(`Salon with ID "${id}" not found`);
+    }
+
+    const updated = await this.prisma.salon.update({
+      where: { id },
+      data: { status },
+    });
+
+    if (this.localSalons.has(id)) {
+      this.localSalons.get(id).status = status;
+    }
+
+    // Audit log
+    await this.prisma.adminAuditLog.create({
+      data: {
+        id: `audit-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+        actorId: actor.id,
+        actorEmail: actor.email,
+        action: 'UPDATE_SALON_STATUS',
+        targetType: 'SALON',
+        targetId: id,
+        targetName: salon.name,
+        details: { status, updatedBy: actor.email },
+      },
+    });
+
+    this.logger.log(`[AUDIT] Salon "${salon.name}" (${id}) status updated to ${status} by Admin ${actor.email}`);
+
+    return {
+      success: true,
+      salonId: id,
+      status: updated.status,
+      message: `Salon "${salon.name}" status updated to ${status.toUpperCase()}.`,
+    };
+  }
+
+  async deleteSalon(salonId: string, confirmSalonName: string, actor: AuthenticatedUser): Promise<any> {
+    const salon = await this.prisma.salon.findUnique({
+      where: { id: salonId },
+      include: {
+        services: true,
+        staff: true,
+        reviews: true,
+        members: true,
+      },
+    });
+
+    if (!salon) {
+      throw new NotFoundException(`Salon with ID "${salonId}" not found`);
+    }
+
+    // Require explicit confirmation of exact salon name
+    if (
+      !confirmSalonName ||
+      confirmSalonName.trim().toLowerCase() !== salon.name.trim().toLowerCase()
+    ) {
+      throw new BadRequestException(
+        `Confirmation failed: Provided name "${confirmSalonName}" does not match salon name "${salon.name}". Deletion aborted.`,
+      );
+    }
+
+    const deletedStats = {
+      salonId,
+      salonName: salon.name,
+      locality: salon.locality,
+      servicesCount: salon.services.length,
+      staffCount: salon.staff.length,
+      reviewsCount: salon.reviews.length,
+      membersCount: salon.members.length,
+      deletedAt: new Date().toISOString(),
+      deletedBy: actor.email,
+    };
+
+    // Execute atomic deletion transaction
+    return await this.prisma.$transaction(async (tx) => {
+      // 1. Delete the salon record (PostgreSQL and Prisma CASCADE deletes services, staff, reviews, members)
+      await tx.salon.delete({
+        where: { id: salonId },
+      });
+
+      // 2. Remove from in-memory fallback cache if present
+      this.localSalons.delete(salonId);
+
+      // 3. Record audit log
+      await tx.adminAuditLog.create({
+        data: {
+          id: `audit-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+          actorId: actor.id,
+          actorEmail: actor.email,
+          action: 'DELETE_SALON',
+          targetType: 'SALON',
+          targetId: salonId,
+          targetName: salon.name,
+          details: deletedStats,
+        },
+      });
+
+      this.logger.warn(
+        `[SECURITY AUDIT] Salon "${salon.name}" (${salonId}) was permanently deleted by Admin ${actor.email}. (${deletedStats.servicesCount} services, ${deletedStats.staffCount} staff, ${deletedStats.membersCount} memberships removed)`,
+      );
+
+      return {
+        success: true,
+        message: `Salon "${salon.name}" and all associated operational records were permanently deleted.`,
+        deletedSalonId: salonId,
+        deletedSalonName: salon.name,
+        details: deletedStats,
+      };
+    });
+  }
+
 }

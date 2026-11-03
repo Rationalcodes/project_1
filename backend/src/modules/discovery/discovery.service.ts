@@ -67,6 +67,7 @@ export class DiscoveryService {
           starting_price, is_open, is_verified, cover_image, last_queue_update, status
         FROM salons
         WHERE status = 'active'
+          AND is_verified = true
           AND ST_DWithin(location, ST_SetSRID(ST_MakePoint($2, $1), 4326)::geography, $3)
         ORDER BY distance_km ASC
         LIMIT $4 OFFSET $5;`,
@@ -116,7 +117,7 @@ export class DiscoveryService {
       const allSalons = this.salonsService.getAllLocalSalons();
 
       const filtered = allSalons
-        .filter((s) => s.status === 'active') // Suspended salons excluded!
+        .filter((s) => s.status === 'active' && s.isVerified === true) // Only approved & active salons
         .map((s) => {
           const dist = this.calculateHaversineDistance(
             query.latitude,

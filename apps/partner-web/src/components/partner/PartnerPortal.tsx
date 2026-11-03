@@ -105,6 +105,7 @@ export const PartnerPortal: React.FC = () => {
         {/* Quick Action: Register New Salon & Switch Salon */}
         <div className="flex flex-wrap items-center gap-2">
           {/* Active Salon Dropdown */}
+          {activeSalon && (
           <div className="relative">
             <button
               onClick={() => setSalonDropdownOpen(!salonDropdownOpen)}
@@ -144,6 +145,7 @@ export const PartnerPortal: React.FC = () => {
               </div>
             )}
           </div>
+          )}
 
           {/* Register New Salon Button */}
           <button
@@ -161,7 +163,7 @@ export const PartnerPortal: React.FC = () => {
       </div>
 
       {/* Main Switcher View: Registration Wizard vs Studio Operating Dashboard */}
-      {partnerView === 'register' ? (
+      {partnerView === 'register' || !activeSalon ? (
         <SalonRegistrationWizard onSuccess={() => setPartnerView('live-queue')} />
       ) : (
         <OwnerApp />

@@ -200,7 +200,38 @@ export const ExploreScreen: React.FC = () => {
       </div>
 
       {/* Large Photographic Salon Cards (Inspired by Reference Screen 2) */}
-      <div className="space-y-5">
+      {processedSalons.length === 0 ? (
+        <div className="bg-[#15151d] border border-zinc-800 rounded-3xl p-8 text-center space-y-3">
+          <div className="w-12 h-12 rounded-2xl bg-amber-500/15 border border-amber-500/30 text-amber-400 flex items-center justify-center mx-auto">
+            <Search className="w-6 h-6 text-amber-400" />
+          </div>
+          <h3 className="text-base font-bold text-white">No registered studios found</h3>
+          <p className="text-xs text-zinc-400 max-w-sm mx-auto">
+            No approved salons match your search or filters in this locality. Try searching another area or register your own salon studio.
+          </p>
+          <div className="pt-2 flex flex-wrap justify-center gap-2">
+            <button
+              onClick={() => {
+                setSearchQuery('');
+                setSelectedCategory('All');
+                setOpenOnly(false);
+              }}
+              className="px-4 py-2 rounded-xl bg-amber-500 text-black font-bold text-xs hover:bg-amber-400"
+            >
+              Reset Filters
+            </button>
+            <a
+              href="https://project-1-xq1k.vercel.app"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-4 py-2 rounded-xl bg-zinc-900 border border-zinc-700 text-amber-400 font-bold text-xs hover:border-amber-400"
+            >
+              Register Your Salon Business ↗
+            </a>
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-5">
         {processedSalons.map((salon) => {
           const queueInfo = getQueueDisplay(salon.currentQueue, salon.isOpen);
           const waitTime = getEstimatedWaitMinutes(salon.currentQueue, salon.avgServiceTimeMinutes, salon.activeBarbers);
@@ -355,6 +386,7 @@ export const ExploreScreen: React.FC = () => {
           );
         })}
       </div>
+      )}
     </div>
   );
 };

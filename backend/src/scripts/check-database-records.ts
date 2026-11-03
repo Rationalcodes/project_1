@@ -32,9 +32,23 @@ async function main() {
   const staffCount = await prisma.salonStaff.count();
   const reviewsCount = await prisma.salonReview.count();
 
-  console.log(`Total Services: ${servicesCount}`);
-  console.log(`Total Staff: ${staffCount}`);
-  console.log(`Total Reviews: ${reviewsCount}`);
+  const s = await prisma.salon.findUnique({
+    where: { id: 'salon-1793713039749' },
+    include: { services: true, staff: true, reviews: true, members: true }
+  });
+  console.log('Salon details:', JSON.stringify(s, null, 2));
+
+  const users = await prisma.user.findMany();
+  console.log(`Total Users: ${users.length}`);
+  users.forEach((u) => {
+    console.log(`  User ID: ${u.id} | Email: ${u.email} | Name: ${u.name} | Role: ${u.role}`);
+  });
+
+  const members = await prisma.salonMember.findMany();
+  console.log(`Total Salon Members: ${members.length}`);
+  members.forEach((m) => {
+    console.log(`  Member ID: ${m.id} | Salon ID: ${m.salonId} | User ID: ${m.userId} | Role: ${m.role}`);
+  });
 }
 
 main()

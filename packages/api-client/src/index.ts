@@ -306,6 +306,79 @@ export class KumbhakaranApiClient {
       return null;
     }
   }
+
+  // ==========================================================================
+  // ADMINISTRATOR SALON MANAGEMENT & DELETION APIs
+  // ==========================================================================
+
+  /**
+   * List all registered salons for administration (requires ADMIN role)
+   */
+  async getAdminSalons(): Promise<any[] | null> {
+    try {
+      const res = await fetch(`${this.baseUrl}/admin/salons`, {
+        headers: this.getHeaders(),
+      });
+      if (!res.ok) return null;
+      return await res.json();
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Verify or unverify a salon registration (requires ADMIN role)
+   */
+  async verifyAdminSalon(salonId: string, isVerified: boolean): Promise<any> {
+    const res = await fetch(`${this.baseUrl}/admin/salons/${salonId}/verify`, {
+      method: 'PATCH',
+      headers: this.getHeaders({
+        'Content-Type': 'application/json',
+      }),
+      body: JSON.stringify({ isVerified }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || `Verification failed with status ${res.status}`);
+    }
+    return await res.json();
+  }
+
+  /**
+   * Update salon operational status (active / suspended) (requires ADMIN role)
+   */
+  async updateAdminSalonStatus(salonId: string, status: 'active' | 'suspended' | 'pending'): Promise<any> {
+    const res = await fetch(`${this.baseUrl}/admin/salons/${salonId}/status`, {
+      method: 'PATCH',
+      headers: this.getHeaders({
+        'Content-Type': 'application/json',
+      }),
+      body: JSON.stringify({ status }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || `Status update failed with status ${res.status}`);
+    }
+    return await res.json();
+  }
+
+  /**
+   * Permanently delete a salon and all associated records (requires ADMIN role and exact confirmation)
+   */
+  async deleteAdminSalon(salonId: string, confirmSalonName: string): Promise<any> {
+    const res = await fetch(`${this.baseUrl}/admin/salons/${salonId}`, {
+      method: 'DELETE',
+      headers: this.getHeaders({
+        'Content-Type': 'application/json',
+      }),
+      body: JSON.stringify({ confirmSalonName }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || `Salon deletion failed with status ${res.status}`);
+    }
+    return await res.json();
+  }
 }
 
 export const defaultApiClient = new KumbhakaranApiClient();

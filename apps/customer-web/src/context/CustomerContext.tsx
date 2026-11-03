@@ -36,7 +36,8 @@ interface CustomerContextType {
   salons: Salon[];
   activeSalonId: string;
   setActiveSalonId: (id: string) => void;
-  activeSalon: Salon;
+  activeSalon: Salon | null;
+  isLoadingSalons: boolean;
   customerTab: CustomerTab;
   setCustomerTab: (tab: CustomerTab) => void;
   selectedSalonForDetail: Salon | null;
@@ -98,6 +99,7 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [comparisonList, setComparisonList] = useState<string[]>([]);
   const [isCompareOpen, setIsCompareOpen] = useState<boolean>(false);
   const [notificationMessage, setNotificationMessage] = useState<string | null>(null);
+  const [isLoadingSalons, setIsLoadingSalons] = useState<boolean>(true);
 
   const setUserLocation = (loc: LocationOption) => {
     setUserLocationState(loc);
@@ -134,7 +136,7 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     });
   };
 
-  const activeSalon = salons.find((s) => s.id === activeSalonId) || salons[0];
+  const activeSalon = salons.find((s) => s.id === activeSalonId) || salons[0] || null;
 
   const triggerNotification = (msg: string) => {
     setNotificationMessage(msg);
@@ -205,30 +207,16 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     triggerNotification('Signed out successfully');
   };
 
-  // Synchronize discovery with NestJS PostGIS Backend & dynamic Haversine distance engine
+    // Synchronize discovery with NestJS PostGIS Backend & dynamic Haversine distance engine
   useEffect(() => {
     let isMounted = true;
+    setIsLoadingSalons(true);
 
-    // 1. Immediately update distance for all existing salons based on current user location
-    setSalons((prev) =>
-      prev.map((s) => {
-        if (!s.coordinates?.lat || !s.coordinates?.lng) return s;
-        const d = calculateHaversineDistance(
-          userLocation.lat,
-          userLocation.lng,
-          s.coordinates.lat,
-          s.coordinates.lng,
-        );
-        return { ...s, distanceKm: d };
-      }),
-    );
-
-    // 2. Fetch live salons from backend and merge
-    defaultApiClient.getNearbySalons(userLocation.lat, userLocation.lng, 25, lazyFilter).then((res) => {
-      if (res && res.salons && isMounted) {
-        setSalons((prev) => {
-          const updated = [...prev];
-          for (const item of res.salons) {
+    defaultApiClient.getNearbySalons(userLocation.lat, userLocation.lng, 25, lazyFilter)
+      .then((res) => {
+        if (!isMounted) return;
+        if (res && res.salons && res.salons.length > 0) {
+          const mapped: Salon[] = res.salons.map((item) => {
             const calculatedDist = calculateHaversineDistance(
               userLocation.lat,
               userLocation.lng,
@@ -237,68 +225,64 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             );
             const dist = calculatedDist || item.distanceKm;
 
-            const matchIdx = updated.findIndex((s) => s.id === item.id);
-            if (matchIdx !== -1) {
-              updated[matchIdx] = {
-                ...updated[matchIdx],
-                currentQueue: item.currentQueue,
-                distanceKm: dist,
-                lastQueueUpdate: item.lastQueueUpdate,
-                rating: item.rating,
-                isOpen: item.isOpen,
-                isVerified: item.isVerified,
-              };
-            } else {
-              // Append newly registered salon from database
-              updated.push({
-                id: item.id,
-                name: item.name,
-                tagline: item.tagline || 'Verified Kumbhakaran Salon Partner',
-                coverImage: item.coverImage || 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=1200&q=80',
-                images: [item.coverImage || 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=1200&q=80'],
-                rating: item.rating || 5.0,
-                reviewCount: item.reviewCount || 0,
-                currentQueue: item.currentQueue,
-                avgServiceTimeMinutes: 20,
-                activeBarbers: 2,
-                distanceKm: dist,
-                startingPrice: item.startingPrice || 150,
-                isOpen: item.isOpen,
-                openingHours: {
-                  open: '09:00 AM',
-                  close: '09:30 PM',
-                  formatted: '09:00 AM – 09:30 PM (All Days)',
-                },
-                address: `${item.locality}, ${item.city}`,
-                locality: item.locality,
-                city: item.city,
-                pincode: '560001',
-                coordinates: {
-                  lat: item.latitude,
-                  lng: item.longitude,
-                },
-                phone: '+91 98000 00000',
-                lastQueueUpdate: item.lastQueueUpdate,
-                services: [
-                  { id: `svc-${item.id}-1`, name: 'Signature Haircut', category: 'Hair', price: item.startingPrice || 150, durationMinutes: 25, isAvailable: true, description: 'Master stylist haircut' },
-                ],
-                staff: [
-                  { id: `st-${item.id}-1`, name: 'Master Barber', role: 'Stylist', experience: '5 Years', photo: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80', specialties: ['Fade', 'Beard'], status: 'active', rating: 4.9 },
-                ],
-                ratingBreakdown: { haircutQuality: 5, staffBehaviour: 5, cleanliness: 5, pricing: 5, overallExperience: 5 },
-                reviews: [],
-                isVerified: item.isVerified,
-                status: 'active',
-                todayCustomersServed: 0,
-                todayRevenue: 0,
-                monthlyRevenue: 0,
-              });
-            }
-          }
-          return updated;
-        });
-      }
-    });
+            return {
+              id: item.id,
+              name: item.name,
+              tagline: item.tagline || 'Verified Kumbhakaran Salon Partner',
+              coverImage: item.coverImage || 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=1200&q=80',
+              images: [item.coverImage || 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=1200&q=80'],
+              rating: Number(item.rating) || 5.0,
+              reviewCount: Number(item.reviewCount) || 0,
+              currentQueue: item.currentQueue,
+              avgServiceTimeMinutes: 20,
+              activeBarbers: 2,
+              distanceKm: dist,
+              startingPrice: Number(item.startingPrice) || 150,
+              isOpen: item.isOpen,
+              openingHours: {
+                open: '09:00 AM',
+                close: '09:30 PM',
+                formatted: '09:00 AM – 09:30 PM (All Days)',
+              },
+              address: `${item.locality}, ${item.city}`,
+              locality: item.locality,
+              city: item.city,
+              pincode: '560001',
+              coordinates: {
+                lat: item.latitude,
+                lng: item.longitude,
+              },
+              phone: '+91 98000 00000',
+              lastQueueUpdate: item.lastQueueUpdate,
+              services: [
+                { id: `svc-${item.id}-1`, name: 'Signature Haircut', category: 'Hair', price: Number(item.startingPrice) || 150, durationMinutes: 25, isAvailable: true, description: 'Master stylist haircut' },
+              ],
+              staff: [
+                { id: `st-${item.id}-1`, name: 'Master Barber', role: 'Stylist', experience: '5 Years', photo: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80', specialties: ['Fade', 'Beard'], status: 'active', rating: 4.9 },
+              ],
+              ratingBreakdown: { haircutQuality: 5, staffBehaviour: 5, cleanliness: 5, pricing: 5, overallExperience: 5 },
+              reviews: [],
+              isVerified: item.isVerified,
+              status: 'active',
+              todayCustomersServed: 0,
+              todayRevenue: 0,
+              monthlyRevenue: 0,
+            };
+          });
+          setSalons(mapped);
+        } else {
+          setSalons([]);
+        }
+        setIsLoadingSalons(false);
+      })
+      .catch((err) => {
+        console.warn('Discovery API call failed:', err);
+        if (isMounted) {
+          setSalons([]);
+          setIsLoadingSalons(false);
+        }
+      });
+
     return () => {
       isMounted = false;
     };
@@ -391,6 +375,7 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         activeSalonId,
         setActiveSalonId,
         activeSalon,
+        isLoadingSalons,
         customerTab,
         setCustomerTab,
         selectedSalonForDetail,
