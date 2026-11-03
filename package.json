@@ -16,10 +16,10 @@
     "backend:test:db": "pnpm --filter @kumbhakaran/backend run test:db",
     "backend:test:phase2": "pnpm --filter @kumbhakaran/backend run test:phase2",
     "backend:test:auth": "pnpm --filter @kumbhakaran/backend exec ts-node src/scripts/test-auth-security.ts",
+    "start": "node backend/dist/main.js",
     "start:dev": "pnpm --filter @kumbhakaran/backend start:dev",
-    "dev": "vite",
-    "build": "tsc -b && vite build",
-    "preview": "vite preview"
+    "start:prod": "node backend/dist/main.js",
+    "build": "pnpm --filter @kumbhakaran/backend build"
   },
   "dependencies": {
     "lucide-react": "1.61.0",
