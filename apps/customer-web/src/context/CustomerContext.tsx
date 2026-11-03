@@ -51,6 +51,7 @@ interface CustomerContextType {
   addReview: (salonId: string, review: Omit<Review, 'id' | 'date'>) => void;
   userLocation: LocationOption;
   setUserLocation: (loc: LocationOption) => void;
+  requestDeviceLocation: () => Promise<boolean>;
   lazyFilter: LazyFilter;
   setLazyFilter: (filter: LazyFilter) => void;
   searchQuery: string;
@@ -59,8 +60,6 @@ interface CustomerContextType {
   setSelectedServiceFilter: (service: string) => void;
   liveSimulatorActive: boolean;
   toggleLiveSimulator: () => void;
-  deviceViewMode: 'mobile-frame' | 'responsive';
-  setDeviceViewMode: (mode: 'mobile-frame' | 'responsive') => void;
   comparisonList: string[];
   toggleCompareSalon: (salonId: string) => void;
   clearComparison: () => void;
@@ -79,16 +78,60 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [selectedSalonForDetail, setSelectedSalonForDetail] = useState<Salon | null>(null);
   const [userProfile, setUserProfile] = useState<CustomerProfile>(INITIAL_USER);
   const [authUser, setAuthUser] = useState<AuthUser | null>(null);
-  const [userLocation, setUserLocation] = useState<LocationOption>(POPULAR_LOCATIONS[0]);
+  const [userLocation, setUserLocationState] = useState<LocationOption>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('kumbhakaran_user_location');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (parsed?.lat && parsed?.lng) return parsed;
+        }
+      } catch {}
+    }
+    return POPULAR_LOCATIONS[0];
+  });
   const [lazyFilter, setLazyFilter] = useState<LazyFilter>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedServiceFilter, setSelectedServiceFilter] = useState<string>('All');
   const [liveSimulatorActive, setLiveSimulatorActive] = useState<boolean>(false);
-  // Default to clean responsive view for production web app
-  const [deviceViewMode, setDeviceViewMode] = useState<'mobile-frame' | 'responsive'>('responsive');
   const [comparisonList, setComparisonList] = useState<string[]>([]);
   const [isCompareOpen, setIsCompareOpen] = useState<boolean>(false);
   const [notificationMessage, setNotificationMessage] = useState<string | null>(null);
+
+  const setUserLocation = (loc: LocationOption) => {
+    setUserLocationState(loc);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('kumbhakaran_user_location', JSON.stringify(loc));
+    }
+  };
+
+  const requestDeviceLocation = async (): Promise<boolean> => {
+    if (typeof window === 'undefined' || !navigator.geolocation) {
+      triggerNotification('Geolocation is not supported by your browser');
+      return false;
+    }
+
+    return new Promise((resolve) => {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const newLoc: LocationOption = {
+            name: 'Current Location',
+            lat: Number(pos.coords.latitude.toFixed(5)),
+            lng: Number(pos.coords.longitude.toFixed(5)),
+          };
+          setUserLocation(newLoc);
+          triggerNotification(`📍 Position acquired (${newLoc.lat}, ${newLoc.lng})`);
+          resolve(true);
+        },
+        (err) => {
+          console.warn('Geolocation denied or failed:', err.message);
+          triggerNotification('Location permission was denied. Select locality manually.');
+          resolve(false);
+        },
+        { timeout: 10000, enableHighAccuracy: true },
+      );
+    });
+  };
 
   const activeSalon = salons.find((s) => s.id === activeSalonId) || salons[0];
 
@@ -178,7 +221,53 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                 lastQueueUpdate: item.lastQueueUpdate,
                 rating: item.rating,
                 isOpen: item.isOpen,
+                isVerified: item.isVerified,
               };
+            } else {
+              // Append newly registered salon from database
+              updated.push({
+                id: item.id,
+                name: item.name,
+                tagline: item.tagline || 'Verified Kumbhakaran Salon Partner',
+                coverImage: item.coverImage || 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=1200&q=80',
+                images: [item.coverImage || 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=1200&q=80'],
+                rating: item.rating || 5.0,
+                reviewCount: item.reviewCount || 0,
+                currentQueue: item.currentQueue,
+                avgServiceTimeMinutes: 20,
+                activeBarbers: 2,
+                distanceKm: item.distanceKm,
+                startingPrice: item.startingPrice || 150,
+                isOpen: item.isOpen,
+                openingHours: {
+                  open: '09:00 AM',
+                  close: '09:30 PM',
+                  formatted: '09:00 AM – 09:30 PM (All Days)',
+                },
+                address: `${item.locality}, ${item.city}`,
+                locality: item.locality,
+                city: item.city,
+                pincode: '560001',
+                coordinates: {
+                  lat: item.latitude,
+                  lng: item.longitude,
+                },
+                phone: '+91 98000 00000',
+                lastQueueUpdate: item.lastQueueUpdate,
+                services: [
+                  { id: `svc-${item.id}-1`, name: 'Signature Haircut', category: 'Hair', price: item.startingPrice || 150, durationMinutes: 25, isAvailable: true, description: 'Master stylist haircut' },
+                ],
+                staff: [
+                  { id: `st-${item.id}-1`, name: 'Master Barber', role: 'Stylist', experience: '5 Years', photo: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80', specialties: ['Fade', 'Beard'], status: 'active', rating: 4.9 },
+                ],
+                ratingBreakdown: { haircutQuality: 5, staffBehaviour: 5, cleanliness: 5, pricing: 5, overallExperience: 5 },
+                reviews: [],
+                isVerified: item.isVerified,
+                status: 'active',
+                todayCustomersServed: 0,
+                todayRevenue: 0,
+                monthlyRevenue: 0,
+              });
             }
           }
           return updated;
@@ -292,6 +381,7 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         addReview,
         userLocation,
         setUserLocation,
+        requestDeviceLocation,
         lazyFilter,
         setLazyFilter,
         searchQuery,
@@ -300,8 +390,6 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         setSelectedServiceFilter,
         liveSimulatorActive,
         toggleLiveSimulator,
-        deviceViewMode,
-        setDeviceViewMode,
         comparisonList,
         toggleCompareSalon,
         clearComparison,

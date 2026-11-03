@@ -2,32 +2,79 @@ import React, { useState } from 'react';
 import {
   MapPin,
   ChevronDown,
-  Smartphone,
-  Monitor,
+  Navigation,
+  Search,
   User,
+  Home,
+  Compass,
+  Map as MapIcon,
+  Heart,
+  X,
 } from 'lucide-react';
 import { useCustomer, POPULAR_LOCATIONS } from '../../context/CustomerContext';
+import { CustomerTab } from '@kumbhakaran/shared-types';
 
 export const Header: React.FC = () => {
   const {
     userLocation,
     setUserLocation,
-    deviceViewMode,
-    setDeviceViewMode,
+    requestDeviceLocation,
     triggerNotification,
     authUser,
     isAuthenticated,
+    customerTab,
     setCustomerTab,
+    setSelectedSalonForDetail,
+    userProfile,
   } = useCustomer();
 
   const [locationDropdownOpen, setLocationDropdownOpen] = useState(false);
+  const [customLocalityInput, setCustomLocalityInput] = useState('');
+
+  const desktopNavItems: { id: CustomerTab; label: string; icon: React.FC<{ className?: string }>; badgeCount?: number }[] = [
+    { id: 'home', label: 'Home', icon: Home },
+    { id: 'explore', label: 'Explore', icon: Compass },
+    { id: 'map', label: 'Map Radar', icon: MapIcon },
+    { id: 'favourites', label: 'Favourites', icon: Heart, badgeCount: userProfile.savedSalons.length },
+    { id: 'profile', label: 'Profile', icon: User },
+  ];
+
+  const handleApplyCustomLocation = (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = customLocalityInput.trim();
+    if (!trimmed) return;
+
+    // Check if matches known hub
+    const matched = POPULAR_LOCATIONS.find((l) =>
+      l.name.toLowerCase().includes(trimmed.toLowerCase()),
+    );
+    if (matched) {
+      setUserLocation(matched);
+    } else {
+      // Use custom locality name with base Bengaluru coordinates or offset
+      setUserLocation({
+        name: trimmed,
+        lat: 12.9716,
+        lng: 77.5946,
+      });
+    }
+    setCustomLocalityInput('');
+    setLocationDropdownOpen(false);
+    triggerNotification(`Location set to "${trimmed}"`);
+  };
 
   return (
-    <header className="sticky top-0 z-40 bg-[#0c0c10]/95 backdrop-blur-md border-b border-zinc-800/80 px-4 py-3 transition-all">
+    <header className="sticky top-0 z-40 bg-[#0c0c10]/95 backdrop-blur-md border-b border-zinc-800/80 px-3 sm:px-6 py-2.5 sm:py-3 transition-all">
       <div className="max-w-7xl mx-auto flex items-center justify-between gap-3 text-xs">
         {/* Brand */}
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-amber-400 via-amber-500 to-amber-700 flex items-center justify-center shadow-lg shadow-amber-500/20">
+        <div
+          onClick={() => {
+            setSelectedSalonForDetail(null);
+            setCustomerTab('home');
+          }}
+          className="flex items-center gap-2.5 cursor-pointer select-none"
+        >
+          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-amber-400 via-amber-500 to-amber-700 flex items-center justify-center shadow-lg shadow-amber-500/20 shrink-0">
             <span className="font-black text-black text-sm tracking-tighter">K</span>
           </div>
           <div>
@@ -35,8 +82,8 @@ export const Header: React.FC = () => {
               <span className="font-extrabold tracking-wider text-slate-100 uppercase text-[13px] font-['Syne',sans-serif]">
                 Kumbhakaran
               </span>
-              <span className="text-[10px] uppercase tracking-widest px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-400 font-bold border border-amber-500/30">
-                Customer App
+              <span className="text-[10px] uppercase tracking-widest px-1.5 py-0.2 rounded bg-amber-500/15 text-amber-400 font-bold border border-amber-500/30">
+                Customer
               </span>
             </div>
             <p className="text-[10px] text-zinc-400 font-medium hidden sm:block">
@@ -45,83 +92,125 @@ export const Header: React.FC = () => {
           </div>
         </div>
 
-        {/* Location Dropdown & Controls */}
+        {/* Desktop Responsive Navigation (Visible on tablet & desktop >= md) */}
+        <nav className="hidden md:flex items-center gap-1 bg-zinc-900/90 border border-zinc-800 p-1 rounded-2xl shadow-inner">
+          {desktopNavItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = customerTab === item.id;
+
+            return (
+              <button
+                key={item.id}
+                onClick={() => {
+                  setSelectedSalonForDetail(null);
+                  setCustomerTab(item.id);
+                }}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-semibold transition-all relative ${
+                  isActive
+                    ? 'bg-amber-500 text-black shadow-md shadow-amber-500/20 font-bold'
+                    : 'text-zinc-400 hover:text-white hover:bg-zinc-800/60'
+                }`}
+              >
+                <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-black' : 'text-zinc-400'}`} />
+                <span>{item.label}</span>
+                {item.badgeCount && item.badgeCount > 0 ? (
+                  <span
+                    className={`ml-1 px-1.5 py-0.2 rounded-full text-[9px] font-black ${
+                      isActive ? 'bg-black text-amber-400' : 'bg-amber-500 text-black'
+                    }`}
+                  >
+                    {item.badgeCount}
+                  </span>
+                ) : null}
+              </button>
+            );
+          })}
+        </nav>
+
+        {/* Right Section: Location Dropdown & Profile Pill */}
         <div className="flex items-center gap-2">
-          {/* Location Dropdown */}
+          {/* Location Selector Dropdown */}
           <div className="relative">
             <button
               onClick={() => setLocationDropdownOpen(!locationDropdownOpen)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-900/90 border border-zinc-700 hover:border-amber-400 text-xs text-white transition-all shadow-sm"
+              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-zinc-900/90 border border-zinc-700/80 hover:border-amber-400 text-xs text-white transition-all shadow-sm"
+              title="Change your current locality"
             >
               <MapPin className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-              <span className="font-medium truncate max-w-[150px] sm:max-w-[200px]">
+              <span className="font-medium truncate max-w-[110px] sm:max-w-[180px]">
                 {userLocation.name}
               </span>
-              <ChevronDown className="w-3.5 h-3.5 text-zinc-400" />
+              <ChevronDown className="w-3 h-3 text-zinc-400 shrink-0" />
             </button>
 
             {locationDropdownOpen && (
-              <div className="absolute right-0 mt-2 w-64 bg-zinc-900 border border-zinc-700 rounded-2xl shadow-2xl p-1.5 z-50">
-                <div className="text-[10px] uppercase tracking-wider font-bold text-zinc-400 px-3 py-1.5">
+              <div className="absolute right-0 mt-2 w-72 bg-zinc-900 border border-zinc-700 rounded-2xl shadow-2xl p-2 z-50">
+                {/* Option to use live device GPS */}
+                <button
+                  type="button"
+                  onClick={async () => {
+                    await requestDeviceLocation();
+                    setLocationDropdownOpen(false);
+                  }}
+                  className="w-full mb-2 p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 hover:bg-amber-500/20 text-xs font-bold flex items-center justify-center gap-2 transition-all shadow-sm"
+                >
+                  <Navigation className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
+                  <span>Use My Current Location</span>
+                </button>
+
+                {/* Search city or locality form */}
+                <form onSubmit={handleApplyCustomLocation} className="mb-2">
+                  <div className="relative">
+                    <Search className="w-3.5 h-3.5 text-zinc-500 absolute left-2.5 top-2.5" />
+                    <input
+                      type="text"
+                      value={customLocalityInput}
+                      onChange={(e) => setCustomLocalityInput(e.target.value)}
+                      placeholder="Search city, locality or PIN..."
+                      className="w-full pl-8 pr-3 py-1.5 bg-black/60 border border-zinc-700/80 rounded-xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-amber-400"
+                    />
+                  </div>
+                </form>
+
+                <div className="text-[10px] uppercase tracking-wider font-bold text-zinc-400 px-2 py-1">
                   Popular Hubs
                 </div>
-                {POPULAR_LOCATIONS.map((loc) => (
-                  <button
-                    key={loc.name}
-                    onClick={() => {
-                      setUserLocation(loc);
-                      setLocationDropdownOpen(false);
-                      triggerNotification(`Location set to ${loc.name}`);
-                    }}
-                    className={`w-full text-left px-3 py-2 text-xs rounded-xl flex items-center justify-between transition-colors ${
-                      userLocation.name === loc.name
-                        ? 'bg-amber-500/20 text-amber-300 font-bold'
-                        : 'text-zinc-300 hover:bg-zinc-800'
-                    }`}
-                  >
-                    <span>{loc.name}</span>
-                    {userLocation.name === loc.name && (
-                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
-                    )}
-                  </button>
-                ))}
+                <div className="max-h-48 overflow-y-auto space-y-0.5">
+                  {POPULAR_LOCATIONS.map((loc) => (
+                    <button
+                      key={loc.name}
+                      onClick={() => {
+                        setUserLocation(loc);
+                        setLocationDropdownOpen(false);
+                        triggerNotification(`Location set to ${loc.name}`);
+                      }}
+                      className={`w-full text-left px-2.5 py-1.5 text-xs rounded-xl flex items-center justify-between transition-colors ${
+                        userLocation.name === loc.name
+                          ? 'bg-amber-500/20 text-amber-300 font-bold'
+                          : 'text-zinc-300 hover:bg-zinc-800'
+                      }`}
+                    >
+                      <span className="truncate">{loc.name}</span>
+                      {userLocation.name === loc.name && (
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />
+                      )}
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
           </div>
 
-          {/* Toggle View Mode: Smartphone frame vs Responsive */}
-          <div className="hidden sm:flex items-center bg-zinc-900 p-0.5 rounded-lg border border-zinc-800">
-            <button
-              onClick={() => setDeviceViewMode('mobile-frame')}
-              title="View in mobile smartphone frame"
-              className={`p-1.5 rounded ${
-                deviceViewMode === 'mobile-frame'
-                  ? 'bg-zinc-800 text-amber-400'
-                  : 'text-zinc-500 hover:text-zinc-300'
-              }`}
-            >
-              <Smartphone className="w-3.5 h-3.5" />
-            </button>
-            <button
-              onClick={() => setDeviceViewMode('responsive')}
-              title="View in full expansive responsive view"
-              className={`p-1.5 rounded ${
-                deviceViewMode === 'responsive'
-                  ? 'bg-zinc-800 text-amber-400'
-                  : 'text-zinc-500 hover:text-zinc-300'
-              }`}
-            >
-              <Monitor className="w-3.5 h-3.5" />
-            </button>
-          </div>
-
           {/* Profile / Sign In Pill */}
           <button
-            onClick={() => setCustomerTab('profile')}
-            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-semibold transition-all border ${
+            onClick={() => {
+              setSelectedSalonForDetail(null);
+              setCustomerTab('profile');
+            }}
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-all border ${
               isAuthenticated
                 ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/20'
-                : 'bg-zinc-900 border-zinc-700 hover:border-amber-400 text-zinc-300'
+                : 'bg-zinc-900 border-zinc-700/80 hover:border-amber-400 text-zinc-300'
             }`}
             title={isAuthenticated ? `Profile: ${authUser?.name}` : 'Sign in with Google'}
           >
@@ -129,12 +218,12 @@ export const Header: React.FC = () => {
               <img
                 src={authUser.avatarUrl}
                 alt=""
-                className="w-4 h-4 rounded-full object-cover"
+                className="w-4 h-4 rounded-full object-cover shrink-0"
               />
             ) : (
-              <User className="w-3.5 h-3.5 text-amber-400" />
+              <User className="w-3.5 h-3.5 text-amber-400 shrink-0" />
             )}
-            <span className="hidden md:inline truncate max-w-[100px]">
+            <span className="hidden sm:inline truncate max-w-[100px]">
               {isAuthenticated ? authUser?.name?.split(' ')[0] : 'Sign In'}
             </span>
           </button>

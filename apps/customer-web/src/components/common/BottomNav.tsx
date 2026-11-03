@@ -1,22 +1,23 @@
 import React from 'react';
-import { Home, Compass, Heart, User } from 'lucide-react';
-import { useSalon } from '../../context/CustomerContext';
+import { Home, Compass, MapPin, Heart, User } from 'lucide-react';
+import { useCustomer } from '../../context/CustomerContext';
 import { CustomerTab } from '@kumbhakaran/shared-types';
 
 export const BottomNav: React.FC = () => {
-  const { customerTab, setCustomerTab, setSelectedSalonForDetail, userProfile } = useSalon();
+  const { customerTab, setCustomerTab, setSelectedSalonForDetail, userProfile } = useCustomer();
 
   const navItems: { id: CustomerTab; label: string; icon: React.FC<{ className?: string }>; badgeCount?: number }[] = [
     { id: 'home', label: 'Home', icon: Home },
     { id: 'explore', label: 'Explore', icon: Compass },
-    { id: 'favourites', label: 'Favourites', icon: Heart, badgeCount: userProfile.savedSalons.length },
-    { id: 'profile', label: 'Profile', icon: User }
+    { id: 'map', label: 'Map', icon: MapPin },
+    { id: 'favourites', label: 'Saved', icon: Heart, badgeCount: userProfile.savedSalons.length },
+    { id: 'profile', label: 'Profile', icon: User },
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-30 max-w-md mx-auto sm:max-w-none">
-      <div className="mx-auto px-4 pb-3 pt-1">
-        <div className="bg-[#121217]/95 backdrop-blur-xl border border-zinc-800/90 rounded-2xl shadow-2xl p-1.5 flex items-center justify-around max-w-md mx-auto">
+    <nav className="fixed bottom-0 left-0 right-0 z-40 md:hidden bg-gradient-to-t from-black via-[#0c0c10] to-transparent pt-3 pb-safe">
+      <div className="max-w-md mx-auto px-4 pb-2">
+        <div className="bg-[#121218]/95 backdrop-blur-xl border border-zinc-800/90 rounded-3xl shadow-2xl p-1.5 flex items-center justify-around ring-1 ring-white/5">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = customerTab === item.id;
@@ -25,13 +26,13 @@ export const BottomNav: React.FC = () => {
               <button
                 key={item.id}
                 onClick={() => {
-                  setSelectedSalonForDetail(null); // return to tab root
+                  setSelectedSalonForDetail(null);
                   setCustomerTab(item.id);
                 }}
-                className={`relative flex flex-col items-center justify-center py-1.5 px-3 rounded-xl transition-all ${
+                className={`relative flex flex-col items-center justify-center py-1.5 px-3 rounded-2xl transition-all ${
                   isActive
-                    ? 'text-amber-400 font-semibold bg-amber-500/10'
-                    : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50'
+                    ? 'text-amber-400 font-bold bg-amber-500/15'
+                    : 'text-zinc-400 hover:text-zinc-200'
                 }`}
               >
                 <div className="relative">
@@ -42,11 +43,10 @@ export const BottomNav: React.FC = () => {
                     </span>
                   ) : null}
                 </div>
-                <span className={`text-[10px] mt-1 transition-colors ${isActive ? 'text-amber-400 font-semibold' : 'text-zinc-400'}`}>
+                <span className={`text-[10px] mt-0.5 transition-colors ${isActive ? 'text-amber-400 font-bold' : 'text-zinc-400'}`}>
                   {item.label}
                 </span>
 
-                {/* Subtle active indicator dot */}
                 {isActive && (
                   <span className="absolute -bottom-1 w-1.5 h-1.5 rounded-full bg-amber-400" />
                 )}

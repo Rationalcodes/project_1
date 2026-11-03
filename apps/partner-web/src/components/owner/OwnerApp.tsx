@@ -924,6 +924,41 @@ export const OwnerApp: React.FC = () => {
           </div>
         </form>
       )}
+
+      {/* Mobile Sticky Bottom Nav for Salon Owners on Smartphones */}
+      <nav className="fixed bottom-0 left-0 right-0 z-40 md:hidden bg-gradient-to-t from-black via-[#0c0c10] to-transparent pt-3 pb-safe">
+        <div className="max-w-md mx-auto px-3 pb-2">
+          <div className="bg-[#121218]/95 backdrop-blur-xl border border-zinc-800/90 rounded-3xl shadow-2xl p-1.5 flex items-center justify-around ring-1 ring-white/5">
+            {[
+              { id: 'live-queue' as const, label: 'Queue', icon: Users },
+              { id: 'dashboard' as const, label: 'Stats', icon: LayoutDashboard },
+              { id: 'services' as const, label: 'Prices', icon: Scissors },
+              { id: 'staff' as const, label: 'Staff', icon: UserCheck },
+              { id: 'settings' as const, label: 'Setup', icon: Settings },
+            ].map((item) => {
+              const Icon = item.icon;
+              const isActive = ownerTab === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => setOwnerTab(item.id)}
+                  className={`relative flex flex-col items-center justify-center py-1 px-2.5 rounded-2xl transition-all ${
+                    isActive
+                      ? 'text-amber-400 font-bold bg-amber-500/15'
+                      : 'text-zinc-400 hover:text-zinc-200'
+                  }`}
+                >
+                  <Icon className={`w-4 h-4 transition-transform ${isActive ? 'scale-110 text-amber-400' : ''}`} />
+                  <span className={`text-[9px] mt-0.5 ${isActive ? 'text-amber-400 font-bold' : 'text-zinc-400'}`}>
+                    {item.label}
+                  </span>
+                  {isActive && <span className="absolute -bottom-1 w-1.5 h-1.5 rounded-full bg-amber-400" />}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </nav>
     </div>
   );
 };

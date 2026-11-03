@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useSalon } from '../../context/PartnerContext';
+import { SalonLocationPicker } from './SalonLocationPicker';
 // Address & Location step
 import {
   Store,
@@ -265,7 +266,26 @@ export const SalonRegistrationWizard: React.FC<SalonRegistrationWizardProps> = (
             </div>
 
             {/* Location selector */}
-            <div className="p-3 rounded-2xl bg-zinc-900/60 border border-zinc-800 text-xs text-zinc-400">Fill in your physical location details below.</div>
+            {/* 4-Option Location Picker Component */}
+            <SalonLocationPicker
+              initialResult={{
+                address,
+                locality,
+                city,
+                state,
+                pincode,
+                latitude: coordinates.lat,
+                longitude: coordinates.lng,
+              }}
+              onLocationConfirmed={(res) => {
+                setAddress(res.address);
+                setLocality(res.locality);
+                setCity(res.city);
+                setState(res.state);
+                setPincode(res.pincode);
+                setCoordinates({ lat: res.latitude, lng: res.longitude });
+              }}
+            />
 
             {/* Detailed Street Address */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
