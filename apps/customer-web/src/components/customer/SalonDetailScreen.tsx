@@ -274,7 +274,7 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
         <div className="p-5 pt-4 bg-white">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div>
-              <h1 className="text-xl sm:text-2xl font-black text-stone-900 font-['Syne',sans-serif]">
+              <h1 className="text-xl sm:text-2xl font-black text-stone-900 tracking-tight">
                 {salon.name}
               </h1>
               <p className="text-xs text-stone-500 mt-0.5">
@@ -396,7 +396,7 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <MapPin className="w-4 h-4 text-[#FF6422]" />
-            <h3 className="text-sm font-bold text-stone-900 font-['Syne',sans-serif]">
+            <h3 className="text-sm font-bold text-stone-900">
               Studio Location & Map
             </h3>
           </div>

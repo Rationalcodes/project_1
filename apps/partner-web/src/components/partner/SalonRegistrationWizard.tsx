@@ -16,7 +16,7 @@ import {
   IndianRupee,
   ShieldCheck
 } from 'lucide-react';
-import { SalonRegistrationInput } from '@kumbhakaran/shared-types';
+import { SalonRegistrationInput, SalonType } from '@kumbhakaran/shared-types';
 
 interface SalonRegistrationWizardProps {
   onSuccess: () => void;
@@ -28,6 +28,7 @@ export const SalonRegistrationWizard: React.FC<SalonRegistrationWizardProps> = (
 
   // Form State: Pre-fill with existing salon if available for this Gmail ID
   const [salonName, setSalonName] = useState(activeSalon?.name || '');
+  const [salonType, setSalonType] = useState<SalonType>(activeSalon?.salonType || 'unisex');
   const [tagline, setTagline] = useState(activeSalon?.tagline || 'Premium cuts & authentic walk-in transparency');
   const [ownerName, setOwnerName] = useState(activeSalon?.ownerName || partnerUser?.name || '');
   const [phone, setPhone] = useState(activeSalon?.phone || '+91 ');
@@ -89,6 +90,7 @@ export const SalonRegistrationWizard: React.FC<SalonRegistrationWizardProps> = (
     const regData: SalonRegistrationInput = {
       name: salonName,
       tagline,
+      salonType,
       ownerName,
       phone,
       email: email || `${salonName.toLowerCase().replace(/\s+/g, '')}@kumbhakaran.app`,
@@ -201,6 +203,38 @@ export const SalonRegistrationWizard: React.FC<SalonRegistrationWizardProps> = (
                 placeholder="e.g. Blade & Timber Grooming Co."
                 className="w-full p-3 bg-zinc-900 border border-zinc-700 rounded-2xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-amber-400"
               />
+            </div>
+
+            <div>
+              <label className="text-xs font-semibold text-zinc-300 block mb-1.5">
+                Studio Category / Client Type *
+              </label>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                {[
+                  { id: 'unisex', label: 'Unisex', desc: 'Serves both Men & Women' },
+                  { id: 'men', label: 'Men Only', desc: 'Gents grooming & barbershop' },
+                  { id: 'women', label: 'Women Only', desc: 'Ladies beauty & styling' },
+                ].map((t) => (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => setSalonType(t.id as SalonType)}
+                    className={`p-3 rounded-2xl border text-left transition-all ${
+                      salonType === t.id
+                        ? 'bg-amber-500/15 border-amber-500 text-white shadow-md shadow-amber-500/10'
+                        : 'bg-zinc-900 border-zinc-700/80 text-zinc-400 hover:border-zinc-600'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className={`text-xs font-bold ${salonType === t.id ? 'text-amber-400' : 'text-zinc-300'}`}>
+                        {t.label}
+                      </span>
+                      {salonType === t.id && <span className="text-amber-400 text-xs">✓</span>}
+                    </div>
+                    <p className="text-[10px] text-zinc-400 mt-0.5 line-clamp-1">{t.desc}</p>
+                  </button>
+                ))}
+              </div>
             </div>
 
             <div>

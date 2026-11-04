@@ -55,10 +55,13 @@ export interface SalonMediaItem {
   uploadedAt?: string;
 }
 
+export type SalonType = 'unisex' | 'men' | 'women';
+
 export interface Salon {
   id: string;
   name: string;
   tagline: string;
+  salonType?: SalonType;
   coverImage: string;
   posterImage?: string;
   loopVideoUrl?: string;
@@ -110,6 +113,7 @@ export interface Salon {
 export interface SalonRegistrationInput {
   name: string;
   tagline?: string;
+  salonType?: SalonType;
   ownerName: string;
   phone: string;
   email: string;

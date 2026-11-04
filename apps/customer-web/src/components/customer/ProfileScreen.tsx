@@ -65,7 +65,7 @@ export const ProfileScreen: React.FC = () => {
                 </span>
                 <span className="text-xs text-stone-500">Optional for customers</span>
               </div>
-              <h2 className="text-base sm:text-lg font-black text-stone-900 mt-1.5 font-['Syne',sans-serif]">
+              <h2 className="text-base sm:text-lg font-black text-stone-900 mt-1.5 tracking-tight">
                 Sign in with Google
               </h2>
               <p className="text-xs text-stone-600 max-w-md mt-0.5">

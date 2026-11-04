@@ -18,7 +18,7 @@ export const FavouritesScreen: React.FC = () => {
     <div className="space-y-5 pb-28 text-stone-900">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-black text-stone-900 tracking-tight font-['Syne',sans-serif]">
+          <h1 className="text-xl font-black text-stone-900 tracking-tight">
             Favourite Grooming Spots
           </h1>
           <p className="text-xs text-stone-500 mt-0.5">

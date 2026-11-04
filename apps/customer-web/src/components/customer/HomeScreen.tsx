@@ -17,7 +17,7 @@ import {
   Store,
   Compass
 } from 'lucide-react';
-import { useSalon, getEstimatedWaitMinutes, getQueueDisplay, getQueueFreshness, POPULAR_LOCATIONS, matchesGenderFilter } from '../../context/CustomerContext';
+import { useSalon, getEstimatedWaitMinutes, getQueueDisplay, getQueueFreshness, POPULAR_LOCATIONS, matchesGenderFilter, getSalonType } from '../../context/CustomerContext';
 import { LazyModeSelector } from '../common/LazyModeSelector';
 import { Salon } from '@kumbhakaran/shared-types';
 import { redirectToGoogleMaps } from '@kumbhakaran/ui';
@@ -128,7 +128,7 @@ export const HomeScreen: React.FC = () => {
               <Sparkles className="w-3 h-3 text-[#FF6422]" />
               <span>Too lazy to call. Too smart to wait.</span>
             </div>
-            <h1 className="text-xl sm:text-2xl font-black text-stone-900 tracking-tight font-['Syne',sans-serif]">
+            <h1 className="text-xl sm:text-2xl font-black text-stone-900 tracking-tight">
               Skip the salon crowd today.
             </h1>
             <p className="text-xs text-stone-600 mt-1 max-w-sm">
@@ -217,7 +217,7 @@ export const HomeScreen: React.FC = () => {
             <Store className="w-8 h-8 text-[#FF6422]" />
           </div>
 
-          <h2 className="text-xl sm:text-2xl font-black text-stone-900 font-['Syne',sans-serif]">
+          <h2 className="text-xl sm:text-2xl font-black text-stone-900 tracking-tight">
             No salons nearby yet.
           </h2>
           <p className="text-sm text-stone-700 font-semibold mt-1">
@@ -415,6 +415,16 @@ export const HomeScreen: React.FC = () => {
                             <span className="text-stone-300">•</span>
                             <span className="text-[11px] text-stone-500 truncate">
                               {salon.locality}
+                            </span>
+                            <span className="text-stone-300">•</span>
+                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full border ${
+                              getSalonType(salon) === 'men'
+                                ? 'bg-blue-50 text-blue-700 border-blue-200'
+                                : getSalonType(salon) === 'women'
+                                ? 'bg-rose-50 text-rose-700 border-rose-200'
+                                : 'bg-stone-100 text-stone-600 border-stone-200'
+                            }`}>
+                              {getSalonType(salon) === 'men' ? 'Men' : getSalonType(salon) === 'women' ? 'Women' : 'Unisex'}
                             </span>
                           </div>
                         </div>

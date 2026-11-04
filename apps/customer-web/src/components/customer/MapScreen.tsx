@@ -295,7 +295,7 @@ export const MapScreen: React.FC = () => {
     visibleSalons.forEach((salon) => {
       const isSelected = selectedMarkerSalon?.id === salon.id;
       const salonBadgeHtml = `
-        <div style="background: ${isSelected ? '#FF6422' : '#FFFFFF'}; color: ${isSelected ? '#FFFFFF' : '#1C1917'}; border: 2px solid #FF6422; border-radius: 9999px; padding: 4px 10px; font-size: 11px; font-weight: 800; font-family: 'Syne', sans-serif; display: flex; align-items: center; gap: 5px; box-shadow: 0 4px 14px rgba(232, 89, 12, 0.25); cursor: pointer; transition: transform 0.15s ease; white-space: nowrap;">
+        <div style="background: ${isSelected ? '#FF6422' : '#FFFFFF'}; color: ${isSelected ? '#FFFFFF' : '#1C1917'}; border: 2px solid #FF6422; border-radius: 9999px; padding: 4px 10px; font-size: 11px; font-weight: 800; display: flex; align-items: center; gap: 5px; box-shadow: 0 4px 14px rgba(232, 89, 12, 0.25); cursor: pointer; transition: transform 0.15s ease; white-space: nowrap;">
           <span>✂ ${salon.name.length > 14 ? salon.name.slice(0, 14) + '…' : salon.name}</span>
           <span style="background: ${isSelected ? '#FFFFFF' : '#FF6422'}; color: ${isSelected ? '#FF6422' : '#FFFFFF'}; border-radius: 9999px; padding: 1px 6px; font-size: 10px; font-weight: 900;">
             ${salon.currentQueue}Q
@@ -381,7 +381,7 @@ export const MapScreen: React.FC = () => {
               {visibleSalons.length} studios within {radiusKm} km
             </span>
           </div>
-          <h1 className="text-xl sm:text-2xl font-black text-stone-900 mt-0.5 font-['Syne',sans-serif]">
+          <h1 className="text-xl sm:text-2xl font-black text-stone-900 mt-0.5 tracking-tight">
             Nearby Salon Map
           </h1>
         </div>
@@ -599,7 +599,7 @@ export const MapScreen: React.FC = () => {
           }`}
         >
           <div className="flex items-center justify-between pb-1">
-            <h3 className="text-sm font-bold text-stone-900 font-['Syne',sans-serif]">
+            <h3 className="text-sm font-bold text-stone-900">
               Studio Listings ({visibleSalons.length})
             </h3>
             <span className="text-[11px] text-stone-500">Sorted by distance</span>

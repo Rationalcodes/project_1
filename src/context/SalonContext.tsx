@@ -21,44 +21,51 @@ export interface LocationOption {
   lng: number;
 }
 
+export type SalonType = 'unisex' | 'men' | 'women';
 export type GenderFilter = 'all' | 'men' | 'women';
 
-export const matchesGenderFilter = (salon: Salon, filter: GenderFilter): boolean => {
-  if (filter === 'all') return true;
+export const getSalonType = (salon: Salon): SalonType => {
+  if (salon.salonType) return salon.salonType;
   const combined = (
     salon.name + ' ' +
     (salon.tagline || '') + ' ' +
-    salon.services.map((s) => s.name + ' ' + s.category).join(' ')
+    (salon.services || []).map((s) => s.name + ' ' + s.category).join(' ')
   ).toLowerCase();
 
+  if (
+    combined.includes('ladies only') ||
+    combined.includes('women only') ||
+    combined.includes('beauty parlour') ||
+    combined.includes('ladies beauty') ||
+    combined.includes('women beauty')
+  ) {
+    return 'women';
+  }
+
+  if (
+    (combined.includes('barber') ||
+      combined.includes('gents') ||
+      combined.includes('mens salon') ||
+      combined.includes('men only')) &&
+    !combined.includes('unisex')
+  ) {
+    return 'men';
+  }
+
+  return 'unisex';
+};
+
+export const matchesGenderFilter = (salon: Salon, filter: GenderFilter): boolean => {
+  if (filter === 'all') return true;
+  const type = getSalonType(salon);
   if (filter === 'men') {
-    if (
-      combined.includes('ladies only') ||
-      combined.includes('women only') ||
-      combined.includes('ladies beauty parlour') ||
-      combined.includes('women beauty parlour')
-    ) {
-      return false;
-    }
-    return true;
+    // Men filter includes Men-specific studios AND Unisex studios
+    return type === 'men' || type === 'unisex';
   }
-
   if (filter === 'women') {
-    if (
-      (combined.includes('gents only') ||
-        combined.includes('men only') ||
-        combined.includes('barber shop') ||
-        combined.includes('barbershop') ||
-        combined.includes('mens salon')) &&
-      !combined.includes('unisex') &&
-      !combined.includes('women') &&
-      !combined.includes('ladies')
-    ) {
-      return false;
-    }
-    return true;
+    // Women filter includes Women-specific studios AND Unisex studios
+    return type === 'women' || type === 'unisex';
   }
-
   return true;
 };
 

@@ -65,46 +65,24 @@ export const Header: React.FC = () => {
   };
 
   return (
-    <header className="sticky top-0 z-40 bg-[#FFFDF9]/95 backdrop-blur-md border-b border-[#E8E2D8] px-3 sm:px-6 py-2 transition-all w-full max-w-full overflow-hidden shadow-[0_2px_10px_rgba(40,20,10,0.03)]">
-      <div className="max-w-7xl mx-auto flex flex-col items-center gap-1.5 text-xs w-full">
-        {/* ROW 1: Centered Kumbhkaran Salons Brand Logo */}
-        <div className="w-full flex items-center justify-center py-0.5">
-          <button
-            type="button"
-            onClick={() => {
-              setSelectedSalonForDetail(null);
-              setCustomerTab('home');
-            }}
-            className="flex items-center justify-center cursor-pointer select-none group focus:outline-none"
-            title="Kumbhkaran Salons Home"
-          >
-            <img
-              src="/logo-transparent.png"
-              alt="Kumbhkaran Salons"
-              className="h-8 sm:h-10 md:h-11 w-auto max-w-[190px] sm:max-w-[240px] md:max-w-[280px] object-contain transition-transform group-hover:scale-105 drop-shadow-xs"
-              onError={(e) => {
-                (e.currentTarget as HTMLImageElement).src = '/logo.png';
-              }}
-            />
-          </button>
-        </div>
-
-        {/* ROW 2: Down the Logo - Location (Left) | Men/Women Switch (Center) | User Profile (Right) */}
-        <div className="w-full flex items-center justify-between gap-1.5 sm:gap-3 pt-0.5">
+    <header className="sticky top-0 z-40 bg-[#FFFDF9]/95 backdrop-blur-md border-b border-[#E8E2D8] px-3 sm:px-6 pt-2.5 pb-2 transition-all w-full max-w-full overflow-hidden shadow-[0_2px_12px_rgba(40,20,10,0.03)]">
+      <div className="max-w-7xl mx-auto flex flex-col items-center gap-2 text-xs w-full">
+        {/* ROW 1: Balanced Utility Bar: Location (Left) | Kumbhkaran Logo (Center) | Profile (Right) */}
+        <div className="w-full flex items-center justify-between gap-2 min-h-[38px]">
           {/* Left: Location Selector Pill */}
           <div className="relative shrink min-w-0">
             <button
               type="button"
               onClick={() => setLocationDropdownOpen(!locationDropdownOpen)}
-              className={`flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl transition-all shadow-xs max-w-[110px] xs:max-w-[145px] sm:max-w-[200px] ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-all shadow-xs max-w-[140px] xs:max-w-[175px] sm:max-w-[220px] ${
                 userLocation
                   ? 'bg-white border border-[#E2DDD5] hover:border-[#FF6422] text-xs text-stone-800 font-semibold'
-                  : 'bg-orange-50 border border-orange-200 hover:border-[#FF6422] text-xs text-[#FF6422] font-bold'
+                  : 'bg-orange-50/80 border border-orange-200 hover:border-[#FF6422] text-xs text-[#FF6422] font-bold'
               }`}
               title={userLocation ? `Current location: ${userLocation.name}` : 'Set your location'}
             >
               <MapPin className="w-3.5 h-3.5 text-[#FF6422] shrink-0" />
-              <span className={`truncate text-[11px] sm:text-xs ${!userLocation ? 'text-[#FF6422] font-bold' : ''}`}>
+              <span className={`truncate text-xs ${!userLocation ? 'text-[#FF6422] font-bold' : ''}`}>
                 {userLocation ? userLocation.name.split(',')[0] : 'Set Location'}
               </span>
               <ChevronDown className="w-3 h-3 text-stone-400 shrink-0" />
@@ -168,47 +146,25 @@ export const Header: React.FC = () => {
             )}
           </div>
 
-          {/* Center: Men / Women Switching Option */}
-          <div className="flex items-center bg-[#F3ECE4] border border-[#E2DDD5] p-0.5 rounded-full shadow-inner shrink-0">
-            <button
-              type="button"
-              onClick={() => setGenderFilter('all')}
-              className={`px-2 sm:px-2.5 py-1 rounded-full text-[11px] sm:text-xs transition-all ${
-                genderFilter === 'all'
-                  ? 'bg-[#FF6422] text-white font-bold shadow-xs'
-                  : 'text-stone-600 hover:text-stone-900 font-semibold'
-              }`}
-              title="Show all studios & salons"
-            >
-              All
-            </button>
-            <button
-              type="button"
-              onClick={() => setGenderFilter('men')}
-              className={`flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-full text-[11px] sm:text-xs transition-all ${
-                genderFilter === 'men'
-                  ? 'bg-[#FF6422] text-white font-bold shadow-xs'
-                  : 'text-stone-600 hover:text-stone-900 font-semibold'
-              }`}
-              title="Filter for Men's Grooming"
-            >
-              <span>👨</span>
-              <span>Men</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setGenderFilter('women')}
-              className={`flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-full text-[11px] sm:text-xs transition-all ${
-                genderFilter === 'women'
-                  ? 'bg-[#FF6422] text-white font-bold shadow-xs'
-                  : 'text-stone-600 hover:text-stone-900 font-semibold'
-              }`}
-              title="Filter for Women's Salons & Beauty"
-            >
-              <span>👩</span>
-              <span>Women</span>
-            </button>
-          </div>
+          {/* Center: Brand Logo */}
+          <button
+            type="button"
+            onClick={() => {
+              setSelectedSalonForDetail(null);
+              setCustomerTab('home');
+            }}
+            className="flex items-center justify-center cursor-pointer select-none group focus:outline-none"
+            title="Kumbhkaran Salons Home"
+          >
+            <img
+              src="/logo-transparent.png"
+              alt="Kumbhkaran Salons"
+              className="h-8 sm:h-9 md:h-10 w-auto max-w-[150px] xs:max-w-[170px] sm:max-w-[210px] object-contain transition-transform group-hover:scale-105 drop-shadow-xs"
+              onError={(e) => {
+                (e.currentTarget as HTMLImageElement).src = '/logo.png';
+              }}
+            />
+          </button>
 
           {/* Right: User Profile / Sign In Pill */}
           <button
@@ -217,7 +173,7 @@ export const Header: React.FC = () => {
               setSelectedSalonForDetail(null);
               setCustomerTab('profile');
             }}
-            className={`flex items-center gap-1 sm:gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-all border shrink-0 shadow-xs ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all border shrink-0 shadow-xs ${
               isAuthenticated
                 ? 'bg-emerald-50 border-emerald-200 text-emerald-800 hover:bg-emerald-100'
                 : 'bg-white border-[#E2DDD5] hover:border-[#FF6422] text-stone-700'
@@ -237,6 +193,48 @@ export const Header: React.FC = () => {
               {isAuthenticated ? authUser?.name?.split(' ')[0] : 'Sign In'}
             </span>
           </button>
+        </div>
+
+        {/* ROW 2: All, Men, Women Centered Segmented Control */}
+        <div className="w-full flex items-center justify-center pt-0.5">
+          <div className="inline-flex items-center bg-[#EFE9DF] border border-[#DDD5C8] p-1 rounded-full shadow-inner">
+            <button
+              type="button"
+              onClick={() => setGenderFilter('all')}
+              className={`px-4 sm:px-6 py-1.5 rounded-full text-xs font-bold transition-all ${
+                genderFilter === 'all'
+                  ? 'bg-[#FF6422] text-white shadow-sm shadow-orange-500/25'
+                  : 'text-stone-600 hover:text-stone-900 font-semibold'
+              }`}
+              title="Show all studios (Unisex, Men & Women)"
+            >
+              All
+            </button>
+            <button
+              type="button"
+              onClick={() => setGenderFilter('men')}
+              className={`px-4 sm:px-6 py-1.5 rounded-full text-xs font-bold transition-all ${
+                genderFilter === 'men'
+                  ? 'bg-[#FF6422] text-white shadow-sm shadow-orange-500/25'
+                  : 'text-stone-600 hover:text-stone-900 font-semibold'
+              }`}
+              title="Show Men's & Unisex Studios"
+            >
+              Men
+            </button>
+            <button
+              type="button"
+              onClick={() => setGenderFilter('women')}
+              className={`px-4 sm:px-6 py-1.5 rounded-full text-xs font-bold transition-all ${
+                genderFilter === 'women'
+                  ? 'bg-[#FF6422] text-white shadow-sm shadow-orange-500/25'
+                  : 'text-stone-600 hover:text-stone-900 font-semibold'
+              }`}
+              title="Show Women's & Unisex Studios"
+            >
+              Women
+            </button>
+          </div>
         </div>
       </div>
     </header>
