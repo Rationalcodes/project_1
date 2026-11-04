@@ -96,7 +96,7 @@ export const Header: React.FC = () => {
       {/* 1. TOP ROOF BAR (JioMart Warm Wine / Auburn base behind tabs) */}
       <div
         className={`w-full px-3 pt-2 transition-colors duration-300 ${
-          isWomen ? 'bg-[#780A1C]' : 'bg-[#781308]'
+          isWomen ? 'bg-[#780A1C]' : 'bg-[#852210]'
         }`}
       >
         <div className="max-w-md mx-auto flex items-end justify-center gap-2">
@@ -106,8 +106,8 @@ export const Header: React.FC = () => {
             onClick={() => setGenderFilter('men')}
             className={`flex-1 py-2.5 px-3 flex items-center justify-center gap-1.5 transition-all duration-200 cursor-pointer select-none ${
               !isWomen
-                ? 'bg-[#FF5722] text-stone-950 font-black text-xs sm:text-sm tracking-wider rounded-t-2xl rounded-b-none border-none shadow-none translate-y-[1px] z-10'
-                : 'bg-white text-[#FF5722] font-black text-xs sm:text-sm tracking-wider rounded-full shadow-sm hover:bg-stone-50 mb-1 active:scale-95'
+                ? 'bg-[#FF723A] text-stone-950 font-black text-xs sm:text-sm tracking-wider rounded-t-2xl rounded-b-none border-none shadow-none translate-y-[1px] z-10'
+                : 'bg-white text-[#FF723A] font-black text-xs sm:text-sm tracking-wider rounded-full shadow-sm hover:bg-stone-50 mb-1 active:scale-95'
             }`}
           >
             <span className="text-sm sm:text-base leading-none">✂</span>
@@ -135,7 +135,7 @@ export const Header: React.FC = () => {
         className={`w-full px-3 sm:px-6 pt-2 pb-3.5 rounded-b-3xl transition-colors duration-300 ${
           isWomen
             ? 'bg-[#FFDFD6] shadow-[0_8px_24px_rgba(225,29,72,0.08)]'
-            : 'bg-[#FF5722] shadow-[0_8px_24px_rgba(255,87,34,0.18)]'
+            : 'bg-[#FF723A] shadow-[0_8px_24px_rgba(255,114,58,0.18)]'
         }`}
       >
         <div className="max-w-7xl mx-auto space-y-2.5">
@@ -194,7 +194,7 @@ export const Header: React.FC = () => {
                       className={`w-full mb-2.5 p-2.5 rounded-xl border text-xs font-bold flex items-center justify-center gap-2 transition-all shadow-xs ${
                         isWomen
                           ? 'bg-rose-50 border-rose-200 text-[#E11D48] hover:bg-rose-100'
-                          : 'bg-orange-50 border-orange-200 text-[#FF6422] hover:bg-orange-100'
+                          : 'bg-orange-50 border-orange-200 text-[#FF723A] hover:bg-orange-100'
                       }`}
                     >
                       <Navigation className="w-3.5 h-3.5 animate-pulse" />
@@ -210,7 +210,7 @@ export const Header: React.FC = () => {
                           value={customLocalityInput}
                           onChange={(e) => setCustomLocalityInput(e.target.value)}
                           placeholder="Search city, locality or PIN..."
-                          className="w-full pl-8 pr-3 py-1.5 bg-[#FAF7F2] border border-[#E2DDD5] rounded-xl text-xs text-stone-900 placeholder-stone-400 focus:outline-none focus:border-[#FF6422]"
+                          className="w-full pl-8 pr-3 py-1.5 bg-[#FAF7F2] border border-[#E2DDD5] rounded-xl text-xs text-stone-900 placeholder-stone-400 focus:outline-none focus:border-[#FF723A]"
                         />
                       </div>
                     </form>
@@ -246,7 +246,7 @@ export const Header: React.FC = () => {
                       <div className="p-2 rounded-xl bg-[#FAF7F2] border border-[#E2DDD5]">
                         <div className="flex items-center justify-between text-xs text-stone-800">
                           <div className="flex items-center gap-1.5 truncate">
-                            <MapPin className="w-3.5 h-3.5 text-[#FF6422] shrink-0" />
+                            <MapPin className="w-3.5 h-3.5 text-[#FF723A] shrink-0" />
                             <span className="font-bold truncate">{userLocation.name}</span>
                           </div>
                           <button
@@ -256,7 +256,7 @@ export const Header: React.FC = () => {
                               setLocationDropdownOpen(false);
                               triggerNotification('Location reset. Showing all salons.');
                             }}
-                            className="text-[11px] text-stone-500 hover:text-[#FF6422] transition-colors shrink-0 ml-2 underline"
+                            className="text-[11px] text-stone-500 hover:text-[#FF723A] transition-colors shrink-0 ml-2 underline"
                           >
                             Clear
                           </button>
@@ -311,7 +311,7 @@ export const Header: React.FC = () => {
               <div className="pl-3.5 pr-2 flex items-center pointer-events-none">
                 <Search
                   className={`w-4 h-4 ${
-                    isWomen ? 'text-[#C93B57]' : 'text-[#FF5722]'
+                    isWomen ? 'text-[#C93B57]' : 'text-[#FF723A]'
                   }`}
                 />
               </div>
@@ -356,7 +356,7 @@ export const Header: React.FC = () => {
                         ? 'bg-[#E11D48] text-white shadow-xs scale-102'
                         : 'bg-white/70 text-[#7A0D22] hover:bg-white border border-rose-200/50'
                       : isActive
-                        ? 'bg-white text-[#FF5722] font-black shadow-xs scale-102'
+                        ? 'bg-white text-[#FF723A] font-black shadow-xs scale-102'
                         : 'bg-white/20 text-white hover:bg-white/30 backdrop-blur-xs border border-white/15'
                   }`}
                 >
