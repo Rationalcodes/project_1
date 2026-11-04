@@ -18,6 +18,7 @@ import {
 import {
   useSalon,
   getEstimatedWaitMinutes,
+  matchesGenderFilter,
 } from '../../context/SalonContext';
 import { Salon } from '../../types';
 import {
@@ -37,6 +38,7 @@ export const MapScreen: React.FC = () => {
     setSelectedSalonForDetail,
     requestDeviceLocation,
     triggerNotification,
+    genderFilter,
   } = useSalon();
 
   const [selectedMarkerSalon, setSelectedMarkerSalon] = useState<Salon | null>(salons[0] || null);
@@ -80,6 +82,7 @@ export const MapScreen: React.FC = () => {
         : s.distanceKm,
     }))
     .filter((s) => {
+      if (!matchesGenderFilter(s, genderFilter)) return false;
       if (userLocation && s.computedDistance > radiusKm) return false;
       if (mapSearch.trim()) {
         const q = mapSearch.toLowerCase();

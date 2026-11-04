@@ -2,7 +2,7 @@ import React from 'react';
 import { PartnerProvider, usePartner } from './context/PartnerContext';
 import { PartnerPortal } from './components/partner/PartnerPortal';
 import { NotificationToast } from './components/common/NotificationToast';
-import { Store, ExternalLink, LogOut, User } from 'lucide-react';
+import { Store, LogOut, User } from 'lucide-react';
 
 const PartnerMainContent: React.FC = () => {
   const { partnerUser, isAuthenticated, logout } = usePartner();
@@ -27,19 +27,8 @@ const PartnerMainContent: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3 text-xs shrink-0">
-            <a
-              href={import.meta.env.VITE_CUSTOMER_APP_URL || 'https://customer-web-inky.vercel.app/'}
-              target="_blank"
-              rel="noreferrer"
-              className="flex items-center gap-1 px-2.5 sm:px-3 py-1.5 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-300 hover:text-white transition-colors"
-            >
-              <span className="hidden sm:inline">View </span>
-              <span>Customer App</span>
-              <ExternalLink className="w-3 h-3 text-zinc-400 shrink-0" />
-            </a>
-
             {isAuthenticated && (
-              <div className="flex items-center gap-1.5 sm:gap-2 pl-2 border-l border-zinc-800 shrink-0">
+              <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
                 <div className="flex items-center gap-1.5 px-2 py-1 rounded-xl bg-zinc-900 border border-zinc-800 text-xs">
                   {partnerUser?.avatarUrl ? (
                     <img

@@ -14,8 +14,8 @@ export const BottomNav: React.FC = () => {
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 md:hidden bg-gradient-to-t from-[#FAF7F2] via-[#FAF7F2]/95 to-transparent pt-3 pb-safe max-w-full">
-      <div className="max-w-md mx-auto px-2 xs:px-4 pb-2">
+    <nav className="fixed bottom-0 left-0 right-0 z-40 bg-gradient-to-t from-[#FAF7F2] via-[#FAF7F2]/95 to-transparent pt-3 pb-safe max-w-full pointer-events-none">
+      <div className="max-w-md mx-auto px-2 xs:px-4 pb-2 pointer-events-auto">
         <div className="bg-white/95 backdrop-blur-xl border border-[#E8E2D8] rounded-3xl shadow-[0_4px_20px_rgba(40,20,10,0.08)] p-1 xs:p-1.5 flex items-center justify-around ring-1 ring-black/5">
           {navItems.map((item) => {
             const Icon = item.icon;

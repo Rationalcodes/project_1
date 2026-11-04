@@ -21,6 +21,46 @@ const configuredApiBaseUrl =
 defaultApiClient.setBaseUrl(configuredApiBaseUrl);
 
 export type CustomerTab = 'home' | 'explore' | 'map' | 'favourites' | 'profile';
+export type GenderFilter = 'all' | 'men' | 'women';
+
+export const matchesGenderFilter = (salon: Salon, filter: GenderFilter): boolean => {
+  if (filter === 'all') return true;
+  const combined = (
+    salon.name + ' ' +
+    (salon.tagline || '') + ' ' +
+    salon.services.map((s) => s.name + ' ' + s.category).join(' ')
+  ).toLowerCase();
+
+  if (filter === 'men') {
+    if (
+      combined.includes('ladies only') ||
+      combined.includes('women only') ||
+      combined.includes('ladies beauty parlour') ||
+      combined.includes('women beauty parlour')
+    ) {
+      return false;
+    }
+    return true;
+  }
+
+  if (filter === 'women') {
+    if (
+      (combined.includes('gents only') ||
+        combined.includes('men only') ||
+        combined.includes('barber shop') ||
+        combined.includes('barbershop') ||
+        combined.includes('mens salon')) &&
+      !combined.includes('unisex') &&
+      !combined.includes('women') &&
+      !combined.includes('ladies')
+    ) {
+      return false;
+    }
+    return true;
+  }
+
+  return true;
+};
 
 export const POPULAR_LOCATIONS: LocationOption[] = [
   { name: 'Koramangala, Bengaluru', lat: 12.9352, lng: 77.6245 },
@@ -70,6 +110,8 @@ interface CustomerContextType {
   setIsCompareOpen: (open: boolean) => void;
   notificationMessage: string | null;
   triggerNotification: (msg: string) => void;
+  genderFilter: GenderFilter;
+  setGenderFilter: (filter: GenderFilter) => void;
 }
 
 const CustomerContext = createContext<CustomerContextType | undefined>(undefined);
@@ -112,6 +154,27 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [isCompareOpen, setIsCompareOpen] = useState<boolean>(false);
   const [notificationMessage, setNotificationMessage] = useState<string | null>(null);
   const [isLoadingSalons, setIsLoadingSalons] = useState<boolean>(true);
+  const [genderFilter, setGenderFilterState] = useState<GenderFilter>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('kumbhakaran_gender_filter');
+      if (saved === 'men' || saved === 'women' || saved === 'all') return saved;
+    }
+    return 'all';
+  });
+
+  const setGenderFilter = (filter: GenderFilter) => {
+    setGenderFilterState(filter);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('kumbhakaran_gender_filter', filter);
+    }
+    triggerNotification(
+      filter === 'all'
+        ? 'Showing all studios'
+        : filter === 'men'
+        ? "Switched to Men's Grooming"
+        : "Switched to Women's Beauty & Salons"
+    );
+  };
 
   const setUserLocation = (loc: LocationOption) => {
     setUserLocationState(loc);
@@ -625,6 +688,8 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         setIsCompareOpen,
         notificationMessage,
         triggerNotification,
+        genderFilter,
+        setGenderFilter,
       }}
     >
       {children}

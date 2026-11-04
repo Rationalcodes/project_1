@@ -15,7 +15,7 @@ import {
   Heart,
   SlidersHorizontal
 } from 'lucide-react';
-import { useSalon, getEstimatedWaitMinutes, getQueueDisplay, getQueueFreshness } from '../../context/SalonContext';
+import { useSalon, getEstimatedWaitMinutes, getQueueDisplay, getQueueFreshness, matchesGenderFilter } from '../../context/SalonContext';
 import { LazyModeSelector } from '../common/LazyModeSelector';
 import { Salon } from '../../types';
 
@@ -35,20 +35,33 @@ export const HomeScreen: React.FC = () => {
     setSelectedServiceFilter,
     comparisonList,
     toggleCompareSalon,
-    setIsCompareOpen
+    setIsCompareOpen,
+    genderFilter,
   } = useSalon();
 
-  const groomingCategories = [
-    { name: 'All', icon: Sparkles },
-    { name: 'Hair', icon: Scissors },
-    { name: 'Beard', icon: Scissors },
-    { name: 'Combos', icon: Flame },
-    { name: 'Spa', icon: Sparkles },
-    { name: 'Facial', icon: Sparkles }
-  ];
+  const groomingCategories =
+    genderFilter === 'women'
+      ? [
+          { name: 'All', icon: Sparkles },
+          { name: 'Hair', icon: Scissors },
+          { name: 'Spa', icon: Sparkles },
+          { name: 'Facial', icon: Sparkles },
+          { name: 'Combos', icon: Flame },
+        ]
+      : [
+          { name: 'All', icon: Sparkles },
+          { name: 'Hair', icon: Scissors },
+          { name: 'Beard', icon: Scissors },
+          { name: 'Combos', icon: Flame },
+          { name: 'Spa', icon: Sparkles },
+          { name: 'Facial', icon: Sparkles },
+        ];
 
   // Filtering logic
   const filteredSalons = salons.filter((salon) => {
+    // Gender Filter match
+    if (!matchesGenderFilter(salon, genderFilter)) return false;
+
     // Search query match
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
@@ -75,14 +88,16 @@ export const HomeScreen: React.FC = () => {
     return true;
   });
 
+  const genderMatchedSalons = salons.filter((s) => matchesGenderFilter(s, genderFilter));
+
   // Shortest queues (< 3 people)
-  const shortestQueueSalons = [...salons]
+  const shortestQueueSalons = [...genderMatchedSalons]
     .filter(s => s.isOpen)
     .sort((a, b) => a.currentQueue - b.currentQueue)
     .slice(0, 4);
 
   // Top rated salons
-  const topRatedSalons = [...salons]
+  const topRatedSalons = [...genderMatchedSalons]
     .sort((a, b) => b.rating - a.rating)
     .slice(0, 3);
 

@@ -15,7 +15,7 @@ import {
   Heart,
   ArrowRight
 } from 'lucide-react';
-import { useSalon, getEstimatedWaitMinutes, getQueueDisplay, getQueueFreshness } from '../../context/CustomerContext';
+import { useSalon, getEstimatedWaitMinutes, getQueueDisplay, getQueueFreshness, matchesGenderFilter } from '../../context/CustomerContext';
 import { Salon } from '@kumbhakaran/shared-types';
 import { redirectToGoogleMaps } from '@kumbhakaran/ui';
 
@@ -32,7 +32,8 @@ export const ExploreScreen: React.FC = () => {
     comparisonList,
     toggleCompareSalon,
     setIsCompareOpen,
-    userLocation
+    userLocation,
+    genderFilter,
   } = useSalon();
 
   const [sortBy, setSortBy] = useState<SortOption>('queue');
@@ -40,11 +41,15 @@ export const ExploreScreen: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [maxPrice, setMaxPrice] = useState<number>(1000);
 
-  const categories = ['All', 'Hair', 'Beard', 'Combos', 'Spa', 'Facial'];
+  const categories =
+    genderFilter === 'women'
+      ? ['All', 'Hair', 'Spa', 'Facial', 'Color', 'Combos']
+      : ['All', 'Hair', 'Beard', 'Combos', 'Spa', 'Facial'];
 
   // Sorting & Filtering
   const processedSalons = salons
     .filter((salon) => {
+      if (!matchesGenderFilter(salon, genderFilter)) return false;
       if (openOnly && !salon.isOpen) return false;
       if (salon.startingPrice > maxPrice) return false;
 

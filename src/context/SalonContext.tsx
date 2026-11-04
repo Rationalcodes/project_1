@@ -21,6 +21,47 @@ export interface LocationOption {
   lng: number;
 }
 
+export type GenderFilter = 'all' | 'men' | 'women';
+
+export const matchesGenderFilter = (salon: Salon, filter: GenderFilter): boolean => {
+  if (filter === 'all') return true;
+  const combined = (
+    salon.name + ' ' +
+    (salon.tagline || '') + ' ' +
+    salon.services.map((s) => s.name + ' ' + s.category).join(' ')
+  ).toLowerCase();
+
+  if (filter === 'men') {
+    if (
+      combined.includes('ladies only') ||
+      combined.includes('women only') ||
+      combined.includes('ladies beauty parlour') ||
+      combined.includes('women beauty parlour')
+    ) {
+      return false;
+    }
+    return true;
+  }
+
+  if (filter === 'women') {
+    if (
+      (combined.includes('gents only') ||
+        combined.includes('men only') ||
+        combined.includes('barber shop') ||
+        combined.includes('barbershop') ||
+        combined.includes('mens salon')) &&
+      !combined.includes('unisex') &&
+      !combined.includes('women') &&
+      !combined.includes('ladies')
+    ) {
+      return false;
+    }
+    return true;
+  }
+
+  return true;
+};
+
 export const POPULAR_LOCATIONS: LocationOption[] = [
   { name: 'Koramangala, Bengaluru', lat: 12.9352, lng: 77.6245 },
   { name: 'Indiranagar, Bengaluru', lat: 12.9719, lng: 77.6412 },
@@ -90,6 +131,8 @@ interface SalonContextType {
   setIsCompareOpen: (open: boolean) => void;
   notificationMessage: string | null;
   triggerNotification: (msg: string) => void;
+  genderFilter: GenderFilter;
+  setGenderFilter: (filter: GenderFilter) => void;
 }
 
 const SalonContext = createContext<SalonContextType | undefined>(undefined);
@@ -138,6 +181,27 @@ export const SalonProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [adminTab, setAdminTab] = useState<AdminTab>('overview');
   const [selectedSalonForDetail, setSelectedSalonForDetail] = useState<Salon | null>(null);
   const [userProfile, setUserProfile] = useState<CustomerProfile>(INITIAL_USER);
+  const [genderFilter, setGenderFilterState] = useState<GenderFilter>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('kumbhakaran_gender_filter');
+      if (saved === 'men' || saved === 'women' || saved === 'all') return saved;
+    }
+    return 'all';
+  });
+
+  const setGenderFilter = (filter: GenderFilter) => {
+    setGenderFilterState(filter);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('kumbhakaran_gender_filter', filter);
+    }
+    triggerNotification(
+      filter === 'all'
+        ? 'Showing all studios'
+        : filter === 'men'
+        ? "Switched to Men's Grooming"
+        : "Switched to Women's Salons & Beauty"
+    );
+  };
   const [userLocation, setUserLocationState] = useState<LocationOption | null>(() => {
     if (typeof window !== 'undefined') {
       try {
@@ -858,7 +922,9 @@ export const SalonProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         isCompareOpen,
         setIsCompareOpen,
         notificationMessage,
-        triggerNotification
+        triggerNotification,
+        genderFilter,
+        setGenderFilter
       }}
     >
       {children}
