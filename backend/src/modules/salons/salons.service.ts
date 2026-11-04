@@ -330,6 +330,31 @@ export class SalonsService {
 
     // 1. Try to persist into PostgreSQL
     try {
+      // Debounce duplicate reviews submitted within 15 seconds (e.g. double-tapping on mobile)
+      const recentDuplicate = await this.prisma.salonReview.findFirst({
+        where: {
+          salonId,
+          customerName: reviewRecord.customerName,
+          comment: reviewRecord.comment,
+          createdAt: {
+            gte: new Date(Date.now() - 15000),
+          },
+        },
+      });
+
+      if (recentDuplicate) {
+        this.logger.warn(`Debounced duplicate review submission for salon ${salonId}`);
+        return {
+          id: recentDuplicate.id,
+          customerName: recentDuplicate.customerName,
+          customerAvatar: recentDuplicate.customerAvatar || reviewRecord.customerAvatar,
+          rating: recentDuplicate.rating,
+          comment: recentDuplicate.comment,
+          verifiedVisit: recentDuplicate.verifiedVisit,
+          createdAt: recentDuplicate.createdAt.toISOString(),
+        };
+      }
+
       await this.prisma.salonReview.create({
         data: reviewRecord,
       });

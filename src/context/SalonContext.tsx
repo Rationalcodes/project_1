@@ -100,11 +100,21 @@ export const SalonProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         try {
           const cached = localStorage.getItem(`kumbhakaran_reviews_${s.id}`);
           if (cached) {
-            const parsedReviews = JSON.parse(cached);
-            if (Array.isArray(parsedReviews) && parsedReviews.length > 0) {
+            const raw = JSON.parse(cached);
+            if (Array.isArray(raw) && raw.length > 0) {
+              const seen = new Set<string>();
+              const parsedReviews = raw.filter((r) => {
+                const sig = `${(r.customerName || '').trim().toLowerCase()}|${(r.comment || '').trim().toLowerCase()}`;
+                if (seen.has(sig)) return false;
+                seen.add(sig);
+                return true;
+              });
+              if (parsedReviews.length !== raw.length) {
+                localStorage.setItem(`kumbhakaran_reviews_${s.id}`, JSON.stringify(parsedReviews));
+              }
               const combined = [
                 ...parsedReviews,
-                ...s.reviews.filter(r => !parsedReviews.some((pr: any) => pr.id === r.id || (pr.customerName === r.customerName && pr.comment === r.comment)))
+                ...s.reviews.filter(r => !parsedReviews.some((pr: any) => pr.id === r.id || `${(pr.customerName || '').trim().toLowerCase()}|${(pr.comment || '').trim().toLowerCase()}` === `${(r.customerName || '').trim().toLowerCase()}|${(r.comment || '').trim().toLowerCase()}`))
               ];
               const avg = Number((combined.reduce((acc: number, r: any) => acc + (r.rating || 5), 0) / combined.length).toFixed(1));
               return {
@@ -237,10 +247,22 @@ export const SalonProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         ownerReply: r.ownerReply || r.owner_reply,
       }));
 
-      const mergedMap = new Map<string, Review>();
-      localReviews.forEach((r) => mergedMap.set(r.id || `${r.customerName}-${r.comment}`, r));
-      dbReviews.forEach((r) => mergedMap.set(r.id || `${r.customerName}-${r.comment}`, r));
-      const combinedReviews = Array.from(mergedMap.values());
+      // Merge and deduplicate reviews: Database reviews are authoritative
+      const getContentKey = (r: { customerName?: string; comment?: string }) =>
+        `${(r.customerName || '').trim().toLowerCase()}|${(r.comment || '').trim().toLowerCase()}`;
+
+      const dbContentKeys = new Set(dbReviews.map(getContentKey));
+      const unsyncedLocalReviews = localReviews.filter(
+        (lr) => !dbContentKeys.has(getContentKey(lr))
+      );
+      const combinedReviews = [...unsyncedLocalReviews, ...dbReviews];
+
+      // Synchronize localStorage so duplicate stale local copies are immediately purged
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem(`kumbhakaran_reviews_${salonId}`, JSON.stringify(combinedReviews));
+        } catch {}
+      }
 
       setSelectedSalonForDetail((prev) => {
         if (!prev || prev.id !== salonId) return prev;
@@ -527,40 +549,12 @@ export const SalonProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const addReview = async (salonId: string, reviewData: Omit<Review, 'id' | 'date'>) => {
-    const newReview: Review = {
-      ...reviewData,
-      id: `rev-${Date.now()}`,
-      date: 'Just now'
-    };
+    // 1. Submit to PostgreSQL database first
+    let createdReviewId = `rev-${Date.now()}`;
+    let createdDate = 'Just now';
 
-    // Save locally immediately to guarantee survival on refresh
     try {
-      const storageKey = `kumbhakaran_reviews_${salonId}`;
-      const existing = localStorage.getItem(storageKey);
-      const list = existing ? JSON.parse(existing) : [];
-      localStorage.setItem(storageKey, JSON.stringify([newReview, ...list]));
-    } catch (e) {
-      console.warn('Failed to cache review in localStorage', e);
-    }
-
-    setSalons(prev => prev.map(s => {
-      if (s.id !== salonId) return s;
-      const nextReviews = [newReview, ...s.reviews];
-      const avgRating = Number((nextReviews.reduce((acc, r) => acc + r.rating, 0) / nextReviews.length).toFixed(1));
-      const updated = {
-        ...s,
-        reviews: nextReviews,
-        reviewCount: (s.reviewCount || s.reviews.length) + 1,
-        rating: avgRating
-      };
-      if (selectedSalonForDetail?.id === salonId) setSelectedSalonForDetail(updated);
-      return updated;
-    }));
-    triggerNotification("Your review was posted successfully!");
-
-    // Also persist directly to PostgreSQL database
-    try {
-      await api.submitSalonReview(salonId, {
+      const persisted = await api.submitSalonReview(salonId, {
         customerName: reviewData.customerName,
         customerAvatar: reviewData.customerAvatar,
         rating: reviewData.rating,
@@ -568,9 +562,59 @@ export const SalonProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         verifiedVisit: reviewData.verifiedVisit,
         criteria: reviewData.criteria,
       });
+
+      if (persisted && persisted.id) {
+        createdReviewId = persisted.id;
+        if (persisted.createdAt) {
+          createdDate = new Date(persisted.createdAt).toLocaleDateString();
+        }
+      }
     } catch (err) {
-      console.warn('Backend sync for review failed, local review remains cached:', err);
+      console.warn('Backend sync for review warning:', err);
     }
+
+    const newReview: Review = {
+      ...reviewData,
+      id: createdReviewId,
+      date: createdDate,
+    };
+
+    const contentKey = `${(newReview.customerName || '').trim().toLowerCase()}|${(newReview.comment || '').trim().toLowerCase()}`;
+
+    // 2. Cache cleanly in localStorage with deduplication
+    if (typeof window !== 'undefined') {
+      try {
+        const storageKey = `kumbhakaran_reviews_${salonId}`;
+        const existing: Review[] = JSON.parse(localStorage.getItem(storageKey) || '[]');
+        const filtered = existing.filter(
+          (r) => `${(r.customerName || '').trim().toLowerCase()}|${(r.comment || '').trim().toLowerCase()}` !== contentKey && r.id !== newReview.id
+        );
+        localStorage.setItem(storageKey, JSON.stringify([newReview, ...filtered]));
+      } catch (e) {
+        console.warn('Failed to cache review in localStorage', e);
+      }
+    }
+
+    // 3. Update local React state with deduplication
+    setSalons(prev => prev.map(s => {
+      if (s.id !== salonId) return s;
+      const existingReviews = (s.reviews || []).filter(
+        (r) => `${(r.customerName || '').trim().toLowerCase()}|${(r.comment || '').trim().toLowerCase()}` !== contentKey && r.id !== newReview.id
+      );
+      const nextReviews = [newReview, ...existingReviews];
+      const newCount = nextReviews.length;
+      const avgRating = Number((nextReviews.reduce((acc, r) => acc + (r.rating || 5), 0) / newCount).toFixed(1));
+      const updated = {
+        ...s,
+        reviews: nextReviews,
+        reviewCount: newCount,
+        rating: avgRating,
+      };
+      if (selectedSalonForDetail?.id === salonId) setSelectedSalonForDetail(updated);
+      return updated;
+    }));
+
+    triggerNotification("Your review was posted successfully!");
   };
 
   const replyToReview = (salonId: string, reviewId: string, replyComment: string) => {

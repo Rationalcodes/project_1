@@ -20,6 +20,7 @@ export const WriteReviewModal: React.FC<WriteReviewModalProps> = ({ isOpen, onCl
   const [verifiedVisit, setVerifiedVisit] = useState(true);
 
   // Dual review sync states
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [copiedForGoogle, setCopiedForGoogle] = useState(false);
   const [lastSubmittedScore, setLastSubmittedScore] = useState(5);
@@ -28,6 +29,7 @@ export const WriteReviewModal: React.FC<WriteReviewModalProps> = ({ isOpen, onCl
   if (!isOpen || !selectedSalonForDetail) return null;
 
   const handleClose = () => {
+    setIsSubmitting(false);
     setIsSubmitted(false);
     setCopiedForGoogle(false);
     setComment('');
@@ -36,35 +38,40 @@ export const WriteReviewModal: React.FC<WriteReviewModalProps> = ({ isOpen, onCl
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!comment.trim()) return;
+    if (isSubmitting || !comment.trim()) return;
+    setIsSubmitting(true);
 
-    const finalName = customerName.trim() || userProfile.name || 'Anonymous Customer';
-    if (finalName !== userProfile.name) {
-      updateCustomerName(finalName);
+    try {
+      const finalName = customerName.trim() || userProfile.name || 'Anonymous Customer';
+      if (finalName !== userProfile.name) {
+        updateCustomerName(finalName);
+      }
+
+      const avgScore = Number(
+        ((haircutQuality + staffBehaviour + cleanliness + pricing + overallExperience) / 5).toFixed(1)
+      );
+
+      await addReview(selectedSalonForDetail.id, {
+        customerName: finalName,
+        customerAvatar: userProfile.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80',
+        rating: Math.round(avgScore),
+        comment,
+        verifiedVisit,
+        criteria: {
+          haircutQuality,
+          staffBehaviour,
+          cleanliness,
+          pricing,
+          overallExperience,
+        },
+      });
+
+      setLastSubmittedScore(Math.round(avgScore));
+      setLastSubmittedComment(comment);
+      setIsSubmitted(true);
+    } finally {
+      setIsSubmitting(false);
     }
-
-    const avgScore = Number(
-      ((haircutQuality + staffBehaviour + cleanliness + pricing + overallExperience) / 5).toFixed(1)
-    );
-
-    await addReview(selectedSalonForDetail.id, {
-      customerName: finalName,
-      customerAvatar: userProfile.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80',
-      rating: Math.round(avgScore),
-      comment,
-      verifiedVisit,
-      criteria: {
-        haircutQuality,
-        staffBehaviour,
-        cleanliness,
-        pricing,
-        overallExperience,
-      },
-    });
-
-    setLastSubmittedScore(Math.round(avgScore));
-    setLastSubmittedComment(comment);
-    setIsSubmitted(true);
   };
 
   const handlePostToGoogle = () => {
@@ -262,9 +269,12 @@ export const WriteReviewModal: React.FC<WriteReviewModalProps> = ({ isOpen, onCl
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl bg-amber-500 text-black font-bold text-xs hover:bg-amber-400 transition-colors shadow-lg shadow-amber-500/20"
+                  disabled={isSubmitting}
+                  className={`px-5 py-2 rounded-xl bg-amber-500 text-black font-bold text-xs transition-colors shadow-lg shadow-amber-500/20 ${
+                    isSubmitting ? 'opacity-50 cursor-not-allowed' : 'hover:bg-amber-400'
+                  }`}
                 >
-                  Submit Review
+                  {isSubmitting ? 'Publishing Review...' : 'Submit Review'}
                 </button>
               </div>
             </form>
