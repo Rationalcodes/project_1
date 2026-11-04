@@ -50,10 +50,52 @@ interface PartnerContextType {
 const PartnerContext = createContext<PartnerContextType | undefined>(undefined);
 
 export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [salons, setSalons] = useState<Salon[]>([]);
-  const [activeSalonId, setActiveSalonId] = useState<string>('');
-  const [partnerView, setPartnerView] = useState<PartnerView>('live-queue');
-  const [partnerUser, setPartnerUser] = useState<AuthUser | null>(null);
+  const [salons, setSalons] = useState<Salon[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem('kumbhakaran_partner_active_salon');
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (parsed && parsed.id) return [parsed];
+        }
+      } catch {}
+    }
+    return [];
+  });
+
+  const [activeSalonId, setActiveSalonId] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem('kumbhakaran_partner_active_salon');
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (parsed && parsed.id) return parsed.id;
+        }
+      } catch {}
+    }
+    return '';
+  });
+
+  const [partnerView, setPartnerView] = useState<PartnerView>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem('kumbhakaran_partner_active_salon');
+        if (cached) return 'live-queue';
+      } catch {}
+    }
+    return 'live-queue';
+  });
+
+  const [partnerUser, setPartnerUser] = useState<AuthUser | null>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem('kumbhakaran_partner_user');
+        if (cached) return JSON.parse(cached);
+      } catch {}
+    }
+    return null;
+  });
+
   const [memberships, setMemberships] = useState<SalonMembership[]>([]);
   const [notificationMessage, setNotificationMessage] = useState<string | null>(null);
 
@@ -66,25 +108,62 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }, 4000);
   };
 
-  // Helper to load the single salon tied to this Gmail ID
-  const loadUserSalon = useCallback(async (user: AuthUser) => {
+  // Helper to load the single salon tied to this Gmail ID or user memberships
+  const loadUserSalon = useCallback(async (user: AuthUser, initialMemberships?: SalonMembership[]) => {
     try {
+      // 1. Fetch via getMySalon (backend checks ownerId, memberships, and email)
       const mySalon = await defaultApiClient.getMySalon(user.email);
       if (mySalon && mySalon.id) {
         setSalons([mySalon]);
         setActiveSalonId(mySalon.id);
         setPartnerView('live-queue');
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('kumbhakaran_partner_active_salon', JSON.stringify(mySalon));
+        }
         return mySalon;
+      }
+
+      // 2. Fallback: If memberships contain a salonId, fetch public salon profile
+      const mems = initialMemberships || memberships || [];
+      const ownerMem = mems.find((m) => m.role === 'PARTNER_OWNER') || mems[0];
+      if (ownerMem && ownerMem.salonId) {
+        const memSalon = await defaultApiClient.getPublicSalonById(ownerMem.salonId);
+        if (memSalon && memSalon.id) {
+          setSalons([memSalon]);
+          setActiveSalonId(memSalon.id);
+          setPartnerView('live-queue');
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('kumbhakaran_partner_active_salon', JSON.stringify(memSalon));
+          }
+          return memSalon;
+        }
       }
     } catch (e) {
       console.warn('Could not load user salon from database:', e);
     }
-    // No salon found yet: prompt registration for this Gmail account
+
+    // 3. Fallback: Check if local storage already has a cached salon record
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem('kumbhakaran_partner_active_salon');
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (parsed && parsed.id) {
+            setSalons([parsed]);
+            setActiveSalonId(parsed.id);
+            setPartnerView('live-queue');
+            return parsed;
+          }
+        }
+      } catch {}
+    }
+
+    // No salon found yet: prompt registration for this account
     setSalons([]);
     setActiveSalonId('');
     setPartnerView('register');
     return null;
-  }, []);
+  }, [memberships]);
 
   // Restore authenticated session from localStorage
   useEffect(() => {
@@ -93,15 +172,14 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
     if (savedToken) {
       defaultApiClient.setAuthToken(savedToken);
       defaultApiClient.getCurrentUser().then(async (res) => {
-        if (isMounted) {
-          if (res?.user) {
-            setPartnerUser(res.user);
-            setMemberships(res.memberships || []);
-            await loadUserSalon(res.user);
-          } else {
-            localStorage.removeItem('kumbhakaran_partner_token');
-            defaultApiClient.setAuthToken(null);
+        if (!isMounted) return;
+        if (res?.user) {
+          setPartnerUser(res.user);
+          setMemberships(res.memberships || []);
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('kumbhakaran_partner_user', JSON.stringify(res.user));
           }
+          await loadUserSalon(res.user, res.memberships);
         }
       });
     }
@@ -115,10 +193,11 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
       const res = await defaultApiClient.loginWithGoogle(credential);
       if (res && res.accessToken) {
         localStorage.setItem('kumbhakaran_partner_token', res.accessToken);
+        localStorage.setItem('kumbhakaran_partner_user', JSON.stringify(res.user));
         setPartnerUser(res.user);
         setMemberships(res.memberships || []);
-        triggerNotification(`Welcome, ${res.user.name}!`);
-        await loadUserSalon(res.user);
+        triggerNotification(`Welcome back, ${res.user.name}!`);
+        await loadUserSalon(res.user, res.memberships);
         return true;
       }
     } catch (err: any) {
@@ -135,9 +214,14 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
       await defaultApiClient.logout();
     } catch {}
     localStorage.removeItem('kumbhakaran_partner_token');
+    localStorage.removeItem('kumbhakaran_partner_user');
+    localStorage.removeItem('kumbhakaran_partner_active_salon');
     defaultApiClient.setAuthToken(null);
     setPartnerUser(null);
     setMemberships([]);
+    setSalons([]);
+    setActiveSalonId('');
+    setPartnerView('register');
     triggerNotification('Signed out from Partner OS');
   };
 
@@ -218,6 +302,11 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setSalons((prev) => [newSalon, ...prev]);
     setActiveSalonId(newId);
     setPartnerView('live-queue');
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('kumbhakaran_partner_active_salon', JSON.stringify(newSalon));
+      } catch {}
+    }
     triggerNotification(`🎉 Salon "${newSalon.name}" registered successfully! Your live walk-in queue is ready.`);
 
     // Asynchronously synchronize with NestJS backend
@@ -238,7 +327,7 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
         const avgPrice = salon.services[0]?.price || 150;
         const revenueDelta = customersServedDelta * avgPrice;
 
-        return {
+        const updated = {
           ...salon,
           currentQueue: newQueue,
           lastQueueUpdate: new Date().toISOString(),
@@ -246,6 +335,12 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
           todayRevenue: salon.todayRevenue + revenueDelta,
           monthlyRevenue: salon.monthlyRevenue + revenueDelta,
         };
+        if (typeof window !== 'undefined') {
+          try {
+            localStorage.setItem('kumbhakaran_partner_active_salon', JSON.stringify(updated));
+          } catch {}
+        }
+        return updated;
       }),
     );
 
@@ -262,7 +357,13 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setSalons((prev) =>
       prev.map((s) => {
         if (s.id !== salonId) return s;
-        return { ...s, ...updates };
+        const updated = { ...s, ...updates };
+        if (typeof window !== 'undefined') {
+          try {
+            localStorage.setItem('kumbhakaran_partner_active_salon', JSON.stringify(updated));
+          } catch {}
+        }
+        return updated;
       }),
     );
     defaultApiClient.updateSalon(salonId, updates);

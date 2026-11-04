@@ -260,31 +260,66 @@ export class SalonsService {
   /**
    * Look up the single salon belonging to this owner or Gmail address
    */
-  async getMySalon(userId?: string, userEmail?: string): Promise<PublicSalonResponseDto | null> {
+  async getMySalon(
+    userId?: string,
+    userEmail?: string,
+    memberships?: Array<{ salonId: string; role?: string }>,
+  ): Promise<PublicSalonResponseDto | null> {
     const emailNorm = userEmail?.toLowerCase().trim();
+    const membershipSalonIds = (memberships || [])
+      .map((m) => m.salonId)
+      .filter(Boolean);
 
     try {
       let salon: any = null;
 
-      // 1. Search database by ownerId or email or active membership
-      if (userId || emailNorm) {
+      // 1. Direct membership match from authenticated token payload
+      if (membershipSalonIds.length > 0) {
+        salon = await this.prisma.salon.findFirst({
+          where: {
+            id: { in: membershipSalonIds },
+          },
+          orderBy: { createdAt: 'desc' },
+        });
+      }
+
+      // 2. Search database by ownerId or email (case-insensitive)
+      if (!salon && (userId || emailNorm)) {
         salon = await this.prisma.salon.findFirst({
           where: {
             OR: [
               ...(userId ? [{ ownerId: userId }] : []),
-              ...(emailNorm ? [{ email: emailNorm }] : []),
+              ...(emailNorm ? [{ email: { equals: emailNorm, mode: 'insensitive' as const } }] : []),
             ],
           },
           orderBy: { createdAt: 'desc' },
         });
 
-        // Also check salon_members table if not found by direct email/ownerId
+        // 3. Check salon_members table if not found by direct email/ownerId
         if (!salon && userId) {
           const mem = await this.prisma.salonMember.findFirst({
             where: { userId, isActive: true },
+            orderBy: { createdAt: 'desc' },
           });
           if (mem) {
             salon = await this.prisma.salon.findUnique({ where: { id: mem.salonId } });
+          }
+        }
+
+        // 4. Check user record by email -> join with salon_members
+        if (!salon && emailNorm) {
+          const userRec = await this.prisma.user.findFirst({
+            where: { email: { equals: emailNorm, mode: 'insensitive' as const } },
+            select: { id: true },
+          });
+          if (userRec) {
+            const mem = await this.prisma.salonMember.findFirst({
+              where: { userId: userRec.id, isActive: true },
+              orderBy: { createdAt: 'desc' },
+            });
+            if (mem) {
+              salon = await this.prisma.salon.findUnique({ where: { id: mem.salonId } });
+            }
           }
         }
       }
@@ -296,9 +331,10 @@ export class SalonsService {
       this.logger.warn(`getMySalon database query error: ${(err as Error).message}`);
     }
 
-    // 2. Check local memory state fallback
+    // 5. Check local memory state fallback
     const local = Array.from(this.localSalons.values()).find(
       (s) =>
+        (membershipSalonIds.length > 0 && membershipSalonIds.includes(s.id)) ||
         (userId && s.ownerId === userId) ||
         (emailNorm && s.email?.toLowerCase().trim() === emailNorm),
     );

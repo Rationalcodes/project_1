@@ -26,6 +26,7 @@ import { PublicSalonResponseDto, PublicReviewDto } from './dto/public-salon-resp
 import { CreateReviewDto } from './dto/create-review.dto';
 import { SalonOwnerGuard } from './guards/salon-owner.guard';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { AuthenticatedUser } from '../auth/interfaces/jwt-payload.interface';
 import { DiscoveryService } from '../discovery/discovery.service';
@@ -78,6 +79,8 @@ export class SalonsController {
   }
 
   @Get('my-salon')
+  @UseGuards(OptionalJwtAuthGuard)
+  @ApiBearerAuth()
   @ApiOperation({
     summary: 'Get existing salon owned by the authenticated partner or specified email',
   })
@@ -87,7 +90,8 @@ export class SalonsController {
   ) {
     const targetEmail = user?.email || emailQuery;
     const targetUserId = user?.id;
-    return this.salonsService.getMySalon(targetUserId, targetEmail);
+    const memberships = user?.memberships || [];
+    return this.salonsService.getMySalon(targetUserId, targetEmail, memberships);
   }
 
   @Get(':id')
