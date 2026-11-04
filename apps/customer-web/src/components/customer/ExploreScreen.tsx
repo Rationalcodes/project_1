@@ -250,10 +250,10 @@ export const ExploreScreen: React.FC = () => {
           </h3>
           <p className="text-xs text-stone-500 max-w-sm mx-auto">
             {isWomen
-              ? 'No ladies or unisex beauty studios match your search or filters in this locality. Try searching another area or register your salon.'
-              : 'No approved salons match your search or filters in this locality. Try searching another area or register your own salon studio.'}
+              ? 'No ladies or unisex beauty studios match your active search filters. Reset your filters to explore all verified studios.'
+              : 'No studios match your active search filters. Reset your filters to explore all verified studios.'}
           </p>
-          <div className="pt-2 flex flex-wrap justify-center gap-2">
+          <div className="pt-2 flex justify-center">
             <button
               onClick={() => {
                 setSearchQuery('');
@@ -261,23 +261,11 @@ export const ExploreScreen: React.FC = () => {
                 setOpenOnly(false);
               }}
               className={`px-4 py-2 rounded-xl text-white font-bold text-xs shadow-xs ${
-                isWomen ? 'bg-[#E11D48] hover:bg-rose-700' : 'bg-[#FF6422] hover:bg-orange-600'
+                isWomen ? 'bg-[#E11D48] hover:bg-rose-700' : 'bg-[#FF723A] hover:bg-orange-600'
               }`}
             >
               Reset Filters
             </button>
-            <a
-              href="https://project-1-xq1k.vercel.app"
-              target="_blank"
-              rel="noopener noreferrer"
-              className={`px-4 py-2 rounded-xl bg-white border font-bold text-xs shadow-xs ${
-                isWomen
-                  ? 'border-[#FED7CC] text-[#E11D48] hover:border-[#E11D48]'
-                  : 'border-[#E2DDD5] text-[#FF6422] hover:border-[#FF6422]'
-              }`}
-            >
-              Register Your Salon Business ↗
-            </a>
           </div>
         </div>
       ) : (

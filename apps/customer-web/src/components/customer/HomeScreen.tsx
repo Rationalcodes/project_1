@@ -161,12 +161,12 @@ export const HomeScreen: React.FC = () => {
         {comparisonList.length > 0 && (
           <div className="mt-3 bg-orange-50 border border-orange-200 rounded-xl p-2.5 flex items-center justify-between text-xs">
             <div className="flex items-center gap-2 text-orange-900 font-semibold">
-              <SlidersHorizontal className="w-3.5 h-3.5 text-[#FF6422]" />
+              <SlidersHorizontal className="w-3.5 h-3.5 text-[#FF723A]" />
               <span>{comparisonList.length} salons in compare list</span>
             </div>
             <button
               onClick={() => setIsCompareOpen(true)}
-              className="px-3 py-1 rounded-lg bg-[#FF6422] text-white font-bold text-[11px] hover:bg-orange-600 transition-colors shadow-xs"
+              className="px-3 py-1 rounded-lg bg-[#FF723A] text-white font-bold text-[11px] hover:bg-orange-600 transition-colors shadow-xs"
             >
               Compare Now
             </button>
@@ -174,70 +174,17 @@ export const HomeScreen: React.FC = () => {
         )}
       </section>
 
-      {/* Empty State when no salons are in range */}
-      {salons.length === 0 && !isLoadingSalons && (
-        <section className="bg-white border border-[#E8E2D8] rounded-3xl p-6 sm:p-8 text-center shadow-sm relative overflow-hidden">
-          <div className="absolute top-0 right-1/2 translate-x-1/2 -mt-16 w-60 h-60 rounded-full bg-orange-400/10 blur-3xl pointer-events-none" />
-
-          <div className="w-16 h-16 rounded-3xl bg-orange-50 border border-orange-200 text-[#FF6422] flex items-center justify-center mx-auto mb-4 shadow-sm">
-            <Store className="w-8 h-8 text-[#FF6422]" />
-          </div>
-
-          <h2 className="text-xl sm:text-2xl font-black text-stone-900 tracking-tight">
-            No salons nearby yet.
-          </h2>
-          <p className="text-sm text-stone-700 font-semibold mt-1">
-            Be the first salon to join Kumbhkaran Salons in your area.
-          </p>
-          <p className="text-xs text-stone-500 max-w-md mx-auto mt-2 leading-relaxed">
-            Kumbhkaran Salons only displays verified, registered salon partners with genuine real-time walk-in queues. Currently, no active approved studios are registered {userLocation ? `in ${userLocation.name}` : 'in this area'}.
-          </p>
-
-          <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3">
-            {userLocation && (
-              <button
-                type="button"
-                onClick={() => clearUserLocation()}
-                className="w-full sm:w-auto px-6 py-3 rounded-2xl bg-[#FF6422] text-white font-extrabold text-xs shadow-md shadow-orange-500/20 hover:bg-orange-600 active:scale-95 transition-all flex items-center justify-center gap-2"
-              >
-                <Compass className="w-4 h-4 text-white" />
-                <span>Show All Registered Salons in India</span>
-              </button>
-            )}
-
-            <a
-              href="https://project-1-xq1k.vercel.app"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-full sm:w-auto px-6 py-3 rounded-2xl bg-white border border-[#E2DDD5] hover:border-[#FF6422] text-stone-800 font-bold text-xs transition-all flex items-center justify-center gap-2 shadow-xs"
-            >
-              <Store className="w-4 h-4 text-[#FF6422]" />
-              <span>Register Your Salon Business ↗</span>
-            </a>
-
-            <button
-              onClick={() => setCustomerTab('map')}
-              className="w-full sm:w-auto px-5 py-3 rounded-2xl bg-white border border-[#E2DDD5] hover:border-[#FF6422] text-stone-800 font-bold text-xs transition-all flex items-center justify-center gap-2 shadow-xs"
-            >
-              <MapPin className="w-4 h-4 text-[#FF6422]" />
-              <span>Explore Map</span>
-            </button>
-          </div>
-        </section>
-      )}
-
       {/* Loading Skeleton */}
-      {isLoadingSalons && (
+      {isLoadingSalons && salons.length === 0 && (
         <div className="py-12 text-center text-xs text-stone-500 flex items-center justify-center gap-2">
-          <div className="w-4 h-4 border-2 border-[#FF6422] border-t-transparent rounded-full animate-spin" />
-          <span>Searching for registered salons {userLocation ? `near ${userLocation.name.split(',')[0]}...` : 'on Kumbhkaran Salons...'}</span>
+          <div className="w-4 h-4 border-2 border-[#FF723A] border-t-transparent rounded-full animate-spin" />
+          <span>Loading verified studios on Kumbhkaran Salons...</span>
         </div>
       )}
 
-      {/* Dynamic Sections when real salons exist */}
-      {salons.length > 0 && (
-        <>
-          <LazyModeSelector />
+      {/* Dynamic Sections - Always visible to customers */}
+      <>
+        <LazyModeSelector />
 
           {/* Popular Grooming / Beauty Services Category Filter */}
           <section>
@@ -703,7 +650,6 @@ export const HomeScreen: React.FC = () => {
             </section>
           )}
         </>
-      )}
     </div>
   );
 };

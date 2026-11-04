@@ -39,8 +39,10 @@ async function bootstrap() {
       // Allow temporary & production Vercel URLs (*.vercel.app)
       if (/^https:\/\/.*\.vercel\.app$/.test(origin)) return callback(null, true);
 
-      // Allow official Kumbhakaran platform domains
+      // Allow official Kumbhkaran Salons custom domains (*.kumbhkaransalons.in, *.kumbhakaran.in)
+      if (/^https:\/\/(.*\.)?kumbhkaransalons\.in$/.test(origin)) return callback(null, true);
       if (/^https:\/\/(.*\.)?kumbhakaran\.in$/.test(origin)) return callback(null, true);
+      if (/^https:\/\/(.*\.)?kumbhakaran-salons\..*$/.test(origin)) return callback(null, true);
 
       // In non-production environments, allow all origins
       if (process.env.NODE_ENV !== 'production') return callback(null, true);

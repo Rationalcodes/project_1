@@ -309,42 +309,6 @@ export const ProfileScreen: React.FC = () => {
         </div>
       </section>
 
-      {/* Salon Partner Portal Link */}
-      <div className={`p-4 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs ${
-        isWomen
-          ? 'bg-rose-50 border-rose-200'
-          : 'bg-orange-50 border-orange-200'
-      }`}>
-        <div>
-          <div className="text-xs font-bold text-stone-900 flex items-center gap-1.5">
-            <span>Own a Salon or Beauty Studio?</span>
-            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
-              isWomen
-                ? 'bg-rose-100 text-[#E11D48] border-rose-200'
-                : 'bg-orange-100 text-[#FF6422] border-orange-200'
-            }`}>
-              For Salons
-            </span>
-          </div>
-          <div className="text-[11px] text-stone-600 mt-0.5">
-            Join Kumbhkaran Salons to broadcast your live queue, manage stylists, and fill empty chairs.
-          </div>
-        </div>
-        <a
-          href="https://project-1-xq1k.vercel.app/"
-          target="_blank"
-          rel="noreferrer"
-          className={`px-3.5 py-2 rounded-xl text-white text-xs font-bold transition-colors flex items-center justify-center gap-1.5 shrink-0 shadow-md ${
-            isWomen
-              ? 'bg-[#E11D48] hover:bg-rose-700 shadow-rose-500/20'
-              : 'bg-[#FF6422] hover:bg-orange-600 shadow-orange-500/20'
-          }`}
-        >
-          <span>Open Partner OS</span>
-          <ExternalLink className="w-3.5 h-3.5" />
-        </a>
-      </div>
-
       {/* Transparency Guarantee */}
       <div className={`p-4 rounded-2xl bg-white border flex items-start gap-3 shadow-xs ${
         isWomen ? 'border-[#FED7CC]' : 'border-[#E8E2D8]'

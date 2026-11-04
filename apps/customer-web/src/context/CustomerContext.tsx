@@ -312,7 +312,81 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     triggerNotification('Signed out successfully');
   };
 
-    // Synchronize discovery with NestJS PostGIS Backend & dynamic Haversine distance engine
+  // Helper to map API salon records with dynamic Haversine distance
+  const mapApiSalons = (apiList: any[], loc: LocationOption | null): Salon[] => {
+    return apiList.map((item) => {
+      const calculatedDist = loc
+        ? calculateHaversineDistance(loc.lat, loc.lng, item.latitude, item.longitude)
+        : null;
+      const dist = calculatedDist ?? item.distanceKm;
+
+      return {
+        id: item.id,
+        name: item.name,
+        tagline: item.tagline || 'Verified Kumbhakaran Salon Partner',
+        coverImage: item.coverImage || 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=1200&q=80',
+        images: [item.coverImage || 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=1200&q=80'],
+        rating: Number(item.rating) || 5.0,
+        reviewCount: Number(item.reviewCount) || 0,
+        currentQueue: item.currentQueue,
+        avgServiceTimeMinutes: 20,
+        activeBarbers: 2,
+        distanceKm: dist,
+        startingPrice: Number(item.startingPrice) || 150,
+        isOpen: item.isOpen,
+        openingHours: {
+          open: '09:00 AM',
+          close: '09:30 PM',
+          formatted: '09:00 AM – 09:30 PM (All Days)',
+        },
+        address: `${item.locality}, ${item.city}`,
+        locality: item.locality,
+        city: item.city,
+        pincode: '560001',
+        coordinates: {
+          lat: item.latitude,
+          lng: item.longitude,
+        },
+        phone: '+91 98000 00000',
+        lastQueueUpdate: item.lastQueueUpdate,
+        services: item.services && item.services.length > 0
+          ? item.services
+          : [
+              { id: `svc-${item.id}-1`, name: 'Signature Haircut', category: 'Hair', price: Number(item.startingPrice) || 150, durationMinutes: 25, isAvailable: true, description: 'Master stylist haircut' },
+            ],
+        staff: [
+          { id: `st-${item.id}-1`, name: 'Master Barber', role: 'Stylist', experience: '5 Years', photo: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80', specialties: ['Fade', 'Beard'], status: 'active', rating: 4.9 },
+        ],
+        ratingBreakdown: { haircutQuality: 5, staffBehaviour: 5, cleanliness: 5, pricing: 5, overallExperience: 5 },
+        reviews: (() => {
+          let cached: Review[] = [];
+          if (typeof window !== 'undefined') {
+            try {
+              const raw: Review[] = JSON.parse(localStorage.getItem(`kumbhakaran_reviews_${item.id}`) || '[]');
+              const seen = new Set<string>();
+              cached = raw.filter((r) => {
+                const sig = `${(r.customerName || '').trim().toLowerCase()}|${(r.comment || '').trim().toLowerCase()}`;
+                if (seen.has(sig)) return false;
+                seen.add(sig);
+                return true;
+              });
+              if (cached.length !== raw.length) {
+                localStorage.setItem(`kumbhakaran_reviews_${item.id}`, JSON.stringify(cached));
+              }
+            } catch {}
+          }
+          return cached;
+        })(),
+        isVerified: item.isVerified,
+        status: 'active',
+        todayCustomersServed: 0,
+        todayRevenue: 0,
+        monthlyRevenue: 0,
+      };
+    });
+  };
+
+  // Synchronize discovery with NestJS PostGIS Backend & dynamic Haversine distance engine
   useEffect(() => {
     let isMounted = true;
     setIsLoadingSalons(true);
@@ -322,94 +396,43 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const queryRadius = userLocation ? 25 : undefined;
 
     defaultApiClient.getNearbySalons(queryLat, queryLng, queryRadius, lazyFilter)
-      .then((res) => {
+      .then(async (res) => {
         if (!isMounted) return;
         if (res && res.salons && res.salons.length > 0) {
-          const mapped: Salon[] = res.salons.map((item) => {
-            const calculatedDist = userLocation
-              ? calculateHaversineDistance(
-                  userLocation.lat,
-                  userLocation.lng,
-                  item.latitude,
-                  item.longitude,
-                )
-              : null;
-            const dist = calculatedDist ?? item.distanceKm;
-
-            return {
-              id: item.id,
-              name: item.name,
-              tagline: item.tagline || 'Verified Kumbhakaran Salon Partner',
-              coverImage: item.coverImage || 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=1200&q=80',
-              images: [item.coverImage || 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=1200&q=80'],
-              rating: Number(item.rating) || 5.0,
-              reviewCount: Number(item.reviewCount) || 0,
-              currentQueue: item.currentQueue,
-              avgServiceTimeMinutes: 20,
-              activeBarbers: 2,
-              distanceKm: dist,
-              startingPrice: Number(item.startingPrice) || 150,
-              isOpen: item.isOpen,
-              openingHours: {
-                open: '09:00 AM',
-                close: '09:30 PM',
-                formatted: '09:00 AM – 09:30 PM (All Days)',
-              },
-              address: `${item.locality}, ${item.city}`,
-              locality: item.locality,
-              city: item.city,
-              pincode: '560001',
-              coordinates: {
-                lat: item.latitude,
-                lng: item.longitude,
-              },
-              phone: '+91 98000 00000',
-              lastQueueUpdate: item.lastQueueUpdate,
-              services: [
-                { id: `svc-${item.id}-1`, name: 'Signature Haircut', category: 'Hair', price: Number(item.startingPrice) || 150, durationMinutes: 25, isAvailable: true, description: 'Master stylist haircut' },
-              ],
-              staff: [
-                { id: `st-${item.id}-1`, name: 'Master Barber', role: 'Stylist', experience: '5 Years', photo: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80', specialties: ['Fade', 'Beard'], status: 'active', rating: 4.9 },
-              ],
-              ratingBreakdown: { haircutQuality: 5, staffBehaviour: 5, cleanliness: 5, pricing: 5, overallExperience: 5 },
-              reviews: (() => {
-                let cached: Review[] = [];
-                if (typeof window !== 'undefined') {
-                  try {
-                    const raw: Review[] = JSON.parse(localStorage.getItem(`kumbhakaran_reviews_${item.id}`) || '[]');
-                    const seen = new Set<string>();
-                    cached = raw.filter((r) => {
-                      const sig = `${(r.customerName || '').trim().toLowerCase()}|${(r.comment || '').trim().toLowerCase()}`;
-                      if (seen.has(sig)) return false;
-                      seen.add(sig);
-                      return true;
-                    });
-                    if (cached.length !== raw.length) {
-                      localStorage.setItem(`kumbhakaran_reviews_${item.id}`, JSON.stringify(cached));
-                    }
-                  } catch {}
-                }
-                return cached;
-              })(),
-              isVerified: item.isVerified,
-              status: 'active',
-              todayCustomersServed: 0,
-              todayRevenue: 0,
-              monthlyRevenue: 0,
-            };
-          });
-          setSalons(mapped);
+          setSalons(mapApiSalons(res.salons, userLocation));
         } else {
-          setSalons([]);
+          // If no salons found in local 25km radius (e.g. Bilaspur), seamlessly fallback to all verified studios across India
+          try {
+            const allRes = await defaultApiClient.getNearbySalons(undefined, undefined, undefined, lazyFilter);
+            if (isMounted) {
+              if (allRes && allRes.salons && allRes.salons.length > 0) {
+                setSalons(mapApiSalons(allRes.salons, userLocation));
+              } else {
+                setSalons(INITIAL_SALONS);
+              }
+            }
+          } catch {
+            if (isMounted) setSalons(INITIAL_SALONS);
+          }
         }
-        setIsLoadingSalons(false);
+        if (isMounted) setIsLoadingSalons(false);
       })
-      .catch((err) => {
+      .catch(async (err) => {
         console.warn('Discovery API call failed:', err);
-        if (isMounted) {
-          setSalons([]);
-          setIsLoadingSalons(false);
+        if (!isMounted) return;
+        try {
+          const allRes = await defaultApiClient.getNearbySalons(undefined, undefined, undefined, lazyFilter);
+          if (isMounted) {
+            if (allRes && allRes.salons && allRes.salons.length > 0) {
+              setSalons(mapApiSalons(allRes.salons, userLocation));
+            } else {
+              setSalons(INITIAL_SALONS);
+            }
+          }
+        } catch {
+          if (isMounted) setSalons(INITIAL_SALONS);
         }
+        if (isMounted) setIsLoadingSalons(false);
       });
 
     return () => {
