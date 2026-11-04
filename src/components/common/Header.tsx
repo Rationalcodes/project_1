@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import {
   MapPin,
   ChevronDown,
+  ExternalLink,
 } from 'lucide-react';
 import { useSalon, POPULAR_LOCATIONS } from '../../context/SalonContext';
 
@@ -41,8 +42,22 @@ export const Header: React.FC = () => {
           </div>
         </div>
 
-        {/* Location Selector */}
-        <div className="relative min-w-0 shrink">
+        <div className="flex items-center gap-2 shrink min-w-0">
+          {/* Partner / Salon Portal link */}
+          <a
+            href="https://project-1-xq1k.vercel.app/"
+            target="_blank"
+            rel="noreferrer"
+            className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/25 text-amber-400 hover:bg-amber-500/20 text-xs font-semibold transition-all shrink-0"
+            title="Kumbhkaran Salons Partner Portal"
+          >
+            <span className="hidden sm:inline">For </span>
+            <span>Salons</span>
+            <ExternalLink className="w-3 h-3 text-amber-400 shrink-0" />
+          </a>
+
+          {/* Location Selector */}
+          <div className="relative min-w-0 shrink">
           <button
             onClick={() => setLocationDropdownOpen(!locationDropdownOpen)}
             className={`flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl transition-all shadow-sm max-w-[150px] xs:max-w-[190px] sm:max-w-[240px] ${
@@ -104,6 +119,7 @@ export const Header: React.FC = () => {
           )}
         </div>
       </div>
-    </header>
+    </div>
+  </header>
   );
 };

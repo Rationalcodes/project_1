@@ -15,6 +15,7 @@ import {
   LogOut,
   Mail,
   CheckCircle2,
+  ExternalLink,
 } from 'lucide-react';
 
 export const ProfileScreen: React.FC = () => {
@@ -262,6 +263,30 @@ export const ProfileScreen: React.FC = () => {
           </select>
         </div>
       </section>
+
+      {/* Salon Partner Portal Link */}
+      <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-lg">
+        <div>
+          <div className="text-xs font-bold text-white flex items-center gap-1.5">
+            <span>Own a Salon or Barber Studio?</span>
+            <span className="text-[10px] bg-amber-500/20 text-amber-300 font-bold px-2 py-0.5 rounded-full border border-amber-500/30">
+              For Salons
+            </span>
+          </div>
+          <div className="text-[11px] text-zinc-400 mt-0.5">
+            Join Kumbhkaran Salons to broadcast your live queue, manage barbers, and fill empty chairs.
+          </div>
+        </div>
+        <a
+          href="https://project-1-xq1k.vercel.app/"
+          target="_blank"
+          rel="noreferrer"
+          className="px-3.5 py-2 rounded-xl bg-amber-500 text-black text-xs font-bold hover:bg-amber-400 transition-colors flex items-center justify-center gap-1.5 shrink-0 shadow-md shadow-amber-500/20"
+        >
+          <span>Open Partner OS</span>
+          <ExternalLink className="w-3.5 h-3.5" />
+        </a>
+      </div>
 
       {/* Transparency Guarantee */}
       <div className="p-4 rounded-2xl bg-zinc-900/50 border border-zinc-800 flex items-start gap-3">

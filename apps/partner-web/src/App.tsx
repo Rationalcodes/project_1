@@ -36,7 +36,7 @@ const PartnerMainContent: React.FC = () => {
 
           <div className="flex items-center gap-2 sm:gap-3 text-xs shrink-0">
             <a
-              href={import.meta.env.VITE_CUSTOMER_APP_URL || 'http://localhost:5173'}
+              href={import.meta.env.VITE_CUSTOMER_APP_URL || 'https://customer-web-inky.vercel.app/'}
               target="_blank"
               rel="noreferrer"
               className="flex items-center gap-1 px-2.5 sm:px-3 py-1.5 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-300 hover:text-white transition-colors"

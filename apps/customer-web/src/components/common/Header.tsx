@@ -10,6 +10,7 @@ import {
   Map as MapIcon,
   Heart,
   X,
+  ExternalLink,
 } from 'lucide-react';
 import { useCustomer, POPULAR_LOCATIONS } from '../../context/CustomerContext';
 import { CustomerTab } from '@kumbhakaran/shared-types';
@@ -221,6 +222,19 @@ export const Header: React.FC = () => {
               </div>
             )}
           </div>
+
+          {/* Partner / Salon Portal link */}
+          <a
+            href="https://project-1-xq1k.vercel.app/"
+            target="_blank"
+            rel="noreferrer"
+            className="flex items-center gap-1 px-2 sm:px-2.5 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/25 text-amber-400 hover:bg-amber-500/20 text-xs font-semibold transition-all shrink-0"
+            title="Kumbhkaran Salons Partner Portal"
+          >
+            <span className="hidden sm:inline">For </span>
+            <span>Salons</span>
+            <ExternalLink className="w-3 h-3 text-amber-400 shrink-0" />
+          </a>
 
           {/* Profile / Sign In Pill */}
           <button
