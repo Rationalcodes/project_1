@@ -157,32 +157,6 @@ export const HomeScreen: React.FC = () => {
           </div>
         </div>
 
-        {/* Global Search Bar */}
-        <div className="mt-4 relative">
-          <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-stone-400">
-            <Search className={`w-4 h-4 ${isWomen ? 'text-[#E11D48]' : 'text-[#FF6422]'}`} />
-          </div>
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder={isWomen ? 'Find beauty parlours, treatments or stylists...' : 'Find salons, services or stylists...'}
-            className={`w-full pl-10 pr-10 py-3 bg-[#FAF7F2] border rounded-2xl text-xs text-stone-900 placeholder-stone-400 focus:outline-none transition-all shadow-inner ${
-              isWomen
-                ? 'border-[#FED7CC] focus:border-[#E11D48] focus:ring-1 focus:ring-[#E11D48]'
-                : 'border-[#E2DDD5] focus:border-[#FF6422] focus:ring-1 focus:ring-[#FF6422]'
-            }`}
-          />
-          {searchQuery && (
-            <button
-              onClick={() => setSearchQuery('')}
-              className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-xs text-stone-500 hover:text-stone-900 font-semibold"
-            >
-              Clear
-            </button>
-          )}
-        </div>
-
         {/* Comparison Bar Trigger (if items selected) */}
         {comparisonList.length > 0 && (
           <div className="mt-3 bg-orange-50 border border-orange-200 rounded-xl p-2.5 flex items-center justify-between text-xs">
@@ -199,38 +173,6 @@ export const HomeScreen: React.FC = () => {
           </div>
         )}
       </section>
-
-      {/* Set Location Banner when user hasn't set their location yet */}
-      {!userLocation && (
-        <div className="mb-5 p-4 sm:p-5 rounded-3xl bg-gradient-to-r from-orange-50 via-amber-50/50 to-white border border-orange-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3.5 shadow-sm">
-          <div className="flex items-center gap-3.5">
-            <div className="w-11 h-11 rounded-2xl bg-orange-100 border border-orange-200 flex items-center justify-center shrink-0 shadow-sm">
-              <MapPin className="w-5 h-5 text-[#FF6422]" />
-            </div>
-            <div>
-              <h3 className="text-sm font-extrabold text-stone-900">
-                Set your location to see salons near you
-              </h3>
-              <p className="text-xs text-stone-600 mt-0.5">
-                Take location directly from your device GPS or select your locality for accurate queues and distance.
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            <button
-              type="button"
-              onClick={async () => {
-                await requestDeviceLocation();
-              }}
-              className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl bg-[#FF6422] hover:bg-orange-600 text-white font-extrabold text-xs flex items-center justify-center gap-1.5 transition-all shadow-md shadow-orange-500/20 active:scale-95"
-            >
-              <Navigation className="w-3.5 h-3.5 fill-white animate-pulse" />
-              <span>Use Current Location</span>
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* Empty State when no salons are in range */}
       {salons.length === 0 && !isLoadingSalons && (

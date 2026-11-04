@@ -150,32 +150,6 @@ export const HomeScreen: React.FC = () => {
           </div>
         </div>
 
-        {/* Global Search Bar */}
-        <div className="mt-4 relative">
-          <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-stone-400">
-            <Search className={`w-4 h-4 ${isWomen ? 'text-[#E11D48]' : 'text-[#FF6422]'}`} />
-          </div>
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder={isWomen ? 'Find beauty parlours, treatments or stylists...' : 'Find salons, services or stylists...'}
-            className={`w-full pl-10 pr-10 py-3 bg-[#FAF7F2] border rounded-2xl text-xs text-stone-900 placeholder-stone-400 focus:outline-none transition-all shadow-inner ${
-              isWomen
-                ? 'border-[#FED7CC] focus:border-[#E11D48] focus:ring-1 focus:ring-[#E11D48]'
-                : 'border-[#E2DDD5] focus:border-[#FF6422] focus:ring-1 focus:ring-[#FF6422]'
-            }`}
-          />
-          {searchQuery && (
-            <button
-              onClick={() => setSearchQuery('')}
-              className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-xs text-stone-500 hover:text-stone-900 font-semibold"
-            >
-              Clear
-            </button>
-          )}
-        </div>
-
         {/* Comparison Bar Trigger (if items selected) */}
         {comparisonList.length > 0 && (
           <div className="mt-3 bg-orange-50 border border-orange-200 rounded-xl p-2.5 flex items-center justify-between text-xs">

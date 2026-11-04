@@ -6,6 +6,9 @@ import {
   Search,
   User,
   X,
+  Sparkles,
+  Scissors,
+  Flame,
 } from 'lucide-react';
 import { useSalon, POPULAR_LOCATIONS } from '../../context/SalonContext';
 
@@ -16,17 +19,39 @@ export const Header: React.FC = () => {
     clearUserLocation,
     requestDeviceLocation,
     triggerNotification,
+    userProfile,
     setCustomerTab,
     setSelectedSalonForDetail,
     genderFilter,
     setGenderFilter,
-    userProfile,
+    searchQuery,
+    setSearchQuery,
+    selectedServiceFilter,
+    setSelectedServiceFilter,
   } = useSalon();
 
   const [locationDropdownOpen, setLocationDropdownOpen] = useState(false);
   const [customLocalityInput, setCustomLocalityInput] = useState('');
 
   const isWomen = genderFilter === 'women';
+
+  const groomingCategories = isWomen
+    ? [
+        { name: 'All', icon: Sparkles },
+        { name: 'Hair', icon: Scissors },
+        { name: 'Facial', icon: Sparkles },
+        { name: 'Spa', icon: Sparkles },
+        { name: 'Color', icon: Sparkles },
+        { name: 'Combos', icon: Flame },
+      ]
+    : [
+        { name: 'All', icon: Sparkles },
+        { name: 'Hair', icon: Scissors },
+        { name: 'Beard', icon: Scissors },
+        { name: 'Combos', icon: Flame },
+        { name: 'Spa', icon: Sparkles },
+        { name: 'Facial', icon: Sparkles },
+      ];
 
   const handleApplyCustomLocation = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -66,185 +91,278 @@ export const Header: React.FC = () => {
   };
 
   return (
-    <header className="sticky top-0 z-40 w-full max-w-full overflow-hidden shadow-xs transition-colors duration-300">
-      {/* 1. TOP DUAL TAB STRIP: Men | Women (Full width top bar inspired by JioMart Quick / ShopAll) */}
+    <header className="sticky top-0 z-40 w-full max-w-full overflow-visible transition-colors duration-300">
+      {/* 1. TOP ROOF BAR (JioMart Base behind tabs) */}
       <div
-        className={`w-full px-2 pt-2 pb-1.5 transition-colors duration-300 ${
-          isWomen ? 'bg-[#3A101A]' : 'bg-[#23120C]'
+        className={`w-full px-3 pt-2.5 transition-colors duration-300 ${
+          isWomen ? 'bg-[#3A0A16]' : 'bg-[#1C110A]'
         }`}
       >
-        <div className="max-w-md mx-auto grid grid-cols-2 gap-1.5 p-1 rounded-2xl bg-black/25 backdrop-blur-xs">
+        <div className="max-w-md mx-auto flex items-end justify-center gap-2">
           {/* MEN TAB */}
           <button
             type="button"
             onClick={() => setGenderFilter('men')}
-            className={`py-2 px-3 rounded-xl text-xs font-black transition-all duration-200 flex items-center justify-center gap-1.5 ${
+            className={`flex-1 py-2.5 px-3 font-black text-xs sm:text-sm tracking-wider flex items-center justify-center gap-1.5 transition-all duration-200 cursor-pointer select-none ${
               !isWomen
-                ? 'bg-[#FAF7F2] text-stone-900 shadow-md shadow-black/25 scale-[1.01]'
-                : 'text-stone-300 hover:text-white hover:bg-white/10'
+                ? 'bg-[#FF5722] text-[#1C110A] rounded-t-2xl rounded-b-none shadow-md z-10'
+                : 'bg-white text-[#FF5722] rounded-2xl shadow-sm hover:bg-stone-50 mb-1 active:scale-98'
             }`}
           >
-            <span className="text-sm">✂</span>
-            <span className="tracking-wider">MEN</span>
+            <span className="text-base leading-none">✂</span>
+            <span className="font-extrabold tracking-wider">MEN</span>
           </button>
 
           {/* WOMEN TAB */}
           <button
             type="button"
             onClick={() => setGenderFilter('women')}
-            className={`py-2 px-3 rounded-xl text-xs font-black transition-all duration-200 flex items-center justify-center gap-1.5 ${
+            className={`flex-1 py-2.5 px-3 font-black text-xs sm:text-sm tracking-wider flex items-center justify-center gap-1.5 transition-all duration-200 cursor-pointer select-none ${
               isWomen
-                ? 'bg-[#FFF8F5] text-[#E11D48] shadow-md shadow-black/25 scale-[1.01]'
-                : 'text-stone-300 hover:text-white hover:bg-white/10'
+                ? 'bg-[#FFDFD6] text-[#7A0D22] rounded-t-2xl rounded-b-none shadow-md z-10'
+                : 'bg-white text-[#C93B57] rounded-2xl shadow-sm hover:bg-stone-50 mb-1 active:scale-98'
             }`}
           >
-            <span className="text-sm">✨</span>
-            <span className="tracking-wider">WOMEN</span>
+            <span className="text-base leading-none">✨</span>
+            <span className="font-extrabold tracking-wider">WOMEN</span>
           </button>
         </div>
       </div>
 
-      {/* 2. MAIN HEADER ROW: Logo & Location on Left | Profile on Right */}
+      {/* 2. THE SEAMLESS CANOPY (Blends directly from active tab with zero line or gap) */}
       <div
-        className={`px-3 sm:px-6 py-2.5 border-b transition-colors duration-300 ${
-          isWomen
-            ? 'bg-[#FFF5F2]/95 backdrop-blur-md border-[#FED7CC]'
-            : 'bg-[#FFFDF9]/95 backdrop-blur-md border-[#E8E2D8]'
+        className={`w-full px-3 sm:px-6 pt-2.5 pb-3 transition-colors duration-300 shadow-md ${
+          isWomen ? 'bg-[#FFDFD6]' : 'bg-[#FF5722]'
         }`}
       >
-        <div className="max-w-7xl mx-auto flex items-center justify-between gap-3">
-          {/* Left: Brand Logo + Location below it (like JioMart Delivery Info) */}
-          <div className="flex flex-col items-start min-w-0">
-            {/* Kumbhkaran Salons Official Logo */}
+        <div className="max-w-7xl mx-auto space-y-2.5">
+          {/* Top Row: Brand Logo + Location (Left) | Profile (Right) */}
+          <div className="flex items-center justify-between gap-3">
+            {/* Left: Official Brand Logo & Location directly beneath it */}
+            <div className="flex flex-col items-start min-w-0">
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedSalonForDetail(null);
+                  setCustomerTab('home');
+                }}
+                className="flex items-center cursor-pointer select-none group focus:outline-none -ml-0.5"
+                title="Kumbhkaran Salons Home"
+              >
+                <img
+                  src={isWomen ? '/logo-transparent.png' : '/logo-white.png'}
+                  alt="Kumbhkaran Salons"
+                  className="h-7 xs:h-8 sm:h-9 w-auto max-w-[170px] sm:max-w-[220px] object-contain transition-transform group-hover:scale-102 drop-shadow-xs"
+                  onError={(e) => {
+                    (e.currentTarget as HTMLImageElement).src = '/logo.png';
+                  }}
+                />
+              </button>
+
+              {/* Location Selector (Directly beneath logo like JioMart Delivery Address) */}
+              <div className="relative mt-0.5">
+                <button
+                  type="button"
+                  onClick={() => setLocationDropdownOpen(!locationDropdownOpen)}
+                  className={`flex items-center gap-1 text-[11px] sm:text-xs font-bold transition-opacity cursor-pointer ${
+                    isWomen
+                      ? 'text-[#7A0D22] hover:text-[#520917]'
+                      : 'text-white/95 hover:text-white'
+                  }`}
+                  title={userLocation ? `Location: ${userLocation.name}` : 'Set your location'}
+                >
+                  <MapPin className="w-3.5 h-3.5 shrink-0" />
+                  <span className="truncate max-w-[170px] xs:max-w-[230px] sm:max-w-[340px]">
+                    {userLocation ? userLocation.name : 'Set Location'}
+                  </span>
+                  <ChevronDown className="w-3 h-3 opacity-80 shrink-0" />
+                </button>
+
+                {/* Location Picker Dropdown */}
+                {locationDropdownOpen && (
+                  <div className="absolute left-0 mt-2 w-72 sm:w-80 max-w-[calc(100vw-24px)] bg-white border border-stone-200 rounded-2xl shadow-2xl p-3 z-50 text-stone-900 animate-in fade-in zoom-in-95">
+                    {/* GPS Locator Button */}
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        await requestDeviceLocation();
+                        setLocationDropdownOpen(false);
+                      }}
+                      className={`w-full mb-2.5 p-2.5 rounded-xl border text-xs font-bold flex items-center justify-center gap-2 transition-all shadow-xs ${
+                        isWomen
+                          ? 'bg-rose-50 border-rose-200 text-[#E11D48] hover:bg-rose-100'
+                          : 'bg-orange-50 border-orange-200 text-[#FF6422] hover:bg-orange-100'
+                      }`}
+                    >
+                      <Navigation className="w-3.5 h-3.5 animate-pulse" />
+                      <span>Use My Current Location</span>
+                    </button>
+
+                    {/* Manual search input */}
+                    <form onSubmit={handleApplyCustomLocation} className="mb-2.5">
+                      <div className="relative">
+                        <Search className="w-3.5 h-3.5 text-stone-400 absolute left-2.5 top-2.5" />
+                        <input
+                          type="text"
+                          value={customLocalityInput}
+                          onChange={(e) => setCustomLocalityInput(e.target.value)}
+                          placeholder="Search city, locality or PIN..."
+                          className="w-full pl-8 pr-3 py-1.5 bg-[#FAF7F2] border border-[#E2DDD5] rounded-xl text-xs text-stone-900 placeholder-stone-400 focus:outline-none focus:border-[#FF6422]"
+                        />
+                      </div>
+                    </form>
+
+                    {/* Popular Location Chips */}
+                    <div className="mb-2">
+                      <p className="text-[10px] uppercase font-bold text-stone-400 mb-1 px-1">
+                        Popular Hubs
+                      </p>
+                      <div className="flex flex-wrap gap-1 max-h-32 overflow-y-auto pr-1">
+                        {POPULAR_LOCATIONS.map((loc) => (
+                          <button
+                            key={loc.name}
+                            type="button"
+                            onClick={() => {
+                              setUserLocation(loc);
+                              setLocationDropdownOpen(false);
+                              triggerNotification(`Location set to ${loc.name}`);
+                            }}
+                            className={`text-[11px] px-2 py-1 rounded-lg border transition-colors ${
+                              userLocation?.name === loc.name
+                                ? 'bg-orange-500 text-white border-orange-500 font-bold'
+                                : 'bg-stone-50 border-stone-200 text-stone-700 hover:border-orange-300'
+                            }`}
+                          >
+                            {loc.name.split(',')[0]}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {userLocation ? (
+                      <div className="p-2 rounded-xl bg-[#FAF7F2] border border-[#E2DDD5]">
+                        <div className="flex items-center justify-between text-xs text-stone-800">
+                          <div className="flex items-center gap-1.5 truncate">
+                            <MapPin className="w-3.5 h-3.5 text-[#FF6422] shrink-0" />
+                            <span className="font-bold truncate">{userLocation.name}</span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              clearUserLocation();
+                              setLocationDropdownOpen(false);
+                              triggerNotification('Location reset. Showing all salons.');
+                            }}
+                            className="text-[11px] text-stone-500 hover:text-[#FF6422] transition-colors shrink-0 ml-2 underline"
+                          >
+                            Clear
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="px-2 py-1 text-[11px] text-stone-500 text-center">
+                        Showing salons across India
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Right: Beside Logo -> User Profile Button */}
             <button
               type="button"
               onClick={() => {
                 setSelectedSalonForDetail(null);
-                setCustomerTab('home');
+                setCustomerTab('profile');
               }}
-              className="flex items-center cursor-pointer select-none group focus:outline-none -ml-1"
-              title="Kumbhkaran Salons Home"
+              className={`flex items-center gap-1.5 p-2 sm:px-3 sm:py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer shadow-xs ${
+                isWomen
+                  ? 'bg-white/85 hover:bg-white text-[#7A0D22] border border-rose-200/60'
+                  : 'bg-white/20 hover:bg-white/30 text-white border border-white/25 backdrop-blur-xs'
+              }`}
+              title="Customer Profile"
             >
-              <img
-                src="/logo-transparent.png"
-                alt="Kumbhkaran Salons"
-                className="h-7 xs:h-8 sm:h-9 w-auto max-w-[170px] sm:max-w-[220px] object-contain transition-transform group-hover:scale-105 drop-shadow-xs"
-                onError={(e) => {
-                  (e.currentTarget as HTMLImageElement).src = '/logo.png';
-                }}
-              />
+              {userProfile?.avatar ? (
+                <img
+                  src={userProfile.avatar}
+                  alt=""
+                  className="w-5 h-5 rounded-full object-cover shrink-0 ring-1 ring-black/10"
+                />
+              ) : (
+                <User
+                  className={`w-4 h-4 shrink-0 ${
+                    isWomen ? 'text-[#7A0D22]' : 'text-white'
+                  }`}
+                />
+              )}
+              <span className="hidden sm:inline truncate max-w-[80px]">
+                {userProfile?.name?.split(' ')[0] || 'Profile'}
+              </span>
             </button>
+          </div>
 
-            {/* Location Selector (Directly below the logo) */}
-            <div className="relative mt-0.5">
-              <button
-                type="button"
-                onClick={() => setLocationDropdownOpen(!locationDropdownOpen)}
-                className={`flex items-center gap-1 text-[11px] sm:text-xs font-bold transition-colors ${
+          {/* Search Row: JioMart-Style Crisp White Pill Embedded in the Canopy */}
+          <div className="relative w-full">
+            <div className="relative flex items-center bg-white rounded-full shadow-md overflow-hidden transition-all focus-within:ring-2 focus-within:ring-black/10">
+              <div className="pl-3.5 pr-2 flex items-center pointer-events-none">
+                <Search
+                  className={`w-4 h-4 ${
+                    isWomen ? 'text-[#C93B57]' : 'text-[#FF5722]'
+                  }`}
+                />
+              </div>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder={
                   isWomen
-                    ? 'text-[#C93B57] hover:text-[#A8223D]'
-                    : 'text-[#D34D14] hover:text-[#9A340B]'
-                }`}
-                title={userLocation ? `Location: ${userLocation.name}` : 'Set your location'}
-              >
-                <MapPin className="w-3.5 h-3.5 shrink-0" />
-                <span className="truncate max-w-[170px] xs:max-w-[230px] sm:max-w-[340px]">
-                  {userLocation ? userLocation.name : 'Set Location'}
-                </span>
-                <ChevronDown className="w-3 h-3 opacity-60 shrink-0" />
-              </button>
-
-              {/* Location Picker Dropdown */}
-              {locationDropdownOpen && (
-                <div className="absolute left-0 mt-2 w-72 max-w-[calc(100vw-24px)] bg-white border border-[#E2DDD5] rounded-2xl shadow-2xl p-2.5 z-50 text-stone-900 animate-in fade-in zoom-in-95">
-                  {/* GPS Locator Button */}
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      await requestDeviceLocation();
-                      setLocationDropdownOpen(false);
-                    }}
-                    className={`w-full mb-2 p-2.5 rounded-xl border text-xs font-bold flex items-center justify-center gap-2 transition-all shadow-xs ${
-                      isWomen
-                        ? 'bg-rose-50 border-rose-200 text-[#E11D48] hover:bg-rose-100'
-                        : 'bg-orange-50 border border-orange-200 text-[#FF6422] hover:bg-orange-100'
-                    }`}
-                  >
-                    <Navigation className="w-3.5 h-3.5 animate-pulse" />
-                    <span>Use My Current Location</span>
-                  </button>
-
-                  {/* Manual search input */}
-                  <form onSubmit={handleApplyCustomLocation} className="mb-2">
-                    <div className="relative">
-                      <Search className="w-3.5 h-3.5 text-stone-400 absolute left-2.5 top-2.5" />
-                      <input
-                        type="text"
-                        value={customLocalityInput}
-                        onChange={(e) => setCustomLocalityInput(e.target.value)}
-                        placeholder="Search city, locality or PIN..."
-                        className="w-full pl-8 pr-3 py-1.5 bg-[#FAF7F2] border border-[#E2DDD5] rounded-xl text-xs text-stone-900 placeholder-stone-400 focus:outline-none focus:border-[#FF6422]"
-                      />
-                    </div>
-                  </form>
-
-                  {userLocation ? (
-                    <div className="p-2.5 rounded-xl bg-[#FAF7F2] border border-[#E2DDD5] mb-2">
-                      <div className="flex items-center justify-between text-xs text-stone-800">
-                        <div className="flex items-center gap-1.5 truncate">
-                          <MapPin className="w-3.5 h-3.5 text-[#FF6422] shrink-0" />
-                          <span className="font-bold truncate">{userLocation.name}</span>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            clearUserLocation();
-                            setLocationDropdownOpen(false);
-                            triggerNotification('Location reset. Showing all salons.');
-                          }}
-                          className="text-[11px] text-stone-500 hover:text-[#FF6422] transition-colors shrink-0 ml-2 underline"
-                        >
-                          Clear
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="px-2 py-1.5 text-[11px] text-stone-500 text-center mb-1">
-                      No filter applied. Showing verified studios across India.
-                    </div>
-                  )}
-                </div>
+                    ? "Search beauty parlours, hair styling, facials, spa..."
+                    : "Search barbers, haircuts, beard grooming, stylists..."
+                }
+                className="w-full py-2.5 pr-9 text-xs sm:text-sm text-stone-900 placeholder-stone-400 bg-transparent focus:outline-none"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-2.5 p-1 rounded-full text-stone-400 hover:text-stone-700 hover:bg-stone-100"
+                  title="Clear search"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
               )}
             </div>
           </div>
 
-          {/* Right: Beside Logo -> Profile Button */}
-          <button
-            type="button"
-            onClick={() => {
-              setSelectedSalonForDetail(null);
-              setCustomerTab('profile');
-            }}
-            className={`flex items-center gap-1.5 p-1.5 sm:px-3 sm:py-1.5 rounded-full text-xs font-bold transition-all border shrink-0 shadow-xs ${
-              isWomen
-                ? 'bg-white border-[#FED7CC] text-stone-700 hover:border-[#E11D48]'
-                : 'bg-white border-[#E2DDD5] text-stone-700 hover:border-[#FF6422]'
-            }`}
-            title="Customer Profile"
-          >
-            {userProfile?.avatar ? (
-              <img
-                src={userProfile.avatar}
-                alt=""
-                className="w-5 h-5 rounded-full object-cover shrink-0 ring-1 ring-black/5"
-              />
-            ) : (
-              <User className={`w-4 h-4 shrink-0 ${isWomen ? 'text-[#E11D48]' : 'text-[#FF6422]'}`} />
-            )}
-            <span className="hidden sm:inline truncate max-w-[80px]">
-              {userProfile?.name?.split(' ')[0] || 'Profile'}
-            </span>
-          </button>
+          {/* Quick Category Pills Bar: Scrollable Horizontal Strip inside Canopy */}
+          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pt-0.5 pb-0.5">
+            {groomingCategories.map((cat) => {
+              const Icon = cat.icon;
+              const isActive = selectedServiceFilter === cat.name;
+
+              return (
+                <button
+                  key={cat.name}
+                  type="button"
+                  onClick={() => setSelectedServiceFilter(cat.name)}
+                  className={`shrink-0 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                    isWomen
+                      ? isActive
+                        ? 'bg-[#E11D48] text-white shadow-xs scale-102'
+                        : 'bg-white/70 text-[#7A0D22] hover:bg-white'
+                      : isActive
+                        ? 'bg-white text-[#FF5722] font-black shadow-xs scale-102'
+                        : 'bg-white/20 text-white hover:bg-white/30 backdrop-blur-xs'
+                  }`}
+                >
+                  <Icon className="w-3 h-3 shrink-0" />
+                  <span>{cat.name}</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
     </header>
