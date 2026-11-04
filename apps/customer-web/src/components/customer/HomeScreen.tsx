@@ -14,7 +14,8 @@ import {
   AlertTriangle,
   Heart,
   SlidersHorizontal,
-  Store
+  Store,
+  Compass
 } from 'lucide-react';
 import { useSalon, getEstimatedWaitMinutes, getQueueDisplay, getQueueFreshness, POPULAR_LOCATIONS } from '../../context/CustomerContext';
 import { LazyModeSelector } from '../common/LazyModeSelector';
@@ -29,6 +30,7 @@ export const HomeScreen: React.FC = () => {
     lazyFilter,
     userLocation,
     setUserLocation,
+    clearUserLocation,
     requestDeviceLocation,
     isLoadingSalons,
     userProfile,
@@ -211,13 +213,24 @@ export const HomeScreen: React.FC = () => {
           </p>
 
           <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3">
+            {userLocation && (
+              <button
+                type="button"
+                onClick={() => clearUserLocation()}
+                className="w-full sm:w-auto px-6 py-3 rounded-2xl bg-amber-500 text-black font-extrabold text-xs shadow-xl shadow-amber-500/20 hover:bg-amber-400 active:scale-95 transition-all flex items-center justify-center gap-2"
+              >
+                <Compass className="w-4 h-4 text-black" />
+                <span>Show All Registered Salons in India</span>
+              </button>
+            )}
+
             <a
               href="https://project-1-xq1k.vercel.app"
               target="_blank"
               rel="noopener noreferrer"
-              className="w-full sm:w-auto px-6 py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-400 text-black font-extrabold text-xs shadow-xl shadow-amber-500/20 hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-2"
+              className="w-full sm:w-auto px-6 py-3 rounded-2xl bg-zinc-900 border border-zinc-700 hover:border-amber-400 text-zinc-200 font-bold text-xs transition-all flex items-center justify-center gap-2"
             >
-              <Store className="w-4 h-4 fill-black" />
+              <Store className="w-4 h-4 fill-amber-400" />
               <span>Register Your Salon Business ↗</span>
             </a>
 
@@ -226,30 +239,8 @@ export const HomeScreen: React.FC = () => {
               className="w-full sm:w-auto px-5 py-3 rounded-2xl bg-zinc-900 border border-zinc-700 hover:border-amber-400 text-zinc-200 font-bold text-xs transition-all flex items-center justify-center gap-2"
             >
               <MapPin className="w-4 h-4 text-amber-400" />
-              <span>Explore Surrounding Area on Map</span>
+              <span>Explore Map</span>
             </button>
-          </div>
-
-          {/* Quick Locality Switcher */}
-          <div className="mt-6 pt-5 border-t border-zinc-800/80">
-            <span className="text-[11px] font-semibold text-zinc-500 uppercase tracking-wider block mb-2">
-              Or check registered studios in nearby localities:
-            </span>
-            <div className="flex flex-wrap justify-center gap-1.5">
-              {POPULAR_LOCATIONS.map((loc) => (
-                <button
-                  key={loc.name}
-                  onClick={() => setUserLocation(loc)}
-                  className={`px-3 py-1 rounded-xl text-xs transition-all ${
-                    userLocation?.name === loc.name
-                      ? 'bg-amber-500 text-black font-bold shadow-md shadow-amber-500/20'
-                      : 'bg-zinc-900/90 border border-zinc-800 text-zinc-300 hover:border-zinc-700 hover:text-white'
-                  }`}
-                >
-                  📍 {loc.name.split(',')[0]}
-                </button>
-              ))}
-            </div>
           </div>
         </section>
       )}

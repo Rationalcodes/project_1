@@ -235,6 +235,26 @@ export class KumbhakaranApiClient {
   }
 
   /**
+   * Get the single salon belonging to the authenticated partner (or by email)
+   */
+  async getMySalon(email?: string): Promise<Salon | null> {
+    try {
+      const url = email
+        ? `${this.baseUrl}/salons/my-salon?email=${encodeURIComponent(email)}`
+        : `${this.baseUrl}/salons/my-salon`;
+      const res = await fetch(url, {
+        headers: this.getHeaders(),
+      });
+      if (!res.ok) return null;
+      const data = await res.json();
+      if (!data || data.hasSalon === false || !data.id) return null;
+      return data;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
    * Public Salon Profile (strictly excludes walk-in customer names and revenue)
    */
   async getPublicSalonById(id: string): Promise<Salon | null> {

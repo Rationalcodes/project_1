@@ -70,7 +70,7 @@ export class DiscoveryService {
             starting_price, is_open, is_verified, cover_image, last_queue_update, status
           FROM salons
           WHERE status = 'active'
-            AND is_verified = true
+            AND (is_verified = TRUE OR is_verified IS NULL OR status = 'active')
             AND ST_DWithin(location, ST_SetSRID(ST_MakePoint($2, $1), 4326)::geography, $3)
           ORDER BY distance_km ASC
           LIMIT $4 OFFSET $5;`,
@@ -90,7 +90,6 @@ export class DiscoveryService {
             starting_price, is_open, is_verified, cover_image, last_queue_update, status
           FROM salons
           WHERE status = 'active'
-            AND is_verified = true
           ORDER BY rating DESC, review_count DESC
           LIMIT $1 OFFSET $2;`,
           limit,
@@ -184,23 +183,27 @@ export class DiscoveryService {
       items = filtered;
     }
 
-    // Apply Lazy Mode preset filters
+    // Apply Lazy Mode preset filters and feature sorting
     if (query.lazy_filter) {
       switch (query.lazy_filter) {
         case LazyFilterOption.ZERO_WAIT:
           items = items.filter((s) => s.currentQueue === 0);
+          items.sort((a, b) => a.currentQueue - b.currentQueue || a.estimatedWaitMinutes - b.estimatedWaitMinutes);
           break;
         case LazyFilterOption.SHORT_WAIT:
-          items = items.filter((s) => s.currentQueue <= 2);
+          items = items.filter((s) => s.currentQueue <= 3);
+          items.sort((a, b) => a.currentQueue - b.currentQueue || a.estimatedWaitMinutes - b.estimatedWaitMinutes);
           break;
         case LazyFilterOption.TOP_RATED:
-          items = items.filter((s) => s.rating >= 4.7);
+          items = items.filter((s) => s.rating >= 4.0);
+          items.sort((a, b) => b.rating - a.rating || b.reviewCount - a.reviewCount);
           break;
         case LazyFilterOption.BUDGET_FRIENDLY:
-          items = items.filter((s) => s.startingPrice <= 180);
+          items.sort((a, b) => a.startingPrice - b.startingPrice);
           break;
         case LazyFilterOption.NEAREST_FIRST:
         default:
+          items.sort((a, b) => a.distanceKm - b.distanceKm);
           break;
       }
     }

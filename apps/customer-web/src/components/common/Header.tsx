@@ -40,25 +40,38 @@ export const Header: React.FC = () => {
     { id: 'profile', label: 'Profile', icon: User },
   ];
 
-  const handleApplyCustomLocation = (e: React.FormEvent) => {
+  const handleApplyCustomLocation = async (e: React.FormEvent) => {
     e.preventDefault();
     const trimmed = customLocalityInput.trim();
     if (!trimmed) return;
 
-    // Check if matches known hub
-    const matched = POPULAR_LOCATIONS.find((l) =>
-      l.name.toLowerCase().includes(trimmed.toLowerCase()),
-    );
-    if (matched) {
-      setUserLocation(matched);
-    } else {
-      // Use custom locality name with base Bengaluru coordinates or offset
-      setUserLocation({
-        name: trimmed,
-        lat: 12.9716,
-        lng: 77.5946,
-      });
-    }
+    try {
+      const geoRes = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(trimmed + ', India')}&limit=1`,
+        { headers: { 'User-Agent': 'KumbhkaranSalons/1.0' } }
+      );
+      if (geoRes.ok) {
+        const results = await geoRes.json();
+        if (results && results.length > 0) {
+          const item = results[0];
+          setUserLocation({
+            name: trimmed,
+            lat: Number(parseFloat(item.lat).toFixed(5)),
+            lng: Number(parseFloat(item.lon).toFixed(5)),
+          });
+          setCustomLocalityInput('');
+          setLocationDropdownOpen(false);
+          triggerNotification(`📍 Location set to "${trimmed}"`);
+          return;
+        }
+      }
+    } catch {}
+
+    setUserLocation({
+      name: trimmed,
+      lat: 0,
+      lng: 0,
+    });
     setCustomLocalityInput('');
     setLocationDropdownOpen(false);
     triggerNotification(`Location set to "${trimmed}"`);
@@ -180,44 +193,30 @@ export const Header: React.FC = () => {
                   </div>
                 </form>
 
-                <div className="text-[10px] uppercase tracking-wider font-bold text-zinc-400 px-2 py-1">
-                  Popular Hubs
-                </div>
-                <div className="max-h-48 overflow-y-auto space-y-0.5">
-                  {POPULAR_LOCATIONS.map((loc) => (
-                    <button
-                      key={loc.name}
-                      onClick={() => {
-                        setUserLocation(loc);
-                        setLocationDropdownOpen(false);
-                        triggerNotification(`Location set to ${loc.name}`);
-                      }}
-                      className={`w-full text-left px-2.5 py-1.5 text-xs rounded-xl flex items-center justify-between transition-colors ${
-                        userLocation?.name === loc.name
-                          ? 'bg-amber-500/20 text-amber-300 font-bold'
-                          : 'text-zinc-300 hover:bg-zinc-800'
-                      }`}
-                    >
-                      <span className="truncate">{loc.name}</span>
-                      {userLocation?.name === loc.name && (
-                        <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />
-                      )}
-                    </button>
-                  ))}
-                </div>
-
-                {userLocation && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      clearUserLocation();
-                      setLocationDropdownOpen(false);
-                      triggerNotification('Location reset. Showing all salons.');
-                    }}
-                    className="w-full mt-2 pt-2 border-t border-zinc-800 text-center text-[11px] text-zinc-400 hover:text-amber-400 transition-colors"
-                  >
-                    Clear Location
-                  </button>
+                {userLocation ? (
+                  <div className="p-2.5 rounded-xl bg-zinc-800/80 border border-zinc-700/80 mb-2">
+                    <div className="flex items-center justify-between text-xs text-white">
+                      <div className="flex items-center gap-1.5 truncate">
+                        <MapPin className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                        <span className="font-bold truncate">{userLocation.name}</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          clearUserLocation();
+                          setLocationDropdownOpen(false);
+                          triggerNotification('Location reset. Showing all salons.');
+                        }}
+                        className="text-[11px] text-zinc-400 hover:text-amber-400 transition-colors shrink-0 ml-2 underline"
+                      >
+                        Clear
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="px-2 py-1.5 text-[11px] text-zinc-400 text-center mb-1">
+                    No filter applied. Showing verified salons across India.
+                  </div>
                 )}
               </div>
             )}

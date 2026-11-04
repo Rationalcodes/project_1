@@ -88,7 +88,17 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         const saved = localStorage.getItem('kumbhakaran_user_location');
         if (saved) {
           const parsed = JSON.parse(saved);
-          if (parsed?.lat && parsed?.lng && parsed?.name) return parsed;
+          if (parsed?.lat && parsed?.lng && parsed?.name) {
+            // Automatically clear stale Bellandur / Bengaluru default from older versions
+            if (
+              parsed.name.toLowerCase().includes('bellandur') ||
+              parsed.name.toLowerCase().includes('koramangala')
+            ) {
+              localStorage.removeItem('kumbhakaran_user_location');
+              return null;
+            }
+            return parsed;
+          }
         }
       } catch {}
     }
@@ -125,19 +135,43 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
     return new Promise((resolve) => {
       navigator.geolocation.getCurrentPosition(
-        (pos) => {
+        async (pos) => {
+          const lat = Number(pos.coords.latitude.toFixed(5));
+          const lng = Number(pos.coords.longitude.toFixed(5));
+          let detectedName = `${lat}, ${lng}`;
+
+          try {
+            const nomRes = await fetch(
+              `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&addressdetails=1`,
+              { headers: { 'User-Agent': 'KumbhkaranSalons/1.0' } }
+            );
+            if (nomRes.ok) {
+              const data = await nomRes.json();
+              const addr = data.address || {};
+              const loc = addr.suburb || addr.neighbourhood || addr.village || addr.county || '';
+              const city = addr.city || addr.town || addr.district || '';
+              if (loc && city && loc !== city) {
+                detectedName = `${loc}, ${city}`;
+              } else if (city) {
+                detectedName = city;
+              } else if (loc) {
+                detectedName = loc;
+              }
+            }
+          } catch {}
+
           const newLoc: LocationOption = {
-            name: 'Current Location',
-            lat: Number(pos.coords.latitude.toFixed(5)),
-            lng: Number(pos.coords.longitude.toFixed(5)),
+            name: detectedName,
+            lat,
+            lng,
           };
           setUserLocation(newLoc);
-          triggerNotification(`📍 Position acquired (${newLoc.lat}, ${newLoc.lng})`);
+          triggerNotification(`📍 Location detected: ${detectedName}`);
           resolve(true);
         },
         (err) => {
           console.warn('Geolocation denied or failed:', err.message);
-          triggerNotification('Location permission was denied. Select locality manually.');
+          triggerNotification('Location permission was denied. Please select or search your locality.');
           resolve(false);
         },
         { timeout: 10000, enableHighAccuracy: true },
@@ -452,16 +486,19 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   const addReview = async (salonId: string, reviewData: Omit<Review, 'id' | 'date'>) => {
+    const cleanComment = (reviewData.comment || '').trim();
+    const cleanName = (reviewData.customerName || '').trim() || 'Anonymous Customer';
+
     // 1. Persist to PostgreSQL backend database
     let createdReviewId = `rev-${Date.now()}`;
     let createdDate = 'Just now';
 
     try {
       const persisted = await defaultApiClient.submitSalonReview(salonId, {
-        customerName: reviewData.customerName,
+        customerName: cleanName,
         customerAvatar: reviewData.customerAvatar,
         rating: reviewData.rating,
-        comment: reviewData.comment,
+        comment: cleanComment,
         verifiedVisit: reviewData.verifiedVisit,
         criteria: reviewData.criteria,
       });
@@ -478,11 +515,13 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
     const newReview: Review = {
       ...reviewData,
+      customerName: cleanName,
+      comment: cleanComment,
       id: createdReviewId,
       date: createdDate,
     };
 
-    const contentKey = `${(newReview.customerName || '').trim().toLowerCase()}|${(newReview.comment || '').trim().toLowerCase()}`;
+    const contentKey = `${cleanName.toLowerCase()}|${cleanComment.toLowerCase()}`;
 
     // 2. Cache cleanly in localStorage with deduplication
     if (typeof window !== 'undefined') {

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useSalon } from '../../context/SalonContext';
 import { SalonLocationPicker } from './SalonLocationPicker';
+// Address & Location step
 import {
   Store,
   MapPin,
@@ -15,30 +16,30 @@ import {
   IndianRupee,
   ShieldCheck
 } from 'lucide-react';
-import { SalonRegistrationInput } from '../../types';
+import { SalonRegistrationInput } from '@kumbhakaran/shared-types';
 
 interface SalonRegistrationWizardProps {
   onSuccess: () => void;
 }
 
 export const SalonRegistrationWizard: React.FC<SalonRegistrationWizardProps> = ({ onSuccess }) => {
-  const { registerSalon } = useSalon();
+  const { registerSalon, activeSalon, setPartnerView } = useSalon();
   const [currentStep, setCurrentStep] = useState<number>(1);
 
-  // Form State
-  const [salonName, setSalonName] = useState('');
-  const [tagline, setTagline] = useState('Premium cuts & authentic walk-in transparency');
-  const [ownerName, setOwnerName] = useState('');
-  const [phone, setPhone] = useState('+91 ');
-  const [email, setEmail] = useState('');
+  // Form State: Pre-fill with existing salon if available for this Gmail ID
+  const [salonName, setSalonName] = useState(activeSalon?.name || '');
+  const [tagline, setTagline] = useState(activeSalon?.tagline || 'Premium cuts & authentic walk-in transparency');
+  const [ownerName, setOwnerName] = useState(activeSalon?.ownerName || '');
+  const [phone, setPhone] = useState(activeSalon?.phone || '+91 ');
+  const [email, setEmail] = useState(activeSalon?.email || '');
 
   // Location State
-  const [address, setAddress] = useState('');
-  const [locality, setLocality] = useState('');
-  const [city, setCity] = useState('');
-  const [state, setState] = useState('');
-  const [pincode, setPincode] = useState('');
-  const [coordinates, setCoordinates] = useState({ lat: 0, lng: 0 });
+  const [address, setAddress] = useState(activeSalon?.address || '');
+  const [locality, setLocality] = useState(activeSalon?.locality || '');
+  const [city, setCity] = useState(activeSalon?.city || '');
+  const [state, setState] = useState(activeSalon?.state || '');
+  const [pincode, setPincode] = useState(activeSalon?.pincode || '');
+  const [coordinates, setCoordinates] = useState(activeSalon?.coordinates || { lat: 0, lng: 0 });
 
   // Hours & Stations
   const [openTime, setOpenTime] = useState('09:00 AM');
@@ -118,7 +119,7 @@ export const SalonRegistrationWizard: React.FC<SalonRegistrationWizardProps> = (
       <div className="text-center mb-6">
         <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-400 text-xs font-bold mb-2">
           <Store className="w-3.5 h-3.5" />
-          <span>Kumbhakaran Partner Onboarding</span>
+          <span>Kumbhkaran Salons Partner Onboarding</span>
         </div>
         <h2 className="text-xl sm:text-2xl font-black text-white font-['Syne',sans-serif]">
           Register Your Salon
@@ -127,6 +128,31 @@ export const SalonRegistrationWizard: React.FC<SalonRegistrationWizardProps> = (
           Join the walk-in transparency network. Pin your exact location, set prices, and let customers see your live waiting count.
         </p>
       </div>
+
+      {activeSalon && (
+        <div className="mb-6 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-left">
+          <div>
+            <div className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
+              <CheckCircle2 className="w-4 h-4 text-amber-400" />
+              <span>Studio Already Registered for {email}</span>
+            </div>
+            <div className="text-xs text-zinc-300 font-semibold mt-0.5">{activeSalon.name} • {activeSalon.city}</div>
+            <p className="text-[11px] text-zinc-400">
+              Your salon is already live on Kumbhkaran. Submitting will update your studio profile.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              setPartnerView('live-queue');
+              if (onSuccess) onSuccess();
+            }}
+            className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-black text-xs font-bold shrink-0 transition-colors"
+          >
+            Open Live Studio Dashboard →
+          </button>
+        </div>
+      )}
 
       {/* 4 Step Progress Pills */}
       <div className="flex items-center justify-between gap-1 mb-8 max-w-md mx-auto text-[11px] font-bold">
@@ -245,7 +271,7 @@ export const SalonRegistrationWizard: React.FC<SalonRegistrationWizardProps> = (
                 }}
                 className="px-6 py-2.5 rounded-xl bg-amber-500 text-black font-bold text-xs hover:bg-amber-400 flex items-center gap-2 shadow-lg shadow-amber-500/20"
               >
-                <span>Next: Location & Pin Drop</span>
+                <span>Next: Salon Address & Location</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
             </div>
@@ -257,7 +283,7 @@ export const SalonRegistrationWizard: React.FC<SalonRegistrationWizardProps> = (
           <div className="space-y-4 animate-in fade-in">
             <div>
               <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                <MapPin className="w-4 h-4 text-amber-400" /> Step 2: Pin Exact Location on Map
+                <MapPin className="w-4 h-4 text-amber-400" /> Step 2: Salon Address & Location
               </h3>
               <p className="text-xs text-zinc-400 mt-0.5">
                 Search your address or click directly on the interactive map to position your salon marker.
@@ -468,7 +494,7 @@ export const SalonRegistrationWizard: React.FC<SalonRegistrationWizardProps> = (
             <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-3.5 flex items-start gap-2.5 text-xs text-zinc-300">
               <ShieldCheck className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
               <div>
-                <strong className="text-white">Walk-in Transparency Activation:</strong> Upon registering, your studio will immediately appear on the Kumbhakaran Discovery Map with coordinates ({coordinates.lat.toFixed(4)}°, {coordinates.lng.toFixed(4)}°). Customers will see your live waiting count!
+                <strong className="text-white">Walk-in Transparency Activation:</strong> Upon registering, your studio will immediately appear on the Kumbhkaran Salons Discovery Map with coordinates ({coordinates.lat.toFixed(4)}°, {coordinates.lng.toFixed(4)}°). Customers will see your live waiting count!
               </div>
             </div>
 
@@ -495,3 +521,4 @@ export const SalonRegistrationWizard: React.FC<SalonRegistrationWizardProps> = (
     </div>
   );
 };
+

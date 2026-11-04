@@ -72,6 +72,7 @@ interface SalonContextType {
   userLocation: LocationOption | null;
   setUserLocation: (loc: LocationOption) => void;
   clearUserLocation: () => void;
+  requestDeviceLocation: () => Promise<boolean>;
   lazyFilter: LazyFilter;
   setLazyFilter: (filter: LazyFilter) => void;
   searchQuery: string;
@@ -143,7 +144,17 @@ export const SalonProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         const saved = localStorage.getItem('kumbhakaran_user_location');
         if (saved) {
           const parsed = JSON.parse(saved);
-          if (parsed?.lat && parsed?.lng && parsed?.name) return parsed;
+          if (parsed?.lat && parsed?.lng && parsed?.name) {
+            // Automatically clear stale Bellandur / Koramangala default
+            if (
+              parsed.name.toLowerCase().includes('bellandur') ||
+              parsed.name.toLowerCase().includes('koramangala')
+            ) {
+              localStorage.removeItem('kumbhakaran_user_location');
+              return null;
+            }
+            return parsed;
+          }
         }
       } catch {}
     }
@@ -162,6 +173,58 @@ export const SalonProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     if (typeof window !== 'undefined') {
       localStorage.removeItem('kumbhakaran_user_location');
     }
+  };
+
+  const requestDeviceLocation = async (): Promise<boolean> => {
+    if (typeof window === 'undefined' || !navigator.geolocation) {
+      triggerNotification('Geolocation is not supported by your browser');
+      return false;
+    }
+
+    return new Promise((resolve) => {
+      navigator.geolocation.getCurrentPosition(
+        async (pos) => {
+          const lat = Number(pos.coords.latitude.toFixed(5));
+          const lng = Number(pos.coords.longitude.toFixed(5));
+          let detectedName = `${lat}, ${lng}`;
+
+          try {
+            const nomRes = await fetch(
+              `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&addressdetails=1`,
+              { headers: { 'User-Agent': 'KumbhkaranSalons/1.0' } }
+            );
+            if (nomRes.ok) {
+              const data = await nomRes.json();
+              const addr = data.address || {};
+              const loc = addr.suburb || addr.neighbourhood || addr.village || addr.county || '';
+              const city = addr.city || addr.town || addr.district || '';
+              if (loc && city && loc !== city) {
+                detectedName = `${loc}, ${city}`;
+              } else if (city) {
+                detectedName = city;
+              } else if (loc) {
+                detectedName = loc;
+              }
+            }
+          } catch {}
+
+          const newLoc: LocationOption = {
+            name: detectedName,
+            lat,
+            lng,
+          };
+          setUserLocation(newLoc);
+          triggerNotification(`📍 Location detected: ${detectedName}`);
+          resolve(true);
+        },
+        (err) => {
+          console.warn('Geolocation denied or failed:', err.message);
+          triggerNotification('Location permission was denied. Please select or search your locality.');
+          resolve(false);
+        },
+        { timeout: 10000, enableHighAccuracy: true },
+      );
+    });
   };
   const [lazyFilter, setLazyFilter] = useState<LazyFilter>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -185,9 +248,9 @@ export const SalonProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   // Synchronize discovery with NestJS PostGIS Backend
   useEffect(() => {
     let isMounted = true;
-    const queryLat = userLocation?.lat ?? 12.9716;
-    const queryLng = userLocation?.lng ?? 77.5946;
-    const queryRadius = userLocation ? 25 : 50;
+    const queryLat = userLocation?.lat;
+    const queryLng = userLocation?.lng;
+    const queryRadius = userLocation ? 25 : undefined;
 
     api.getNearbySalons(queryLat, queryLng, queryRadius, lazyFilter).then(res => {
       if (res && res.salons && isMounted) {
@@ -381,7 +444,7 @@ export const SalonProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       },
       reviews: [],
       featured: true,
-      isVerified: false,
+      isVerified: true,
       status: 'active',
       todayCustomersServed: 0,
       todayRevenue: 0,
@@ -778,6 +841,7 @@ export const SalonProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         userLocation,
         setUserLocation,
         clearUserLocation,
+        requestDeviceLocation,
         lazyFilter,
         setLazyFilter,
         searchQuery,

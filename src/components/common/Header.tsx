@@ -3,14 +3,16 @@ import {
   MapPin,
   ChevronDown,
   ExternalLink,
+  Navigation,
 } from 'lucide-react';
-import { useSalon, POPULAR_LOCATIONS } from '../../context/SalonContext';
+import { useSalon } from '../../context/SalonContext';
 
 export const Header: React.FC = () => {
   const {
     userLocation,
     setUserLocation,
     clearUserLocation,
+    requestDeviceLocation,
     triggerNotification,
   } = useSalon();
 
@@ -75,45 +77,43 @@ export const Header: React.FC = () => {
           </button>
 
           {locationDropdownOpen && (
-            <div className="absolute right-0 mt-2 w-64 max-w-[calc(100vw-24px)] bg-zinc-900 border border-zinc-700 rounded-2xl shadow-2xl p-1.5 z-50">
-              <div className="text-[10px] uppercase tracking-wider font-bold text-zinc-400 px-3 py-1.5">
-                Popular Hubs
-              </div>
-              <div className="max-h-48 overflow-y-auto space-y-0.5">
-                {POPULAR_LOCATIONS.map((loc) => (
-                  <button
-                    key={loc.name}
-                    onClick={() => {
-                      setUserLocation(loc);
-                      setLocationDropdownOpen(false);
-                      triggerNotification(`Location set to ${loc.name}`);
-                    }}
-                    className={`w-full text-left px-3 py-2 text-xs rounded-xl flex items-center justify-between transition-colors ${
-                      userLocation?.name === loc.name
-                        ? 'bg-amber-500/20 text-amber-300 font-bold'
-                        : 'text-zinc-300 hover:bg-zinc-800'
-                    }`}
-                  >
-                    <span className="truncate">{loc.name}</span>
-                    {userLocation?.name === loc.name && (
-                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />
-                    )}
-                  </button>
-                ))}
-              </div>
+            <div className="absolute right-0 mt-2 w-72 max-w-[calc(100vw-24px)] bg-zinc-900 border border-zinc-700 rounded-2xl shadow-2xl p-2 z-50">
+              <button
+                type="button"
+                onClick={async () => {
+                  await requestDeviceLocation();
+                  setLocationDropdownOpen(false);
+                }}
+                className="w-full mb-2 p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 hover:bg-amber-500/20 text-xs font-bold flex items-center justify-center gap-2 transition-all shadow-sm"
+              >
+                <Navigation className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
+                <span>Use My Current Location</span>
+              </button>
 
-              {userLocation && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    clearUserLocation();
-                    setLocationDropdownOpen(false);
-                    triggerNotification('Location reset. Showing all salons.');
-                  }}
-                  className="w-full mt-2 pt-2 border-t border-zinc-800 text-center text-[11px] text-zinc-400 hover:text-amber-400 transition-colors"
-                >
-                  Clear Location
-                </button>
+              {userLocation ? (
+                <div className="p-2.5 rounded-xl bg-zinc-800/80 border border-zinc-700/80 mb-2">
+                  <div className="flex items-center justify-between text-xs text-white">
+                    <div className="flex items-center gap-1.5 truncate">
+                      <MapPin className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                      <span className="font-bold truncate">{userLocation.name}</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        clearUserLocation();
+                        setLocationDropdownOpen(false);
+                        triggerNotification('Location reset. Showing all salons.');
+                      }}
+                      className="text-[11px] text-zinc-400 hover:text-amber-400 transition-colors shrink-0 ml-2 underline"
+                    >
+                      Clear
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="px-2 py-1.5 text-[11px] text-zinc-400 text-center mb-1">
+                  No filter applied. Showing verified salons across India.
+                </div>
               )}
             </div>
           )}

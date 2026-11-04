@@ -37,17 +37,18 @@ export const api = {
    * Discovers nearby verified salons using PostGIS geographical queries
    */
   async getNearbySalons(
-    latitude: number,
-    longitude: number,
-    radiusKm: number = 10,
+    latitude?: number,
+    longitude?: number,
+    radiusKm?: number,
     lazyFilter?: string,
   ): Promise<NearbySalonsApiResponse | null> {
     try {
-      const params = new URLSearchParams({
-        latitude: latitude.toString(),
-        longitude: longitude.toString(),
-        radius_km: radiusKm.toString(),
-      });
+      const params = new URLSearchParams();
+      if (latitude !== undefined && longitude !== undefined) {
+        params.append('latitude', latitude.toString());
+        params.append('longitude', longitude.toString());
+        if (radiusKm) params.append('radius_km', radiusKm.toString());
+      }
 
       if (lazyFilter && lazyFilter !== 'all') {
         params.append('lazy_filter', lazyFilter);

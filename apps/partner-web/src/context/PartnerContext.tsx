@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import {
   Salon,
   Service,
@@ -50,7 +50,7 @@ interface PartnerContextType {
 const PartnerContext = createContext<PartnerContextType | undefined>(undefined);
 
 export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [salons, setSalons] = useState<Salon[]>(INITIAL_SALONS);
+  const [salons, setSalons] = useState<Salon[]>([]);
   const [activeSalonId, setActiveSalonId] = useState<string>('');
   const [partnerView, setPartnerView] = useState<PartnerView>('live-queue');
   const [partnerUser, setPartnerUser] = useState<AuthUser | null>(null);
@@ -66,27 +66,38 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }, 4000);
   };
 
+  // Helper to load the single salon tied to this Gmail ID
+  const loadUserSalon = useCallback(async (user: AuthUser) => {
+    try {
+      const mySalon = await defaultApiClient.getMySalon(user.email);
+      if (mySalon && mySalon.id) {
+        setSalons([mySalon]);
+        setActiveSalonId(mySalon.id);
+        setPartnerView('live-queue');
+        return mySalon;
+      }
+    } catch (e) {
+      console.warn('Could not load user salon from database:', e);
+    }
+    // No salon found yet: prompt registration for this Gmail account
+    setSalons([]);
+    setActiveSalonId('');
+    setPartnerView('register');
+    return null;
+  }, []);
+
   // Restore authenticated session from localStorage
   useEffect(() => {
     let isMounted = true;
     const savedToken = localStorage.getItem('kumbhakaran_partner_token');
     if (savedToken) {
       defaultApiClient.setAuthToken(savedToken);
-      defaultApiClient.getCurrentUser().then((res) => {
+      defaultApiClient.getCurrentUser().then(async (res) => {
         if (isMounted) {
           if (res?.user) {
             setPartnerUser(res.user);
-                        setMemberships(res.memberships || []);
-            if (res.memberships && res.memberships.length > 0) {
-              Promise.all(res.memberships.map((m: any) => defaultApiClient.getPublicSalonById(m.salonId)))
-                .then((fetched) => {
-                  const valid = fetched.filter(Boolean) as Salon[];
-                  if (valid.length > 0) {
-                    setSalons(valid);
-                    setActiveSalonId(valid[0].id);
-                  }
-                });
-            }
+            setMemberships(res.memberships || []);
+            await loadUserSalon(res.user);
           } else {
             localStorage.removeItem('kumbhakaran_partner_token');
             defaultApiClient.setAuthToken(null);
@@ -97,7 +108,7 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [loadUserSalon]);
 
   const loginWithGoogle = async (credential: string): Promise<boolean> => {
     try {
@@ -107,6 +118,7 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
         setPartnerUser(res.user);
         setMemberships(res.memberships || []);
         triggerNotification(`Welcome, ${res.user.name}!`);
+        await loadUserSalon(res.user);
         return true;
       }
     } catch (err: any) {
@@ -196,7 +208,7 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
       },
       reviews: [],
       featured: true,
-      isVerified: false,
+      isVerified: true,
       status: 'active',
       todayCustomersServed: 0,
       todayRevenue: 0,

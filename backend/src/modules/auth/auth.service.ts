@@ -208,6 +208,30 @@ export class AuthService {
       status: m.isActive ? 'ACTIVE' : (m.status || 'ACTIVE'),
     }));
 
+    // Ensure 1 Gmail ID = 1 Salon link: dynamically match any salon owned by this Gmail or userId
+    try {
+      const ownedSalon = await this.prisma.salon.findFirst({
+        where: {
+          OR: [
+            { email: user.email.toLowerCase().trim() },
+            { ownerId: user.id },
+          ],
+        },
+        select: { id: true },
+      });
+
+      if (ownedSalon && !memberships.some((m) => m.salonId === ownedSalon.id)) {
+        memberships.push({
+          salonId: ownedSalon.id,
+          role: 'PARTNER_OWNER',
+          isActive: true,
+          status: 'ACTIVE',
+        });
+      }
+    } catch (e) {
+      this.logger.warn(`Could not sync owned salon membership: ${(e as Error).message}`);
+    }
+
     const jwtPayload: JwtPayload = {
       sub: user.id,
       email: user.email,
@@ -268,6 +292,30 @@ export class AuthService {
       isActive: m.isActive ?? (m.status === 'ACTIVE'),
       status: m.isActive ? 'ACTIVE' : (m.status || 'ACTIVE'),
     }));
+
+    // Ensure 1 Gmail ID = 1 Salon link: dynamically match any salon owned by this Gmail or userId
+    try {
+      const ownedSalon = await this.prisma.salon.findFirst({
+        where: {
+          OR: [
+            { email: user.email.toLowerCase().trim() },
+            { ownerId: user.id },
+          ],
+        },
+        select: { id: true },
+      });
+
+      if (ownedSalon && !memberships.some((m) => m.salonId === ownedSalon.id)) {
+        memberships.push({
+          salonId: ownedSalon.id,
+          role: 'PARTNER_OWNER',
+          isActive: true,
+          status: 'ACTIVE',
+        });
+      }
+    } catch (e) {
+      this.logger.warn(`Could not sync owned salon membership: ${(e as Error).message}`);
+    }
 
     return {
       id: user.id,

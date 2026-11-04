@@ -77,6 +77,19 @@ export class SalonsController {
     return this.discoveryService.getNearbySalons(query);
   }
 
+  @Get('my-salon')
+  @ApiOperation({
+    summary: 'Get existing salon owned by the authenticated partner or specified email',
+  })
+  async getMySalon(
+    @CurrentUser() user?: AuthenticatedUser,
+    @Query('email') emailQuery?: string,
+  ) {
+    const targetEmail = user?.email || emailQuery;
+    const targetUserId = user?.id;
+    return this.salonsService.getMySalon(targetUserId, targetEmail);
+  }
+
   @Get(':id')
   @ApiOperation({
     summary: 'Get public salon profile by ID',

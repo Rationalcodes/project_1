@@ -591,13 +591,25 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
 
           {/* Customer Reviews List */}
           <div className="space-y-3">
-            {(salon.reviews || []).length === 0 ? (
-              <div className="bg-[#14141b] border border-zinc-800/80 rounded-2xl p-6 text-center space-y-2">
-                <p className="text-zinc-400 text-xs">No reviews submitted yet.</p>
-                <p className="text-zinc-500 text-[11px]">Be the first customer to share your grooming experience!</p>
-              </div>
-            ) : (
-              (salon.reviews || []).map((rev) => (
+            {(() => {
+              const seen = new Set<string>();
+              const uniqueReviews = (salon.reviews || []).filter((rev) => {
+                const key = `${(rev.customerName || '').trim().toLowerCase()}|${(rev.comment || '').trim().toLowerCase()}`;
+                if (seen.has(key)) return false;
+                seen.add(key);
+                return true;
+              });
+
+              if (uniqueReviews.length === 0) {
+                return (
+                  <div className="bg-[#14141b] border border-zinc-800/80 rounded-2xl p-6 text-center space-y-2">
+                    <p className="text-zinc-400 text-xs">No reviews submitted yet.</p>
+                    <p className="text-zinc-500 text-[11px]">Be the first customer to share your grooming experience!</p>
+                  </div>
+                );
+              }
+
+              return uniqueReviews.map((rev) => (
                 <div key={rev.id} className="bg-[#14141b] border border-zinc-800 rounded-2xl p-4 space-y-2">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2.5">
@@ -635,8 +647,8 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
                     </div>
                   )}
                 </div>
-              ))
-            )}
+              ));
+            })()}
           </div>
         </div>
       )}

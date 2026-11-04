@@ -23,8 +23,67 @@ export class SalonsService {
   constructor(private readonly prisma: PrismaService) {}
 
   async registerSalon(dto: RegisterSalonDto, resolvedOwnerId?: string): Promise<any> {
-    const salonId = `salon-${Date.now()}`;
     const ownerId = resolvedOwnerId || dto.ownerId || `owner-${Date.now()}`;
+    const searchEmail = dto.email?.toLowerCase().trim();
+
+    // 1. Enforce 1 Gmail ID = 1 Salon policy (Idempotent: update existing if already registered)
+    try {
+      let existingSalon: any = null;
+      if (searchEmail || resolvedOwnerId) {
+        existingSalon = await this.prisma.salon.findFirst({
+          where: {
+            OR: [
+              ...(searchEmail ? [{ email: searchEmail }] : []),
+              ...(resolvedOwnerId ? [{ ownerId: resolvedOwnerId }] : []),
+            ],
+          },
+        });
+      }
+
+      if (existingSalon) {
+        this.logger.log(`Found existing salon ${existingSalon.id} for ${searchEmail || resolvedOwnerId}. Updating salon.`);
+        await this.prisma.$executeRawUnsafe(
+          `UPDATE salons
+           SET name = $1, tagline = $2, owner_name = $3, phone = $4,
+               address = $5, locality = $6, city = $7, state = $8, pincode = $9,
+               latitude = $10, longitude = $11, location = ST_SetSRID(ST_MakePoint($11, $10), 4326)::geography,
+               is_verified = TRUE, status = 'active', last_queue_update = NOW()
+           WHERE id = $12;`,
+          dto.name,
+          dto.tagline || existingSalon.tagline,
+          dto.ownerName || existingSalon.ownerName,
+          dto.phone || existingSalon.phone,
+          dto.address || existingSalon.address,
+          dto.locality || existingSalon.locality,
+          dto.city || existingSalon.city,
+          dto.state || existingSalon.state || 'Chhattisgarh',
+          dto.pincode || existingSalon.pincode,
+          dto.latitude,
+          dto.longitude,
+          existingSalon.id,
+        );
+
+        // Ensure ownerId is bound
+        if (resolvedOwnerId && existingSalon.ownerId !== resolvedOwnerId) {
+          await this.prisma.$executeRawUnsafe(
+            `UPDATE salons SET owner_id = $1 WHERE id = $2;`,
+            resolvedOwnerId,
+            existingSalon.id,
+          );
+        }
+
+        const updatedSalon = await this.getPublicSalonById(existingSalon.id);
+        return {
+          success: true,
+          message: `Your salon '${existingSalon.name}' was synced with this Gmail account`,
+          salon: updatedSalon,
+        };
+      }
+    } catch (e) {
+      this.logger.warn(`Could not verify existing salon: ${(e as Error).message}`);
+    }
+
+    const salonId = `salon-${Date.now()}`;
 
     // Validate coordinates
     if (dto.latitude < -90 || dto.latitude > 90) {
@@ -44,11 +103,11 @@ export class SalonsService {
       ownerName: dto.ownerName,
       ownerId: ownerId,
       phone: dto.phone,
-      email: dto.email || null,
+      email: searchEmail || null,
       address: dto.address,
       locality: dto.locality,
       city: dto.city,
-      state: dto.state || 'Karnataka',
+      state: dto.state || 'Chhattisgarh',
       pincode: dto.pincode,
       latitude: dto.latitude,
       longitude: dto.longitude,
@@ -59,8 +118,8 @@ export class SalonsService {
       activeBarbers: dto.activeBarbers || 2,
       startingPrice,
       isOpen: true,
-      isVerified: false,
-      status: 'active', // 'active' for immediate test availability, or 'pending'
+      isVerified: true, // Immediate verification so salon is visible to customers immediately!
+      status: 'active',
       rating: 5.0,
       reviewCount: 0,
       lastQueueUpdate: new Date().toISOString(),
@@ -196,6 +255,59 @@ export class SalonsService {
         status: newSalonRecord.status,
       },
     };
+  }
+
+  /**
+   * Look up the single salon belonging to this owner or Gmail address
+   */
+  async getMySalon(userId?: string, userEmail?: string): Promise<PublicSalonResponseDto | null> {
+    const emailNorm = userEmail?.toLowerCase().trim();
+
+    try {
+      let salon: any = null;
+
+      // 1. Search database by ownerId or email or active membership
+      if (userId || emailNorm) {
+        salon = await this.prisma.salon.findFirst({
+          where: {
+            OR: [
+              ...(userId ? [{ ownerId: userId }] : []),
+              ...(emailNorm ? [{ email: emailNorm }] : []),
+            ],
+          },
+          orderBy: { createdAt: 'desc' },
+        });
+
+        // Also check salon_members table if not found by direct email/ownerId
+        if (!salon && userId) {
+          const mem = await this.prisma.salonMember.findFirst({
+            where: { userId, isActive: true },
+          });
+          if (mem) {
+            salon = await this.prisma.salon.findUnique({ where: { id: mem.salonId } });
+          }
+        }
+      }
+
+      if (salon) {
+        return this.getPublicSalonById(salon.id);
+      }
+    } catch (err) {
+      this.logger.warn(`getMySalon database query error: ${(err as Error).message}`);
+    }
+
+    // 2. Check local memory state fallback
+    const local = Array.from(this.localSalons.values()).find(
+      (s) =>
+        (userId && s.ownerId === userId) ||
+        (emailNorm && s.email?.toLowerCase().trim() === emailNorm),
+    );
+
+    if (local) {
+      return this.getPublicSalonById(local.id);
+    }
+
+    return null;
   }
 
   async getPublicSalonById(id: string): Promise<PublicSalonResponseDto> {
@@ -348,28 +460,25 @@ export class SalonsService {
 
     // 1. Try to persist into PostgreSQL
     try {
-      // Debounce duplicate reviews submitted within 15 seconds (e.g. double-tapping on mobile)
-      const recentDuplicate = await this.prisma.salonReview.findFirst({
+      // Prevent duplicate review submissions with the exact same customer name and comment
+      const existingDuplicate = await this.prisma.salonReview.findFirst({
         where: {
           salonId,
           customerName: reviewRecord.customerName,
           comment: reviewRecord.comment,
-          createdAt: {
-            gte: new Date(Date.now() - 15000),
-          },
         },
       });
 
-      if (recentDuplicate) {
-        this.logger.warn(`Debounced duplicate review submission for salon ${salonId}`);
+      if (existingDuplicate) {
+        this.logger.warn(`Deduplicated repeat review submission for salon ${salonId}`);
         return {
-          id: recentDuplicate.id,
-          customerName: recentDuplicate.customerName,
-          customerAvatar: recentDuplicate.customerAvatar || reviewRecord.customerAvatar,
-          rating: recentDuplicate.rating,
-          comment: recentDuplicate.comment,
-          verifiedVisit: recentDuplicate.verifiedVisit,
-          createdAt: recentDuplicate.createdAt.toISOString(),
+          id: existingDuplicate.id,
+          customerName: existingDuplicate.customerName,
+          customerAvatar: existingDuplicate.customerAvatar || reviewRecord.customerAvatar,
+          rating: existingDuplicate.rating,
+          comment: existingDuplicate.comment,
+          verifiedVisit: existingDuplicate.verifiedVisit,
+          createdAt: existingDuplicate.createdAt.toISOString(),
         };
       }
 
