@@ -9,6 +9,7 @@ import {
   Loader2,
   Building2,
   Compass,
+  Store,
 } from 'lucide-react';
 import {
   loadLeafletScript,
@@ -49,6 +50,7 @@ const LANDMARK_PREFIX_CHIPS = [
   'Behind',
   'Next to',
   'Left side of',
+  'Right side of',
   'At Chowk',
 ];
 
@@ -66,14 +68,16 @@ export const SalonLocationPicker: React.FC<SalonLocationPickerProps> = ({
   const [state, setState] = useState(currentVal?.state || '');
   const [pincode, setPincode] = useState(currentVal?.pincode || '');
   const [buildingOrShop, setBuildingOrShop] = useState(currentVal?.buildingOrShop || '');
-  const [lat, setLat] = useState<number>(currentVal?.latitude || 22.1388);
-  const [lng, setLng] = useState<number>(currentVal?.longitude || 82.1453);
+
+  // Coordinates: dynamic with zero hardcoding
+  const [lat, setLat] = useState<number>(currentVal?.latitude || 0);
+  const [lng, setLng] = useState<number>(currentVal?.longitude || 0);
   const [placeId, setPlaceId] = useState<string | undefined>(currentVal?.placeId);
 
   // Status & Geolocation States
   const [isGpsLoading, setIsGpsLoading] = useState(false);
   const [isGeocoding, setIsGeocoding] = useState(false);
-  const [detectedPoi, setDetectedPoi] = useState<string | null>(null);
+  const [nearbyLandmarks, setNearbyLandmarks] = useState<string[]>([]);
   const [gpsActive, setGpsActive] = useState(false);
 
   // Search autocomplete state
@@ -99,14 +103,17 @@ export const SalonLocationPicker: React.FC<SalonLocationPickerProps> = ({
   // Helper to sync back to parent
   const syncToParent = useCallback(
     (overrides: Partial<LocationPickerResult> = {}) => {
+      const targetLat = overrides.latitude !== undefined ? overrides.latitude : lat;
+      const targetLng = overrides.longitude !== undefined ? overrides.longitude : lng;
+
       const result: LocationPickerResult = {
         address: overrides.address !== undefined ? overrides.address : address,
         locality: overrides.locality !== undefined ? overrides.locality : locality,
         city: overrides.city !== undefined ? overrides.city : city,
         state: overrides.state !== undefined ? overrides.state : state,
         pincode: overrides.pincode !== undefined ? overrides.pincode : pincode,
-        latitude: overrides.latitude !== undefined ? overrides.latitude : lat,
-        longitude: overrides.longitude !== undefined ? overrides.longitude : lng,
+        latitude: targetLat,
+        longitude: targetLng,
         placeId: overrides.placeId !== undefined ? overrides.placeId : placeId,
         buildingOrShop: overrides.buildingOrShop !== undefined ? overrides.buildingOrShop : buildingOrShop,
       };
@@ -117,12 +124,22 @@ export const SalonLocationPicker: React.FC<SalonLocationPickerProps> = ({
     [address, locality, city, state, pincode, lat, lng, placeId, buildingOrShop, onChange, onLocationConfirmed]
   );
 
-  // Reverse Geocode from Coordinates to Real Locality, City, State, PIN, and nearby POI/Road
+  // Dynamic Reverse Geocode & Famous Landmark Detection (Zero Hardcoding)
   const reverseGeocode = useCallback(
     async (targetLat: number, targetLng: number) => {
+      if (!targetLat || !targetLng) return;
       setIsGeocoding(true);
+
+      let detectedCity = '';
+      let detectedState = '';
+      let detectedPincode = '';
+      let detectedLocality = '';
+      let detectedRoad = '';
+      let detectedAmenity = '';
+      let wikiLandmarks: string[] = [];
+
+      // 1. Nominatim Reverse Geocoding
       try {
-        // Tier 1: OpenStreetMap Nominatim with full addressdetails
         const nomRes = await fetch(
           `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${targetLat}&lon=${targetLng}&addressdetails=1`,
           { headers: { 'User-Agent': 'KumbhakaranPartnerApp/1.0' } }
@@ -132,10 +149,10 @@ export const SalonLocationPicker: React.FC<SalonLocationPickerProps> = ({
           const data = await nomRes.json();
           const addr = data.address || {};
 
-          const detectedCity = addr.city || addr.town || addr.district || addr.county || '';
-          const detectedState = addr.state || '';
-          const detectedPincode = addr.postcode || '';
-          const detectedLocality =
+          detectedCity = addr.city || addr.town || addr.district || addr.county || '';
+          detectedState = addr.state || '';
+          detectedPincode = addr.postcode || '';
+          detectedLocality =
             addr.suburb ||
             addr.neighbourhood ||
             addr.village ||
@@ -143,65 +160,85 @@ export const SalonLocationPicker: React.FC<SalonLocationPickerProps> = ({
             addr.county ||
             detectedCity ||
             '';
-          const road = addr.road || addr.street || '';
-          const poi = addr.amenity || addr.shop || addr.building || addr.college || addr.university || '';
-
-          const candidatePoi = poi || road || '';
-          if (candidatePoi) setDetectedPoi(candidatePoi);
-
-          setLocality(detectedLocality);
-          setCity(detectedCity);
-          setState(detectedState);
-          setPincode(detectedPincode);
-
-          syncToParent({
-            latitude: targetLat,
-            longitude: targetLng,
-            locality: detectedLocality,
-            city: detectedCity,
-            state: detectedState,
-            pincode: detectedPincode,
-          });
-          setIsGeocoding(false);
-          return;
+          detectedRoad = addr.road || addr.street || '';
+          detectedAmenity = addr.amenity || addr.shop || addr.building || addr.college || addr.university || '';
         }
       } catch (err) {
-        console.warn('Nominatim reverse geocode fallback to BigDataCloud:', err);
+        console.warn('Nominatim reverse geocode error:', err);
       }
 
-      // Tier 2: BigDataCloud Fallback
+      // 2. Wikipedia Nearby Geosearch for Famous Local Landmarks & Institutions
       try {
-        const bdcRes = await fetch(
-          `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${targetLat}&longitude=${targetLng}&localityLanguage=en`
-        );
-        if (bdcRes.ok) {
-          const bdc = await bdcRes.json();
-          const detectedCity = bdc.city || bdc.locality || '';
-          const detectedLocality = bdc.locality || bdc.city || '';
-          const detectedState = bdc.principalSubdivision || '';
-          const detectedPincode = bdc.postcode || '';
-
-          setLocality(detectedLocality);
-          setCity(detectedCity);
-          setState(detectedState);
-          setPincode(detectedPincode);
-
-          syncToParent({
-            latitude: targetLat,
-            longitude: targetLng,
-            locality: detectedLocality,
-            city: detectedCity,
-            state: detectedState,
-            pincode: detectedPincode,
-          });
+        const wikiUrl = `https://en.wikipedia.org/w/api.php?action=query&list=geosearch&gscoord=${targetLat}|${targetLng}&gsradius=5000&gslimit=5&format=json&origin=*`;
+        const wikiRes = await fetch(wikiUrl);
+        if (wikiRes.ok) {
+          const wikiData = await wikiRes.json();
+          if (wikiData.query?.geosearch) {
+            wikiLandmarks = wikiData.query.geosearch
+              .map((item: any) => item.title)
+              .filter(
+                (title: string) =>
+                  !title.toLowerCase().includes('constituency') &&
+                  !title.toLowerCase().includes('division')
+              );
+          }
         }
-      } catch (bdcErr) {
-        console.warn('BigDataCloud reverse geocode error:', bdcErr);
-      } finally {
-        setIsGeocoding(false);
+      } catch (wikiErr) {
+        console.warn('Wiki geosearch error:', wikiErr);
       }
+
+      // 3. Fallback to BigDataCloud if Nominatim had empty locality
+      if (!detectedCity && !detectedLocality) {
+        try {
+          const bdcRes = await fetch(
+            `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${targetLat}&longitude=${targetLng}&localityLanguage=en`
+          );
+          if (bdcRes.ok) {
+            const bdc = await bdcRes.json();
+            detectedCity = bdc.city || bdc.locality || '';
+            detectedLocality = bdc.locality || bdc.city || '';
+            detectedState = bdc.principalSubdivision || '';
+            detectedPincode = bdc.postcode || '';
+          }
+        } catch (bdcErr) {
+          console.warn('BigDataCloud error:', bdcErr);
+        }
+      }
+
+      // Combine nearby landmark candidates
+      const candidates: string[] = [];
+      if (detectedAmenity) candidates.push(detectedAmenity);
+      if (detectedRoad) candidates.push(detectedRoad);
+      for (const lm of wikiLandmarks) {
+        if (!candidates.includes(lm)) candidates.push(lm);
+      }
+
+      setNearbyLandmarks(candidates);
+      if (detectedLocality) setLocality(detectedLocality);
+      if (detectedCity) setCity(detectedCity);
+      if (detectedState) setState(detectedState);
+      if (detectedPincode) setPincode(detectedPincode);
+
+      // Auto-suggest landmark in address field if currently empty
+      let updatedAddress = address;
+      if (!updatedAddress.trim() && candidates.length > 0) {
+        updatedAddress = `Near ${candidates[0]}`;
+        setAddress(updatedAddress);
+      }
+
+      syncToParent({
+        latitude: targetLat,
+        longitude: targetLng,
+        locality: detectedLocality,
+        city: detectedCity,
+        state: detectedState,
+        pincode: detectedPincode,
+        address: updatedAddress,
+      });
+
+      setIsGeocoding(false);
     },
-    [syncToParent]
+    [address, syncToParent]
   );
 
   // Initialize Map Engines (Mapbox GL prioritized when token configured, else Google or Leaflet)
@@ -267,6 +304,54 @@ export const SalonLocationPicker: React.FC<SalonLocationPickerProps> = ({
     [mapEngine, reverseGeocode]
   );
 
+  // Dynamic Device Location Auto-Detection on Mount (Zero Hardcoding)
+  useEffect(() => {
+    // 1. If coordinates already supplied by prop, use them
+    if (currentVal?.latitude && currentVal?.longitude) {
+      updateMapPosition(currentVal.latitude, currentVal.longitude, !currentVal.locality);
+      return;
+    }
+
+    // 2. Query browser device GPS
+    if (typeof navigator !== 'undefined' && navigator.geolocation) {
+      setIsGpsLoading(true);
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          setIsGpsLoading(false);
+          setGpsActive(true);
+          const userLat = Number(pos.coords.latitude.toFixed(6));
+          const userLng = Number(pos.coords.longitude.toFixed(6));
+          updateMapPosition(userLat, userLng, true);
+        },
+        () => {
+          // 3. Fallback to dynamic IP location detection (never hardcoded)
+          fetch('https://ipwho.is/')
+            .then((r) => r.json())
+            .then((d) => {
+              setIsGpsLoading(false);
+              if (d && d.success && d.latitude && d.longitude) {
+                const ipLat = Number(d.latitude.toFixed(6));
+                const ipLng = Number(d.longitude.toFixed(6));
+                updateMapPosition(ipLat, ipLng, true);
+              }
+            })
+            .catch(() => setIsGpsLoading(false));
+        },
+        { enableHighAccuracy: true, timeout: 8000 }
+      );
+    } else {
+      // Dynamic IP location detection
+      fetch('https://ipwho.is/')
+        .then((r) => r.json())
+        .then((d) => {
+          if (d && d.success && d.latitude && d.longitude) {
+            updateMapPosition(Number(d.latitude.toFixed(6)), Number(d.longitude.toFixed(6)), true);
+          }
+        })
+        .catch(() => {});
+    }
+  }, []);
+
   // 1-Click Detect Live GPS Location
   const handleUseCurrentLocation = useCallback(() => {
     if (!navigator.geolocation) {
@@ -290,13 +375,6 @@ export const SalonLocationPicker: React.FC<SalonLocationPickerProps> = ({
     );
   }, [updateMapPosition]);
 
-  // Auto-fetch GPS on initial mount if locality is empty
-  useEffect(() => {
-    if (!currentVal?.locality && !locality) {
-      handleUseCurrentLocation();
-    }
-  }, []); // Run once on mount
-
   // Mount Mapbox GL Map
   useEffect(() => {
     if (mapEngine !== 'mapbox' || !isMapboxReady || !mapContainerRef.current) return;
@@ -306,12 +384,14 @@ export const SalonLocationPicker: React.FC<SalonLocationPickerProps> = ({
     try {
       mapboxgl.accessToken = getMapboxToken();
 
+      const initialCenter = lat && lng ? [lng, lat] : [78.9629, 20.5937]; // Center of India view until GPS arrives
+
       if (!mapboxMapRef.current) {
         const map = new mapboxgl.Map({
           container: mapContainerRef.current,
           style: MAPBOX_DARK_STYLE,
-          center: [lng, lat],
-          zoom: 16,
+          center: initialCenter,
+          zoom: lat && lng ? 16 : 5,
           pitch: 20,
           attributionControl: false,
         });
@@ -320,7 +400,7 @@ export const SalonLocationPicker: React.FC<SalonLocationPickerProps> = ({
           draggable: true,
           color: '#f59e0b',
         })
-          .setLngLat([lng, lat])
+          .setLngLat(initialCenter)
           .addTo(map);
 
         marker.on('dragend', () => {
@@ -343,7 +423,7 @@ export const SalonLocationPicker: React.FC<SalonLocationPickerProps> = ({
 
         mapboxMapRef.current = map;
         mapboxMarkerRef.current = marker;
-      } else {
+      } else if (lat && lng) {
         mapboxMapRef.current.flyTo({ center: [lng, lat], zoom: 16 });
         if (mapboxMarkerRef.current) {
           mapboxMarkerRef.current.setLngLat([lng, lat]);
@@ -369,10 +449,12 @@ export const SalonLocationPicker: React.FC<SalonLocationPickerProps> = ({
     const gmaps = (window as any).google?.maps;
     if (!gmaps) return;
 
+    const initialCenter = lat && lng ? { lat, lng } : { lat: 20.5937, lng: 78.9629 };
+
     if (!googleMapRef.current) {
       const map = new gmaps.Map(mapContainerRef.current, {
-        center: { lat, lng },
-        zoom: 16,
+        center: initialCenter,
+        zoom: lat && lng ? 16 : 5,
         styles: KUMBHAKARAN_MAP_STYLES,
         disableDefaultUI: true,
         gestureHandling: 'greedy',
@@ -380,7 +462,7 @@ export const SalonLocationPicker: React.FC<SalonLocationPickerProps> = ({
       });
 
       const marker = new gmaps.Marker({
-        position: { lat, lng },
+        position: initialCenter,
         map,
         draggable: true,
         title: 'Drag to salon entrance',
@@ -415,7 +497,7 @@ export const SalonLocationPicker: React.FC<SalonLocationPickerProps> = ({
 
       googleMapRef.current = map;
       googleMarkerRef.current = marker;
-    } else {
+    } else if (lat && lng) {
       googleMapRef.current.setCenter({ lat, lng });
       if (googleMarkerRef.current) {
         googleMarkerRef.current.setPosition({ lat, lng });
@@ -429,10 +511,12 @@ export const SalonLocationPicker: React.FC<SalonLocationPickerProps> = ({
     const L = (window as any).L;
     if (!L) return;
 
+    const initialCenter: [number, number] = lat && lng ? [lat, lng] : [20.5937, 78.9629];
+
     if (!leafletMapRef.current) {
       const map = L.map(mapContainerRef.current, {
-        center: [lat, lng],
-        zoom: 16,
+        center: initialCenter,
+        zoom: lat && lng ? 16 : 5,
         zoomControl: false,
         attributionControl: false,
       });
@@ -469,7 +553,7 @@ export const SalonLocationPicker: React.FC<SalonLocationPickerProps> = ({
         iconAnchor: [17, 34],
       });
 
-      const marker = L.marker([lat, lng], {
+      const marker = L.marker(initialCenter, {
         icon: markerIcon,
         draggable: true,
         title: 'Drag to salon entrance',
@@ -495,7 +579,7 @@ export const SalonLocationPicker: React.FC<SalonLocationPickerProps> = ({
 
       leafletMapRef.current = map;
       leafletMarkerRef.current = marker;
-    } else {
+    } else if (lat && lng) {
       leafletMapRef.current.setView([lat, lng], 16);
       if (leafletMarkerRef.current) {
         leafletMarkerRef.current.setLatLng([lat, lng]);
@@ -561,21 +645,7 @@ export const SalonLocationPicker: React.FC<SalonLocationPickerProps> = ({
   const handleSelectSearchResult = (result: any) => {
     setSearchQuery(result.shortName);
     setSearchResults([]);
-    updateMapPosition(result.lat, result.lng, false);
-
-    if (result.locality) setLocality(result.locality);
-    if (result.city) setCity(result.city);
-    if (result.state) setState(result.state);
-    if (result.pincode) setPincode(result.pincode);
-
-    syncToParent({
-      latitude: result.lat,
-      longitude: result.lng,
-      locality: result.locality,
-      city: result.city,
-      state: result.state,
-      pincode: result.pincode,
-    });
+    updateMapPosition(result.lat, result.lng, true);
   };
 
   // Add Landmark Direction Prefix chip into the landmark text field
@@ -590,12 +660,9 @@ export const SalonLocationPicker: React.FC<SalonLocationPickerProps> = ({
     }
   };
 
-  // Append detected POI / road
-  const handleApplyDetectedPoi = () => {
-    if (!detectedPoi) return;
-    const newAddress = address.trim()
-      ? `${address.trim()}, Near ${detectedPoi}`
-      : `Near ${detectedPoi}`;
+  // Set Landmark from dynamically detected nearby places
+  const handleSelectLandmarkChip = (landmarkName: string) => {
+    const newAddress = `Near ${landmarkName}`;
     setAddress(newAddress);
     syncToParent({ address: newAddress });
   };
@@ -626,7 +693,7 @@ export const SalonLocationPicker: React.FC<SalonLocationPickerProps> = ({
             type="text"
             value={searchQuery}
             onChange={(e) => handleSearchInput(e.target.value)}
-            placeholder="Search colony, chowk, landmark, or PIN (e.g. Koni, Bilaspur)..."
+            placeholder="Search colony, chowk, landmark, or PIN..."
             className="w-full pl-9 pr-8 py-2.5 bg-zinc-900 border border-zinc-700/80 rounded-xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-amber-400 shadow-inner"
           />
           {isSearching && (
@@ -671,36 +738,38 @@ export const SalonLocationPicker: React.FC<SalonLocationPickerProps> = ({
         <div className="absolute top-2.5 left-2.5 z-10 px-2.5 py-1.5 rounded-xl bg-black/85 backdrop-blur-md border border-zinc-800 text-[10px] font-semibold text-zinc-300 flex items-center gap-2 shadow-lg">
           <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse shrink-0"></span>
           <span className="font-mono text-amber-300 font-bold">
-            {lat.toFixed(5)}, {lng.toFixed(5)}
+            {lat && lng ? `${lat.toFixed(5)}, ${lng.toFixed(5)}` : 'Waiting for GPS...'}
           </span>
           {isGeocoding && (
             <span className="text-[10px] text-amber-400 flex items-center gap-1 border-l border-zinc-700 pl-2">
-              <Loader2 className="w-3 h-3 animate-spin" /> Detecting address...
+              <Loader2 className="w-3 h-3 animate-spin" /> Detecting address & landmarks...
             </span>
           )}
         </div>
 
         {/* Google Maps Verification Action */}
-        <div className="absolute top-2.5 right-2.5 z-10">
-          <button
-            type="button"
-            onClick={() => openGoogleMapsLocation(lat, lng)}
-            className="px-2.5 py-1.5 rounded-xl bg-black/85 backdrop-blur-md border border-zinc-800 text-[10px] font-bold text-amber-400 hover:text-white flex items-center gap-1.5 transition-colors shadow-lg"
-            title="Verify location marker in official Google Maps"
-          >
-            <span>Verify in Google Maps</span>
-            <ExternalLink className="w-3 h-3" />
-          </button>
-        </div>
+        {lat && lng ? (
+          <div className="absolute top-2.5 right-2.5 z-10">
+            <button
+              type="button"
+              onClick={() => openGoogleMapsLocation(lat, lng)}
+              className="px-2.5 py-1.5 rounded-xl bg-black/85 backdrop-blur-md border border-zinc-800 text-[10px] font-bold text-amber-400 hover:text-white flex items-center gap-1.5 transition-colors shadow-lg"
+              title="Verify location marker in official Google Maps"
+            >
+              <span>Verify in Google Maps</span>
+              <ExternalLink className="w-3 h-3" />
+            </button>
+          </div>
+        ) : null}
 
         {/* Draggable hint pill at bottom of map */}
-        <div className="absolute bottom-2.5 left-1/2 -translate-x-1/2 z-10 px-3 py-1 rounded-full bg-black/80 backdrop-blur-md border border-zinc-800 text-[10px] text-zinc-300 flex items-center gap-1.5 pointer-events-none shadow-md">
+        <div className="absolute bottom-2.5 left-1/2 -translate-x-1/2 z-10 px-3 py-1 rounded-full bg-black/80 backdrop-blur-md border border-zinc-800 text-[10px] text-zinc-300 flex items-center gap-1.5 pointer-events-none shadow-md whitespace-nowrap">
           <Compass className="w-3 h-3 text-amber-400" />
           <span>Click anywhere or drag marker to pinpoint salon entrance</span>
         </div>
       </div>
 
-      {/* INDIAN SHOP ADDRESS & LANDMARK DETAILS */}
+      {/* DYNAMIC INDIAN SHOP ADDRESS & LANDMARK DETAILS */}
       <div className="bg-[#14141c] border border-zinc-800 rounded-2xl p-4 space-y-3.5 shadow-lg">
         {/* SECTION 1: FAMOUS LANDMARK / CHOWK / NEARBY DUKAN */}
         <div>
@@ -733,20 +802,26 @@ export const SalonLocationPicker: React.FC<SalonLocationPickerProps> = ({
             ))}
           </div>
 
-          {/* Detected POI / Road helper chip */}
-          {detectedPoi && (
-            <div className="mb-2 p-2 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-between gap-2 text-xs">
-              <div className="flex items-center gap-1.5 text-amber-300 font-medium truncate">
-                <Sparkles className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                <span className="truncate">Detected landmark/road: <strong>{detectedPoi}</strong></span>
+          {/* Dynamically Detected Famous Nearby Landmarks & Chowks */}
+          {nearbyLandmarks.length > 0 && (
+            <div className="mb-2.5 p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 space-y-1.5">
+              <div className="text-[10px] text-amber-400 uppercase font-bold tracking-wider flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                <span>Detected Famous Nearby Landmarks & Spots (Click to set):</span>
               </div>
-              <button
-                type="button"
-                onClick={handleApplyDetectedPoi}
-                className="px-2.5 py-1 rounded-lg bg-amber-500 text-black text-[10px] font-bold hover:bg-amber-400 shrink-0"
-              >
-                Insert to Address
-              </button>
+              <div className="flex flex-wrap gap-1.5">
+                {nearbyLandmarks.map((lm, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => handleSelectLandmarkChip(lm)}
+                    className="px-2.5 py-1 rounded-lg bg-zinc-900/90 hover:bg-amber-500 hover:text-black border border-amber-500/30 text-[11px] text-zinc-200 font-medium transition-all flex items-center gap-1 shadow-sm"
+                  >
+                    <Store className="w-3 h-3 text-amber-400" />
+                    <span>Near {lm}</span>
+                  </button>
+                ))}
+              </div>
             </div>
           )}
 
@@ -758,7 +833,7 @@ export const SalonLocationPicker: React.FC<SalonLocationPickerProps> = ({
               setAddress(e.target.value);
               syncToParent({ address: e.target.value });
             }}
-            placeholder="e.g. Near Koni Chowk, Opp. Engineering College Gate, Next to Verma Medical"
+            placeholder="e.g. Near Koni Chowk, Opp. Engineering College Gate, Beside Verma Medical"
             className="w-full p-2.5 bg-zinc-900 border border-zinc-700/90 rounded-xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-amber-400"
           />
         </div>
@@ -799,7 +874,7 @@ export const SalonLocationPicker: React.FC<SalonLocationPickerProps> = ({
                 setLocality(e.target.value);
                 syncToParent({ locality: e.target.value });
               }}
-              placeholder="e.g. Koni / Civil Lines"
+              placeholder="Locality (e.g. Koni / Civil Lines)"
               className="w-full p-2.5 bg-zinc-900 border border-zinc-700/80 rounded-xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-amber-400"
             />
           </div>

@@ -18,36 +18,38 @@ export enum LazyFilterOption {
 }
 
 export class NearbySalonsQueryDto {
-  @ApiProperty({
+  @ApiPropertyOptional({
     example: 12.9352,
-    description: 'Customer current latitude coordinate',
+    description: 'Customer current latitude coordinate (optional, queries all active if omitted)',
   })
+  @IsOptional()
   @Type(() => Number)
   @IsNumber()
   @Min(-90)
   @Max(90)
-  latitude: number;
+  latitude?: number;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     example: 77.6245,
-    description: 'Customer current longitude coordinate',
+    description: 'Customer current longitude coordinate (optional, queries all active if omitted)',
   })
+  @IsOptional()
   @Type(() => Number)
   @IsNumber()
   @Min(-180)
   @Max(180)
-  longitude: number;
+  longitude?: number;
 
   @ApiPropertyOptional({
-    example: 10,
-    description: 'Search discovery radius in kilometers (default: 10 km, max: 50 km)',
+    example: 25,
+    description: 'Search discovery radius in kilometers (default: 25 km, max: 5000 km)',
   })
   @IsOptional()
   @Type(() => Number)
   @IsNumber()
   @Min(0.5)
-  @Max(50)
-  radius_km?: number = 10;
+  @Max(5000)
+  radius_km?: number = 25;
 
   @ApiPropertyOptional({
     enum: LazyFilterOption,

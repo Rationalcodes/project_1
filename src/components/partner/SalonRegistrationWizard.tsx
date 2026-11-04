@@ -38,7 +38,7 @@ export const SalonRegistrationWizard: React.FC<SalonRegistrationWizardProps> = (
   const [city, setCity] = useState('');
   const [state, setState] = useState('');
   const [pincode, setPincode] = useState('');
-  const [coordinates, setCoordinates] = useState({ lat: 22.1388, lng: 82.1453 });
+  const [coordinates, setCoordinates] = useState({ lat: 0, lng: 0 });
 
   // Hours & Stations
   const [openTime, setOpenTime] = useState('09:00 AM');

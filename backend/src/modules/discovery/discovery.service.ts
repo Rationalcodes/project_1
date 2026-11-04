@@ -56,27 +56,47 @@ export class DiscoveryService {
     let items: NearbySalonItemDto[] = [];
     let queriedFromDatabase = false;
 
-    // Attempt native PostGIS parameterized query
+    // Attempt native PostGIS parameterized query or national discovery
     try {
-      // Longitude first ($2), Latitude second ($1) for ST_MakePoint
-      const dbRows: any[] = await this.prisma.$queryRawUnsafe(
-        `SELECT 
-          id, name, tagline, locality, city, latitude, longitude,
-          ROUND((ST_Distance(location, ST_SetSRID(ST_MakePoint($2, $1), 4326)::geography) / 1000)::numeric, 2) AS distance_km,
-          rating, review_count, current_queue, avg_service_time_minutes, active_barbers,
-          starting_price, is_open, is_verified, cover_image, last_queue_update, status
-        FROM salons
-        WHERE status = 'active'
-          AND is_verified = true
-          AND ST_DWithin(location, ST_SetSRID(ST_MakePoint($2, $1), 4326)::geography, $3)
-        ORDER BY distance_km ASC
-        LIMIT $4 OFFSET $5;`,
-        query.latitude,
-        query.longitude,
-        radiusMeters,
-        limit,
-        offset,
-      );
+      let dbRows: any[] = [];
+
+      if (query.latitude !== undefined && query.longitude !== undefined) {
+        // PostGIS ST_DWithin query around user coordinates
+        dbRows = await this.prisma.$queryRawUnsafe(
+          `SELECT 
+            id, name, tagline, locality, city, latitude, longitude,
+            ROUND((ST_Distance(location, ST_SetSRID(ST_MakePoint($2, $1), 4326)::geography) / 1000)::numeric, 2) AS distance_km,
+            rating, review_count, current_queue, avg_service_time_minutes, active_barbers,
+            starting_price, is_open, is_verified, cover_image, last_queue_update, status
+          FROM salons
+          WHERE status = 'active'
+            AND is_verified = true
+            AND ST_DWithin(location, ST_SetSRID(ST_MakePoint($2, $1), 4326)::geography, $3)
+          ORDER BY distance_km ASC
+          LIMIT $4 OFFSET $5;`,
+          query.latitude,
+          query.longitude,
+          radiusMeters,
+          limit,
+          offset,
+        );
+      } else {
+        // Query all active verified salons across India with zero hardcoding
+        dbRows = await this.prisma.$queryRawUnsafe(
+          `SELECT 
+            id, name, tagline, locality, city, latitude, longitude,
+            0.0 AS distance_km,
+            rating, review_count, current_queue, avg_service_time_minutes, active_barbers,
+            starting_price, is_open, is_verified, cover_image, last_queue_update, status
+          FROM salons
+          WHERE status = 'active'
+            AND is_verified = true
+          ORDER BY rating DESC, review_count DESC
+          LIMIT $1 OFFSET $2;`,
+          limit,
+          offset,
+        );
+      }
 
       if (dbRows && dbRows.length > 0) {
         queriedFromDatabase = true;
@@ -119,12 +139,15 @@ export class DiscoveryService {
       const filtered = allSalons
         .filter((s) => s.status === 'active' && s.isVerified === true) // Only approved & active salons
         .map((s) => {
-          const dist = this.calculateHaversineDistance(
-            query.latitude,
-            query.longitude,
-            s.latitude,
-            s.longitude,
-          );
+          const hasCoords = query.latitude !== undefined && query.longitude !== undefined;
+          const dist = hasCoords
+            ? this.calculateHaversineDistance(
+                query.latitude!,
+                query.longitude!,
+                s.latitude,
+                s.longitude,
+              )
+            : 0;
           const barbers = Math.max(1, s.activeBarbers || 2);
           const avgTime = s.avgServiceTimeMinutes || 20;
           const queue = Number(s.currentQueue || 0);
@@ -151,7 +174,12 @@ export class DiscoveryService {
             freshnessBadge: this.calculateFreshnessBadge(s.lastQueueUpdate),
           };
         })
-        .filter((s) => s.distanceKm <= radiusKm);
+        .filter((s) => {
+          if (query.latitude !== undefined && query.longitude !== undefined) {
+            return s.distanceKm <= radiusKm;
+          }
+          return true;
+        });
 
       items = filtered;
     }

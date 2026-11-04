@@ -221,9 +221,9 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     let isMounted = true;
     setIsLoadingSalons(true);
 
-    const queryLat = userLocation?.lat ?? 12.9716;
-    const queryLng = userLocation?.lng ?? 77.5946;
-    const queryRadius = userLocation ? 25 : 50;
+    const queryLat = userLocation?.lat;
+    const queryLng = userLocation?.lng;
+    const queryRadius = userLocation ? 25 : undefined;
 
     defaultApiClient.getNearbySalons(queryLat, queryLng, queryRadius, lazyFilter)
       .then((res) => {

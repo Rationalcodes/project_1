@@ -199,26 +199,31 @@ export class KumbhakaranApiClient {
   // ==========================================================================
 
   /**
-   * Public Customer Discovery: PostGIS ST_DWithin search
+   * Public Customer Discovery: PostGIS ST_DWithin search or all-salons national discovery
    */
   async getNearbySalons(
-    latitude: number,
-    longitude: number,
-    radiusKm: number = 10,
+    latitude?: number | null,
+    longitude?: number | null,
+    radiusKm: number = 25,
     lazyFilter?: string,
   ): Promise<NearbySalonsApiResponse | null> {
     try {
-      const params = new URLSearchParams({
-        latitude: latitude.toString(),
-        longitude: longitude.toString(),
-        radius_km: radiusKm.toString(),
-      });
+      const params = new URLSearchParams();
+
+      if (latitude !== undefined && latitude !== null && longitude !== undefined && longitude !== null) {
+        params.append('latitude', latitude.toString());
+        params.append('longitude', longitude.toString());
+        params.append('radius_km', radiusKm.toString());
+      }
 
       if (lazyFilter && lazyFilter !== 'all') {
         params.append('lazy_filter', lazyFilter);
       }
 
-      const res = await fetch(`${this.baseUrl}/salons/nearby?${params.toString()}`, {
+      const queryString = params.toString();
+      const url = queryString ? `${this.baseUrl}/salons/nearby?${queryString}` : `${this.baseUrl}/salons/nearby`;
+
+      const res = await fetch(url, {
         headers: this.getHeaders(),
       });
 
