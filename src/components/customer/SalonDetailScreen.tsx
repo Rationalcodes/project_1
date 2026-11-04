@@ -19,7 +19,15 @@ import {
   MessageSquarePlus,
   SlidersHorizontal,
   ChevronRight,
-  ExternalLink
+  ExternalLink,
+  Film,
+  Play,
+  Volume2,
+  VolumeX,
+  Eye,
+  Maximize2,
+  X,
+  ChevronLeft
 } from 'lucide-react';
 import { useSalon, getEstimatedWaitMinutes, getQueueDisplay, getQueueFreshness } from '../../context/SalonContext';
 import { Service, Staff } from '../../types';
@@ -48,6 +56,10 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
   const [activeTab, setActiveTab] = useState<'services' | 'staff' | 'reviews' | 'gallery'>('services');
   const [selectedServiceCategory, setSelectedServiceCategory] = useState<string>('All');
   const [activeGalleryIndex, setActiveGalleryIndex] = useState(0);
+  const [showVideoInHero, setShowVideoInHero] = useState(true);
+  const [isLoopVideoMuted, setIsLoopVideoMuted] = useState(true);
+  const [galleryFilter, setGalleryFilter] = useState<'all' | 'location' | 'work' | 'video'>('all');
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
   if (!selectedSalonForDetail) return null;
 
@@ -56,6 +68,57 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
   const queueInfo = getQueueDisplay(salon.currentQueue, salon.isOpen);
   const waitTime = getEstimatedWaitMinutes(salon.currentQueue, salon.avgServiceTimeMinutes, salon.activeBarbers);
   const freshness = getQueueFreshness(salon.lastQueueUpdate);
+
+  // Curated Location & Work media collections
+  const locationPhotos = (salon.locationImages && salon.locationImages.length > 0)
+    ? salon.locationImages
+    : [
+        salon.posterImage || salon.coverImage || 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1585747860715-2ba37e788b70?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1521590832167-7bcbfaa6381f?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1512690459411-b9245aed614b?auto=format&fit=crop&w=1200&q=80'
+      ];
+
+  const workPhotos = (salon.workImages && salon.workImages.length > 0)
+    ? salon.workImages
+    : [
+        'https://images.unsplash.com/photo-1622286342621-4bd786c2447c?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1599351431202-1e0f0137899a?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1517832606589-7629c339590a?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1621605815971-fbc98d665033?auto=format&fit=crop&w=1200&q=80'
+      ];
+
+  // Aggregated gallery items for filtering and interactive lightbox
+  const galleryItems = [
+    ...(salon.loopVideoUrl ? [{
+      id: 'loop-vid',
+      url: salon.loopVideoUrl,
+      type: 'video' as const,
+      title: `${salon.name} Studio Loop Video`,
+      category: 'video' as const,
+      categoryLabel: 'Loop Video'
+    }] : []),
+    ...locationPhotos.map((url, i) => ({
+      id: `loc-${i}`,
+      url,
+      type: 'image' as const,
+      title: `Location & Studio Space #${i + 1}`,
+      category: 'location' as const,
+      categoryLabel: 'Salon Location'
+    })),
+    ...workPhotos.map((url, i) => ({
+      id: `work-${i}`,
+      url,
+      type: 'image' as const,
+      title: `Styling & Cut Work #${i + 1}`,
+      category: 'work' as const,
+      categoryLabel: 'Our Work'
+    })),
+  ];
+
+  const filteredGalleryItems = galleryFilter === 'all'
+    ? galleryItems
+    : galleryItems.filter(item => item.category === galleryFilter);
 
   const serviceCategories = ['All', 'Hair', 'Beard', 'Combos', 'Spa', 'Facial', 'Color'];
 
@@ -118,18 +181,80 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
         </div>
       </div>
 
-      {/* Cover Image Carousel & Overview */}
+      {/* Cover Image Carousel, Poster & Loop Video Showcase */}
       <div className="rounded-3xl overflow-hidden border border-zinc-800/80 bg-zinc-950 relative shadow-2xl">
-        <div className="h-60 sm:h-72 w-full relative">
-          <img
-            src={salon.images[activeGalleryIndex] || salon.coverImage}
-            alt={salon.name}
-            className="w-full h-full object-cover transition-all duration-500"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#0e0e13] via-black/40 to-black/20" />
+        <div className="h-64 sm:h-80 w-full relative overflow-hidden group">
+          {salon.loopVideoUrl && showVideoInHero ? (
+            <video
+              autoPlay
+              loop
+              muted={isLoopVideoMuted}
+              playsInline
+              poster={salon.posterImage || salon.coverImage}
+              className="w-full h-full object-cover transition-all duration-700"
+              key={salon.loopVideoUrl}
+            >
+              <source src={salon.loopVideoUrl} type="video/mp4" />
+            </video>
+          ) : (
+            <img
+              src={salon.images[activeGalleryIndex] || salon.posterImage || salon.coverImage}
+              alt={salon.name}
+              className="w-full h-full object-cover transition-all duration-500"
+            />
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-[#0e0e13] via-black/40 to-black/20 pointer-events-none" />
 
-          {/* Gallery image selector dots */}
-          {salon.images.length > 1 && (
+          {/* Top Controls: Badges + Video/Poster Toggle */}
+          <div className="absolute top-3 left-3 right-3 flex items-center justify-between pointer-events-auto z-10">
+            <div className="flex items-center gap-2">
+              {salon.isVerified && (
+                <span className="flex items-center gap-1 bg-black/80 backdrop-blur-md px-2.5 py-1 rounded-full text-amber-400 font-bold text-xs border border-amber-400/30">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-amber-400" /> Verified Salon
+                </span>
+              )}
+              <span className={`px-2.5 py-1 rounded-full text-xs font-bold backdrop-blur-md ${
+                salon.isOpen ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
+              }`}>
+                {salon.isOpen ? 'Open Now' : 'Closed'}
+              </span>
+            </div>
+
+            {salon.loopVideoUrl && (
+              <div className="flex items-center gap-1.5 bg-black/75 backdrop-blur-md border border-zinc-700/80 p-1 rounded-full shadow-lg">
+                <button
+                  type="button"
+                  onClick={() => setShowVideoInHero(!showVideoInHero)}
+                  className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold transition-all flex items-center gap-1 ${
+                    showVideoInHero
+                      ? 'bg-amber-400 text-black shadow-sm'
+                      : 'text-zinc-300 hover:text-white'
+                  }`}
+                  title="Toggle between loop video and still poster"
+                >
+                  <Film className="w-3 h-3" />
+                  <span>{showVideoInHero ? 'Loop Video' : 'Poster'}</span>
+                </button>
+                {showVideoInHero && (
+                  <button
+                    type="button"
+                    onClick={() => setIsLoopVideoMuted(!isLoopVideoMuted)}
+                    className="p-1 rounded-full text-zinc-300 hover:text-white transition-colors"
+                    title={isLoopVideoMuted ? 'Unmute Audio' : 'Mute Audio'}
+                  >
+                    {isLoopVideoMuted ? (
+                      <VolumeX className="w-3.5 h-3.5" />
+                    ) : (
+                      <Volume2 className="w-3.5 h-3.5 text-amber-400" />
+                    )}
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Gallery image selector dots when in poster mode */}
+          {(!salon.loopVideoUrl || !showVideoInHero) && salon.images.length > 1 && (
             <div className="absolute bottom-3 left-4 flex gap-1.5 z-10">
               {salon.images.map((_, idx) => (
                 <button
@@ -142,20 +267,6 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
               ))}
             </div>
           )}
-
-          {/* Verification & Open Badge */}
-          <div className="absolute top-3 left-3 flex items-center gap-2">
-            {salon.isVerified && (
-              <span className="flex items-center gap-1 bg-black/80 backdrop-blur-md px-2.5 py-1 rounded-full text-amber-400 font-bold text-xs border border-amber-400/30">
-                <CheckCircle2 className="w-3.5 h-3.5 text-amber-400" /> Verified Salon
-              </span>
-            )}
-            <span className={`px-2.5 py-1 rounded-full text-xs font-bold backdrop-blur-md ${
-              salon.isOpen ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
-            }`}>
-              {salon.isOpen ? 'Open Now' : 'Closed'}
-            </span>
-          </div>
         </div>
 
         {/* Salon Header Titles */}
@@ -292,7 +403,7 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
           { id: 'services', label: `Services (${salon.services.length})` },
           { id: 'staff', label: `Stylists (${salon.staff.length})` },
           { id: 'reviews', label: `Reviews (${salon.reviewCount})` },
-          { id: 'gallery', label: `Gallery (${salon.images.length})` }
+          { id: 'gallery', label: `Showcase (${galleryItems.length})` }
         ].map((tab) => (
           <button
             key={tab.id}
@@ -515,14 +626,192 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
         </div>
       )}
 
-      {/* TAB CONTENT: GALLERY */}
+      {/* TAB CONTENT: SHOWCASE & GALLERY (LOCATION, WORK, LOOP VIDEO) */}
       {activeTab === 'gallery' && (
-        <div className="grid grid-cols-2 gap-3">
-          {salon.images.map((img, idx) => (
-            <div key={idx} className="h-40 rounded-2xl overflow-hidden border border-zinc-800">
-              <img src={img} alt={`Studio gallery ${idx}`} className="w-full h-full object-cover hover:scale-105 transition-transform duration-500" />
+        <div className="space-y-4">
+          {/* Sub-Category Filters */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
+            {[
+              { id: 'all' as const, label: `All Media (${galleryItems.length})`, icon: Sparkles },
+              { id: 'location' as const, label: `📍 Location (${locationPhotos.length})`, icon: MapPin },
+              { id: 'work' as const, label: `💈 Our Work (${workPhotos.length})`, icon: Scissors },
+              ...(salon.loopVideoUrl ? [{ id: 'video' as const, label: `🎥 Loop Video (1)`, icon: Film }] : []),
+            ].map((f) => {
+              const Icon = f.icon;
+              const isSelected = galleryFilter === f.id;
+              return (
+                <button
+                  key={f.id}
+                  type="button"
+                  onClick={() => setGalleryFilter(f.id)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
+                    isSelected
+                      ? 'bg-amber-400 text-black shadow-md shadow-amber-400/20'
+                      : 'bg-[#14141c] text-zinc-400 hover:text-white border border-zinc-800'
+                  }`}
+                >
+                  <Icon className="w-3.5 h-3.5" />
+                  <span>{f.label}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Media Grid */}
+          {filteredGalleryItems.length === 0 ? (
+            <div className="bg-[#14141c] border border-zinc-800/80 rounded-2xl p-8 text-center text-xs text-zinc-500">
+              No media in this category yet.
             </div>
-          ))}
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {filteredGalleryItems.map((item, idx) => (
+                <div
+                  key={item.id}
+                  onClick={() => setLightboxIndex(galleryItems.findIndex(g => g.id === item.id))}
+                  className="group relative h-44 rounded-2xl overflow-hidden border border-zinc-800 bg-zinc-900 cursor-pointer shadow-md hover:border-amber-400/50 transition-all"
+                >
+                  {item.type === 'video' ? (
+                    <div className="w-full h-full relative">
+                      <video
+                        src={item.url}
+                        autoPlay
+                        loop
+                        muted
+                        playsInline
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                      <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+                        <div className="w-9 h-9 rounded-full bg-amber-400/90 text-black flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                          <Play className="w-4 h-4 fill-black ml-0.5" />
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <img
+                      src={item.url}
+                      alt={item.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
+                  )}
+
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20 opacity-90 group-hover:opacity-100 transition-opacity" />
+
+                  {/* Badge */}
+                  <div className="absolute top-2 left-2">
+                    <span className="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full backdrop-blur-md bg-black/70 border border-white/10 text-amber-400">
+                      {item.categoryLabel}
+                    </span>
+                  </div>
+
+                  {/* Title & Enlarge icon */}
+                  <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between text-[11px] text-white font-medium">
+                    <span className="truncate drop-shadow-md">{item.title}</span>
+                    <Maximize2 className="w-3.5 h-3.5 text-zinc-300 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 ml-1" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Informational Callout */}
+          <div className="p-3.5 rounded-2xl bg-zinc-900/60 border border-zinc-800/80 flex items-center gap-2.5 text-xs text-zinc-400">
+            <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
+            <span>
+              Real photos and loop video captured directly on location at <strong className="text-white">{salon.name}</strong>, {salon.locality}.
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* FULL-SCREEN LIGHTBOX MODAL */}
+      {lightboxIndex !== null && galleryItems[lightboxIndex] && (
+        <div className="fixed inset-0 z-50 bg-black/95 backdrop-blur-xl flex flex-col justify-between p-4 animate-in fade-in duration-200">
+          {/* Top Bar */}
+          <div className="flex items-center justify-between text-white pb-3 border-b border-zinc-800/80">
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-amber-400/20 text-amber-400 border border-amber-400/30">
+                {galleryItems[lightboxIndex].categoryLabel}
+              </span>
+              <h4 className="text-xs font-bold text-zinc-200 truncate max-w-[200px] sm:max-w-md">
+                {galleryItems[lightboxIndex].title}
+              </h4>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <span className="text-xs text-zinc-500 font-mono">
+                {lightboxIndex + 1} / {galleryItems.length}
+              </span>
+              <button
+                type="button"
+                onClick={() => setLightboxIndex(null)}
+                className="p-1.5 rounded-full bg-zinc-800/90 text-zinc-300 hover:text-white hover:bg-zinc-700 transition-all"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+
+          {/* Media Player / Image Area */}
+          <div className="flex-1 flex items-center justify-center relative my-2 min-h-0">
+            {galleryItems[lightboxIndex].type === 'video' ? (
+              <video
+                src={galleryItems[lightboxIndex].url}
+                autoPlay
+                loop
+                controls
+                playsInline
+                className="max-h-full max-w-full rounded-2xl shadow-2xl object-contain"
+              />
+            ) : (
+              <img
+                src={galleryItems[lightboxIndex].url}
+                alt={galleryItems[lightboxIndex].title}
+                className="max-h-full max-w-full rounded-2xl shadow-2xl object-contain select-none"
+              />
+            )}
+
+            {/* Left/Right Navigation */}
+            {galleryItems.length > 1 && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setLightboxIndex((lightboxIndex - 1 + galleryItems.length) % galleryItems.length)}
+                  className="absolute left-2 sm:left-4 p-2.5 rounded-full bg-black/60 text-white hover:bg-black/90 backdrop-blur-md transition-all shadow-lg"
+                >
+                  <ChevronLeft className="w-6 h-6" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setLightboxIndex((lightboxIndex + 1) % galleryItems.length)}
+                  className="absolute right-2 sm:right-4 p-2.5 rounded-full bg-black/60 text-white hover:bg-black/90 backdrop-blur-md transition-all shadow-lg"
+                >
+                  <ChevronRight className="w-6 h-6" />
+                </button>
+              </>
+            )}
+          </div>
+
+          {/* Bottom Thumbnails */}
+          <div className="flex items-center justify-center gap-2 overflow-x-auto py-2 no-scrollbar border-t border-zinc-800/80">
+            {galleryItems.map((item, idx) => (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => setLightboxIndex(idx)}
+                className={`relative w-12 h-12 rounded-xl overflow-hidden shrink-0 border-2 transition-all ${
+                  idx === lightboxIndex ? 'border-amber-400 scale-105' : 'border-zinc-800 opacity-60 hover:opacity-100'
+                }`}
+              >
+                {item.type === 'video' ? (
+                  <div className="w-full h-full bg-zinc-800 flex items-center justify-center">
+                    <Play className="w-4 h-4 fill-amber-400 text-amber-400" />
+                  </div>
+                ) : (
+                  <img src={item.url} alt="" className="w-full h-full object-cover" />
+                )}
+              </button>
+            ))}
+          </div>
         </div>
       )}
     </div>

@@ -44,12 +44,28 @@ export interface Review {
   };
 }
 
+export interface SalonMediaItem {
+  id: string;
+  url: string;
+  type: 'image' | 'video';
+  category: 'location' | 'work' | 'poster';
+  title?: string;
+  tag?: string;
+  thumbnailUrl?: string;
+  uploadedAt?: string;
+}
+
 export interface Salon {
   id: string;
   name: string;
   tagline: string;
   coverImage: string;
+  posterImage?: string;
+  loopVideoUrl?: string;
   images: string[];
+  locationImages?: string[];
+  workImages?: string[];
+  mediaGallery?: SalonMediaItem[];
   rating: number;
   reviewCount: number;
   currentQueue: number;
@@ -132,7 +148,7 @@ export type AppMode = AppPortal;
 
 export type CustomerTab = 'home' | 'explore' | 'map' | 'favourites' | 'profile';
 
-export type PartnerView = 'dashboard' | 'register' | 'live-queue' | 'services' | 'staff' | 'reviews' | 'analytics' | 'settings';
+export type PartnerView = 'dashboard' | 'register' | 'live-queue' | 'services' | 'staff' | 'reviews' | 'analytics' | 'settings' | 'gallery';
 export type OwnerTab = PartnerView;
 
 export type AdminTab = 'overview' | 'salons' | 'customers' | 'verification' | 'reviews' | 'subscriptions' | 'analytics' | 'settings';

@@ -383,6 +383,13 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           reviews: combinedReviews,
           currentQueue: publicData.currentQueue !== undefined ? publicData.currentQueue : prev.currentQueue,
           isOpen: publicData.isOpen !== undefined ? publicData.isOpen : prev.isOpen,
+          coverImage: (publicData as any).coverImage || prev.coverImage,
+          posterImage: (publicData as any).posterImage || (publicData as any).coverImage || prev.posterImage,
+          loopVideoUrl: (publicData as any).loopVideoUrl || prev.loopVideoUrl,
+          images: ((publicData as any).images && (publicData as any).images.length > 0) ? (publicData as any).images : prev.images,
+          locationImages: (publicData as any).locationImages || prev.locationImages,
+          workImages: (publicData as any).workImages || prev.workImages,
+          mediaGallery: (publicData as any).mediaGallery || prev.mediaGallery,
         };
       });
 
@@ -396,6 +403,13 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             reviews: combinedReviews,
             currentQueue: publicData.currentQueue !== undefined ? publicData.currentQueue : s.currentQueue,
             isOpen: publicData.isOpen !== undefined ? publicData.isOpen : s.isOpen,
+            coverImage: (publicData as any).coverImage || s.coverImage,
+            posterImage: (publicData as any).posterImage || (publicData as any).coverImage || s.posterImage,
+            loopVideoUrl: (publicData as any).loopVideoUrl || s.loopVideoUrl,
+            images: ((publicData as any).images && (publicData as any).images.length > 0) ? (publicData as any).images : s.images,
+            locationImages: (publicData as any).locationImages || s.locationImages,
+            workImages: (publicData as any).workImages || s.workImages,
+            mediaGallery: (publicData as any).mediaGallery || s.mediaGallery,
           };
         }),
       );

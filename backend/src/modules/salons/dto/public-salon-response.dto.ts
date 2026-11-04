@@ -84,6 +84,24 @@ export class PublicSalonResponseDto {
   @ApiPropertyOptional({ example: 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=1200' })
   coverImage?: string;
 
+  @ApiPropertyOptional()
+  posterImage?: string;
+
+  @ApiPropertyOptional()
+  loopVideoUrl?: string;
+
+  @ApiPropertyOptional({ type: [String] })
+  images?: string[];
+
+  @ApiPropertyOptional({ type: [String] })
+  locationImages?: string[];
+
+  @ApiPropertyOptional({ type: [String] })
+  workImages?: string[];
+
+  @ApiPropertyOptional()
+  mediaGallery?: any[];
+
   @ApiProperty({ example: '09:00 AM – 09:30 PM (All Days)' })
   openingHoursFormatted: string;
 

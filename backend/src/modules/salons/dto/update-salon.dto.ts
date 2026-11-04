@@ -95,4 +95,30 @@ export class UpdateSalonDto {
   @IsOptional()
   @IsString()
   coverImage?: string;
+
+  @ApiPropertyOptional({ example: 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=1200' })
+  @IsOptional()
+  @IsString()
+  posterImage?: string;
+
+  @ApiPropertyOptional({ example: 'https://assets.mixkit.co/videos/preview/mixkit-barber-cutting-hair-with-scissors-and-comb-41544-large.mp4' })
+  @IsOptional()
+  @IsString()
+  loopVideoUrl?: string;
+
+  @ApiPropertyOptional({ type: [String] })
+  @IsOptional()
+  images?: string[];
+
+  @ApiPropertyOptional({ type: [String] })
+  @IsOptional()
+  locationImages?: string[];
+
+  @ApiPropertyOptional({ type: [String] })
+  @IsOptional()
+  workImages?: string[];
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  mediaGallery?: any[];
 }

@@ -269,6 +269,24 @@ export class SalonsService {
       latitude: Number(salonData.latitude),
       longitude: Number(salonData.longitude),
       coverImage: salonData.coverImage || salonData.cover_image,
+      posterImage: salonData.posterImage || salonData.poster_image || salonData.coverImage || salonData.cover_image,
+      loopVideoUrl: salonData.loopVideoUrl || salonData.loop_video_url,
+      images: salonData.images || [
+        salonData.coverImage || salonData.cover_image,
+        'https://images.unsplash.com/photo-1585747860715-2ba37e788b70?auto=format&fit=crop&w=800&q=80',
+        'https://images.unsplash.com/photo-1622286342621-4bd786c2447c?auto=format&fit=crop&w=800&q=80',
+      ],
+      locationImages: salonData.locationImages || salonData.location_images || [
+        'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=800&q=80',
+        'https://images.unsplash.com/photo-1585747860715-2ba37e788b70?auto=format&fit=crop&w=800&q=80',
+        'https://images.unsplash.com/photo-1521590832167-7bcbfaa6381f?auto=format&fit=crop&w=800&q=80',
+      ],
+      workImages: salonData.workImages || salonData.work_images || [
+        'https://images.unsplash.com/photo-1622286342621-4bd786c2447c?auto=format&fit=crop&w=800&q=80',
+        'https://images.unsplash.com/photo-1599351431202-1e0f0137899a?auto=format&fit=crop&w=800&q=80',
+        'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=800&q=80',
+      ],
+      mediaGallery: salonData.mediaGallery || salonData.media_gallery || [],
       openingHoursFormatted: salonData.openingHoursFormatted || salonData.opening_hours_formatted || '09:00 AM – 09:30 PM',
       currentQueue: Number(currentQueue),
       estimatedWaitMinutes,
@@ -492,6 +510,12 @@ export class SalonsService {
       if (dto.isOpen !== undefined) salon.isOpen = dto.isOpen;
       if (dto.status) salon.status = dto.status;
       if (dto.coverImage) salon.coverImage = dto.coverImage;
+      if (dto.posterImage) salon.posterImage = dto.posterImage;
+      if (dto.loopVideoUrl !== undefined) salon.loopVideoUrl = dto.loopVideoUrl;
+      if (dto.images) salon.images = dto.images;
+      if (dto.locationImages) salon.locationImages = dto.locationImages;
+      if (dto.workImages) salon.workImages = dto.workImages;
+      if (dto.mediaGallery) salon.mediaGallery = dto.mediaGallery;
     }
 
     return {

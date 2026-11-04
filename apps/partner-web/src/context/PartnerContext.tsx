@@ -253,7 +253,8 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
         return { ...s, ...updates };
       }),
     );
-    triggerNotification('Salon information updated successfully');
+    defaultApiClient.updateSalon(salonId, updates);
+    triggerNotification('Salon information and media updated successfully');
   };
 
   const addService = (salonId: string, serviceData: Omit<Service, 'id'>) => {

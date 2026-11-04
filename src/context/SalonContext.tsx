@@ -273,6 +273,13 @@ export const SalonProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           reviews: combinedReviews,
           currentQueue: publicData.currentQueue !== undefined ? publicData.currentQueue : prev.currentQueue,
           isOpen: publicData.isOpen !== undefined ? publicData.isOpen : prev.isOpen,
+          coverImage: (publicData as any).coverImage || prev.coverImage,
+          posterImage: (publicData as any).posterImage || (publicData as any).coverImage || prev.posterImage,
+          loopVideoUrl: (publicData as any).loopVideoUrl || prev.loopVideoUrl,
+          images: ((publicData as any).images && (publicData as any).images.length > 0) ? (publicData as any).images : prev.images,
+          locationImages: (publicData as any).locationImages || prev.locationImages,
+          workImages: (publicData as any).workImages || prev.workImages,
+          mediaGallery: (publicData as any).mediaGallery || prev.mediaGallery,
         };
       });
     }).catch(() => {});
@@ -473,7 +480,8 @@ export const SalonProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       }
       return updated;
     }));
-    triggerNotification("Salon information updated successfully");
+    api.updateSalon(salonId, updates);
+    triggerNotification("Salon information and media updated successfully");
   };
 
   const addService = (salonId: string, serviceData: Omit<Service, 'id'>) => {

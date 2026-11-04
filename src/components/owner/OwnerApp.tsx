@@ -25,7 +25,13 @@ import {
   MapPin,
   Phone,
   Sparkles,
-  Info
+  Info,
+  Film,
+  Image as ImageIcon,
+  Video,
+  Upload,
+  Play,
+  Eye
 } from 'lucide-react';
 import { OwnerTab, Service, Staff } from '../../types';
 
@@ -90,9 +96,95 @@ export const OwnerApp: React.FC = () => {
     { id: 'services', label: 'Services & Pricing', icon: Scissors },
     { id: 'staff', label: 'Staff Management', icon: UserCheck },
     { id: 'reviews', label: 'Customer Reviews', icon: Star },
+    { id: 'gallery', label: 'Media & Loop Video', icon: Film },
     { id: 'analytics', label: 'Traffic Analytics', icon: BarChart3 },
     { id: 'settings', label: 'Salon Settings', icon: Settings }
   ];
+
+  // Media & Showcase Studio state
+  const [mediaSubTab, setMediaSubTab] = useState<'poster-video' | 'location' | 'work'>('poster-video');
+  const [posterUrlInput, setPosterUrlInput] = useState(activeSalon.posterImage || activeSalon.coverImage || '');
+  const [loopVideoUrlInput, setLoopVideoUrlInput] = useState(activeSalon.loopVideoUrl || '');
+  const [newLocationUrl, setNewLocationUrl] = useState('');
+  const [newWorkUrl, setNewWorkUrl] = useState('');
+
+  const locationPhotosList = (activeSalon.locationImages && activeSalon.locationImages.length > 0)
+    ? activeSalon.locationImages
+    : [
+        activeSalon.posterImage || activeSalon.coverImage || 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1585747860715-2ba37e788b70?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1521590832167-7bcbfaa6381f?auto=format&fit=crop&w=1200&q=80'
+      ];
+
+  const workPhotosList = (activeSalon.workImages && activeSalon.workImages.length > 0)
+    ? activeSalon.workImages
+    : [
+        'https://images.unsplash.com/photo-1622286342621-4bd786c2447c?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1599351431202-1e0f0137899a?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1517832606589-7629c339590a?auto=format&fit=crop&w=1200&q=80'
+      ];
+
+  const handleSaveHeroMedia = (e: React.FormEvent) => {
+    e.preventDefault();
+    updateSalonInfo(activeSalon.id, {
+      posterImage: posterUrlInput.trim() || activeSalon.coverImage,
+      coverImage: posterUrlInput.trim() || activeSalon.coverImage,
+      loopVideoUrl: loopVideoUrlInput.trim()
+    });
+    triggerNotification('Poster and loop video showcase updated!');
+  };
+
+  const handleAddLocationPhoto = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newLocationUrl.trim()) return;
+    const updated = [newLocationUrl.trim(), ...locationPhotosList];
+    updateSalonInfo(activeSalon.id, {
+      locationImages: updated,
+      images: [newLocationUrl.trim(), ...activeSalon.images]
+    });
+    setNewLocationUrl('');
+    triggerNotification('Location photo added to showcase!');
+  };
+
+  const handleRemoveLocationPhoto = (photoUrl: string) => {
+    const updated = locationPhotosList.filter(url => url !== photoUrl);
+    updateSalonInfo(activeSalon.id, { locationImages: updated });
+    triggerNotification('Location photo removed');
+  };
+
+  const handleAddWorkPhoto = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newWorkUrl.trim()) return;
+    const updated = [newWorkUrl.trim(), ...workPhotosList];
+    updateSalonInfo(activeSalon.id, { workImages: updated });
+    setNewWorkUrl('');
+    triggerNotification('Styling work added to customer portfolio!');
+  };
+
+  const handleRemoveWorkPhoto = (photoUrl: string) => {
+    const updated = workPhotosList.filter(url => url !== photoUrl);
+    updateSalonInfo(activeSalon.id, { workImages: updated });
+    triggerNotification('Work portfolio photo removed');
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, target: 'poster' | 'video' | 'location' | 'work') => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      if (target === 'poster') {
+        setPosterUrlInput(result);
+      } else if (target === 'video') {
+        setLoopVideoUrlInput(result);
+      } else if (target === 'location') {
+        setNewLocationUrl(result);
+      } else if (target === 'work') {
+        setNewWorkUrl(result);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
 
   const handleManualQueueSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -856,6 +948,378 @@ export const OwnerApp: React.FC = () => {
               <span className="text-[10px] text-zinc-500">42% of all walk-ins</span>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* TAB: MEDIA & LOOP VIDEO SHOWCASE STUDIO */}
+      {ownerTab === 'gallery' && (
+        <div className="space-y-6 max-w-4xl">
+          {/* Studio Header */}
+          <div className="bg-[#14141c] border border-zinc-800 rounded-3xl p-5 space-y-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <div className="flex items-center gap-2">
+                  <Film className="w-5 h-5 text-amber-400" />
+                  <h2 className="text-base font-bold text-white">Media, Poster & Location Showcase</h2>
+                </div>
+                <p className="text-xs text-zinc-400 mt-1">
+                  Upload high-res poster photos, background loop videos, physical salon location pictures, and haircut portfolio.
+                </p>
+              </div>
+
+              {/* Sub-tab Switcher */}
+              <div className="flex items-center gap-1 bg-zinc-900/90 border border-zinc-800 p-1 rounded-2xl text-xs shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setMediaSubTab('poster-video')}
+                  className={`px-3 py-1.5 rounded-xl font-semibold transition-all ${
+                    mediaSubTab === 'poster-video'
+                      ? 'bg-amber-400 text-black shadow-sm font-bold'
+                      : 'text-zinc-400 hover:text-white'
+                  }`}
+                >
+                  Poster & Loop Video
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMediaSubTab('location')}
+                  className={`px-3 py-1.5 rounded-xl font-semibold transition-all ${
+                    mediaSubTab === 'location'
+                      ? 'bg-amber-400 text-black shadow-sm font-bold'
+                      : 'text-zinc-400 hover:text-white'
+                  }`}
+                >
+                  Location ({locationPhotosList.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMediaSubTab('work')}
+                  className={`px-3 py-1.5 rounded-xl font-semibold transition-all ${
+                    mediaSubTab === 'work'
+                      ? 'bg-amber-400 text-black shadow-sm font-bold'
+                      : 'text-zinc-400 hover:text-white'
+                  }`}
+                >
+                  Our Work ({workPhotosList.length})
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* SUBTAB 1: POSTER & LOOP VIDEO */}
+          {mediaSubTab === 'poster-video' && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              {/* Form Input */}
+              <form onSubmit={handleSaveHeroMedia} className="bg-[#14141c] border border-zinc-800 rounded-3xl p-5 space-y-4 text-xs">
+                <div>
+                  <h3 className="text-sm font-bold text-white flex items-center gap-1.5 mb-1">
+                    <Video className="w-4 h-4 text-amber-400" />
+                    Cover Poster & Loop Video
+                  </h3>
+                  <p className="text-[11px] text-zinc-400">
+                    Set a cinematic looping video (MP4/WebM) or a high-res poster image for your salon's profile banner.
+                  </p>
+                </div>
+
+                {/* Poster Image URL & File Upload */}
+                <div>
+                  <label className="text-zinc-300 font-semibold block mb-1">Poster Image URL (Hero Cover)</label>
+                  <div className="flex gap-2">
+                    <input
+                      type="url"
+                      value={posterUrlInput}
+                      onChange={(e) => setPosterUrlInput(e.target.value)}
+                      placeholder="https://images.unsplash.com/..."
+                      className="flex-1 p-2.5 bg-zinc-900 border border-zinc-700 rounded-xl text-white text-xs"
+                    />
+                    <label className="px-3 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-semibold rounded-xl text-xs cursor-pointer flex items-center gap-1 shrink-0">
+                      <Upload className="w-3.5 h-3.5" />
+                      <span>Upload</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => handleFileUpload(e, 'poster')}
+                      />
+                    </label>
+                  </div>
+                </div>
+
+                {/* Loop Video URL & File Upload */}
+                <div>
+                  <label className="text-zinc-300 font-semibold block mb-1">
+                    Loop Video URL (MP4 / WebM direct video link)
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="url"
+                      value={loopVideoUrlInput}
+                      onChange={(e) => setLoopVideoUrlInput(e.target.value)}
+                      placeholder="https://assets.mixkit.co/videos/...mp4"
+                      className="flex-1 p-2.5 bg-zinc-900 border border-zinc-700 rounded-xl text-white text-xs"
+                    />
+                    <label className="px-3 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-semibold rounded-xl text-xs cursor-pointer flex items-center gap-1 shrink-0">
+                      <Upload className="w-3.5 h-3.5" />
+                      <span>Upload</span>
+                      <input
+                        type="file"
+                        accept="video/mp4,video/webm"
+                        className="hidden"
+                        onChange={(e) => handleFileUpload(e, 'video')}
+                      />
+                    </label>
+                  </div>
+                </div>
+
+                {/* Quick Presets for Barber Studios */}
+                <div className="p-3 bg-zinc-900/70 border border-zinc-800 rounded-2xl space-y-2">
+                  <span className="text-[10px] uppercase font-bold text-zinc-400 tracking-wider block">
+                    ⚡ Quick Sample Studio Loops:
+                  </span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {[
+                      {
+                        label: '✂️ Master Barber Scissors & Fade',
+                        url: 'https://assets.mixkit.co/videos/preview/mixkit-barber-cutting-hair-with-scissors-and-comb-41544-large.mp4'
+                      },
+                      {
+                        label: '💈 Barber Styling & Comb',
+                        url: 'https://assets.mixkit.co/videos/preview/mixkit-barber-styling-a-mans-hair-41545-large.mp4'
+                      },
+                      {
+                        label: '✂️ Haircut Precision Cut',
+                        url: 'https://assets.mixkit.co/videos/preview/mixkit-hairdresser-brushing-a-womans-hair-41540-large.mp4'
+                      }
+                    ].map((preset) => (
+                      <button
+                        key={preset.label}
+                        type="button"
+                        onClick={() => setLoopVideoUrlInput(preset.url)}
+                        className="px-2.5 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-[11px] text-zinc-300 hover:text-amber-400 transition-colors"
+                      >
+                        {preset.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="pt-2 flex justify-end">
+                  <button
+                    type="submit"
+                    className="px-5 py-2.5 bg-amber-500 text-black font-bold rounded-xl text-xs hover:bg-amber-400 flex items-center gap-1.5 shadow-lg shadow-amber-500/20"
+                  >
+                    <Save className="w-4 h-4" />
+                    <span>Save Poster & Video</span>
+                  </button>
+                </div>
+              </form>
+
+              {/* Live Customer Preview */}
+              <div className="bg-[#14141c] border border-zinc-800 rounded-3xl p-5 space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-bold text-white flex items-center gap-1.5">
+                    <Eye className="w-4 h-4 text-amber-400" />
+                    Customer Live View Preview
+                  </h3>
+                  <span className="text-[10px] text-zinc-500">How customers see your salon</span>
+                </div>
+
+                <div className="h-64 rounded-2xl overflow-hidden border border-zinc-700 relative bg-black shadow-inner">
+                  {loopVideoUrlInput ? (
+                    <video
+                      src={loopVideoUrlInput}
+                      autoPlay
+                      loop
+                      muted
+                      playsInline
+                      poster={posterUrlInput}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <img
+                      src={posterUrlInput || activeSalon.coverImage}
+                      alt="Preview"
+                      className="w-full h-full object-cover"
+                    />
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20" />
+                  <div className="absolute top-3 left-3 flex items-center gap-2">
+                    <span className="px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-black/80 text-amber-400 border border-amber-400/40">
+                      {loopVideoUrlInput ? '🎥 Loop Video Active' : '🖼️ Poster Active'}
+                    </span>
+                  </div>
+                  <div className="absolute bottom-3 left-3 right-3 text-white">
+                    <div className="text-sm font-black">{activeSalon.name}</div>
+                    <div className="text-[11px] text-zinc-300">{activeSalon.locality}, {activeSalon.city}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* SUBTAB 2: LOCATION GALLERY (AMBIECE & PREMISES) */}
+          {mediaSubTab === 'location' && (
+            <div className="space-y-5">
+              {/* Add Location Photo Form */}
+              <form onSubmit={handleAddLocationPhoto} className="bg-[#14141c] border border-zinc-800 rounded-3xl p-5 text-xs space-y-3">
+                <h3 className="text-sm font-bold text-white flex items-center gap-1.5">
+                  <MapPin className="w-4 h-4 text-amber-400" />
+                  Add Physical Salon Location Photo
+                </h3>
+                <p className="text-[11px] text-zinc-400">
+                  Upload clear photos of your chairs, waiting area, wash bar, and exterior front facade to build customer trust.
+                </p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="sm:col-span-2">
+                    <label className="text-zinc-300 font-semibold block mb-1">Image URL</label>
+                    <input
+                      type="url"
+                      value={newLocationUrl}
+                      onChange={(e) => setNewLocationUrl(e.target.value)}
+                      placeholder="https://images.unsplash.com/..."
+                      className="w-full p-2.5 bg-zinc-900 border border-zinc-700 rounded-xl text-white text-xs"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-zinc-300 font-semibold block mb-1">Upload File</label>
+                    <label className="w-full p-2.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-semibold rounded-xl text-xs cursor-pointer flex items-center justify-center gap-1.5">
+                      <Upload className="w-4 h-4" />
+                      <span>Choose Image</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => handleFileUpload(e, 'location')}
+                      />
+                    </label>
+                  </div>
+                </div>
+
+                <div className="flex justify-end pt-1">
+                  <button
+                    type="submit"
+                    disabled={!newLocationUrl.trim()}
+                    className="px-5 py-2 bg-amber-500 text-black font-bold rounded-xl text-xs hover:bg-amber-400 disabled:opacity-50 flex items-center gap-1"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>Add to Location Gallery</span>
+                  </button>
+                </div>
+              </form>
+
+              {/* Location Photos Grid */}
+              <div className="bg-[#14141c] border border-zinc-800 rounded-3xl p-5 space-y-3">
+                <div className="flex items-center justify-between text-xs">
+                  <h4 className="font-bold text-white">Active Location Photos ({locationPhotosList.length})</h4>
+                  <span className="text-zinc-500">Visible to all nearby walk-in customers</span>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  {locationPhotosList.map((url, idx) => (
+                    <div key={idx} className="group relative h-36 rounded-2xl overflow-hidden border border-zinc-800 bg-zinc-900">
+                      <img src={url} alt={`Location ${idx}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-80" />
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveLocationPhoto(url)}
+                        className="absolute top-2 right-2 p-1.5 rounded-full bg-rose-500/80 hover:bg-rose-500 text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                        title="Remove photo"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                      <span className="absolute bottom-2 left-2 text-[10px] font-bold text-zinc-300 drop-shadow">
+                        Space #{idx + 1}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* SUBTAB 3: OUR WORK & STYLES PORTFOLIO */}
+          {mediaSubTab === 'work' && (
+            <div className="space-y-5">
+              {/* Add Work Photo Form */}
+              <form onSubmit={handleAddWorkPhoto} className="bg-[#14141c] border border-zinc-800 rounded-3xl p-5 text-xs space-y-3">
+                <h3 className="text-sm font-bold text-white flex items-center gap-1.5">
+                  <Scissors className="w-4 h-4 text-amber-400" />
+                  Add Client Haircut & Grooming Work
+                </h3>
+                <p className="text-[11px] text-zinc-400">
+                  Showcase real haircuts, beard trims, and styling transformations done by your stylists.
+                </p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="sm:col-span-2">
+                    <label className="text-zinc-300 font-semibold block mb-1">Image URL</label>
+                    <input
+                      type="url"
+                      value={newWorkUrl}
+                      onChange={(e) => setNewWorkUrl(e.target.value)}
+                      placeholder="https://images.unsplash.com/..."
+                      className="w-full p-2.5 bg-zinc-900 border border-zinc-700 rounded-xl text-white text-xs"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-zinc-300 font-semibold block mb-1">Upload File</label>
+                    <label className="w-full p-2.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-semibold rounded-xl text-xs cursor-pointer flex items-center justify-center gap-1.5">
+                      <Upload className="w-4 h-4" />
+                      <span>Choose Photo</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => handleFileUpload(e, 'work')}
+                      />
+                    </label>
+                  </div>
+                </div>
+
+                <div className="flex justify-end pt-1">
+                  <button
+                    type="submit"
+                    disabled={!newWorkUrl.trim()}
+                    className="px-5 py-2 bg-amber-500 text-black font-bold rounded-xl text-xs hover:bg-amber-400 disabled:opacity-50 flex items-center gap-1"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>Add to Work Portfolio</span>
+                  </button>
+                </div>
+              </form>
+
+              {/* Work Photos Grid */}
+              <div className="bg-[#14141c] border border-zinc-800 rounded-3xl p-5 space-y-3">
+                <div className="flex items-center justify-between text-xs">
+                  <h4 className="font-bold text-white">Client Styling Portfolio ({workPhotosList.length})</h4>
+                  <span className="text-zinc-500">Inspires customers on what cut to request</span>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  {workPhotosList.map((url, idx) => (
+                    <div key={idx} className="group relative h-36 rounded-2xl overflow-hidden border border-zinc-800 bg-zinc-900">
+                      <img src={url} alt={`Work ${idx}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-80" />
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveWorkPhoto(url)}
+                        className="absolute top-2 right-2 p-1.5 rounded-full bg-rose-500/80 hover:bg-rose-500 text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                        title="Remove photo"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                      <span className="absolute bottom-2 left-2 text-[10px] font-bold text-amber-400 drop-shadow">
+                        💈 Style #{idx + 1}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

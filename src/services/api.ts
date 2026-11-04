@@ -183,4 +183,24 @@ export const api = {
       return [];
     }
   },
+
+  /**
+   * Update salon details, poster, loop video, and gallery
+   */
+  async updateSalon(salonId: string, updates: any) {
+    try {
+      const res = await fetch(`${API_BASE}/salons/${salonId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify(updates),
+      });
+      if (!res.ok) return null;
+      return await res.json();
+    } catch {
+      return null;
+    }
+  },
 };

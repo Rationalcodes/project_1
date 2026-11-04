@@ -354,6 +354,25 @@ export class KumbhakaranApiClient {
     }
   }
 
+  /**
+   * Update salon profile, poster, loop video, or location & work gallery (requires Partner/Owner auth)
+   */
+  async updateSalon(salonId: string, updates: any): Promise<any> {
+    try {
+      const res = await fetch(`${this.baseUrl}/salons/${salonId}`, {
+        method: 'PATCH',
+        headers: this.getHeaders({
+          'Content-Type': 'application/json',
+        }),
+        body: JSON.stringify(updates),
+      });
+      if (!res.ok) return null;
+      return await res.json();
+    } catch {
+      return null;
+    }
+  }
+
   // ==========================================================================
   // ADMINISTRATOR SALON MANAGEMENT & DELETION APIs
   // ==========================================================================
