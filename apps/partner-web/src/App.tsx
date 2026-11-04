@@ -2,6 +2,7 @@ import React from 'react';
 import { PartnerProvider, usePartner } from './context/PartnerContext';
 import { PartnerPortal } from './components/partner/PartnerPortal';
 import { NotificationToast } from './components/common/NotificationToast';
+import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { Store, LogOut, User } from 'lucide-react';
 
 const PartnerMainContent: React.FC = () => {
@@ -69,9 +70,11 @@ const PartnerMainContent: React.FC = () => {
 
 export function App() {
   return (
-    <PartnerProvider>
-      <PartnerMainContent />
-    </PartnerProvider>
+    <ErrorBoundary>
+      <PartnerProvider>
+        <PartnerMainContent />
+      </PartnerProvider>
+    </ErrorBoundary>
   );
 }
 

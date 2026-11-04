@@ -8,6 +8,7 @@ import {
   SalonRegistrationInput,
 } from '@kumbhakaran/shared-types';
 import { defaultApiClient, AuthUser, SalonMembership } from '@kumbhakaran/api-client';
+import { safeStorage } from '../utils/safeStorage';
 import { INITIAL_SALONS } from '../data/mockSalons';
 
 // Explicitly sync API client base URL with Vite environment or production fallback
@@ -51,48 +52,40 @@ const PartnerContext = createContext<PartnerContextType | undefined>(undefined);
 
 export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [salons, setSalons] = useState<Salon[]>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const cached = localStorage.getItem('kumbhakaran_partner_active_salon');
-        if (cached) {
-          const parsed = JSON.parse(cached);
-          if (parsed && parsed.id) return [parsed];
-        }
-      } catch {}
-    }
+    try {
+      const cached = safeStorage.getItem('kumbhakaran_partner_active_salon');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed && parsed.id) return [parsed];
+      }
+    } catch {}
     return [];
   });
 
   const [activeSalonId, setActiveSalonId] = useState<string>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const cached = localStorage.getItem('kumbhakaran_partner_active_salon');
-        if (cached) {
-          const parsed = JSON.parse(cached);
-          if (parsed && parsed.id) return parsed.id;
-        }
-      } catch {}
-    }
+    try {
+      const cached = safeStorage.getItem('kumbhakaran_partner_active_salon');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed && parsed.id) return parsed.id;
+      }
+    } catch {}
     return '';
   });
 
   const [partnerView, setPartnerView] = useState<PartnerView>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const cached = localStorage.getItem('kumbhakaran_partner_active_salon');
-        if (cached) return 'live-queue';
-      } catch {}
-    }
+    try {
+      const cached = safeStorage.getItem('kumbhakaran_partner_active_salon');
+      if (cached) return 'live-queue';
+    } catch {}
     return 'live-queue';
   });
 
   const [partnerUser, setPartnerUser] = useState<AuthUser | null>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const cached = localStorage.getItem('kumbhakaran_partner_user');
-        if (cached) return JSON.parse(cached);
-      } catch {}
-    }
+    try {
+      const cached = safeStorage.getItem('kumbhakaran_partner_user');
+      if (cached) return JSON.parse(cached);
+    } catch {}
     return null;
   });
 
@@ -117,9 +110,7 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
         setSalons([mySalon]);
         setActiveSalonId(mySalon.id);
         setPartnerView('live-queue');
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('kumbhakaran_partner_active_salon', JSON.stringify(mySalon));
-        }
+        safeStorage.setItem('kumbhakaran_partner_active_salon', JSON.stringify(mySalon));
         return mySalon;
       }
 
@@ -132,9 +123,7 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
           setSalons([memSalon]);
           setActiveSalonId(memSalon.id);
           setPartnerView('live-queue');
-          if (typeof window !== 'undefined') {
-            localStorage.setItem('kumbhakaran_partner_active_salon', JSON.stringify(memSalon));
-          }
+          safeStorage.setItem('kumbhakaran_partner_active_salon', JSON.stringify(memSalon));
           return memSalon;
         }
       }
@@ -143,20 +132,18 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
 
     // 3. Fallback: Check if local storage already has a cached salon record
-    if (typeof window !== 'undefined') {
-      try {
-        const cached = localStorage.getItem('kumbhakaran_partner_active_salon');
-        if (cached) {
-          const parsed = JSON.parse(cached);
-          if (parsed && parsed.id) {
-            setSalons([parsed]);
-            setActiveSalonId(parsed.id);
-            setPartnerView('live-queue');
-            return parsed;
-          }
+    try {
+      const cached = safeStorage.getItem('kumbhakaran_partner_active_salon');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed && parsed.id) {
+          setSalons([parsed]);
+          setActiveSalonId(parsed.id);
+          setPartnerView('live-queue');
+          return parsed;
         }
-      } catch {}
-    }
+      }
+    } catch {}
 
     // No salon found yet: prompt registration for this account
     setSalons([]);
@@ -168,7 +155,7 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
   // Restore authenticated session from localStorage
   useEffect(() => {
     let isMounted = true;
-    const savedToken = localStorage.getItem('kumbhakaran_partner_token');
+    const savedToken = safeStorage.getItem('kumbhakaran_partner_token');
     if (savedToken) {
       defaultApiClient.setAuthToken(savedToken);
       defaultApiClient.getCurrentUser().then(async (res) => {
@@ -176,9 +163,7 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
         if (res?.user) {
           setPartnerUser(res.user);
           setMemberships(res.memberships || []);
-          if (typeof window !== 'undefined') {
-            localStorage.setItem('kumbhakaran_partner_user', JSON.stringify(res.user));
-          }
+          safeStorage.setItem('kumbhakaran_partner_user', JSON.stringify(res.user));
           await loadUserSalon(res.user, res.memberships);
         }
       });
@@ -192,8 +177,8 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
     try {
       const res = await defaultApiClient.loginWithGoogle(credential);
       if (res && res.accessToken) {
-        localStorage.setItem('kumbhakaran_partner_token', res.accessToken);
-        localStorage.setItem('kumbhakaran_partner_user', JSON.stringify(res.user));
+        safeStorage.setItem('kumbhakaran_partner_token', res.accessToken);
+        safeStorage.setItem('kumbhakaran_partner_user', JSON.stringify(res.user));
         setPartnerUser(res.user);
         setMemberships(res.memberships || []);
         triggerNotification(`Welcome back, ${res.user.name}!`);
@@ -213,9 +198,9 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
     try {
       await defaultApiClient.logout();
     } catch {}
-    localStorage.removeItem('kumbhakaran_partner_token');
-    localStorage.removeItem('kumbhakaran_partner_user');
-    localStorage.removeItem('kumbhakaran_partner_active_salon');
+    safeStorage.removeItem('kumbhakaran_partner_token');
+    safeStorage.removeItem('kumbhakaran_partner_user');
+    safeStorage.removeItem('kumbhakaran_partner_active_salon');
     defaultApiClient.setAuthToken(null);
     setPartnerUser(null);
     setMemberships([]);
@@ -302,11 +287,7 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setSalons((prev) => [newSalon, ...prev]);
     setActiveSalonId(newId);
     setPartnerView('live-queue');
-    if (typeof window !== 'undefined') {
-      try {
-        localStorage.setItem('kumbhakaran_partner_active_salon', JSON.stringify(newSalon));
-      } catch {}
-    }
+    safeStorage.setItem('kumbhakaran_partner_active_salon', JSON.stringify(newSalon));
     triggerNotification(`🎉 Salon "${newSalon.name}" registered successfully! Your live walk-in queue is ready.`);
 
     // Asynchronously synchronize with NestJS backend
@@ -335,11 +316,7 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
           todayRevenue: salon.todayRevenue + revenueDelta,
           monthlyRevenue: salon.monthlyRevenue + revenueDelta,
         };
-        if (typeof window !== 'undefined') {
-          try {
-            localStorage.setItem('kumbhakaran_partner_active_salon', JSON.stringify(updated));
-          } catch {}
-        }
+        safeStorage.setItem('kumbhakaran_partner_active_salon', JSON.stringify(updated));
         return updated;
       }),
     );
@@ -358,11 +335,7 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
       prev.map((s) => {
         if (s.id !== salonId) return s;
         const updated = { ...s, ...updates };
-        if (typeof window !== 'undefined') {
-          try {
-            localStorage.setItem('kumbhakaran_partner_active_salon', JSON.stringify(updated));
-          } catch {}
-        }
+        safeStorage.setItem('kumbhakaran_partner_active_salon', JSON.stringify(updated));
         return updated;
       }),
     );

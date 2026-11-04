@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Navigation, MapPin, X, Sparkles } from 'lucide-react';
 import { useCustomer, POPULAR_LOCATIONS } from '../../context/CustomerContext';
+import { safeStorage } from '../../utils/safeStorage';
 
 export const LocationPermissionBanner: React.FC = () => {
   const { requestDeviceLocation, setUserLocation, userLocation, triggerNotification } = useCustomer();
@@ -10,7 +11,7 @@ export const LocationPermissionBanner: React.FC = () => {
 
   useEffect(() => {
     // Check if user has previously dismissed or accepted location prompt
-    const prompted = localStorage.getItem('kumbhakaran_location_prompted');
+    const prompted = safeStorage.getItem('kumbhakaran_location_prompted');
     if (!prompted) {
       // Delay display slightly for smooth page load
       const timer = setTimeout(() => setIsVisible(true), 1200);
@@ -19,13 +20,13 @@ export const LocationPermissionBanner: React.FC = () => {
   }, []);
 
   const handleAllowLocation = async () => {
-    localStorage.setItem('kumbhakaran_location_prompted', 'true');
+    safeStorage.setItem('kumbhakaran_location_prompted', 'true');
     setIsVisible(false);
     await requestDeviceLocation();
   };
 
   const handleDismiss = () => {
-    localStorage.setItem('kumbhakaran_location_prompted', 'true');
+    safeStorage.setItem('kumbhakaran_location_prompted', 'true');
     setIsVisible(false);
   };
 
@@ -47,7 +48,7 @@ export const LocationPermissionBanner: React.FC = () => {
       });
     }
 
-    localStorage.setItem('kumbhakaran_location_prompted', 'true');
+    safeStorage.setItem('kumbhakaran_location_prompted', 'true');
     setIsVisible(false);
     triggerNotification(`Location set to "${q}"`);
   };

@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Salon, AdminTab } from '@kumbhakaran/shared-types';
 import { defaultApiClient, AuthUser } from '@kumbhakaran/api-client';
+import { safeStorage } from '../utils/safeStorage';
 import { INITIAL_SALONS } from '../data/mockSalons';
 
 // Explicitly sync API client base URL with Vite environment or production fallback
@@ -103,7 +104,7 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   // Restore authenticated session from localStorage
   useEffect(() => {
     let isMounted = true;
-    const savedToken = localStorage.getItem('kumbhakaran_admin_token');
+    const savedToken = safeStorage.getItem('kumbhakaran_admin_token');
     if (savedToken) {
       defaultApiClient.setAuthToken(savedToken);
       defaultApiClient.getCurrentUser().then((res) => {
@@ -113,9 +114,6 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             if (res.user.role === 'ADMIN') {
               refreshSalons();
             }
-          } else {
-            localStorage.removeItem('kumbhakaran_admin_token');
-            defaultApiClient.setAuthToken(null);
           }
         }
       });
@@ -129,7 +127,7 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     try {
       const res = await defaultApiClient.loginWithGoogle(credential);
       if (res && res.accessToken) {
-        localStorage.setItem('kumbhakaran_admin_token', res.accessToken);
+        safeStorage.setItem('kumbhakaran_admin_token', res.accessToken);
         setAdminUser(res.user);
         if (res.user.role === 'ADMIN') {
           triggerNotification(`Welcome to Kumbhkaran Salons HQ, ${res.user.name}`);
@@ -152,7 +150,7 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     try {
       await defaultApiClient.logout();
     } catch {}
-    localStorage.removeItem('kumbhakaran_admin_token');
+    safeStorage.removeItem('kumbhakaran_admin_token');
     defaultApiClient.setAuthToken(null);
     setAdminUser(null);
     setSalons([]);

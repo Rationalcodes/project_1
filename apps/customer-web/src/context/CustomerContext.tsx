@@ -8,6 +8,7 @@ import {
   LocationOption,
 } from '@kumbhakaran/shared-types';
 import { defaultApiClient, AuthUser } from '@kumbhakaran/api-client';
+import { safeStorage } from '../utils/safeStorage';
 import { calculateHaversineDistance } from '@kumbhakaran/ui';
 import { INITIAL_SALONS, INITIAL_USER } from '../data/mockSalons';
 
@@ -131,25 +132,23 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [authUser, setAuthUser] = useState<AuthUser | null>(null);
   // Strictly take location from user only — never assume or force a default locality
   const [userLocation, setUserLocationState] = useState<LocationOption | null>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const saved = localStorage.getItem('kumbhakaran_user_location');
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          if (parsed?.lat && parsed?.lng && parsed?.name) {
-            // Automatically clear stale Bellandur / Bengaluru default from older versions
-            if (
-              parsed.name.toLowerCase().includes('bellandur') ||
-              parsed.name.toLowerCase().includes('koramangala')
-            ) {
-              localStorage.removeItem('kumbhakaran_user_location');
-              return null;
-            }
-            return parsed;
+    try {
+      const saved = safeStorage.getItem('kumbhakaran_user_location');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed?.lat && parsed?.lng && parsed?.name) {
+          // Automatically clear stale Bellandur / Bengaluru default from older versions
+          if (
+            parsed.name.toLowerCase().includes('bellandur') ||
+            parsed.name.toLowerCase().includes('koramangala')
+          ) {
+            safeStorage.removeItem('kumbhakaran_user_location');
+            return null;
           }
+          return parsed;
         }
-      } catch {}
-    }
+      }
+    } catch {}
     return null;
   });
   const [lazyFilter, setLazyFilter] = useState<LazyFilter>('all');
@@ -161,32 +160,26 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [notificationMessage, setNotificationMessage] = useState<string | null>(null);
   const [isLoadingSalons, setIsLoadingSalons] = useState<boolean>(true);
   const [genderFilter, setGenderFilterState] = useState<GenderFilter>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('kumbhakaran_gender_filter');
+    try {
+      const saved = safeStorage.getItem('kumbhakaran_gender_filter');
       if (saved === 'men' || saved === 'women') return saved;
-    }
+    } catch {}
     return 'men';
   });
 
   const setGenderFilter = (filter: GenderFilter) => {
     setGenderFilterState(filter);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('kumbhakaran_gender_filter', filter);
-    }
+    safeStorage.setItem('kumbhakaran_gender_filter', filter);
   };
 
   const setUserLocation = (loc: LocationOption) => {
     setUserLocationState(loc);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('kumbhakaran_user_location', JSON.stringify(loc));
-    }
+    safeStorage.setItem('kumbhakaran_user_location', JSON.stringify(loc));
   };
 
   const clearUserLocation = () => {
     setUserLocationState(null);
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('kumbhakaran_user_location');
-    }
+    safeStorage.removeItem('kumbhakaran_user_location');
   };
 
   const requestDeviceLocation = async (): Promise<boolean> => {
@@ -253,7 +246,7 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   // Restore authenticated session from localStorage
   useEffect(() => {
     let isMounted = true;
-    const savedToken = localStorage.getItem('kumbhakaran_customer_token');
+    const savedToken = safeStorage.getItem('kumbhakaran_customer_token');
     if (savedToken) {
       defaultApiClient.setAuthToken(savedToken);
       defaultApiClient.getCurrentUser().then((res) => {
@@ -265,9 +258,6 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
               name: res.user.name,
               avatar: res.user.avatarUrl || prev.avatar,
             }));
-          } else {
-            localStorage.removeItem('kumbhakaran_customer_token');
-            defaultApiClient.setAuthToken(null);
           }
         }
       });
@@ -281,7 +271,7 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     try {
       const res = await defaultApiClient.loginWithGoogle(credential);
       if (res && res.accessToken) {
-        localStorage.setItem('kumbhakaran_customer_token', res.accessToken);
+        safeStorage.setItem('kumbhakaran_customer_token', res.accessToken);
         setAuthUser(res.user);
         setUserProfile((prev) => ({
           ...prev,
@@ -306,7 +296,7 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     } catch {
       // Ignore network errors on logout
     }
-    localStorage.removeItem('kumbhakaran_customer_token');
+    safeStorage.removeItem('kumbhakaran_customer_token');
     defaultApiClient.setAuthToken(null);
     setAuthUser(null);
     triggerNotification('Signed out successfully');
@@ -362,7 +352,7 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           let cached: Review[] = [];
           if (typeof window !== 'undefined') {
             try {
-              const raw: Review[] = JSON.parse(localStorage.getItem(`kumbhakaran_reviews_${item.id}`) || '[]');
+              const raw: Review[] = JSON.parse(safeStorage.getItem(`kumbhakaran_reviews_${item.id}`) || '[]');
               const seen = new Set<string>();
               cached = raw.filter((r) => {
                 const sig = `${(r.customerName || '').trim().toLowerCase()}|${(r.comment || '').trim().toLowerCase()}`;
@@ -371,7 +361,7 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                 return true;
               });
               if (cached.length !== raw.length) {
-                localStorage.setItem(`kumbhakaran_reviews_${item.id}`, JSON.stringify(cached));
+                safeStorage.setItem(`kumbhakaran_reviews_${item.id}`, JSON.stringify(cached));
               }
             } catch {}
           }
@@ -451,11 +441,9 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
       // Read any locally cached customer reviews
       let localReviews: Review[] = [];
-      if (typeof window !== 'undefined') {
-        try {
-          localReviews = JSON.parse(localStorage.getItem(`kumbhakaran_reviews_${salonId}`) || '[]');
-        } catch {}
-      }
+      try {
+        localReviews = JSON.parse(safeStorage.getItem(`kumbhakaran_reviews_${salonId}`) || '[]');
+      } catch {}
 
       // Format database reviews
       const dbReviews: Review[] = (publicData.reviews || []).map((r: any) => ({
@@ -486,12 +474,8 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       );
       const combinedReviews = [...unsyncedLocalReviews, ...dbReviews];
 
-      // Synchronize localStorage so stale or duplicate local copies are immediately purged
-      if (typeof window !== 'undefined') {
-        try {
-          localStorage.setItem(`kumbhakaran_reviews_${salonId}`, JSON.stringify(combinedReviews));
-        } catch {}
-      }
+      // Synchronize safeStorage so stale or duplicate local copies are immediately purged
+      safeStorage.setItem(`kumbhakaran_reviews_${salonId}`, JSON.stringify(combinedReviews));
 
       setSelectedSalonForDetail((prev) => {
         if (!prev || prev.id !== salonId) return prev;
@@ -612,13 +596,13 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     if (typeof window !== 'undefined') {
       try {
         const key = `kumbhakaran_reviews_${salonId}`;
-        const existing: Review[] = JSON.parse(localStorage.getItem(key) || '[]');
+        const existing: Review[] = JSON.parse(safeStorage.getItem(key) || '[]');
         const filtered = existing.filter(
           (r) => `${(r.customerName || '').trim().toLowerCase()}|${(r.comment || '').trim().toLowerCase()}` !== contentKey && r.id !== newReview.id
         );
-        localStorage.setItem(key, JSON.stringify([newReview, ...filtered]));
+        safeStorage.setItem(key, JSON.stringify([newReview, ...filtered]));
       } catch (e) {
-        console.warn('Failed to cache review in localStorage:', e);
+        console.warn('Failed to cache review in storage:', e);
       }
     }
 
