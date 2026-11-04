@@ -14,9 +14,9 @@ export const BottomNav: React.FC = () => {
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-30 max-w-md mx-auto sm:max-w-none">
+    <nav className="fixed bottom-0 left-0 right-0 z-30 max-w-md mx-auto sm:max-w-none bg-gradient-to-t from-[#FAF7F2] via-[#FAF7F2]/95 to-transparent pt-3 pb-safe">
       <div className="mx-auto px-4 pb-3 pt-1">
-        <div className="bg-[#121217]/95 backdrop-blur-xl border border-zinc-800/90 rounded-2xl shadow-2xl p-1.5 flex items-center justify-around max-w-md mx-auto">
+        <div className="bg-white/95 backdrop-blur-xl border border-[#E8E2D8] rounded-2xl shadow-[0_4px_20px_rgba(40,20,10,0.08)] p-1.5 flex items-center justify-around max-w-md mx-auto ring-1 ring-black/5">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = customerTab === item.id;
@@ -30,25 +30,25 @@ export const BottomNav: React.FC = () => {
                 }}
                 className={`relative flex flex-col items-center justify-center py-1.5 px-3 rounded-xl transition-all ${
                   isActive
-                    ? 'text-amber-400 font-semibold bg-amber-500/10'
-                    : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50'
+                    ? 'text-[#FF6422] font-semibold bg-orange-50'
+                    : 'text-stone-500 hover:text-stone-800 hover:bg-stone-50'
                 }`}
               >
                 <div className="relative">
-                  <Icon className={`w-5 h-5 transition-transform ${isActive ? 'scale-110 text-amber-400' : ''}`} />
+                  <Icon className={`w-5 h-5 transition-transform ${isActive ? 'scale-110 text-[#FF6422]' : ''}`} />
                   {item.badgeCount && item.badgeCount > 0 ? (
-                    <span className="absolute -top-1 -right-2 bg-amber-500 text-black font-extrabold text-[9px] w-4 h-4 rounded-full flex items-center justify-center shadow">
+                    <span className="absolute -top-1 -right-2 bg-[#FF6422] text-white font-extrabold text-[9px] w-4 h-4 rounded-full flex items-center justify-center shadow">
                       {item.badgeCount}
                     </span>
                   ) : null}
                 </div>
-                <span className={`text-[10px] mt-1 transition-colors ${isActive ? 'text-amber-400 font-semibold' : 'text-zinc-400'}`}>
+                <span className={`text-[10px] mt-1 transition-colors ${isActive ? 'text-[#FF6422] font-semibold' : 'text-stone-500'}`}>
                   {item.label}
                 </span>
 
                 {/* Subtle active indicator dot */}
                 {isActive && (
-                  <span className="absolute -bottom-1 w-1.5 h-1.5 rounded-full bg-amber-400" />
+                  <span className="absolute -bottom-1 w-1.5 h-1.5 rounded-full bg-[#FF6422]" />
                 )}
               </button>
             );

@@ -103,7 +103,7 @@ export const MapScreen: React.FC = () => {
         setIsGoogleLoaded(true);
         setMapEngine('google');
       } else {
-        // Fallback to Leaflet dark tiles
+        // Fallback to Leaflet tiles
         loadLeafletScript().then((leafletSuccess) => {
           if (!isMounted) return;
           setIsLeafletLoaded(leafletSuccess || Boolean((window as any).L));
@@ -127,7 +127,7 @@ export const MapScreen: React.FC = () => {
       const map = new gmaps.Map(mapContainerRef.current, {
         center: { lat: currentCoords.lat, lng: currentCoords.lng },
         zoom: 14,
-        styles: mapLayerType === 'dark' ? KUMBHAKARAN_MAP_STYLES : [],
+        styles: mapLayerType === 'dark' ? [] : [],
         mapTypeId: mapLayerType === 'satellite' ? 'hybrid' : 'roadmap',
         disableDefaultUI: true,
         gestureHandling: 'greedy',
@@ -149,11 +149,7 @@ export const MapScreen: React.FC = () => {
     } else {
       googleMapRef.current.setCenter({ lat: currentCoords.lat, lng: currentCoords.lng });
       googleMapRef.current.setMapTypeId(mapLayerType === 'satellite' ? 'hybrid' : 'roadmap');
-      if (mapLayerType === 'dark') {
-        googleMapRef.current.setOptions({ styles: KUMBHAKARAN_MAP_STYLES });
-      } else {
-        googleMapRef.current.setOptions({ styles: [] });
-      }
+      googleMapRef.current.setOptions({ styles: [] });
     }
   }, [mapEngine, isGoogleLoaded, mapLayerType, currentCoords.lat, currentCoords.lng]);
 
@@ -177,7 +173,7 @@ export const MapScreen: React.FC = () => {
         icon: {
           path: gmaps.SymbolPath.CIRCLE,
           scale: 9,
-          fillColor: '#38bdf8',
+          fillColor: '#FF6422',
           fillOpacity: 1,
           strokeColor: '#ffffff',
           strokeWeight: 2.5,
@@ -196,9 +192,9 @@ export const MapScreen: React.FC = () => {
         title: `${salon.name} • ${salon.currentQueue} waiting`,
         icon: {
           path: 'M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z',
-          fillColor: isSelected ? '#f59e0b' : salon.isOpen ? '#fbbf24' : '#6b7280',
+          fillColor: isSelected ? '#FF6422' : salon.isOpen ? '#F59F00' : '#9CA3AF',
           fillOpacity: 1,
-          strokeColor: '#000000',
+          strokeColor: '#ffffff',
           strokeWeight: 1.5,
           scale: isSelected ? 1.8 : 1.4,
           anchor: new gmaps.Point(12, 22),
@@ -232,23 +228,12 @@ export const MapScreen: React.FC = () => {
         attributionControl: false,
       });
 
-      // Prioritize Mapbox if token configured, otherwise use high-contrast OpenStreetMap Dark tiles (Zero Watermark, Zero API Key)
-      const mapboxToken = (import.meta as any).env?.VITE_MAPBOX_ACCESS_TOKEN;
-      if (mapboxToken && typeof mapboxToken === 'string' && mapboxToken.startsWith('pk.') && !mapboxToken.includes('dummy')) {
-        L.tileLayer(`https://api.mapbox.com/styles/v1/mapbox/dark-v11/tiles/{z}/{x}/{y}?access_token=${mapboxToken}`, {
-          maxZoom: 19,
-          tileSize: 512,
-          zoomOffset: -1,
-          attribution: '&copy; Mapbox &copy; OpenStreetMap',
-        }).addTo(map);
-      } else {
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          maxZoom: 19,
-          subdomains: ['a', 'b', 'c'],
-          className: 'osm-dark-tiles',
-          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-        }).addTo(map);
-      }
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        subdomains: ['a', 'b', 'c'],
+        className: 'osm-tiles',
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      }).addTo(map);
 
       const markersLayer = L.layerGroup().addTo(map);
       leafletMarkersLayerRef.current = markersLayer;
@@ -290,8 +275,8 @@ export const MapScreen: React.FC = () => {
     if (userLocation) {
       const userBeaconHtml = `
         <div style="position: relative; width: 24px; height: 24px;">
-          <div style="position: absolute; inset: -4px; background: rgba(59, 130, 246, 0.4); border-radius: 9999px; animation: ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;"></div>
-          <div style="position: absolute; inset: 2px; background: #3b82f6; border: 2.5px solid #ffffff; border-radius: 9999px; box-shadow: 0 0 12px #3b82f6;"></div>
+          <div style="position: absolute; inset: -4px; background: rgba(255, 100, 34, 0.3); border-radius: 9999px; animation: ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;"></div>
+          <div style="position: absolute; inset: 2px; background: #FF6422; border: 2.5px solid #ffffff; border-radius: 9999px; box-shadow: 0 0 12px rgba(255,100,34,0.6);"></div>
         </div>
       `;
       const userIcon = L.divIcon({
@@ -307,9 +292,9 @@ export const MapScreen: React.FC = () => {
     visibleSalons.forEach((salon) => {
       const isSelected = selectedMarkerSalon?.id === salon.id;
       const salonBadgeHtml = `
-        <div style="background: ${isSelected ? '#f59e0b' : '#14141e'}; color: ${isSelected ? '#000' : '#fff'}; border: 2px solid #f59e0b; border-radius: 9999px; padding: 4px 10px; font-size: 11px; font-weight: 800; font-family: 'Syne', sans-serif; display: flex; align-items: center; gap: 5px; box-shadow: 0 4px 16px rgba(0,0,0,0.8); cursor: pointer; transition: transform 0.15s ease; white-space: nowrap;">
+        <div style="background: ${isSelected ? '#FF6422' : '#FFFFFF'}; color: ${isSelected ? '#FFFFFF' : '#1C1917'}; border: 2px solid #FF6422; border-radius: 9999px; padding: 4px 10px; font-size: 11px; font-weight: 800; font-family: 'Syne', sans-serif; display: flex; align-items: center; gap: 5px; box-shadow: 0 4px 14px rgba(232, 89, 12, 0.25); cursor: pointer; transition: transform 0.15s ease; white-space: nowrap;">
           <span>✂ ${salon.name.length > 14 ? salon.name.slice(0, 14) + '…' : salon.name}</span>
-          <span style="background: ${isSelected ? '#000' : '#f59e0b'}; color: ${isSelected ? '#f59e0b' : '#000'}; border-radius: 9999px; padding: 1px 6px; font-size: 10px; font-weight: 900;">
+          <span style="background: ${isSelected ? '#FFFFFF' : '#FF6422'}; color: ${isSelected ? '#FF6422' : '#FFFFFF'}; border-radius: 9999px; padding: 1px 6px; font-size: 10px; font-weight: 900;">
             ${salon.currentQueue}Q
           </span>
         </div>
@@ -380,20 +365,20 @@ export const MapScreen: React.FC = () => {
   };
 
   return (
-    <div className="space-y-4 pb-28 text-slate-100">
+    <div className="space-y-4 pb-28 text-stone-900">
       {/* Header controls & radius switcher */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">
-            <span className="text-[10px] uppercase tracking-widest font-extrabold px-2 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span className="text-[10px] uppercase tracking-widest font-extrabold px-2 py-0.5 rounded bg-orange-100/70 text-[#FF6422] border border-orange-200 flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
               {mapEngine === 'google' ? 'Google Maps Live' : 'Google Maps Radar'}
             </span>
-            <span className="text-xs text-zinc-400 font-medium">
+            <span className="text-xs text-stone-500 font-medium">
               {visibleSalons.length} studios within {radiusKm} km
             </span>
           </div>
-          <h1 className="text-xl sm:text-2xl font-black text-white mt-0.5 font-['Syne',sans-serif]">
+          <h1 className="text-xl sm:text-2xl font-black text-stone-900 mt-0.5 font-['Syne',sans-serif]">
             Nearby Salon Map
           </h1>
         </div>
@@ -402,20 +387,20 @@ export const MapScreen: React.FC = () => {
         <div className="flex items-center gap-2 flex-wrap">
           {/* Layer switcher for Google Maps */}
           {mapEngine === 'google' && (
-            <div className="flex items-center bg-zinc-900 border border-zinc-800 rounded-xl p-0.5 text-xs font-semibold">
+            <div className="flex items-center bg-[#F3ECE4] border border-[#E2DDD5] rounded-xl p-0.5 text-xs font-semibold">
               <button
                 onClick={() => setMapLayerType('dark')}
                 className={`px-2 py-1 rounded-lg transition-colors ${
-                  mapLayerType === 'dark' ? 'bg-amber-500 text-black font-bold' : 'text-zinc-400 hover:text-white'
+                  mapLayerType === 'dark' ? 'bg-[#FF6422] text-white font-bold shadow-sm' : 'text-stone-600 hover:text-stone-900'
                 }`}
-                title="Dark theme radar"
+                title="Default map style"
               >
-                Dark
+                Standard
               </button>
               <button
                 onClick={() => setMapLayerType('satellite')}
                 className={`px-2 py-1 rounded-lg transition-colors ${
-                  mapLayerType === 'satellite' ? 'bg-amber-500 text-black font-bold' : 'text-zinc-400 hover:text-white'
+                  mapLayerType === 'satellite' ? 'bg-[#FF6422] text-white font-bold shadow-sm' : 'text-stone-600 hover:text-stone-900'
                 }`}
                 title="Satellite hybrid"
               >
@@ -425,15 +410,15 @@ export const MapScreen: React.FC = () => {
           )}
 
           {/* Radius Filter */}
-          <div className="flex items-center bg-zinc-900 border border-zinc-800 rounded-xl p-0.5 text-xs font-semibold">
+          <div className="flex items-center bg-[#F3ECE4] border border-[#E2DDD5] rounded-xl p-0.5 text-xs font-semibold">
             {[2, 5, 10, 20].map((r) => (
               <button
                 key={r}
                 onClick={() => setRadiusKm(r)}
                 className={`px-2.5 py-1 rounded-lg transition-colors ${
                   radiusKm === r
-                    ? 'bg-amber-500 text-black font-bold'
-                    : 'text-zinc-400 hover:text-white'
+                    ? 'bg-[#FF6422] text-white font-bold shadow-sm'
+                    : 'text-stone-600 hover:text-stone-900'
                 }`}
               >
                 {r}km
@@ -442,17 +427,17 @@ export const MapScreen: React.FC = () => {
           </div>
 
           {/* Toggle Map / List view on mobile */}
-          <div className="sm:hidden flex items-center bg-zinc-900 border border-zinc-800 rounded-xl p-0.5 text-xs">
+          <div className="sm:hidden flex items-center bg-[#F3ECE4] border border-[#E2DDD5] rounded-xl p-0.5 text-xs">
             <button
               onClick={() => setViewMode('map')}
-              className={`p-1.5 rounded-lg ${viewMode === 'map' ? 'bg-amber-500 text-black' : 'text-zinc-400'}`}
+              className={`p-1.5 rounded-lg ${viewMode === 'map' ? 'bg-[#FF6422] text-white shadow-sm' : 'text-stone-600'}`}
               title="Map view"
             >
               <MapIcon className="w-4 h-4" />
             </button>
             <button
               onClick={() => setViewMode('list')}
-              className={`p-1.5 rounded-lg ${viewMode === 'list' ? 'bg-amber-500 text-black' : 'text-zinc-400'}`}
+              className={`p-1.5 rounded-lg ${viewMode === 'list' ? 'bg-[#FF6422] text-white shadow-sm' : 'text-stone-600'}`}
               title="List view"
             >
               <List className="w-4 h-4" />
@@ -463,18 +448,18 @@ export const MapScreen: React.FC = () => {
 
       {/* Search Input Bar */}
       <div className="relative">
-        <Search className="w-4 h-4 text-amber-400 absolute left-3.5 top-3" />
+        <Search className="w-4 h-4 text-[#FF6422] absolute left-3.5 top-3" />
         <input
           type="text"
           value={mapSearch}
           onChange={(e) => setMapSearch(e.target.value)}
           placeholder="Filter map by studio name, locality or PIN code..."
-          className="w-full pl-10 pr-4 py-2.5 bg-zinc-900/90 border border-zinc-700/80 rounded-2xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-amber-400 shadow-inner"
+          className="w-full pl-10 pr-4 py-2.5 bg-white border border-[#E8E2D8] rounded-2xl text-xs text-stone-900 placeholder-stone-400 focus:outline-none focus:border-[#FF6422] focus:ring-1 focus:ring-[#FF6422] shadow-sm"
         />
         {mapSearch && (
           <button
             onClick={() => setMapSearch('')}
-            className="absolute right-3 top-3 text-zinc-500 hover:text-white"
+            className="absolute right-3 top-3 text-stone-400 hover:text-stone-700"
           >
             <X className="w-4 h-4" />
           </button>
@@ -485,17 +470,17 @@ export const MapScreen: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
         {/* MAP CONTAINER (Left or Top) */}
         <div
-          className={`lg:col-span-7 xl:col-span-8 relative rounded-3xl overflow-hidden border border-zinc-800 bg-[#0c0c12] shadow-2xl min-h-[460px] h-[60vh] lg:h-[650px] ${
+          className={`lg:col-span-7 xl:col-span-8 relative rounded-3xl overflow-hidden border border-[#E8E2D8] bg-[#FAF7F2] shadow-md min-h-[460px] h-[60vh] lg:h-[650px] ${
             viewMode === 'list' ? 'hidden sm:block' : 'block'
           }`}
         >
           {/* Interactive Google Map / Leaflet Container */}
           <style>{`
-            .osm-dark-tiles {
-              filter: invert(100%) hue-rotate(180deg) brightness(92%) contrast(90%) !important;
+            .osm-tiles {
+              filter: none !important;
             }
             .leaflet-container {
-              background-color: #0b0f17 !important;
+              background-color: #FAF7F2 !important;
             }
           `}</style>
           <div ref={mapContainerRef} className="w-full h-full" style={{ zIndex: 1 }} />
@@ -504,7 +489,7 @@ export const MapScreen: React.FC = () => {
           {hasMapMoved && (
             <button
               onClick={handleSearchThisArea}
-              className="absolute top-4 left-1/2 -translate-x-1/2 z-20 px-4 py-2 rounded-2xl bg-amber-500 text-black text-xs font-black shadow-2xl flex items-center gap-2 hover:bg-amber-400 transition-transform active:scale-95 animate-in fade-in"
+              className="absolute top-4 left-1/2 -translate-x-1/2 z-20 px-4 py-2 rounded-2xl bg-[#FF6422] text-white text-xs font-black shadow-lg shadow-orange-500/25 flex items-center gap-2 hover:bg-[#E55215] transition-transform active:scale-95 animate-in fade-in"
             >
               <RefreshCw className="w-3.5 h-3.5" />
               <span>Search This Area</span>
@@ -512,11 +497,11 @@ export const MapScreen: React.FC = () => {
           )}
 
           {/* Google Maps Official Open in App shortcut badge */}
-          <div className="absolute top-4 right-4 z-20 hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-black/80 backdrop-blur-md border border-zinc-800 text-[11px] font-bold text-zinc-300">
-            <span className="text-amber-400">Google Maps</span>
+          <div className="absolute top-4 right-4 z-20 hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/90 backdrop-blur-md border border-[#E8E2D8] text-[11px] font-bold text-stone-700 shadow-sm">
+            <span className="text-[#FF6422]">Google Maps</span>
             <button
               onClick={() => openGoogleMapsLocation(currentCoords.lat, currentCoords.lng)}
-              className="text-zinc-400 hover:text-white flex items-center gap-1"
+              className="text-stone-500 hover:text-stone-900 flex items-center gap-1"
               title="Launch in Google Maps"
             >
               <ExternalLink className="w-3 h-3" />
@@ -527,23 +512,23 @@ export const MapScreen: React.FC = () => {
           <div className="absolute bottom-6 right-4 z-20 flex flex-col gap-2">
             <button
               onClick={handlePanToUser}
-              className="w-10 h-10 rounded-2xl bg-[#121218]/90 border border-zinc-700/80 text-amber-400 hover:bg-zinc-800 flex items-center justify-center shadow-xl backdrop-blur-md transition-all active:scale-90"
+              className="w-10 h-10 rounded-2xl bg-white/95 border border-[#E8E2D8] text-[#FF6422] hover:bg-orange-50 flex items-center justify-center shadow-md backdrop-blur-md transition-all active:scale-90"
               title="Center on my location"
             >
-              <Crosshair className="w-5 h-5 text-amber-400" />
+              <Crosshair className="w-5 h-5 text-[#FF6422]" />
             </button>
-            <div className="bg-[#121218]/90 border border-zinc-700/80 rounded-2xl flex flex-col shadow-xl backdrop-blur-md overflow-hidden">
+            <div className="bg-white/95 border border-[#E8E2D8] rounded-2xl flex flex-col shadow-md backdrop-blur-md overflow-hidden">
               <button
                 onClick={() => handleZoom(1)}
-                className="w-10 h-10 flex items-center justify-center text-zinc-200 hover:bg-zinc-800 transition-colors"
+                className="w-10 h-10 flex items-center justify-center text-stone-700 hover:text-[#FF6422] hover:bg-stone-50 transition-colors"
                 title="Zoom in"
               >
                 <Plus className="w-4 h-4" />
               </button>
-              <div className="w-full h-px bg-zinc-800" />
+              <div className="w-full h-px bg-stone-200" />
               <button
                 onClick={() => handleZoom(-1)}
-                className="w-10 h-10 flex items-center justify-center text-zinc-200 hover:bg-zinc-800 transition-colors"
+                className="w-10 h-10 flex items-center justify-center text-stone-700 hover:text-[#FF6422] hover:bg-stone-50 transition-colors"
                 title="Zoom out"
               >
                 <Minus className="w-4 h-4" />
@@ -554,20 +539,20 @@ export const MapScreen: React.FC = () => {
           {/* Selected Salon Floating Card (Mobile/Overlay) */}
           {selectedMarkerSalon && (
             <div className="absolute bottom-4 left-3 right-16 z-20 animate-in slide-in-from-bottom-3 duration-200">
-              <div className="bg-[#12121a]/95 backdrop-blur-md border border-amber-500/40 rounded-2xl p-3 shadow-2xl flex items-center gap-3">
+              <div className="bg-white/95 backdrop-blur-md border border-orange-200 rounded-2xl p-3 shadow-xl flex items-center gap-3">
                 <img
                   src={selectedMarkerSalon.coverImage}
                   alt={selectedMarkerSalon.name}
-                  className="w-16 h-16 rounded-xl object-cover shrink-0 border border-zinc-800"
+                  className="w-16 h-16 rounded-xl object-cover shrink-0 border border-stone-200"
                 />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5 text-[10px]">
-                    <span className="font-bold text-amber-400">{selectedMarkerSalon.rating} ★</span>
-                    <span className="text-zinc-500">•</span>
-                    <span className="text-zinc-400">{selectedMarkerSalon.distanceKm} km</span>
+                    <span className="font-bold text-[#FF6422]">{selectedMarkerSalon.rating} ★</span>
+                    <span className="text-stone-300">•</span>
+                    <span className="text-stone-600">{selectedMarkerSalon.distanceKm} km</span>
                   </div>
-                  <h4 className="text-xs font-bold text-white truncate">{selectedMarkerSalon.name}</h4>
-                  <p className="text-[11px] text-zinc-400 truncate">{selectedMarkerSalon.locality}</p>
+                  <h4 className="text-xs font-bold text-stone-900 truncate">{selectedMarkerSalon.name}</h4>
+                  <p className="text-[11px] text-stone-500 truncate">{selectedMarkerSalon.locality}</p>
                   
                   <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                     {/* Google Maps Directions Redirection Button */}
@@ -583,17 +568,17 @@ export const MapScreen: React.FC = () => {
                           userLocation || undefined,
                         )
                       }
-                      className="px-2.5 py-1 rounded-lg bg-amber-500 text-black font-extrabold text-[10px] flex items-center gap-1 hover:bg-amber-400 transition-colors shadow-md"
+                      className="px-2.5 py-1 rounded-lg bg-[#FF6422] text-white font-extrabold text-[10px] flex items-center gap-1 hover:bg-[#E55215] transition-colors shadow-sm"
                       title="Navigate turn-by-turn in Google Maps"
                     >
-                      <Navigation className="w-3 h-3 fill-black" />
+                      <Navigation className="w-3 h-3 fill-white" />
                       <span>Google Maps Directions ↗</span>
                     </button>
 
                     {/* View Details button */}
                     <button
                       onClick={() => setSelectedSalonForDetail(selectedMarkerSalon)}
-                      className="text-[10px] font-bold text-amber-400 hover:text-amber-300 underline flex items-center gap-0.5"
+                      className="text-[10px] font-bold text-[#FF6422] hover:text-orange-700 underline flex items-center gap-0.5"
                     >
                       Studio Info →
                     </button>
@@ -611,21 +596,21 @@ export const MapScreen: React.FC = () => {
           }`}
         >
           <div className="flex items-center justify-between pb-1">
-            <h3 className="text-sm font-bold text-white font-['Syne',sans-serif]">
+            <h3 className="text-sm font-bold text-stone-900 font-['Syne',sans-serif]">
               Studio Listings ({visibleSalons.length})
             </h3>
-            <span className="text-[11px] text-zinc-400">Sorted by distance</span>
+            <span className="text-[11px] text-stone-500">Sorted by distance</span>
           </div>
 
           <div className="space-y-3 max-h-[650px] overflow-y-auto pr-1">
             {visibleSalons.length === 0 ? (
-              <div className="p-8 text-center bg-zinc-900/50 rounded-3xl border border-zinc-800">
-                <MapPin className="w-8 h-8 text-zinc-600 mx-auto mb-2" />
-                <p className="text-xs font-semibold text-zinc-300">No studios found in this range</p>
-                <p className="text-[11px] text-zinc-500 mt-1">Try expanding search radius to 10km or 20km.</p>
+              <div className="p-8 text-center bg-white rounded-3xl border border-[#E8E2D8] shadow-sm">
+                <MapPin className="w-8 h-8 text-stone-400 mx-auto mb-2" />
+                <p className="text-xs font-semibold text-stone-800">No studios found in this range</p>
+                <p className="text-[11px] text-stone-500 mt-1">Try expanding search radius to 10km or 20km.</p>
                 <button
                   onClick={() => setRadiusKm(20)}
-                  className="mt-3 px-3 py-1.5 rounded-xl bg-amber-500 text-black text-xs font-bold hover:bg-amber-400"
+                  className="mt-3 px-3 py-1.5 rounded-xl bg-[#FF6422] text-white text-xs font-bold hover:bg-[#E55215] shadow-sm"
                 >
                   Expand to 20 km
                 </button>
@@ -645,36 +630,36 @@ export const MapScreen: React.FC = () => {
                     onClick={() => handleSelectSalonClick(salon)}
                     className={`cursor-pointer rounded-2xl p-3.5 transition-all border ${
                       isSelected
-                        ? 'bg-amber-500/10 border-amber-500/50 shadow-lg shadow-amber-500/5 ring-1 ring-amber-500/30'
-                        : 'bg-[#121217] border-zinc-800/80 hover:border-zinc-700 hover:bg-[#16161d]'
+                        ? 'bg-orange-50/80 border-orange-300 shadow-md ring-1 ring-orange-200'
+                        : 'bg-white border-[#E8E2D8] hover:border-orange-200 hover:bg-[#FFFDF9] shadow-sm'
                     }`}
                   >
                     <div className="flex gap-3">
                       <img
                         src={salon.coverImage}
                         alt={salon.name}
-                        className="w-16 h-16 rounded-xl object-cover shrink-0 border border-zinc-800"
+                        className="w-16 h-16 rounded-xl object-cover shrink-0 border border-stone-100"
                       />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between">
-                          <h4 className="text-xs font-bold text-white truncate">{salon.name}</h4>
-                          <span className="text-[10px] font-bold text-amber-400 shrink-0">
+                          <h4 className="text-xs font-bold text-stone-900 truncate">{salon.name}</h4>
+                          <span className="text-[10px] font-bold text-[#FF6422] shrink-0">
                             {salon.rating} ★
                           </span>
                         </div>
-                        <p className="text-[11px] text-zinc-400 truncate mt-0.5">{salon.locality}</p>
+                        <p className="text-[11px] text-stone-500 truncate mt-0.5">{salon.locality}</p>
 
-                        <div className="flex items-center gap-3 text-[10px] text-zinc-400 mt-1">
-                          <span className="font-semibold text-zinc-300">{salon.distanceKm} km away</span>
+                        <div className="flex items-center gap-3 text-[10px] text-stone-600 mt-1">
+                          <span className="font-semibold text-stone-700">{salon.distanceKm} km away</span>
                           <span>•</span>
-                          <span className={`${salon.isOpen ? 'text-emerald-400' : 'text-zinc-500'} font-medium`}>
+                          <span className={`${salon.isOpen ? 'text-emerald-700 font-semibold' : 'text-stone-400'}`}>
                             {salon.isOpen ? `${salon.currentQueue} in queue (${waitTime}m)` : 'Closed'}
                           </span>
                         </div>
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-zinc-800/60">
+                    <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-stone-100">
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
@@ -688,10 +673,10 @@ export const MapScreen: React.FC = () => {
                             userLocation || undefined,
                           );
                         }}
-                        className="text-[10px] font-bold text-amber-400 hover:text-amber-300 flex items-center gap-1"
+                        className="text-[10px] font-bold text-[#FF6422] hover:text-orange-700 flex items-center gap-1"
                         title="Open in Google Maps"
                       >
-                        <Navigation className="w-3 h-3 fill-amber-400" />
+                        <Navigation className="w-3 h-3 fill-[#FF6422]" />
                         <span>Google Maps Directions ↗</span>
                       </button>
 
@@ -700,7 +685,7 @@ export const MapScreen: React.FC = () => {
                           e.stopPropagation();
                           setSelectedSalonForDetail(salon);
                         }}
-                        className="text-[10px] font-semibold text-zinc-400 hover:text-white flex items-center gap-1"
+                        className="text-[10px] font-semibold text-stone-500 hover:text-stone-900 flex items-center gap-1"
                       >
                         <span>Details</span>
                         <ArrowRight className="w-3 h-3" />

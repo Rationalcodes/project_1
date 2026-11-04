@@ -30,7 +30,8 @@ export const ExploreScreen: React.FC = () => {
     userProfile,
     comparisonList,
     toggleCompareSalon,
-    setIsCompareOpen
+    setIsCompareOpen,
+    userLocation
   } = useSalon();
 
   const [sortBy, setSortBy] = useState<SortOption>('queue');
@@ -70,42 +71,42 @@ export const ExploreScreen: React.FC = () => {
     });
 
   return (
-    <div className="space-y-5 pb-28 text-slate-100">
+    <div className="space-y-5 pb-28 text-stone-900">
       {/* Header title & search */}
       <div>
-        <h1 className="text-xl font-black text-white tracking-tight font-['Syne',sans-serif]">
+        <h1 className="text-xl font-black text-stone-900 tracking-tight font-['Syne',sans-serif]">
           Browse & Compare Studios
         </h1>
-        <p className="text-xs text-zinc-400 mt-0.5">
+        <p className="text-xs text-stone-500 mt-0.5">
           Find the ideal salon match with real-time walk-in visibility
         </p>
       </div>
 
       {/* Search Bar */}
       <div className="relative">
-        <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-zinc-400">
-          <Search className="w-4 h-4 text-amber-400" />
+        <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-stone-400">
+          <Search className="w-4 h-4 text-[#FF6422]" />
         </div>
         <input
           type="text"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder="Search by salon name, locality or service..."
-          className="w-full pl-10 pr-4 py-2.5 bg-zinc-900/90 border border-zinc-700/80 rounded-2xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-amber-400 shadow-inner"
+          className="w-full pl-10 pr-4 py-2.5 bg-white border border-[#E2DDD5] rounded-2xl text-xs text-stone-900 placeholder-stone-400 focus:outline-none focus:border-[#FF6422] shadow-xs"
         />
       </div>
 
       {/* Quick Sort Options */}
       <div>
         <div className="flex items-center justify-between mb-2">
-          <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-1">
-            <ArrowUpDown className="w-3 h-3 text-amber-400" /> Sort Salons By:
+          <span className="text-[11px] font-bold text-stone-500 uppercase tracking-wider flex items-center gap-1">
+            <ArrowUpDown className="w-3 h-3 text-[#FF6422]" /> Sort Salons By:
           </span>
 
           {comparisonList.length > 0 && (
             <button
               onClick={() => setIsCompareOpen(true)}
-              className="text-xs text-amber-400 font-bold hover:underline flex items-center gap-1"
+              className="text-xs text-[#FF6422] font-bold hover:underline flex items-center gap-1"
             >
               <SlidersHorizontal className="w-3.5 h-3.5" />
               Compare ({comparisonList.length})
@@ -118,8 +119,8 @@ export const ExploreScreen: React.FC = () => {
             onClick={() => setSortBy('queue')}
             className={`px-3 py-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 border transition-all ${
               sortBy === 'queue'
-                ? 'bg-amber-500 text-black border-amber-400 shadow-md shadow-amber-500/20'
-                : 'bg-zinc-900/80 text-zinc-400 border-zinc-800 hover:text-white'
+                ? 'bg-[#FF6422] text-white border-orange-500 shadow-sm shadow-orange-500/20 font-bold'
+                : 'bg-white text-stone-700 border-[#E2DDD5] hover:border-orange-300'
             }`}
           >
             <Users className="w-3.5 h-3.5" /> Lowest Queue
@@ -129,8 +130,8 @@ export const ExploreScreen: React.FC = () => {
             onClick={() => setSortBy('distance')}
             className={`px-3 py-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 border transition-all ${
               sortBy === 'distance'
-                ? 'bg-amber-500 text-black border-amber-400 shadow-md shadow-amber-500/20'
-                : 'bg-zinc-900/80 text-zinc-400 border-zinc-800 hover:text-white'
+                ? 'bg-[#FF6422] text-white border-orange-500 shadow-sm shadow-orange-500/20 font-bold'
+                : 'bg-white text-stone-700 border-[#E2DDD5] hover:border-orange-300'
             }`}
           >
             <Navigation className="w-3.5 h-3.5" /> Nearest First
@@ -140,8 +141,8 @@ export const ExploreScreen: React.FC = () => {
             onClick={() => setSortBy('rating')}
             className={`px-3 py-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 border transition-all ${
               sortBy === 'rating'
-                ? 'bg-amber-500 text-black border-amber-400 shadow-md shadow-amber-500/20'
-                : 'bg-zinc-900/80 text-zinc-400 border-zinc-800 hover:text-white'
+                ? 'bg-[#FF6422] text-white border-orange-500 shadow-sm shadow-orange-500/20 font-bold'
+                : 'bg-white text-stone-700 border-[#E2DDD5] hover:border-orange-300'
             }`}
           >
             <Star className="w-3.5 h-3.5" /> Top Rated
@@ -151,8 +152,8 @@ export const ExploreScreen: React.FC = () => {
             onClick={() => setSortBy('price')}
             className={`px-3 py-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 border transition-all ${
               sortBy === 'price'
-                ? 'bg-amber-500 text-black border-amber-400 shadow-md shadow-amber-500/20'
-                : 'bg-zinc-900/80 text-zinc-400 border-zinc-800 hover:text-white'
+                ? 'bg-[#FF6422] text-white border-orange-500 shadow-sm shadow-orange-500/20 font-bold'
+                : 'bg-white text-stone-700 border-[#E2DDD5] hover:border-orange-300'
             }`}
           >
             <span>₹</span> Lowest Price
@@ -161,7 +162,7 @@ export const ExploreScreen: React.FC = () => {
       </div>
 
       {/* Filter Row: Service Category chips + Open Now toggle */}
-      <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-zinc-800/60">
+      <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-[#E8E2D8]">
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
           {categories.map((cat) => (
             <button
@@ -169,8 +170,8 @@ export const ExploreScreen: React.FC = () => {
               onClick={() => setSelectedCategory(cat)}
               className={`px-3 py-1 rounded-full text-[11px] font-semibold whitespace-nowrap border transition-all ${
                 selectedCategory === cat
-                  ? 'bg-zinc-100 text-black border-white'
-                  : 'bg-zinc-900/70 text-zinc-400 border-zinc-800 hover:text-white'
+                  ? 'bg-[#FF6422] text-white border-orange-500 shadow-xs'
+                  : 'bg-white text-stone-700 border-[#E2DDD5] hover:border-orange-300'
               }`}
             >
               {cat}
@@ -180,25 +181,56 @@ export const ExploreScreen: React.FC = () => {
 
         <button
           onClick={() => setOpenOnly(!openOnly)}
-          className={`px-3 py-1 rounded-full text-[11px] font-semibold border flex items-center gap-1.5 transition-all ${
+          className={`px-3 py-1 rounded-full text-[11px] font-semibold border flex items-center gap-1.5 transition-all shadow-xs ${
             openOnly
-              ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-300'
-              : 'bg-zinc-900/80 border-zinc-800 text-zinc-400'
+              ? 'bg-emerald-50 border-emerald-300 text-emerald-800'
+              : 'bg-white border-[#E2DDD5] text-stone-600'
           }`}
         >
-          <span className={`w-2 h-2 rounded-full ${openOnly ? 'bg-emerald-400' : 'bg-zinc-600'}`} />
+          <span className={`w-2 h-2 rounded-full ${openOnly ? 'bg-emerald-500' : 'bg-stone-300'}`} />
           Open Now Only
         </button>
       </div>
 
-      {/* Results Count & Comparison banner */}
-      <div className="flex items-center justify-between text-xs text-zinc-400">
+      {/* Results Count & Instructions */}
+      <div className="flex items-center justify-between text-xs text-stone-500">
         <span>Showing {processedSalons.length} studios</span>
         <span>Tap any card for complete queue & service breakdown</span>
       </div>
 
-      {/* Large Photographic Salon Cards (Inspired by Reference Screen 2) */}
-      <div className="space-y-5">
+      {/* Salon Cards */}
+      {processedSalons.length === 0 ? (
+        <div className="bg-white border border-[#E8E2D8] rounded-3xl p-8 text-center space-y-3 shadow-sm">
+          <div className="w-12 h-12 rounded-2xl bg-orange-50 border border-orange-200 text-[#FF6422] flex items-center justify-center mx-auto">
+            <Search className="w-6 h-6 text-[#FF6422]" />
+          </div>
+          <h3 className="text-base font-bold text-stone-900">No registered studios found</h3>
+          <p className="text-xs text-stone-500 max-w-sm mx-auto">
+            No approved salons match your search or filters in this locality. Try searching another area or register your own salon studio.
+          </p>
+          <div className="pt-2 flex flex-wrap justify-center gap-2">
+            <button
+              onClick={() => {
+                setSearchQuery('');
+                setSelectedCategory('All');
+                setOpenOnly(false);
+              }}
+              className="px-4 py-2 rounded-xl bg-[#FF6422] text-white font-bold text-xs hover:bg-orange-600 shadow-xs"
+            >
+              Reset Filters
+            </button>
+            <a
+              href="https://project-1-xq1k.vercel.app"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-4 py-2 rounded-xl bg-white border border-[#E2DDD5] text-[#FF6422] font-bold text-xs hover:border-[#FF6422] shadow-xs"
+            >
+              Register Your Salon Business ↗
+            </a>
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-5">
         {processedSalons.map((salon) => {
           const queueInfo = getQueueDisplay(salon.currentQueue, salon.isOpen);
           const waitTime = getEstimatedWaitMinutes(salon.currentQueue, salon.avgServiceTimeMinutes, salon.activeBarbers);
@@ -210,7 +242,7 @@ export const ExploreScreen: React.FC = () => {
             <div
               key={salon.id}
               onClick={() => setSelectedSalonForDetail(salon)}
-              className="group bg-[#15151d] hover:bg-[#1a1a24] border border-zinc-800/90 hover:border-amber-500/50 rounded-3xl overflow-hidden shadow-2xl transition-all duration-300 cursor-pointer"
+              className="group bg-white hover:bg-[#FFFDF9] border border-[#E8E2D8] hover:border-orange-400 rounded-3xl overflow-hidden shadow-[0_4px_20px_rgba(40,20,10,0.04)] hover:shadow-xl transition-all duration-300 cursor-pointer"
             >
               {/* Large Salon Photograph with overlays */}
               <div className="h-48 sm:h-56 w-full relative overflow-hidden">
@@ -219,11 +251,11 @@ export const ExploreScreen: React.FC = () => {
                   alt={salon.name}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#15151d] via-black/40 to-black/20" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/10" />
 
                 {/* Top overlay badges */}
                 <div className="absolute top-3 left-3 right-3 flex items-center justify-between">
-                  <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black shadow-2xl backdrop-blur-md ${queueInfo.badgeClass}`}>
+                  <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black shadow-md backdrop-blur-md ${queueInfo.badgeClass}`}>
                     <span className={`w-2 h-2 rounded-full ${queueInfo.dotClass}`} />
                     {salon.currentQueue < 10 ? `0${salon.currentQueue}` : salon.currentQueue} People Waiting
                   </span>
@@ -234,8 +266,8 @@ export const ExploreScreen: React.FC = () => {
                         e.stopPropagation();
                         toggleCompareSalon(salon.id);
                       }}
-                      className={`p-2 rounded-full backdrop-blur-md transition-colors ${
-                        isComparing ? 'bg-amber-400 text-black' : 'bg-black/60 text-zinc-400 hover:text-white'
+                      className={`p-2 rounded-full backdrop-blur-md transition-colors border ${
+                        isComparing ? 'bg-[#FF6422] text-white border-orange-500 shadow-xs' : 'bg-white/90 text-stone-600 hover:text-stone-900 border-stone-200 shadow-xs'
                       }`}
                       title={isComparing ? 'Remove from compare' : 'Add to compare'}
                     >
@@ -247,7 +279,7 @@ export const ExploreScreen: React.FC = () => {
                         e.stopPropagation();
                         toggleFavorite(salon.id);
                       }}
-                      className="p-2 rounded-full bg-black/60 text-zinc-400 hover:text-rose-400 backdrop-blur-md transition-colors"
+                      className="p-2 rounded-full bg-white/90 text-stone-500 hover:text-rose-500 border border-stone-200 backdrop-blur-md transition-colors shadow-xs"
                       title="Save"
                     >
                       <Heart className={`w-4 h-4 ${isSaved ? 'fill-rose-500 text-rose-500' : ''}`} />
@@ -263,18 +295,23 @@ export const ExploreScreen: React.FC = () => {
                         {salon.name}
                       </h2>
                       {salon.isVerified && (
-                        <CheckCircle2 className="w-4 h-4 text-amber-400" />
+                        <CheckCircle2 className="w-4 h-4 text-[#FF6422]" />
                       )}
                     </div>
-                    <p className="text-xs text-zinc-300 drop-shadow line-clamp-1 mt-0.5">
-                      {salon.locality} • {salon.distanceKm} km from you
-                    </p>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <span className="text-xs text-stone-200 drop-shadow line-clamp-1">
+                        {salon.locality} • {salon.distanceKm} km
+                      </span>
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-white/90 text-[10px] font-bold text-[#FF6422] border border-orange-200 backdrop-blur-sm shadow-xs">
+                        {salon.distanceKm} km
+                      </span>
+                    </div>
                   </div>
 
-                  <div className="flex items-center gap-1 bg-black/80 backdrop-blur-md px-2.5 py-1 rounded-xl text-amber-400 font-bold text-xs border border-amber-400/30">
-                    <Star className="w-3.5 h-3.5 fill-amber-400" />
+                  <div className="flex items-center gap-1 bg-white/95 backdrop-blur-md px-2.5 py-1 rounded-xl text-amber-800 font-bold text-xs border border-amber-200 shadow-xs">
+                    <Star className="w-3.5 h-3.5 fill-amber-500 text-amber-500" />
                     <span>{salon.rating}</span>
-                    <span className="text-zinc-400 font-normal">({salon.reviewCount})</span>
+                    <span className="text-stone-400 font-normal">({salon.reviewCount})</span>
                   </div>
                 </div>
               </div>
@@ -286,29 +323,29 @@ export const ExploreScreen: React.FC = () => {
                   {salon.services.slice(0, 4).map((s) => (
                     <span
                       key={s.id}
-                      className="text-[11px] font-medium bg-zinc-900 text-zinc-300 border border-zinc-800 px-2.5 py-1 rounded-lg"
+                      className="text-[11px] font-medium bg-[#FAF7F2] text-stone-700 border border-[#E2DDD5] px-2.5 py-1 rounded-lg"
                     >
-                      {s.name} <span className="text-amber-400 font-semibold">₹{s.price}</span>
+                      {s.name} <span className="text-[#FF6422] font-semibold">₹{s.price}</span>
                     </span>
                   ))}
                   {salon.services.length > 4 && (
-                    <span className="text-[11px] text-zinc-500 self-center">
+                    <span className="text-[11px] text-stone-500 self-center">
                       +{salon.services.length - 4} more services
                     </span>
                   )}
                 </div>
 
                 {/* Bottom info strip */}
-                <div className="pt-3 border-t border-zinc-800/80 flex items-center justify-between text-xs">
+                <div className="pt-3 border-t border-[#E8E2D8] flex items-center justify-between text-xs">
                   <div className="flex items-center gap-3">
                     <div>
-                      <div className="text-[10px] text-zinc-500">Starting at</div>
-                      <div className="font-extrabold text-amber-400 text-sm">₹{salon.startingPrice}</div>
+                      <div className="text-[10px] text-stone-500">Starting at</div>
+                      <div className="font-extrabold text-stone-900 text-sm">₹{salon.startingPrice}</div>
                     </div>
-                    <div className="h-6 w-px bg-zinc-800" />
+                    <div className="h-6 w-px bg-stone-200" />
                     <div>
-                      <div className="text-[10px] text-zinc-500">Estimated wait</div>
-                      <div className="font-bold text-emerald-400">~{waitTime} mins</div>
+                      <div className="text-[10px] text-stone-500">Estimated wait</div>
+                      <div className="font-bold text-emerald-700">~{waitTime} mins</div>
                     </div>
                   </div>
 
@@ -321,7 +358,7 @@ export const ExploreScreen: React.FC = () => {
                         e.stopPropagation();
                         setSelectedSalonForDetail(salon);
                       }}
-                      className="px-3.5 py-1.5 rounded-xl bg-amber-500 text-black font-bold text-xs hover:bg-amber-400 transition-colors flex items-center gap-1 shadow-lg shadow-amber-500/20"
+                      className="px-3.5 py-1.5 rounded-xl bg-[#FF6422] text-white font-bold text-xs hover:bg-orange-600 transition-colors flex items-center gap-1 shadow-xs"
                     >
                       View Details <ArrowRight className="w-3 h-3" />
                     </button>
@@ -332,6 +369,7 @@ export const ExploreScreen: React.FC = () => {
           );
         })}
       </div>
+      )}
     </div>
   );
 };

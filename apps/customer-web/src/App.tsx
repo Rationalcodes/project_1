@@ -50,7 +50,7 @@ const CustomerMainContent: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#09090c] text-slate-100 flex flex-col font-sans selection:bg-amber-500/30 selection:text-amber-300 w-full max-w-full overflow-x-hidden">
+    <div className="min-h-screen bg-[#FAF7F2] text-stone-900 flex flex-col font-sans selection:bg-orange-500/20 selection:text-orange-950 w-full max-w-full overflow-x-hidden">
       {/* Universal Responsive Header */}
       <Header />
 

@@ -36,7 +36,7 @@ import { SalonMapboxView } from '@kumbhakaran/ui';
 interface SalonDetailScreenProps {
   onBack: () => void;
   onOpenReviewModal: () => void;
-  onOpenDirectionsModal: () => void;
+  onOpenDirectionsModal?: () => void;
 }
 
 export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
@@ -50,7 +50,8 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
     userProfile,
     toggleCompareSalon,
     comparisonList,
-    triggerNotification
+    triggerNotification,
+    userLocation
   } = useSalon();
 
   const [activeTab, setActiveTab] = useState<'services' | 'staff' | 'reviews' | 'gallery'>('services');
@@ -129,7 +130,7 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
   const handleShare = () => {
     if (navigator.share) {
       navigator.share({
-        title: `${salon.name} - Kumbhakaran Live Queue`,
+        title: `${salon.name} - Kumbhkaran Salons Live Queue`,
         text: `Check out live queue at ${salon.name}: ${salon.currentQueue} people waiting right now!`,
         url: window.location.href
       }).catch(() => {});
@@ -139,24 +140,24 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
   };
 
   return (
-    <div className="space-y-5 pb-32 text-slate-100">
-      {/* Top Navigation Bar */}
+    <div className="space-y-5 pb-32 text-stone-900">
+      {/* Top Navigation Bar with Warm Orange Back Chevron */}
       <div className="flex items-center justify-between">
         <button
           onClick={onBack}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-900 border border-zinc-800 text-xs font-semibold text-zinc-300 hover:text-white hover:bg-zinc-800 transition-colors"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-[#E2DDD5] text-xs font-bold text-stone-800 hover:border-[#FF6422] hover:text-[#FF6422] transition-colors shadow-xs"
         >
-          <ArrowLeft className="w-4 h-4" />
+          <ArrowLeft className="w-4 h-4 text-[#FF6422]" />
           <span>Back</span>
         </button>
 
         <div className="flex items-center gap-2">
           <button
             onClick={() => toggleCompareSalon(salon.id)}
-            className={`p-2 rounded-xl border transition-colors ${
+            className={`p-2 rounded-xl border transition-colors shadow-xs ${
               comparisonList.includes(salon.id)
-                ? 'bg-amber-400 text-black border-amber-400'
-                : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white'
+                ? 'bg-[#FF6422] text-white border-orange-500'
+                : 'bg-white border-[#E2DDD5] text-stone-600 hover:text-stone-900'
             }`}
             title="Compare Salon"
           >
@@ -165,7 +166,7 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
 
           <button
             onClick={handleShare}
-            className="p-2 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white transition-colors"
+            className="p-2 rounded-xl bg-white border border-[#E2DDD5] text-stone-600 hover:text-stone-900 shadow-xs transition-colors"
             title="Share"
           >
             <Share2 className="w-4 h-4" />
@@ -173,7 +174,7 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
 
           <button
             onClick={() => toggleFavorite(salon.id)}
-            className="p-2 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-rose-400 transition-colors"
+            className="p-2 rounded-xl bg-white border border-[#E2DDD5] text-stone-500 hover:text-rose-500 shadow-xs transition-colors"
             title="Save to Favourites"
           >
             <Heart className={`w-4 h-4 ${isSaved ? 'fill-rose-500 text-rose-500' : ''}`} />
@@ -182,7 +183,7 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
       </div>
 
       {/* Cover Image Carousel, Poster & Loop Video Showcase */}
-      <div className="rounded-3xl overflow-hidden border border-zinc-800/80 bg-zinc-950 relative shadow-2xl">
+      <div className="rounded-3xl overflow-hidden border border-[#E8E2D8] bg-white relative shadow-sm">
         <div className="h-64 sm:h-80 w-full relative overflow-hidden group">
           {salon.loopVideoUrl && showVideoInHero ? (
             <video
@@ -203,32 +204,32 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
               className="w-full h-full object-cover transition-all duration-500"
             />
           )}
-          <div className="absolute inset-0 bg-gradient-to-t from-[#0e0e13] via-black/40 to-black/20 pointer-events-none" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-black/10 pointer-events-none" />
 
           {/* Top Controls: Badges + Video/Poster Toggle */}
           <div className="absolute top-3 left-3 right-3 flex items-center justify-between pointer-events-auto z-10">
             <div className="flex items-center gap-2">
               {salon.isVerified && (
-                <span className="flex items-center gap-1 bg-black/80 backdrop-blur-md px-2.5 py-1 rounded-full text-amber-400 font-bold text-xs border border-amber-400/30">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-amber-400" /> Verified Salon
+                <span className="flex items-center gap-1 bg-white/95 backdrop-blur-md px-2.5 py-1 rounded-full text-[#FF6422] font-bold text-xs border border-orange-200 shadow-xs">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-[#FF6422]" /> Verified Salon
                 </span>
               )}
-              <span className={`px-2.5 py-1 rounded-full text-xs font-bold backdrop-blur-md ${
-                salon.isOpen ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
+              <span className={`px-2.5 py-1 rounded-full text-xs font-bold backdrop-blur-md shadow-xs ${
+                salon.isOpen ? 'bg-white/95 text-emerald-800 border border-emerald-200' : 'bg-white/95 text-rose-800 border border-rose-200'
               }`}>
                 {salon.isOpen ? 'Open Now' : 'Closed'}
               </span>
             </div>
 
             {salon.loopVideoUrl && (
-              <div className="flex items-center gap-1.5 bg-black/75 backdrop-blur-md border border-zinc-700/80 p-1 rounded-full shadow-lg">
+              <div className="flex items-center gap-1.5 bg-white/90 backdrop-blur-md border border-[#E2DDD5] p-1 rounded-full shadow-md">
                 <button
                   type="button"
                   onClick={() => setShowVideoInHero(!showVideoInHero)}
                   className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold transition-all flex items-center gap-1 ${
                     showVideoInHero
-                      ? 'bg-amber-400 text-black shadow-sm'
-                      : 'text-zinc-300 hover:text-white'
+                      ? 'bg-[#FF6422] text-white shadow-xs'
+                      : 'text-stone-700 hover:text-stone-900'
                   }`}
                   title="Toggle between loop video and still poster"
                 >
@@ -239,13 +240,13 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
                   <button
                     type="button"
                     onClick={() => setIsLoopVideoMuted(!isLoopVideoMuted)}
-                    className="p-1 rounded-full text-zinc-300 hover:text-white transition-colors"
+                    className="p-1 rounded-full text-stone-600 hover:text-stone-900 transition-colors"
                     title={isLoopVideoMuted ? 'Unmute Audio' : 'Mute Audio'}
                   >
                     {isLoopVideoMuted ? (
                       <VolumeX className="w-3.5 h-3.5" />
                     ) : (
-                      <Volume2 className="w-3.5 h-3.5 text-amber-400" />
+                      <Volume2 className="w-3.5 h-3.5 text-[#FF6422]" />
                     )}
                   </button>
                 )}
@@ -261,7 +262,7 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
                   key={idx}
                   onClick={() => setActiveGalleryIndex(idx)}
                   className={`h-1.5 rounded-full transition-all ${
-                    activeGalleryIndex === idx ? 'w-6 bg-amber-400' : 'w-2 bg-white/50'
+                    activeGalleryIndex === idx ? 'w-6 bg-[#FF6422]' : 'w-2 bg-white/60'
                   }`}
                 />
               ))}
@@ -270,62 +271,66 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
         </div>
 
         {/* Salon Header Titles */}
-        <div className="p-5 pt-3">
+        <div className="p-5 pt-4 bg-white">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div>
-              <h1 className="text-xl sm:text-2xl font-black text-white font-['Syne',sans-serif]">
+              <h1 className="text-xl sm:text-2xl font-black text-stone-900 font-['Syne',sans-serif]">
                 {salon.name}
               </h1>
-              <p className="text-xs text-zinc-400 mt-0.5">
+              <p className="text-xs text-stone-500 mt-0.5">
                 {salon.tagline}
               </p>
             </div>
 
             <div className="flex items-center gap-2">
-              <div className="flex items-center gap-1.5 bg-amber-400/10 border border-amber-400/30 px-3 py-1.5 rounded-2xl text-amber-400 font-bold text-sm">
-                <Star className="w-4 h-4 fill-amber-400" />
+              <div className="flex items-center gap-1.5 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-2xl text-amber-800 font-bold text-sm shadow-xs">
+                <Star className="w-4 h-4 fill-amber-500 text-amber-500" />
                 <span>{salon.rating}</span>
-                <span className="text-zinc-400 text-xs font-normal">({salon.reviewCount} reviews)</span>
+                <span className="text-stone-500 text-xs font-normal">({salon.reviewCount} reviews)</span>
               </div>
             </div>
           </div>
 
           {/* Location & Quick Actions */}
-          <div className="mt-4 pt-3 border-t border-zinc-800/80 flex flex-wrap items-center justify-between gap-3 text-xs">
-            <div className="flex items-center gap-2 text-zinc-300">
-              <MapPin className="w-4 h-4 text-amber-400 shrink-0" />
+          <div className="mt-4 pt-3 border-t border-[#E8E2D8] flex flex-wrap items-center justify-between gap-3 text-xs">
+            <div className="flex items-center gap-2 text-stone-700">
+              <MapPin className="w-4 h-4 text-[#FF6422] shrink-0" />
               <span className="truncate max-w-xs">{salon.address}</span>
             </div>
 
             <div className="flex items-center gap-2">
               <a
                 href={`tel:${salon.phone}`}
-                className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-300 hover:text-white"
+                className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-white border border-[#E2DDD5] text-stone-700 hover:text-stone-900 shadow-xs"
               >
-                <Phone className="w-3.5 h-3.5 text-zinc-400" />
+                <Phone className="w-3.5 h-3.5 text-stone-500" />
                 <span>Call Studio</span>
               </a>
 
               <button
-                onClick={onOpenDirectionsModal}
-                className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-amber-500 text-black font-bold hover:bg-amber-400 transition-colors"
+                onClick={() => {
+                  const url = `https://www.google.com/maps/dir/?api=1&destination=${salon.coordinates.lat},${salon.coordinates.lng}`;
+                  window.open(url, '_blank');
+                }}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#FF6422] text-white font-bold hover:bg-orange-600 transition-all shadow-md shadow-orange-500/20 active:scale-95"
+                title="Navigate in Google Maps"
               >
-                <Navigation className="w-3.5 h-3.5" />
-                <span>Directions ({salon.distanceKm} km)</span>
+                <Navigation className="w-3.5 h-3.5 fill-white" />
+                <span>{salon.distanceKm} km • Navigate ↗</span>
               </button>
             </div>
           </div>
         </div>
       </div>
 
-      {/* PROMINENT LIVE QUEUE CARD (Requirement: "The queue information must be prominent... CURRENT QUEUE: 03 PEOPLE WAITING... Last updated: 2 minutes ago") */}
-      <section className="bg-gradient-to-b from-[#181822] via-[#14141c] to-[#0f0f15] border-2 border-amber-500/30 rounded-3xl p-5 shadow-2xl relative overflow-hidden">
-        <div className="absolute top-0 right-0 -mr-10 -mt-10 w-44 h-44 rounded-full bg-amber-500/10 blur-3xl pointer-events-none" />
+      {/* PROMINENT LIVE QUEUE CARD */}
+      <section className="bg-white border-2 border-orange-200 rounded-3xl p-5 shadow-[0_4px_20px_rgba(255,100,34,0.06)] relative overflow-hidden">
+        <div className="absolute top-0 right-0 -mr-10 -mt-10 w-44 h-44 rounded-full bg-orange-400/10 blur-3xl pointer-events-none" />
 
-        <div className="flex items-center justify-between mb-3 pb-2 border-b border-zinc-800">
+        <div className="flex items-center justify-between mb-3 pb-2 border-b border-[#E8E2D8]">
           <div className="flex items-center gap-2">
             <span className={`w-3 h-3 rounded-full ${queueInfo.dotClass}`} />
-            <span className="text-xs font-black uppercase tracking-wider text-amber-400">
+            <span className="text-xs font-black uppercase tracking-wider text-[#FF6422]">
               Live Walk-In Visibility
             </span>
           </div>
@@ -338,12 +343,12 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
         {/* Big Counter Display */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-2">
           <div>
-            <div className="text-[11px] font-extrabold uppercase tracking-widest text-zinc-400 mb-1">
+            <div className="text-[11px] font-extrabold uppercase tracking-widest text-stone-500 mb-1">
               Current Queue
             </div>
-            <div className="text-4xl sm:text-5xl font-black text-white flex items-baseline gap-3 tracking-tight">
+            <div className="text-4xl sm:text-5xl font-black text-stone-900 flex items-baseline gap-3 tracking-tight">
               <span>{salon.currentQueue < 10 ? `0${salon.currentQueue}` : salon.currentQueue}</span>
-              <span className="text-sm sm:text-base font-semibold text-zinc-400 uppercase tracking-wider">
+              <span className="text-sm sm:text-base font-semibold text-stone-500 uppercase tracking-wider">
                 People Waiting
               </span>
             </div>
@@ -354,38 +359,38 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
           </div>
 
           {/* Estimated Wait Card */}
-          <div className="bg-zinc-900/90 border border-zinc-800 rounded-2xl p-4 sm:w-56 shrink-0 shadow-lg">
-            <div className="text-[10px] text-zinc-400 uppercase font-semibold flex items-center gap-1">
-              <Clock className="w-3.5 h-3.5 text-amber-400" /> Estimated Wait Time
+          <div className="bg-[#FAF7F2] border border-[#E8E2D8] rounded-2xl p-4 sm:w-56 shrink-0 shadow-xs">
+            <div className="text-[10px] text-stone-500 uppercase font-semibold flex items-center gap-1">
+              <Clock className="w-3.5 h-3.5 text-[#FF6422]" /> Estimated Wait Time
             </div>
-            <div className="text-2xl font-black text-white mt-1">
-              ~{waitTime} <span className="text-xs font-normal text-zinc-400">minutes</span>
+            <div className="text-2xl font-black text-stone-900 mt-1">
+              ~{waitTime} <span className="text-xs font-normal text-stone-500">minutes</span>
             </div>
-            <p className="text-[10px] text-zinc-500 mt-1 leading-snug">
+            <p className="text-[10px] text-stone-500 mt-1 leading-snug">
               Based on {salon.activeBarbers} active stylist{salon.activeBarbers > 1 ? 's' : ''} at chairs.
             </p>
           </div>
         </div>
 
         {/* Important Business Rule Banner */}
-        <div className="mt-4 pt-3 border-t border-zinc-800/80 flex items-start gap-2.5 text-xs text-zinc-400 bg-black/40 p-3 rounded-2xl">
-          <Info className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+        <div className="mt-4 pt-3 border-t border-[#E8E2D8] flex items-start gap-2.5 text-xs text-stone-600 bg-orange-50/50 p-3 rounded-2xl border border-orange-100">
+          <Info className="w-4 h-4 text-[#FF6422] shrink-0 mt-0.5" />
           <p>
-            <strong className="text-zinc-200">No appointments or tokens needed:</strong> Kumbhakaran eliminates blind walk-ins by giving you live visibility. Just check the queue, decide if it suits you, and walk right in.
+            <strong className="text-stone-900">No appointments or tokens needed:</strong> Kumbhkaran Salons eliminates blind walk-ins by giving you live visibility. Just check the queue, decide if it suits you, and walk right in.
           </p>
         </div>
       </section>
 
       {/* Interactive Mapbox Studio Location */}
-      <section className="bg-zinc-900/40 border border-zinc-800 rounded-3xl p-4 sm:p-5 space-y-3">
+      <section className="bg-white border border-[#E8E2D8] rounded-3xl p-4 sm:p-5 space-y-3 shadow-xs">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <MapPin className="w-4 h-4 text-amber-400" />
-            <h3 className="text-sm font-bold text-white font-['Syne',sans-serif]">
+            <MapPin className="w-4 h-4 text-[#FF6422]" />
+            <h3 className="text-sm font-bold text-stone-900 font-['Syne',sans-serif]">
               Studio Location & Map
             </h3>
           </div>
-          <span className="text-[11px] text-zinc-400 font-medium">
+          <span className="text-[11px] text-stone-500 font-medium">
             {salon.distanceKm} km away • {salon.locality}
           </span>
         </div>
@@ -398,7 +403,7 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
       </section>
 
       {/* Tabs navigation: Services, Staff, Reviews, Gallery */}
-      <div className="flex border-b border-zinc-800 text-xs font-bold">
+      <div className="flex border-b border-[#E8E2D8] text-xs font-bold">
         {[
           { id: 'services', label: `Services (${salon.services.length})` },
           { id: 'staff', label: `Stylists (${salon.staff.length})` },
@@ -410,8 +415,8 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
             onClick={() => setActiveTab(tab.id as any)}
             className={`flex-1 py-3 text-center border-b-2 transition-all ${
               activeTab === tab.id
-                ? 'border-amber-400 text-amber-400 bg-amber-400/5'
-                : 'border-transparent text-zinc-400 hover:text-white'
+                ? 'border-[#FF6422] text-[#FF6422] bg-orange-50/50'
+                : 'border-transparent text-stone-500 hover:text-stone-900'
             }`}
           >
             {tab.label}
@@ -430,8 +435,8 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
                 onClick={() => setSelectedServiceCategory(cat)}
                 className={`px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap border transition-all ${
                   selectedServiceCategory === cat
-                    ? 'bg-amber-400 text-black border-amber-400'
-                    : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white'
+                    ? 'bg-[#FF6422] text-white border-orange-500 shadow-xs'
+                    : 'bg-white border-[#E2DDD5] text-stone-700 hover:border-orange-300'
                 }`}
               >
                 {cat}
@@ -444,36 +449,36 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
             {filteredServices.map((service) => (
               <div
                 key={service.id}
-                className="bg-[#14141b] border border-zinc-800/80 rounded-2xl p-4 flex items-start justify-between gap-3 hover:border-zinc-700 transition-colors"
+                className="bg-white border border-[#E8E2D8] rounded-2xl p-4 flex items-start justify-between gap-3 hover:border-orange-300 transition-colors shadow-xs"
               >
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
-                    <h3 className="text-sm font-bold text-white">
+                    <h3 className="text-sm font-bold text-stone-900">
                       {service.name}
                     </h3>
                     {service.popular && (
-                      <span className="text-[9px] uppercase font-extrabold px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                      <span className="text-[9px] uppercase font-extrabold px-1.5 py-0.5 rounded bg-orange-50 text-[#FF6422] border border-orange-200">
                         Popular
                       </span>
                     )}
                   </div>
-                  <p className="text-xs text-zinc-400 mt-1 leading-relaxed">
+                  <p className="text-xs text-stone-600 mt-1 leading-relaxed">
                     {service.description}
                   </p>
-                  <div className="flex items-center gap-3 mt-2 text-[11px] text-zinc-500">
+                  <div className="flex items-center gap-3 mt-2 text-[11px] text-stone-500">
                     <span className="flex items-center gap-1">
-                      <Clock className="w-3 h-3 text-zinc-500" /> ~{service.durationMinutes} mins
+                      <Clock className="w-3 h-3 text-stone-400" /> ~{service.durationMinutes} mins
                     </span>
                     <span>•</span>
-                    <span className="text-zinc-400">Category: {service.category}</span>
+                    <span className="text-stone-500">Category: {service.category}</span>
                   </div>
                 </div>
 
                 <div className="text-right shrink-0">
-                  <div className="text-base font-extrabold text-amber-400">
+                  <div className="text-base font-extrabold text-[#FF6422]">
                     ₹{service.price}
                   </div>
-                  <span className="text-[10px] text-zinc-500 block mt-0.5">
+                  <span className="text-[10px] text-stone-500 block mt-0.5">
                     Pay at salon
                   </span>
                 </div>
@@ -486,7 +491,7 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
       {/* TAB CONTENT: STAFF & STYLISTS */}
       {activeTab === 'staff' && (
         <div className="space-y-4">
-          <div className="text-xs text-zinc-400">
+          <div className="text-xs text-stone-500">
             Meet the master barbers and grooming artisans at {salon.name}.
           </div>
 
@@ -494,25 +499,25 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
             {salon.staff.map((member) => (
               <div
                 key={member.id}
-                className="bg-[#14141b] border border-zinc-800 rounded-2xl p-4 flex items-center gap-3.5"
+                className="bg-white border border-[#E8E2D8] rounded-2xl p-4 flex items-center gap-3.5 shadow-xs"
               >
                 <img
                   src={member.photo}
                   alt={member.name}
-                  className="w-16 h-16 rounded-2xl object-cover shrink-0 border border-zinc-700"
+                  className="w-16 h-16 rounded-2xl object-cover shrink-0 border border-[#E2DDD5]"
                 />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center justify-between">
-                    <h4 className="text-sm font-bold text-white truncate">{member.name}</h4>
-                    <span className="flex items-center gap-0.5 text-xs font-bold text-amber-400">
-                      <Star className="w-3 h-3 fill-amber-400" /> {member.rating}
+                    <h4 className="text-sm font-bold text-stone-900 truncate">{member.name}</h4>
+                    <span className="flex items-center gap-0.5 text-xs font-bold text-amber-800 bg-amber-50 border border-amber-200 px-1.5 py-0.2 rounded">
+                      <Star className="w-3 h-3 fill-amber-500 text-amber-500" /> {member.rating}
                     </span>
                   </div>
-                  <p className="text-xs text-zinc-400">{member.role} • {member.experience}</p>
+                  <p className="text-xs text-stone-500">{member.role} • {member.experience}</p>
 
                   <div className="flex flex-wrap gap-1 mt-2">
                     {member.specialties.map((spec, idx) => (
-                      <span key={idx} className="text-[9px] bg-zinc-900 text-zinc-300 px-2 py-0.5 rounded border border-zinc-800">
+                      <span key={idx} className="text-[9px] bg-[#FAF7F2] text-stone-700 px-2 py-0.5 rounded border border-[#E2DDD5]">
                         {spec}
                       </span>
                     ))}
@@ -528,21 +533,21 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
       {activeTab === 'reviews' && (
         <div className="space-y-5">
           {/* Ratings Overview & 5 Criteria Breakdown */}
-          <div className="bg-[#14141b] border border-zinc-800 rounded-2xl p-4">
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pb-4 border-b border-zinc-800">
+          <div className="bg-white border border-[#E8E2D8] rounded-2xl p-4 shadow-xs">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pb-4 border-b border-[#E8E2D8]">
               <div className="text-center sm:text-left">
-                <div className="text-4xl font-black text-white flex items-center justify-center sm:justify-start gap-2">
-                  <Star className="w-8 h-8 fill-amber-400 text-amber-400" />
+                <div className="text-4xl font-black text-stone-900 flex items-center justify-center sm:justify-start gap-2">
+                  <Star className="w-8 h-8 fill-amber-500 text-amber-500" />
                   <span>{salon.rating}</span>
                 </div>
-                <div className="text-xs text-zinc-400 mt-1">
+                <div className="text-xs text-stone-500 mt-1">
                   Based on {salon.reviewCount} customer reviews
                 </div>
               </div>
 
               <button
                 onClick={onOpenReviewModal}
-                className="px-4 py-2 rounded-xl bg-amber-500 text-black font-bold text-xs hover:bg-amber-400 transition-colors flex items-center gap-1.5"
+                className="px-4 py-2 rounded-xl bg-[#FF6422] text-white font-bold text-xs hover:bg-orange-600 transition-colors flex items-center gap-1.5 shadow-xs"
               >
                 <MessageSquarePlus className="w-4 h-4" />
                 <span>Rate & Review Salon</span>
@@ -558,12 +563,12 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
                 { label: 'Pricing & Value', score: salon.ratingBreakdown?.pricing ?? 5 },
                 { label: 'Overall Experience', score: salon.ratingBreakdown?.overallExperience ?? 5 }
               ].map((c) => (
-                <div key={c.label} className="bg-zinc-900/60 p-2 rounded-xl flex items-center justify-between">
-                  <span className="text-zinc-400">{c.label}</span>
-                  <div className="flex items-center gap-1.5 font-bold text-amber-400">
-                    <div className="w-16 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+                <div key={c.label} className="bg-[#FAF7F2] border border-[#E2DDD5] p-2 rounded-xl flex items-center justify-between">
+                  <span className="text-stone-700">{c.label}</span>
+                  <div className="flex items-center gap-1.5 font-bold text-amber-800">
+                    <div className="w-16 h-1.5 bg-stone-200 rounded-full overflow-hidden">
                       <div
-                        className="h-full bg-amber-400 rounded-full"
+                        className="h-full bg-[#FF6422] rounded-full"
                         style={{ width: `${(c.score / 5) * 100}%` }}
                       />
                     </div>
@@ -587,48 +592,48 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
 
               if (uniqueReviews.length === 0) {
                 return (
-                  <div className="bg-[#14141b] border border-zinc-800/80 rounded-2xl p-6 text-center space-y-2">
-                    <p className="text-zinc-400 text-xs">No reviews submitted yet.</p>
-                    <p className="text-zinc-500 text-[11px]">Be the first customer to share your grooming experience!</p>
+                  <div className="bg-white border border-[#E8E2D8] rounded-2xl p-6 text-center space-y-2 shadow-xs">
+                    <p className="text-stone-600 text-xs">No reviews submitted yet.</p>
+                    <p className="text-stone-500 text-[11px]">Be the first customer to share your grooming experience!</p>
                   </div>
                 );
               }
 
               return uniqueReviews.map((rev) => (
-                <div key={rev.id} className="bg-[#14141b] border border-zinc-800 rounded-2xl p-4 space-y-2">
+                <div key={rev.id} className="bg-white border border-[#E8E2D8] rounded-2xl p-4 space-y-2 shadow-xs">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2.5">
                       <img src={rev.customerAvatar} alt={rev.customerName} className="w-8 h-8 rounded-full object-cover" />
                       <div>
-                        <div className="text-xs font-bold text-white flex items-center gap-1.5">
+                        <div className="text-xs font-bold text-stone-900 flex items-center gap-1.5">
                           <span>{rev.customerName}</span>
                           {rev.verifiedVisit && (
-                            <span className="text-[10px] text-emerald-400 font-semibold bg-emerald-500/10 px-1.5 py-0.2 rounded">
+                            <span className="text-[10px] text-emerald-800 font-semibold bg-emerald-50 border border-emerald-200 px-1.5 py-0.2 rounded">
                               Verified Visit
                             </span>
                           )}
                         </div>
-                        <span className="text-[10px] text-zinc-500">{rev.date}</span>
+                        <span className="text-[10px] text-stone-500">{rev.date}</span>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-0.5 text-xs text-amber-400 font-bold">
-                      <Star className="w-3.5 h-3.5 fill-amber-400" />
+                    <div className="flex items-center gap-0.5 text-xs text-amber-800 font-bold bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-lg">
+                      <Star className="w-3.5 h-3.5 fill-amber-500 text-amber-500" />
                       <span>{rev.rating}.0</span>
                     </div>
                   </div>
 
-                  <p className="text-xs text-zinc-300 leading-relaxed">
+                  <p className="text-xs text-stone-700 leading-relaxed">
                     "{rev.comment}"
                   </p>
 
                   {/* Owner Reply if any */}
                   {rev.ownerReply && (
-                    <div className="mt-2 bg-zinc-900/80 border-l-2 border-amber-400 p-2.5 rounded-r-xl text-xs">
-                      <div className="text-[11px] font-bold text-amber-400 mb-0.5">
+                    <div className="mt-2 bg-orange-50/50 border-l-2 border-[#FF6422] p-2.5 rounded-r-xl text-xs border border-orange-100">
+                      <div className="text-[11px] font-bold text-[#FF6422] mb-0.5">
                         Salon Owner Response • {rev.ownerReply.date}
                       </div>
-                      <p className="text-zinc-300">{rev.ownerReply.comment}</p>
+                      <p className="text-stone-700">{rev.ownerReply.comment}</p>
                     </div>
                   )}
                 </div>
@@ -638,7 +643,7 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
         </div>
       )}
 
-      {/* TAB CONTENT: SHOWCASE & GALLERY (LOCATION, WORK, LOOP VIDEO) */}
+      {/* TAB CONTENT: SHOWCASE & GALLERY */}
       {activeTab === 'gallery' && (
         <div className="space-y-4">
           {/* Sub-Category Filters */}
@@ -656,10 +661,10 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
                   key={f.id}
                   type="button"
                   onClick={() => setGalleryFilter(f.id)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all shadow-xs ${
                     isSelected
-                      ? 'bg-amber-400 text-black shadow-md shadow-amber-400/20'
-                      : 'bg-[#14141c] text-zinc-400 hover:text-white border border-zinc-800'
+                      ? 'bg-[#FF6422] text-white shadow-sm shadow-orange-500/20'
+                      : 'bg-white text-stone-700 hover:border-orange-300 border border-[#E2DDD5]'
                   }`}
                 >
                   <Icon className="w-3.5 h-3.5" />
@@ -671,7 +676,7 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
 
           {/* Media Grid */}
           {filteredGalleryItems.length === 0 ? (
-            <div className="bg-[#14141c] border border-zinc-800/80 rounded-2xl p-8 text-center text-xs text-zinc-500">
+            <div className="bg-white border border-[#E8E2D8] rounded-2xl p-8 text-center text-xs text-stone-500 shadow-xs">
               No media in this category yet.
             </div>
           ) : (
@@ -680,7 +685,7 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
                 <div
                   key={item.id}
                   onClick={() => setLightboxIndex(galleryItems.findIndex(g => g.id === item.id))}
-                  className="group relative h-44 rounded-2xl overflow-hidden border border-zinc-800 bg-zinc-900 cursor-pointer shadow-md hover:border-amber-400/50 transition-all"
+                  className="group relative h-44 rounded-2xl overflow-hidden border border-[#E8E2D8] bg-stone-100 cursor-pointer shadow-xs hover:border-orange-400 transition-all"
                 >
                   {item.type === 'video' ? (
                     <div className="w-full h-full relative">
@@ -692,9 +697,9 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
                         playsInline
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                       />
-                      <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
-                        <div className="w-9 h-9 rounded-full bg-amber-400/90 text-black flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-                          <Play className="w-4 h-4 fill-black ml-0.5" />
+                      <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
+                        <div className="w-9 h-9 rounded-full bg-[#FF6422] text-white flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                          <Play className="w-4 h-4 fill-white ml-0.5" />
                         </div>
                       </div>
                     </div>
@@ -710,7 +715,7 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
 
                   {/* Badge */}
                   <div className="absolute top-2 left-2">
-                    <span className="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full backdrop-blur-md bg-black/70 border border-white/10 text-amber-400">
+                    <span className="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full backdrop-blur-md bg-white/90 text-stone-900 border border-stone-200">
                       {item.categoryLabel}
                     </span>
                   </div>
@@ -718,7 +723,7 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
                   {/* Title & Enlarge icon */}
                   <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between text-[11px] text-white font-medium">
                     <span className="truncate drop-shadow-md">{item.title}</span>
-                    <Maximize2 className="w-3.5 h-3.5 text-zinc-300 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 ml-1" />
+                    <Maximize2 className="w-3.5 h-3.5 text-stone-200 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 ml-1" />
                   </div>
                 </div>
               ))}
@@ -726,10 +731,10 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
           )}
 
           {/* Informational Callout */}
-          <div className="p-3.5 rounded-2xl bg-zinc-900/60 border border-zinc-800/80 flex items-center gap-2.5 text-xs text-zinc-400">
-            <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
+          <div className="p-3.5 rounded-2xl bg-orange-50/50 border border-orange-200 flex items-center gap-2.5 text-xs text-stone-700">
+            <Sparkles className="w-4 h-4 text-[#FF6422] shrink-0" />
             <span>
-              Real photos and loop video captured directly on location at <strong className="text-white">{salon.name}</strong>, {salon.locality}.
+              Real photos and loop video captured directly on location at <strong className="text-stone-900">{salon.name}</strong>, {salon.locality}.
             </span>
           </div>
         </div>
@@ -741,7 +746,7 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
           {/* Top Bar */}
           <div className="flex items-center justify-between text-white pb-3 border-b border-zinc-800/80">
             <div className="flex items-center gap-2">
-              <span className="text-[11px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-amber-400/20 text-amber-400 border border-amber-400/30">
+              <span className="text-[11px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-[#FF6422]/20 text-orange-400 border border-orange-500/30">
                 {galleryItems[lightboxIndex].categoryLabel}
               </span>
               <h4 className="text-xs font-bold text-zinc-200 truncate max-w-[200px] sm:max-w-md">
@@ -811,12 +816,12 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
                 type="button"
                 onClick={() => setLightboxIndex(idx)}
                 className={`relative w-12 h-12 rounded-xl overflow-hidden shrink-0 border-2 transition-all ${
-                  idx === lightboxIndex ? 'border-amber-400 scale-105' : 'border-zinc-800 opacity-60 hover:opacity-100'
+                  idx === lightboxIndex ? 'border-[#FF6422] scale-105' : 'border-zinc-800 opacity-60 hover:opacity-100'
                 }`}
               >
                 {item.type === 'video' ? (
                   <div className="w-full h-full bg-zinc-800 flex items-center justify-center">
-                    <Play className="w-4 h-4 fill-amber-400 text-amber-400" />
+                    <Play className="w-4 h-4 fill-white text-white" />
                   </div>
                 ) : (
                   <img src={item.url} alt="" className="w-full h-full object-cover" />

@@ -53,22 +53,22 @@ export const ProfileScreen: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 pb-28 text-slate-100">
+    <div className="space-y-6 pb-28 text-stone-900">
       {/* Google Authentication Status Card */}
       {!isAuthenticated ? (
-        <div className="bg-gradient-to-br from-[#1c1c28] via-[#14141c] to-[#0d0d12] border border-amber-500/30 rounded-3xl p-5 shadow-2xl relative overflow-hidden">
+        <div className="bg-white border border-[#E8E2D8] rounded-3xl p-5 shadow-sm relative overflow-hidden">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-[10px] uppercase font-extrabold tracking-widest px-2 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                <span className="text-[10px] uppercase font-extrabold tracking-widest px-2 py-0.5 rounded bg-orange-50 text-[#FF6422] border border-orange-200">
                   Google Account
                 </span>
-                <span className="text-xs text-zinc-400">Optional for customers</span>
+                <span className="text-xs text-stone-500">Optional for customers</span>
               </div>
-              <h2 className="text-base sm:text-lg font-black text-white mt-1.5 font-['Syne',sans-serif]">
+              <h2 className="text-base sm:text-lg font-black text-stone-900 mt-1.5 font-['Syne',sans-serif]">
                 Sign in with Google
               </h2>
-              <p className="text-xs text-zinc-400 max-w-md mt-0.5">
+              <p className="text-xs text-stone-600 max-w-md mt-0.5">
                 Sync your favourite studios, keep booking history across devices, and leave verified walk-in reviews.
               </p>
             </div>
@@ -83,20 +83,20 @@ export const ProfileScreen: React.FC = () => {
           </div>
         </div>
       ) : (
-        <div className="bg-[#121218] border border-emerald-500/30 rounded-3xl p-4 sm:p-5 shadow-xl flex items-center justify-between gap-3">
+        <div className="bg-white border border-emerald-200 rounded-3xl p-4 sm:p-5 shadow-sm flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+            <div className="w-10 h-10 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-700">
               <CheckCircle2 className="w-5 h-5" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-white">{authUser?.name}</span>
-                <span className="text-[10px] bg-emerald-500/20 text-emerald-300 font-semibold px-2 py-0.5 rounded-full border border-emerald-500/30">
+                <span className="text-xs font-bold text-stone-900">{authUser?.name}</span>
+                <span className="text-[10px] bg-emerald-50 text-emerald-800 font-semibold px-2 py-0.5 rounded-full border border-emerald-200">
                   Google Verified
                 </span>
               </div>
-              <div className="text-[11px] text-zinc-400 flex items-center gap-1 mt-0.5">
-                <Mail className="w-3 h-3 text-zinc-500" />
+              <div className="text-[11px] text-stone-500 flex items-center gap-1 mt-0.5">
+                <Mail className="w-3 h-3 text-stone-400" />
                 <span>{authUser?.email}</span>
               </div>
             </div>
@@ -104,7 +104,7 @@ export const ProfileScreen: React.FC = () => {
 
           <button
             onClick={() => logout()}
-            className="px-3 py-1.5 rounded-xl bg-zinc-900 border border-zinc-700 hover:border-red-500 text-xs text-red-400 font-bold hover:bg-red-950/20 transition-all flex items-center gap-1.5"
+            className="px-3 py-1.5 rounded-xl bg-white border border-rose-200 text-xs text-rose-600 font-bold hover:bg-rose-50 transition-all flex items-center gap-1.5 shadow-xs"
             title="Sign out of Google"
           >
             <LogOut className="w-3.5 h-3.5" />
@@ -114,17 +114,17 @@ export const ProfileScreen: React.FC = () => {
       )}
 
       {/* Customer Profile Header */}
-      <div className="bg-gradient-to-br from-[#1c1c25] via-[#14141c] to-[#0c0c10] border border-zinc-800 rounded-3xl p-5 shadow-2xl relative overflow-hidden">
+      <div className="bg-white border border-[#E8E2D8] rounded-3xl p-5 shadow-sm relative overflow-hidden">
         <div className="flex items-center gap-4">
           <div className="relative">
             {authUser?.avatarUrl ? (
               <img
                 src={authUser.avatarUrl}
                 alt={authUser.name}
-                className="w-16 h-16 rounded-2xl object-cover border-2 border-amber-400 shadow-xl"
+                className="w-16 h-16 rounded-2xl object-cover border-2 border-[#FF6422] shadow-sm"
               />
             ) : (
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-black font-extrabold text-2xl shadow-xl border-2 border-amber-300">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-orange-400 to-[#FF6422] flex items-center justify-center text-white font-extrabold text-2xl shadow-sm border-2 border-orange-300">
                 {userProfile.name ? userProfile.name.charAt(0).toUpperCase() : 'C'}
               </div>
             )}
@@ -142,24 +142,24 @@ export const ProfileScreen: React.FC = () => {
                   onChange={(e) => setNameInput(e.target.value)}
                   placeholder="Enter your name..."
                   autoFocus
-                  className="px-2.5 py-1 bg-zinc-900 border border-amber-400 rounded-xl text-sm font-bold text-white focus:outline-none"
+                  className="px-2.5 py-1 bg-[#FAF7F2] border border-[#FF6422] rounded-xl text-sm font-bold text-stone-900 focus:outline-none"
                 />
                 <button
                   type="submit"
-                  className="p-1.5 rounded-lg bg-amber-500 text-black font-bold"
+                  className="p-1.5 rounded-lg bg-[#FF6422] text-white font-bold"
                 >
                   <Check className="w-3.5 h-3.5" />
                 </button>
               </form>
             ) : (
               <div className="flex items-center gap-2">
-                <h2 className="text-lg font-extrabold text-white truncate">
+                <h2 className="text-lg font-extrabold text-stone-900 truncate">
                   {authUser?.name || userProfile.name}
                 </h2>
                 {!authUser && (
                   <button
                     onClick={() => setIsEditingName(true)}
-                    className="p-1 rounded-lg hover:bg-zinc-800 text-zinc-400 hover:text-amber-400 transition-colors"
+                    className="p-1 rounded-lg hover:bg-stone-100 text-stone-400 hover:text-[#FF6422] transition-colors"
                     title="Edit your display name"
                   >
                     <Edit2 className="w-3.5 h-3.5" />
@@ -169,12 +169,12 @@ export const ProfileScreen: React.FC = () => {
             )}
 
             <div className="mt-1 flex items-center gap-1.5">
-              <span className="text-[11px] text-emerald-400 font-semibold bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+              <span className="text-[11px] text-orange-700 font-semibold bg-orange-50 px-2 py-0.5 rounded-full border border-orange-200">
                 {isAuthenticated ? 'Authenticated Customer' : 'Zero-Sign Up Walk-In Access'}
               </span>
             </div>
 
-            <p className="text-[11px] text-zinc-500 mt-1">
+            <p className="text-[11px] text-stone-500 mt-1">
               {isAuthenticated
                 ? `Signed in as ${authUser?.email}`
                 : 'No phone number or password required. Pure walk-in clarity.'}
@@ -183,44 +183,44 @@ export const ProfileScreen: React.FC = () => {
         </div>
 
         {/* Quick Stats Grid */}
-        <div className="grid grid-cols-3 gap-2 mt-5 pt-4 border-t border-zinc-800/80 text-center">
+        <div className="grid grid-cols-3 gap-2 mt-5 pt-4 border-t border-[#E8E2D8] text-center">
           <div
             onClick={() => setCustomerTab('favourites')}
-            className="cursor-pointer hover:bg-zinc-800/40 p-2 rounded-xl transition-colors"
+            className="cursor-pointer hover:bg-orange-50/50 p-2 rounded-xl transition-colors"
           >
-            <div className="text-lg font-black text-amber-400">{userProfile.savedSalons.length}</div>
-            <div className="text-[10px] text-zinc-400 uppercase font-semibold">Favourites</div>
+            <div className="text-lg font-black text-[#FF6422]">{userProfile.savedSalons.length}</div>
+            <div className="text-[10px] text-stone-500 uppercase font-semibold">Favourites</div>
           </div>
 
           <div className="p-2">
-            <div className="text-lg font-black text-white">{userProfile.recentlyViewed.length}</div>
-            <div className="text-[10px] text-zinc-400 uppercase font-semibold">Viewed</div>
+            <div className="text-lg font-black text-stone-900">{userProfile.recentlyViewed.length}</div>
+            <div className="text-[10px] text-stone-500 uppercase font-semibold">Viewed</div>
           </div>
 
           <div className="p-2">
-            <div className="text-lg font-black text-emerald-400">{userReviews.length}</div>
-            <div className="text-[10px] text-zinc-400 uppercase font-semibold">Reviews</div>
+            <div className="text-lg font-black text-emerald-700">{userReviews.length}</div>
+            <div className="text-[10px] text-stone-500 uppercase font-semibold">Reviews</div>
           </div>
         </div>
       </div>
 
       {/* Customer Name Setting Card */}
       {!authUser && (
-        <section className="bg-[#14141c] border border-zinc-800 rounded-2xl p-4 space-y-3">
-          <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
-            <User className="w-3.5 h-3.5 text-amber-400" />
+        <section className="bg-white border border-[#E8E2D8] rounded-2xl p-4 space-y-3 shadow-xs">
+          <h3 className="text-xs font-bold text-stone-500 uppercase tracking-wider flex items-center gap-1.5">
+            <User className="w-3.5 h-3.5 text-[#FF6422]" />
             Your Display Name
           </h3>
 
           <div className="flex items-center justify-between text-xs py-1">
             <div>
-              <div className="text-zinc-200 font-semibold">Customer Name</div>
-              <div className="text-[10px] text-zinc-500">Displayed when you leave salon reviews</div>
+              <div className="text-stone-900 font-semibold">Customer Name</div>
+              <div className="text-[10px] text-stone-500">Displayed when you leave salon reviews</div>
             </div>
 
             <button
               onClick={() => setIsEditingName(true)}
-              className="px-3 py-1.5 rounded-xl bg-zinc-900 border border-zinc-700 hover:border-amber-400 text-xs text-amber-400 font-bold"
+              className="px-3 py-1.5 rounded-xl bg-white border border-[#E2DDD5] hover:border-[#FF6422] text-xs text-[#FF6422] font-bold shadow-xs"
             >
               {userProfile.name || 'Set Name'}
             </button>
@@ -229,24 +229,24 @@ export const ProfileScreen: React.FC = () => {
       )}
 
       {/* Location & Discovery Preferences */}
-      <section className="bg-[#14141c] border border-zinc-800 rounded-2xl p-4 space-y-3">
-        <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
-          <MapPin className="w-3.5 h-3.5 text-amber-400" />
+      <section className="bg-white border border-[#E8E2D8] rounded-2xl p-4 space-y-3 shadow-xs">
+        <h3 className="text-xs font-bold text-stone-500 uppercase tracking-wider flex items-center gap-1.5">
+          <MapPin className="w-3.5 h-3.5 text-[#FF6422]" />
           Location & Discovery
         </h3>
 
-        <div className="flex items-center justify-between text-xs py-1 border-b border-zinc-800/80">
+        <div className="flex items-center justify-between text-xs py-1 border-b border-[#E8E2D8]">
           <div>
-            <div className="text-zinc-200 font-semibold">Active Area</div>
-            <div className="text-[10px] text-zinc-500">{userLocation ? userLocation.name : 'Not set'}</div>
+            <div className="text-stone-900 font-semibold">Active Area</div>
+            <div className="text-[10px] text-stone-500">{userLocation ? userLocation.name : 'Not set'}</div>
           </div>
-          <span className="text-[11px] text-amber-400 font-medium">GPS Coordinates active</span>
+          <span className="text-[11px] text-[#FF6422] font-semibold">GPS Coordinates active</span>
         </div>
 
         <div className="flex items-center justify-between text-xs py-1">
           <div>
-            <div className="text-zinc-200 font-semibold">Default Search Radius</div>
-            <div className="text-[10px] text-zinc-500">Distance limit for PostGIS ST_DWithin radius search</div>
+            <div className="text-stone-900 font-semibold">Default Search Radius</div>
+            <div className="text-[10px] text-stone-500">Distance limit for PostGIS ST_DWithin radius search</div>
           </div>
           <select
             value={preferredRadius}
@@ -254,7 +254,7 @@ export const ProfileScreen: React.FC = () => {
               setPreferredRadius(e.target.value);
               triggerNotification(`Search radius set to ${e.target.value}`);
             }}
-            className="px-2 py-1 bg-zinc-900 border border-zinc-700 rounded-xl text-xs text-white focus:outline-none"
+            className="px-2.5 py-1 bg-[#FAF7F2] border border-[#E2DDD5] rounded-xl text-xs text-stone-900 focus:outline-none"
           >
             <option value="2 km">2 km (Ultra-local)</option>
             <option value="5 km">5 km (Neighbourhood)</option>
@@ -265,15 +265,15 @@ export const ProfileScreen: React.FC = () => {
       </section>
 
       {/* Salon Partner Portal Link */}
-      <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-lg">
+      <div className="p-4 rounded-2xl bg-orange-50 border border-orange-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
         <div>
-          <div className="text-xs font-bold text-white flex items-center gap-1.5">
+          <div className="text-xs font-bold text-stone-900 flex items-center gap-1.5">
             <span>Own a Salon or Barber Studio?</span>
-            <span className="text-[10px] bg-amber-500/20 text-amber-300 font-bold px-2 py-0.5 rounded-full border border-amber-500/30">
+            <span className="text-[10px] bg-orange-100 text-[#FF6422] font-bold px-2 py-0.5 rounded-full border border-orange-200">
               For Salons
             </span>
           </div>
-          <div className="text-[11px] text-zinc-400 mt-0.5">
+          <div className="text-[11px] text-stone-600 mt-0.5">
             Join Kumbhkaran Salons to broadcast your live queue, manage barbers, and fill empty chairs.
           </div>
         </div>
@@ -281,7 +281,7 @@ export const ProfileScreen: React.FC = () => {
           href="https://project-1-xq1k.vercel.app/"
           target="_blank"
           rel="noreferrer"
-          className="px-3.5 py-2 rounded-xl bg-amber-500 text-black text-xs font-bold hover:bg-amber-400 transition-colors flex items-center justify-center gap-1.5 shrink-0 shadow-md shadow-amber-500/20"
+          className="px-3.5 py-2 rounded-xl bg-[#FF6422] text-white text-xs font-bold hover:bg-orange-600 transition-colors flex items-center justify-center gap-1.5 shrink-0 shadow-md shadow-orange-500/20"
         >
           <span>Open Partner OS</span>
           <ExternalLink className="w-3.5 h-3.5" />
@@ -289,10 +289,10 @@ export const ProfileScreen: React.FC = () => {
       </div>
 
       {/* Transparency Guarantee */}
-      <div className="p-4 rounded-2xl bg-zinc-900/50 border border-zinc-800 flex items-start gap-3">
-        <ShieldCheck className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
-        <div className="text-xs text-zinc-400 space-y-1">
-          <div className="font-bold text-zinc-200">The Kumbhkaran Salons Promise</div>
+      <div className="p-4 rounded-2xl bg-white border border-[#E8E2D8] flex items-start gap-3 shadow-xs">
+        <ShieldCheck className="w-5 h-5 text-[#FF6422] shrink-0 mt-0.5" />
+        <div className="text-xs text-stone-600 space-y-1">
+          <div className="font-bold text-stone-900">The Kumbhkaran Salons Promise</div>
           <div>
             We never share your private phone number or email with salons. No booking fees, no upfront payments, and no marketing spam. Just pure walk-in transparency.
           </div>

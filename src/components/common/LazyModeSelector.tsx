@@ -21,9 +21,9 @@ export const LazyModeSelector: React.FC = () => {
       label: '0–5 min',
       sublabel: 'No time to waste',
       icon: Zap,
-      accentColor: 'text-emerald-400',
-      borderActive: 'border-emerald-500/50',
-      bgActive: 'bg-emerald-500/15',
+      accentColor: 'text-emerald-600',
+      borderActive: 'border-emerald-400',
+      bgActive: 'bg-emerald-50',
       filterFn: (w) => w <= 5
     },
     {
@@ -31,9 +31,9 @@ export const LazyModeSelector: React.FC = () => {
       label: '5–15 min',
       sublabel: 'Just chilling',
       icon: Coffee,
-      accentColor: 'text-amber-400',
-      borderActive: 'border-amber-500/50',
-      bgActive: 'bg-amber-500/15',
+      accentColor: 'text-amber-600',
+      borderActive: 'border-amber-400',
+      bgActive: 'bg-amber-50',
       filterFn: (w) => w > 5 && w <= 15
     },
     {
@@ -41,9 +41,9 @@ export const LazyModeSelector: React.FC = () => {
       label: '15–30 min',
       sublabel: 'A little patience',
       icon: Clock,
-      accentColor: 'text-orange-400',
-      borderActive: 'border-orange-500/50',
-      bgActive: 'bg-orange-500/15',
+      accentColor: 'text-[#FF6422]',
+      borderActive: 'border-orange-400',
+      bgActive: 'bg-orange-50',
       filterFn: (w) => w > 15 && w <= 30
     },
     {
@@ -51,9 +51,9 @@ export const LazyModeSelector: React.FC = () => {
       label: '30+ min',
       sublabel: 'Maybe somewhere else!',
       icon: Hourglass,
-      accentColor: 'text-rose-400',
-      borderActive: 'border-rose-500/50',
-      bgActive: 'bg-rose-500/15',
+      accentColor: 'text-rose-600',
+      borderActive: 'border-rose-400',
+      bgActive: 'bg-rose-50',
       filterFn: (w) => w > 30
     }
   ];
@@ -66,17 +66,17 @@ export const LazyModeSelector: React.FC = () => {
   };
 
   return (
-    <div className="bg-gradient-to-b from-[#14141a] to-[#0e0e13] border border-zinc-800/80 rounded-2xl p-3.5 shadow-xl">
+    <div className="bg-white border border-[#E8E2D8] rounded-2xl p-3.5 shadow-sm">
       <div className="flex items-center justify-between mb-2.5">
         <div className="flex items-center gap-1.5">
-          <div className="w-5 h-5 rounded-md bg-amber-500/20 text-amber-400 flex items-center justify-center">
+          <div className="w-5 h-5 rounded-md bg-orange-100 text-[#FF6422] flex items-center justify-center">
             <Sparkles className="w-3.5 h-3.5" />
           </div>
           <div>
-            <h3 className="text-xs font-bold text-white uppercase tracking-wider">
+            <h3 className="text-xs font-bold text-stone-900 uppercase tracking-wider">
               Lazy Mode Filter
             </h3>
-            <p className="text-[10px] text-zinc-400">
+            <p className="text-[10px] text-stone-500">
               Filter by your exact patience limit right now
             </p>
           </div>
@@ -85,7 +85,7 @@ export const LazyModeSelector: React.FC = () => {
         {lazyFilter !== 'all' && (
           <button
             onClick={() => setLazyFilter('all')}
-            className="text-[11px] text-amber-400 hover:text-amber-300 font-medium px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/20"
+            className="text-[11px] text-[#FF6422] hover:text-orange-700 font-semibold px-2 py-0.5 rounded bg-orange-50 border border-orange-200 shadow-xs"
           >
             Reset
           </button>
@@ -103,27 +103,27 @@ export const LazyModeSelector: React.FC = () => {
             <button
               key={opt.id}
               onClick={() => setLazyFilter(isSelected ? 'all' : opt.id)}
-              className={`p-2.5 rounded-xl border text-left transition-all relative overflow-hidden group ${
+              className={`p-2.5 rounded-xl border text-left transition-all relative overflow-hidden group shadow-xs ${
                 isSelected
-                  ? `${opt.borderActive} ${opt.bgActive} shadow-lg shadow-black/40`
-                  : 'border-zinc-800/80 bg-zinc-900/60 hover:bg-zinc-800/60 hover:border-zinc-700'
+                  ? `${opt.borderActive} ${opt.bgActive} shadow-sm ring-1 ring-orange-400/30`
+                  : 'border-[#E2DDD5] bg-[#FAF7F2] hover:bg-white hover:border-orange-300'
               }`}
             >
               <div className="flex items-center justify-between mb-1">
                 <div className="flex items-center gap-1.5">
                   <Icon className={`w-3.5 h-3.5 ${opt.accentColor}`} />
-                  <span className={`text-xs font-bold ${isSelected ? 'text-white' : 'text-zinc-200'}`}>
+                  <span className={`text-xs font-bold ${isSelected ? 'text-stone-900' : 'text-stone-800'}`}>
                     {opt.label}
                   </span>
                 </div>
-                <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
-                  isSelected ? 'bg-black/60 text-white' : 'bg-zinc-800 text-zinc-400'
+                <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold border ${
+                  isSelected ? 'bg-white text-stone-900 border-stone-200' : 'bg-white text-stone-500 border-stone-200'
                 }`}>
                   {count}
                 </span>
               </div>
 
-              <p className="text-[10px] text-zinc-400 line-clamp-1">
+              <p className="text-[10px] text-stone-500 line-clamp-1">
                 {opt.sublabel}
               </p>
 

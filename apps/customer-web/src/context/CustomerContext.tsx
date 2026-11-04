@@ -656,10 +656,10 @@ export const getQueueDisplay = (currentQueue: number, isOpen: boolean) => {
       label: 'Closed',
       shortLabel: 'Closed',
       color: 'slate',
-      badgeClass: 'bg-zinc-800/80 text-zinc-400 border border-zinc-700',
-      pillClass: 'bg-zinc-800 text-zinc-400 border-zinc-700',
-      dotClass: 'bg-zinc-500',
-      textClass: 'text-zinc-400',
+      badgeClass: 'bg-stone-100 text-stone-600 border border-stone-200',
+      pillClass: 'bg-stone-100 text-stone-600 border-stone-200',
+      dotClass: 'bg-stone-400',
+      textClass: 'text-stone-500',
     };
   }
   if (currentQueue === 0) {
@@ -667,10 +667,10 @@ export const getQueueDisplay = (currentQueue: number, isOpen: boolean) => {
       label: 'Zero Wait • Walk Straight In',
       shortLabel: '0 waiting',
       color: 'emerald',
-      badgeClass: 'bg-emerald-950/70 text-emerald-300 border border-emerald-500/30',
-      pillClass: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
-      dotClass: 'bg-emerald-400 animate-pulse',
-      textClass: 'text-emerald-400',
+      badgeClass: 'bg-emerald-50 text-emerald-800 border border-emerald-200',
+      pillClass: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+      dotClass: 'bg-emerald-500 animate-pulse',
+      textClass: 'text-emerald-700',
     };
   }
   if (currentQueue <= 2) {
@@ -678,10 +678,10 @@ export const getQueueDisplay = (currentQueue: number, isOpen: boolean) => {
       label: 'Low Queue • Quick Turnaround',
       shortLabel: `${currentQueue < 10 ? '0' + currentQueue : currentQueue} waiting`,
       color: 'emerald',
-      badgeClass: 'bg-emerald-950/70 text-emerald-300 border border-emerald-500/30',
-      pillClass: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
-      dotClass: 'bg-emerald-400 animate-pulse',
-      textClass: 'text-emerald-400',
+      badgeClass: 'bg-emerald-50 text-emerald-800 border border-emerald-200',
+      pillClass: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+      dotClass: 'bg-emerald-500 animate-pulse',
+      textClass: 'text-emerald-700',
     };
   }
   if (currentQueue <= 6) {
@@ -689,28 +689,28 @@ export const getQueueDisplay = (currentQueue: number, isOpen: boolean) => {
       label: 'Moderate Queue • Normal Flow',
       shortLabel: `${currentQueue < 10 ? '0' + currentQueue : currentQueue} waiting`,
       color: 'amber',
-      badgeClass: 'bg-amber-950/70 text-amber-300 border border-amber-500/30',
-      pillClass: 'bg-amber-500/20 text-amber-400 border-amber-500/30',
-      dotClass: 'bg-amber-400',
-      textClass: 'text-amber-400',
+      badgeClass: 'bg-orange-50 text-orange-800 border border-orange-200',
+      pillClass: 'bg-orange-50 text-orange-700 border-orange-200',
+      dotClass: 'bg-orange-500',
+      textClass: 'text-orange-700',
     };
   }
   return {
     label: 'High Queue • Extended Wait',
     shortLabel: `${currentQueue < 10 ? '0' + currentQueue : currentQueue} waiting`,
     color: 'rose',
-    badgeClass: 'bg-rose-950/70 text-rose-300 border border-rose-500/30',
-    pillClass: 'bg-rose-500/20 text-rose-400 border-rose-500/30',
+    badgeClass: 'bg-rose-50 text-rose-800 border border-rose-200',
+    pillClass: 'bg-rose-50 text-rose-700 border-rose-200',
     dotClass: 'bg-rose-500',
-    textClass: 'text-rose-400',
+    textClass: 'text-rose-700',
   };
 };
 
 export const getQueueFreshness = (isoDate: string) => {
   const diffMs = Date.now() - new Date(isoDate).getTime();
   const diffMins = Math.floor(diffMs / (60 * 1000));
-  if (diffMins < 2) return { text: 'Updated just now', isStale: false, color: 'text-emerald-400', badgeClass: 'text-emerald-400 bg-emerald-500/10' };
-  if (diffMins < 6) return { text: `Updated ${diffMins} mins ago`, isStale: false, color: 'text-zinc-300', badgeClass: 'text-zinc-300 bg-zinc-800/80' };
-  if (diffMins < 20) return { text: `Updated ${diffMins} mins ago`, isStale: false, color: 'text-zinc-400', badgeClass: 'text-zinc-400 bg-zinc-800/60' };
-  return { text: `Updated ${diffMins}m ago • Stale`, isStale: true, color: 'text-amber-400', badgeClass: 'text-amber-400 bg-amber-500/10 border border-amber-500/30' };
+  if (diffMins < 2) return { text: 'Updated just now', isStale: false, color: 'text-emerald-700', badgeClass: 'text-emerald-700 bg-emerald-50 border border-emerald-200' };
+  if (diffMins < 6) return { text: `Updated ${diffMins} mins ago`, isStale: false, color: 'text-stone-700', badgeClass: 'text-stone-700 bg-stone-100 border border-stone-200' };
+  if (diffMins < 20) return { text: `Updated ${diffMins} mins ago`, isStale: false, color: 'text-stone-600', badgeClass: 'text-stone-600 bg-stone-100 border border-stone-200' };
+  return { text: `Updated ${diffMins}m ago • Stale`, isStale: true, color: 'text-orange-700', badgeClass: 'text-orange-700 bg-orange-50 border border-orange-200' };
 };

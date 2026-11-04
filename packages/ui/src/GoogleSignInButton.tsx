@@ -127,12 +127,12 @@ export const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
 
   if (initError) {
     return (
-      <div className={`p-3 rounded-xl bg-red-950/40 border border-red-800/60 text-red-300 text-xs ${className}`}>
+      <div className={`p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs ${className}`}>
         <div className="font-bold flex items-center gap-1.5">
           <span>⚠️</span>
           <span>Google Sign-In Error</span>
         </div>
-        <p className="mt-1 text-[11px] text-red-400">{initError}</p>
+        <p className="mt-1 text-[11px] text-rose-600">{initError}</p>
       </div>
     );
   }
@@ -142,9 +142,9 @@ export const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
       {!isGisReady && (
         <div
           style={{ width: typeof width === 'number' ? `${width}px` : width, maxWidth: '100%', height: '40px' }}
-          className="rounded-lg bg-zinc-800/80 animate-pulse border border-zinc-700/60 flex items-center justify-center gap-2 text-zinc-400 text-xs"
+          className="rounded-lg bg-stone-100 animate-pulse border border-stone-200 flex items-center justify-center gap-2 text-stone-500 text-xs"
         >
-          <div className="w-4 h-4 border-2 border-amber-400 border-t-transparent rounded-full animate-spin" />
+          <div className="w-4 h-4 border-2 border-[#FF6422] border-t-transparent rounded-full animate-spin" />
           <span>Connecting Google...</span>
         </div>
       )}

@@ -160,9 +160,9 @@ export const SalonMapboxView: React.FC<SalonMapboxViewProps> = ({
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
       }).addTo(map);
 
-      // Custom Amber Marker
+      // Custom Orange Marker
       const pinHtml = `
-        <div style="background: #f59e0b; color: #000; padding: 4px 10px; border-radius: 9999px; font-weight: 800; font-size: 11px; box-shadow: 0 4px 14px rgba(0,0,0,0.7); border: 2px solid #ffffff; white-space: nowrap; display: flex; align-items: center; gap: 4px;">
+        <div style="background: #FF6422; color: #ffffff; padding: 4px 10px; border-radius: 9999px; font-weight: 800; font-size: 11px; box-shadow: 0 4px 14px rgba(0,0,0,0.25); border: 2px solid #ffffff; white-space: nowrap; display: flex; align-items: center; gap: 4px;">
           <span>✂</span>
           <span>${salon.name.length > 16 ? salon.name.slice(0, 16) + '…' : salon.name}</span>
         </div>
@@ -220,13 +220,13 @@ export const SalonMapboxView: React.FC<SalonMapboxViewProps> = ({
   };
 
   return (
-    <div className={`relative rounded-3xl overflow-hidden border border-zinc-800 bg-[#0c0c12] shadow-2xl ${className}`}>
+    <div className={`relative rounded-3xl overflow-hidden border border-[#E8E2D8] bg-[#FAF7F2] shadow-sm ${className}`}>
       <style>{`
         .osm-dark-tiles {
-          filter: invert(100%) hue-rotate(180deg) brightness(92%) contrast(90%) !important;
+          filter: none !important;
         }
         .leaflet-container {
-          background-color: #0b0f17 !important;
+          background-color: #FAF7F2 !important;
         }
       `}</style>
       {/* Map Canvas */}
@@ -234,8 +234,8 @@ export const SalonMapboxView: React.FC<SalonMapboxViewProps> = ({
 
       {/* Top Header Badge */}
       <div className="absolute top-3 left-3 z-10 flex items-center gap-2">
-        <div className="px-3 py-1 rounded-xl bg-black/80 backdrop-blur-md border border-zinc-800 text-[11px] font-bold text-zinc-200 flex items-center gap-1.5 shadow-lg">
-          <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+        <div className="px-3 py-1 rounded-xl bg-white/95 backdrop-blur-md border border-[#E2DDD5] text-[11px] font-bold text-stone-800 flex items-center gap-1.5 shadow-xs">
+          <span className="w-2 h-2 rounded-full bg-[#FF6422] animate-pulse"></span>
           <span>{mapEngine === 'mapbox' ? 'Mapbox Location' : 'Studio Location'}</span>
         </div>
 
@@ -243,11 +243,11 @@ export const SalonMapboxView: React.FC<SalonMapboxViewProps> = ({
           <button
             type="button"
             onClick={() => setMapStyle(mapStyle === 'dark' ? 'satellite' : 'dark')}
-            className="px-2.5 py-1 rounded-xl bg-black/80 backdrop-blur-md border border-zinc-800 text-[10px] font-semibold text-zinc-300 hover:text-white flex items-center gap-1 transition-colors"
+            className="px-2.5 py-1 rounded-xl bg-white/90 backdrop-blur-md border border-[#E2DDD5] text-[10px] font-semibold text-stone-700 hover:text-stone-900 flex items-center gap-1 transition-colors shadow-xs"
             title="Toggle map style"
           >
-            <Layers className="w-3 h-3 text-amber-400" />
-            <span className="capitalize">{mapStyle === 'dark' ? 'Satellite' : 'Dark'}</span>
+            <Layers className="w-3 h-3 text-[#FF6422]" />
+            <span className="capitalize">{mapStyle === 'dark' ? 'Satellite' : 'Light'}</span>
           </button>
         )}
       </div>
@@ -257,10 +257,10 @@ export const SalonMapboxView: React.FC<SalonMapboxViewProps> = ({
         <button
           type="button"
           onClick={() => redirectToGoogleMaps(salon.coordinates, userLocation)}
-          className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-extrabold text-[11px] flex items-center gap-1.5 shadow-xl transition-all active:scale-95"
+          className="px-3 py-1.5 rounded-xl bg-[#FF6422] hover:bg-orange-600 text-white font-extrabold text-[11px] flex items-center gap-1.5 shadow-md shadow-orange-500/20 transition-all active:scale-95"
           title="Open turn-by-turn navigation"
         >
-          <Navigation className="w-3.5 h-3.5 fill-black" />
+          <Navigation className="w-3.5 h-3.5 fill-white" />
           <span>Directions ↗</span>
         </button>
       </div>
@@ -270,25 +270,25 @@ export const SalonMapboxView: React.FC<SalonMapboxViewProps> = ({
         <button
           type="button"
           onClick={handleRecenter}
-          className="w-8 h-8 rounded-xl bg-black/80 backdrop-blur-md border border-zinc-800 text-amber-400 hover:text-white flex items-center justify-center shadow-lg transition-transform active:scale-90"
+          className="w-8 h-8 rounded-xl bg-white/90 backdrop-blur-md border border-[#E2DDD5] text-stone-700 hover:text-[#FF6422] flex items-center justify-center shadow-xs transition-transform active:scale-90"
           title="Recenter on studio"
         >
           <Crosshair className="w-4 h-4" />
         </button>
-        <div className="bg-black/80 backdrop-blur-md border border-zinc-800 rounded-xl overflow-hidden shadow-lg flex flex-col">
+        <div className="bg-white/90 backdrop-blur-md border border-[#E2DDD5] rounded-xl overflow-hidden shadow-xs flex flex-col">
           <button
             type="button"
             onClick={() => handleZoom(1)}
-            className="w-8 h-8 flex items-center justify-center text-zinc-300 hover:text-white hover:bg-zinc-800 transition-colors"
+            className="w-8 h-8 flex items-center justify-center text-stone-700 hover:text-stone-900 hover:bg-stone-50 transition-colors"
             title="Zoom in"
           >
             <Plus className="w-3.5 h-3.5" />
           </button>
-          <div className="w-full h-px bg-zinc-800" />
+          <div className="w-full h-px bg-[#E2DDD5]" />
           <button
             type="button"
             onClick={() => handleZoom(-1)}
-            className="w-8 h-8 flex items-center justify-center text-zinc-300 hover:text-white hover:bg-zinc-800 transition-colors"
+            className="w-8 h-8 flex items-center justify-center text-stone-700 hover:text-stone-900 hover:bg-stone-50 transition-colors"
             title="Zoom out"
           >
             <Minus className="w-3.5 h-3.5" />
@@ -301,17 +301,17 @@ export const SalonMapboxView: React.FC<SalonMapboxViewProps> = ({
         <button
           type="button"
           onClick={handleCopyAddress}
-          className="px-3 py-1.5 rounded-xl bg-black/85 backdrop-blur-md border border-zinc-800 text-left text-[11px] text-zinc-300 hover:text-white flex items-center gap-2 shadow-lg transition-colors group"
+          className="px-3 py-1.5 rounded-xl bg-white/90 backdrop-blur-md border border-[#E2DDD5] text-left text-[11px] text-stone-700 hover:text-stone-900 flex items-center gap-2 shadow-xs transition-colors group"
           title="Copy full studio address"
         >
-          <MapPin className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+          <MapPin className="w-3.5 h-3.5 text-[#FF6422] shrink-0" />
           <span className="truncate max-w-[180px] sm:max-w-xs">{salon.address}</span>
           {copiedAddress ? (
-            <span className="text-emerald-400 font-bold flex items-center gap-0.5 text-[10px] shrink-0">
+            <span className="text-emerald-700 font-bold flex items-center gap-0.5 text-[10px] shrink-0">
               <Check className="w-3 h-3" /> Copied
             </span>
           ) : (
-            <Copy className="w-3 h-3 text-zinc-500 group-hover:text-zinc-300 shrink-0" />
+            <Copy className="w-3 h-3 text-stone-400 group-hover:text-stone-600 shrink-0" />
           )}
         </button>
       </div>

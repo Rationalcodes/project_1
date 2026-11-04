@@ -56,25 +56,25 @@ export const LocationPermissionBanner: React.FC = () => {
 
   return (
     <div className="relative mb-4 animate-in slide-in-from-top-4 duration-300 w-full max-w-full overflow-hidden">
-      <div className="bg-gradient-to-r from-amber-950/40 via-[#181822] to-[#121218] border border-amber-500/30 rounded-3xl p-3.5 sm:p-4 shadow-xl backdrop-blur-md">
+      <div className="bg-gradient-to-r from-orange-50 via-amber-50/50 to-white border border-orange-200 rounded-3xl p-3.5 sm:p-4 shadow-[0_4px_16px_rgba(40,20,10,0.04)]">
         <div className="flex items-start justify-between gap-2.5 sm:gap-3">
           <div className="flex items-start gap-2.5 sm:gap-3 min-w-0 flex-1">
-            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-500/40 flex items-center justify-center shrink-0 shadow-lg shadow-amber-500/10">
-              <Navigation className="w-4 h-4 sm:w-5 sm:h-5 text-amber-400" />
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-orange-100 text-[#FF6422] border border-orange-200 flex items-center justify-center shrink-0 shadow-sm">
+              <Navigation className="w-4 h-4 sm:w-5 sm:h-5 text-[#FF6422]" />
             </div>
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-1.5">
-                <span className="text-[9px] sm:text-[10px] uppercase font-bold tracking-wider px-2 py-0.2 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                <span className="text-[9px] sm:text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-orange-100 text-[#FF6422] border border-orange-200">
                   Precision Discovery
                 </span>
-                <span className="text-[11px] sm:text-xs text-zinc-400 truncate max-w-[160px] sm:max-w-[240px]">
+                <span className="text-[11px] sm:text-xs text-stone-500 truncate max-w-[160px] sm:max-w-[240px]">
                   {userLocation ? `Current: ${userLocation.name}` : 'Location: Not set'}
                 </span>
               </div>
-              <h4 className="text-xs sm:text-sm font-bold text-white mt-1">
+              <h4 className="text-xs sm:text-sm font-bold text-stone-900 mt-1">
                 Share your location for live salon queues near you?
               </h4>
-              <p className="text-[11px] sm:text-xs text-zinc-400 mt-0.5 leading-relaxed">
+              <p className="text-[11px] sm:text-xs text-stone-600 mt-0.5 leading-relaxed">
                 Kumbhkaran Salons measures live walk-in queues and walking distances using PostGIS spatial search.
               </p>
 
@@ -85,19 +85,19 @@ export const LocationPermissionBanner: React.FC = () => {
                     value={manualQuery}
                     onChange={(e) => setManualQuery(e.target.value)}
                     placeholder="Search city, locality or PIN code..."
-                    className="flex-1 min-w-0 px-3 py-1.5 bg-black/70 border border-zinc-700 rounded-xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-amber-400"
+                    className="flex-1 min-w-0 px-3 py-1.5 bg-white border border-[#E2DDD5] rounded-xl text-xs text-stone-900 placeholder-stone-400 focus:outline-none focus:border-[#FF6422]"
                     autoFocus
                   />
                   <button
                     type="submit"
-                    className="px-3 py-1.5 rounded-xl bg-amber-500 text-black font-bold text-xs hover:bg-amber-400 shrink-0"
+                    className="px-3 py-1.5 rounded-xl bg-[#FF6422] text-white font-bold text-xs hover:bg-orange-600 shrink-0 shadow-xs"
                   >
                     Set
                   </button>
                   <button
                     type="button"
                     onClick={() => setShowManualInput(false)}
-                    className="p-1.5 text-zinc-400 hover:text-white shrink-0"
+                    className="p-1.5 text-stone-400 hover:text-stone-700 shrink-0"
                   >
                     Cancel
                   </button>
@@ -106,14 +106,14 @@ export const LocationPermissionBanner: React.FC = () => {
                 <div className="mt-3 flex flex-wrap items-center gap-2">
                   <button
                     onClick={handleAllowLocation}
-                    className="w-full sm:w-auto px-3.5 py-1.5 rounded-xl bg-amber-500 text-black font-bold text-xs hover:bg-amber-400 flex items-center justify-center gap-1.5 shadow-md shadow-amber-500/20 transition-all"
+                    className="w-full sm:w-auto px-3.5 py-1.5 rounded-xl bg-[#FF6422] text-white font-bold text-xs hover:bg-orange-600 flex items-center justify-center gap-1.5 shadow-md shadow-orange-500/20 transition-all"
                   >
-                    <Navigation className="w-3.5 h-3.5 text-black" />
+                    <Navigation className="w-3.5 h-3.5 text-white" />
                     <span>Use My Current Location</span>
                   </button>
                   <button
                     onClick={() => setShowManualInput(true)}
-                    className="w-full sm:w-auto px-3 py-1.5 rounded-xl bg-zinc-900 border border-zinc-700 text-zinc-300 hover:text-white text-xs font-semibold transition-colors text-center"
+                    className="w-full sm:w-auto px-3 py-1.5 rounded-xl bg-white border border-[#E2DDD5] text-stone-700 hover:border-[#FF6422] text-xs font-semibold transition-colors text-center shadow-xs"
                   >
                     Search City, Locality or PIN
                   </button>
@@ -124,7 +124,7 @@ export const LocationPermissionBanner: React.FC = () => {
 
           <button
             onClick={handleDismiss}
-            className="p-1 text-zinc-400 hover:text-white rounded-lg transition-colors shrink-0"
+            className="p-1 text-stone-400 hover:text-stone-700 rounded-lg transition-colors shrink-0"
             title="Dismiss"
           >
             <X className="w-4 h-4" />
