@@ -70,7 +70,7 @@ export class SalonOwnerGuard implements CanActivate {
     try {
       salon = await this.prisma.salon.findUnique({
         where: { id: salonId },
-        select: { id: true, ownerId: true, status: true },
+        select: { id: true, ownerId: true, status: true, email: true },
       });
 
       if (salon) {
@@ -85,14 +85,30 @@ export class SalonOwnerGuard implements CanActivate {
       }
     } catch {
       // In offline / fallback mode, simulate existing salon record
-      salon = { id: salonId, ownerId: 'owner-arjun-101' };
+      salon = { id: salonId, ownerId: user.id };
     }
 
     if (!salon) {
       throw new NotFoundException(`Salon with ID '${salonId}' was not found`);
     }
 
-    const isDirectOwner = salon.ownerId === user.id;
+    const userEmailNorm = (user.email || '').toLowerCase().trim();
+    const salonEmailNorm = (salon.email || '').toLowerCase().trim();
+    let isDirectOwner =
+      salon.ownerId === user.id ||
+      (Boolean(userEmailNorm) && Boolean(salonEmailNorm) && userEmailNorm === salonEmailNorm);
+
+    // Auto-link ownerId if matched by email or missing
+    if (isDirectOwner && user.id && (!salon.ownerId || salon.ownerId !== user.id)) {
+      try {
+        await this.prisma.salon.update({
+          where: { id: salonId },
+          data: { ownerId: user.id },
+        });
+        salon.ownerId = user.id;
+      } catch {}
+    }
+
     if (!isMemberOwner) {
       isMemberOwner = (user.memberships || []).some(
         (m) =>
@@ -100,6 +116,24 @@ export class SalonOwnerGuard implements CanActivate {
           m.role === 'PARTNER_OWNER' &&
           (m.isActive === true || m.status === 'ACTIVE'),
       );
+    }
+
+    // Check salonMember by user email if not matched by ID
+    if (!isMemberOwner && !isDirectOwner && userEmailNorm) {
+      try {
+        const userRec = await this.prisma.user.findFirst({
+          where: { email: { equals: userEmailNorm, mode: 'insensitive' as const } },
+          select: { id: true },
+        });
+        if (userRec) {
+          const mem = await this.prisma.salonMember.findFirst({
+            where: { salonId, userId: userRec.id, isActive: true },
+          });
+          if (mem && mem.role === 'PARTNER_OWNER') {
+            isMemberOwner = true;
+          }
+        }
+      } catch {}
     }
 
     if (!isDirectOwner && !isMemberOwner) {

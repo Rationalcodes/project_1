@@ -379,54 +379,64 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   // Synchronize discovery with NestJS PostGIS Backend & dynamic Haversine distance engine
   useEffect(() => {
     let isMounted = true;
-    setIsLoadingSalons(true);
 
     const queryLat = userLocation?.lat;
     const queryLng = userLocation?.lng;
     const queryRadius = userLocation ? 25 : undefined;
 
-    defaultApiClient.getNearbySalons(queryLat, queryLng, queryRadius, lazyFilter)
-      .then(async (res) => {
-        if (!isMounted) return;
-        if (res && res.salons && res.salons.length > 0) {
-          setSalons(mapApiSalons(res.salons, userLocation));
-        } else {
-          // If no salons found in local 25km radius (e.g. Bilaspur), seamlessly fallback to all verified studios across India
-          try {
-            const allRes = await defaultApiClient.getNearbySalons(undefined, undefined, undefined, lazyFilter);
-            if (isMounted) {
-              if (allRes && allRes.salons && allRes.salons.length > 0) {
-                setSalons(mapApiSalons(allRes.salons, userLocation));
-              } else {
-                setSalons(INITIAL_SALONS);
-              }
-            }
-          } catch {
-            if (isMounted) setSalons(INITIAL_SALONS);
+    const fetchSalons = async (isInitial = false) => {
+      if (isInitial && isMounted) setIsLoadingSalons(true);
+      try {
+        let res = await defaultApiClient.getNearbySalons(queryLat, queryLng, queryRadius, lazyFilter);
+        if (!res || !res.salons || res.salons.length === 0) {
+          // If no salons found in local 25km radius, seamlessly fallback to all verified studios across India
+          res = await defaultApiClient.getNearbySalons(undefined, undefined, undefined, lazyFilter);
+        }
+
+        if (isMounted) {
+          if (res && res.salons && res.salons.length > 0) {
+            const mapped = mapApiSalons(res.salons, userLocation);
+            setSalons(mapped);
+
+            // Also keep selectedSalonForDetail live if customer is viewing a modal
+            setSelectedSalonForDetail((prev) => {
+              if (!prev) return prev;
+              const match = mapped.find((m) => m.id === prev.id);
+              if (!match) return prev;
+              return {
+                ...prev,
+                currentQueue: match.currentQueue,
+                lastQueueUpdate: match.lastQueueUpdate,
+                isOpen: match.isOpen,
+              };
+            });
+          } else if (isInitial) {
+            setSalons(INITIAL_SALONS);
           }
         }
-        if (isMounted) setIsLoadingSalons(false);
-      })
-      .catch(async (err) => {
+      } catch (err) {
         console.warn('Discovery API call failed:', err);
-        if (!isMounted) return;
-        try {
-          const allRes = await defaultApiClient.getNearbySalons(undefined, undefined, undefined, lazyFilter);
-          if (isMounted) {
-            if (allRes && allRes.salons && allRes.salons.length > 0) {
-              setSalons(mapApiSalons(allRes.salons, userLocation));
-            } else {
-              setSalons(INITIAL_SALONS);
-            }
-          }
-        } catch {
-          if (isMounted) setSalons(INITIAL_SALONS);
+        if (isInitial && isMounted) {
+          setSalons(INITIAL_SALONS);
         }
-        if (isMounted) setIsLoadingSalons(false);
-      });
+      } finally {
+        if (isInitial && isMounted) {
+          setIsLoadingSalons(false);
+        }
+      }
+    };
+
+    // Initial fetch
+    fetchSalons(true);
+
+    // Live telemetry interval: Poll every 8 seconds for real-time queue updates from partners
+    const intervalId = setInterval(() => {
+      fetchSalons(false);
+    }, 8000);
 
     return () => {
       isMounted = false;
+      clearInterval(intervalId);
     };
   }, [userLocation, lazyFilter]);
 
