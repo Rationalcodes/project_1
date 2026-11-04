@@ -86,7 +86,7 @@ export const Header: React.FC = () => {
             setSelectedSalonForDetail(null);
             setCustomerTab('home');
           }}
-          className="flex items-center gap-2 sm:gap-3 cursor-pointer select-none shrink-0 min-w-0 group"
+          className="flex items-center cursor-pointer select-none shrink-0 min-w-0 group"
         >
           <img
             src="/logo-white.png"
@@ -96,9 +96,6 @@ export const Header: React.FC = () => {
               (e.currentTarget as HTMLImageElement).src = '/logo.png';
             }}
           />
-          <span className="hidden sm:inline text-[9px] sm:text-[10px] uppercase tracking-widest px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-400 font-bold border border-amber-500/30 shrink-0 self-center">
-            Customer
-          </span>
         </div>
 
         {/* Desktop Responsive Navigation (Visible on tablet & desktop >= md) */}

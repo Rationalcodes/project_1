@@ -22,7 +22,7 @@ export const Header: React.FC = () => {
     <header className="sticky top-0 z-40 bg-[#0c0c10]/95 backdrop-blur-md border-b border-zinc-800/80 px-3 sm:px-4 py-2.5 sm:py-3 transition-all w-full max-w-full overflow-hidden">
       <div className="max-w-7xl mx-auto flex items-center justify-between gap-2 sm:gap-3 text-xs w-full">
         {/* Official Brand Logo */}
-        <div className="flex items-center gap-2 sm:gap-3 min-w-0 shrink group">
+        <div className="flex items-center min-w-0 shrink group">
           <img
             src="/logo-white.png"
             alt="Kumbhkaran Salons"
@@ -31,9 +31,6 @@ export const Header: React.FC = () => {
               (e.currentTarget as HTMLImageElement).src = '/logo.png';
             }}
           />
-          <span className="hidden sm:inline text-[9px] sm:text-[10px] uppercase tracking-widest px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-400 font-bold border border-amber-500/30 shrink-0 self-center">
-            Customer
-          </span>
         </div>
 
         <div className="flex items-center gap-2 shrink min-w-0">
