@@ -141,6 +141,34 @@ export class PublicSalonResponseDto {
   @ApiProperty({ type: [PublicReviewDto] })
   reviews: PublicReviewDto[];
 
+  @ApiPropertyOptional()
+  openingHours?: {
+    open: string;
+    close: string;
+    formatted: string;
+  };
+
+  @ApiPropertyOptional()
+  coordinates?: {
+    lat: number;
+    lng: number;
+  };
+
+  @ApiPropertyOptional()
+  staff?: any[];
+
+  @ApiPropertyOptional()
+  ratingBreakdown?: any;
+
+  @ApiPropertyOptional()
+  phone?: string;
+
+  @ApiPropertyOptional()
+  email?: string;
+
+  @ApiPropertyOptional()
+  ownerName?: string;
+
   // Internal business fields explicitly excluded from public serialization
   @Exclude()
   ownerId?: string;

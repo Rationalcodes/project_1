@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSalon, getEstimatedWaitMinutes, getQueueDisplay, getQueueFreshness } from '../../context/PartnerContext';
 import {
   LayoutDashboard,
@@ -32,7 +32,8 @@ import {
   Video,
   Upload,
   Play,
-  Eye
+  Eye,
+  Store,
 } from 'lucide-react';
 import { OwnerTab, Service, Staff } from '@kumbhakaran/shared-types';
 import { openGoogleMapsLocation } from '@kumbhakaran/ui';
@@ -76,18 +77,54 @@ export const OwnerApp: React.FC = () => {
   // Local state for review replies
   const [replyTextMap, setReplyTextMap] = useState<{ [key: string]: string }>({});
 
-  // Local state for salon settings form
-  if (!activeSalon) return null;
+  // Local state for salon settings form (declared unconditionally)
+  const [salonForm, setSalonForm] = useState(() => ({
+    name: activeSalon?.name || '',
+    tagline: activeSalon?.tagline || '',
+    phone: activeSalon?.phone || '',
+    address: activeSalon?.address || '',
+    openingHours: activeSalon?.openingHours?.formatted || (activeSalon as any)?.openingHoursFormatted || '09:00 AM – 09:30 PM (All Days)',
+    isOpen: activeSalon?.isOpen ?? true,
+    googlePlaceId: (activeSalon as any)?.googlePlaceId || ''
+  }));
 
-  const [salonForm, setSalonForm] = useState({
-    name: activeSalon.name,
-    tagline: activeSalon.tagline,
-    phone: activeSalon.phone,
-    address: activeSalon.address,
-    openingHours: activeSalon.openingHours.formatted,
-    isOpen: activeSalon.isOpen,
-    googlePlaceId: (activeSalon as any).googlePlaceId || ''
-  });
+  // Media & Showcase Studio state (declared unconditionally)
+  const [mediaSubTab, setMediaSubTab] = useState<'poster-video' | 'location' | 'work'>('poster-video');
+  const [posterUrlInput, setPosterUrlInput] = useState(activeSalon?.posterImage || activeSalon?.coverImage || '');
+  const [loopVideoUrlInput, setLoopVideoUrlInput] = useState(activeSalon?.loopVideoUrl || '');
+  const [newLocationUrl, setNewLocationUrl] = useState('');
+  const [newLocationTitle, setNewLocationTitle] = useState('');
+  const [newWorkUrl, setNewWorkUrl] = useState('');
+  const [newWorkTitle, setNewWorkTitle] = useState('');
+  const [newWorkTag, setNewWorkTag] = useState<'Fade' | 'Beard' | 'Classic' | 'Color' | 'Spa'>('Fade');
+
+  // Sync form when activeSalon changes
+  useEffect(() => {
+    if (activeSalon) {
+      setSalonForm({
+        name: activeSalon.name || '',
+        tagline: activeSalon.tagline || '',
+        phone: activeSalon.phone || '',
+        address: activeSalon.address || '',
+        openingHours: activeSalon.openingHours?.formatted || (activeSalon as any)?.openingHoursFormatted || '09:00 AM – 09:30 PM (All Days)',
+        isOpen: activeSalon.isOpen ?? true,
+        googlePlaceId: (activeSalon as any)?.googlePlaceId || ''
+      });
+      setPosterUrlInput(activeSalon.posterImage || activeSalon.coverImage || '');
+      setLoopVideoUrlInput(activeSalon.loopVideoUrl || '');
+    }
+  }, [activeSalon?.id]);
+
+  // Safe fallback if activeSalon is not available
+  if (!activeSalon) {
+    return (
+      <div className="p-12 text-center text-zinc-400 space-y-3">
+        <Store className="w-10 h-10 text-amber-400 mx-auto animate-pulse" />
+        <p className="text-sm font-semibold text-white">Loading your salon workspace...</p>
+        <p className="text-xs text-zinc-500">Connecting to live walk-in queue telemetry</p>
+      </div>
+    );
+  }
 
   const queueInfo = getQueueDisplay(activeSalon.currentQueue, activeSalon.isOpen);
   const freshness = getQueueFreshness(activeSalon.lastQueueUpdate);
@@ -104,16 +141,6 @@ export const OwnerApp: React.FC = () => {
     { id: 'analytics', label: 'Traffic Analytics', icon: BarChart3 },
     { id: 'settings', label: 'Salon Settings', icon: Settings }
   ];
-
-  // Media & Showcase Studio state
-  const [mediaSubTab, setMediaSubTab] = useState<'poster-video' | 'location' | 'work'>('poster-video');
-  const [posterUrlInput, setPosterUrlInput] = useState(activeSalon.posterImage || activeSalon.coverImage || '');
-  const [loopVideoUrlInput, setLoopVideoUrlInput] = useState(activeSalon.loopVideoUrl || '');
-  const [newLocationUrl, setNewLocationUrl] = useState('');
-  const [newLocationTitle, setNewLocationTitle] = useState('');
-  const [newWorkUrl, setNewWorkUrl] = useState('');
-  const [newWorkTitle, setNewWorkTitle] = useState('');
-  const [newWorkTag, setNewWorkTag] = useState<'Fade' | 'Beard' | 'Classic' | 'Color' | 'Spa'>('Fade');
 
   const locationPhotosList = (activeSalon.locationImages && activeSalon.locationImages.length > 0)
     ? activeSalon.locationImages
@@ -147,7 +174,7 @@ export const OwnerApp: React.FC = () => {
     const updated = [newLocationUrl.trim(), ...locationPhotosList];
     updateSalonInfo(activeSalon.id, {
       locationImages: updated,
-      images: [newLocationUrl.trim(), ...activeSalon.images]
+      images: [newLocationUrl.trim(), ...(activeSalon.images || [])]
     });
     setNewLocationUrl('');
     setNewLocationTitle('');
@@ -239,6 +266,7 @@ export const OwnerApp: React.FC = () => {
 
   const handleSaveSettings = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!activeSalon) return;
     updateSalonInfo(activeSalon.id, {
       name: salonForm.name,
       tagline: salonForm.tagline,
@@ -247,7 +275,8 @@ export const OwnerApp: React.FC = () => {
       isOpen: salonForm.isOpen,
       googlePlaceId: salonForm.googlePlaceId,
       openingHours: {
-        ...activeSalon.openingHours,
+        open: activeSalon.openingHours?.open || '09:00 AM',
+        close: activeSalon.openingHours?.close || '09:30 PM',
         formatted: salonForm.openingHours
       }
     });
@@ -687,7 +716,7 @@ export const OwnerApp: React.FC = () => {
 
           {/* Service items */}
           <div className="space-y-2.5">
-            {activeSalon.services.map((svc) => (
+            {(activeSalon.services || []).map((svc) => (
               <div
                 key={svc.id}
                 className="bg-[#14141c] border border-zinc-800 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
@@ -752,7 +781,7 @@ export const OwnerApp: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-sm font-bold text-white">
-                Barber & Stylist Chairs ({activeSalon.staff.length})
+                Barber & Stylist Chairs ({(activeSalon.staff || []).length})
               </h2>
               <p className="text-xs text-zinc-400">
                 Number of active chairs directly adjusts estimated wait times on the customer app
@@ -828,10 +857,14 @@ export const OwnerApp: React.FC = () => {
           )}
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-            {activeSalon.staff.map((member) => (
+            {(activeSalon.staff || []).map((member) => (
               <div key={member.id} className="bg-[#14141c] border border-zinc-800 rounded-2xl p-4 flex items-center justify-between gap-3 text-xs">
                 <div className="flex items-center gap-3">
-                  <img src={member.photo} alt={member.name} className="w-12 h-12 rounded-xl object-cover" />
+                  <img
+                    src={member.photo || (member as any).avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80'}
+                    alt={member.name}
+                    className="w-12 h-12 rounded-xl object-cover"
+                  />
                   <div>
                     <h4 className="font-bold text-white text-sm">{member.name}</h4>
                     <p className="text-zinc-400">{member.role} • {member.experience}</p>
@@ -884,14 +917,18 @@ export const OwnerApp: React.FC = () => {
           </div>
 
           <div className="space-y-3">
-            {activeSalon.reviews.map((rev) => (
+            {(activeSalon.reviews || []).map((rev) => (
               <div key={rev.id} className="bg-[#14141c] border border-zinc-800 rounded-2xl p-4 text-xs space-y-2">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <img src={rev.customerAvatar} alt={rev.customerName} className="w-7 h-7 rounded-full object-cover" />
+                    <img
+                      src={rev.customerAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80'}
+                      alt={rev.customerName}
+                      className="w-7 h-7 rounded-full object-cover"
+                    />
                     <div>
                       <span className="font-bold text-white">{rev.customerName}</span>
-                      <span className="text-[10px] text-zinc-500 ml-2">{rev.date}</span>
+                      <span className="text-[10px] text-zinc-500 ml-2">{(rev as any).date || (rev as any).createdAt || 'Recently'}</span>
                     </div>
                   </div>
                   <div className="flex items-center gap-0.5 text-amber-400 font-bold">

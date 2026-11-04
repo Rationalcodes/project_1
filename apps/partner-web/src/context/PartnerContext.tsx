@@ -48,6 +48,82 @@ interface PartnerContextType {
   triggerNotification: (msg: string) => void;
 }
 
+export function normalizeSalon(raw: any): Salon {
+  if (!raw) return raw;
+  const openingHours = raw.openingHours && typeof raw.openingHours === 'object'
+    ? {
+        open: raw.openingHours.open || '09:00 AM',
+        close: raw.openingHours.close || '09:30 PM',
+        formatted: raw.openingHours.formatted || raw.openingHoursFormatted || '09:00 AM – 09:30 PM (All Days)',
+      }
+    : {
+        open: '09:00 AM',
+        close: '09:30 PM',
+        formatted: raw.openingHoursFormatted || '09:00 AM – 09:30 PM (All Days)',
+      };
+
+  const staff = Array.isArray(raw.staff) && raw.staff.length > 0
+    ? raw.staff.map((st: any) => ({
+        id: st.id,
+        name: st.name,
+        role: st.role || 'Senior Stylist',
+        experience: st.experience || '4 Years',
+        specialization: st.specialization || (Array.isArray(st.specialties) ? st.specialties.join(', ') : 'Hair styling & Grooming'),
+        rating: Number(st.rating || 5.0),
+        reviewsCount: Number(st.reviewsCount || 15),
+        avatarUrl: st.avatarUrl || st.photo || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
+        photo: st.photo || st.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
+        status: st.status || 'active',
+        isAvailable: st.status === 'active' || st.isAvailable !== false,
+      }))
+    : [
+        {
+          id: `staff-${raw.id}-1`,
+          name: raw.ownerName || 'Lead Stylist',
+          role: 'Master Barber',
+          experience: '5+ Years',
+          specialization: 'Classic Fades, Beard Grooming',
+          rating: 5.0,
+          reviewsCount: 18,
+          avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
+          photo: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
+          status: 'active',
+          isAvailable: true,
+        },
+        {
+          id: `staff-${raw.id}-2`,
+          name: 'Senior Stylist',
+          role: 'Hair & Beard Specialist',
+          experience: '3 Years',
+          specialization: 'Modern Cuts & Hair Spa',
+          rating: 4.9,
+          reviewsCount: 14,
+          avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80',
+          photo: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80',
+          status: 'active',
+          isAvailable: true,
+        },
+      ];
+
+  return {
+    ...raw,
+    openingHours,
+    coordinates: raw.coordinates || {
+      lat: Number(raw.latitude || 28.6139),
+      lng: Number(raw.longitude || 77.2090),
+    },
+    staff,
+    services: Array.isArray(raw.services) ? raw.services : [],
+    reviews: Array.isArray(raw.reviews) ? raw.reviews : [],
+    images: Array.isArray(raw.images) && raw.images.length > 0 ? raw.images : [
+      raw.coverImage || 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=800&q=80'
+    ],
+    locationImages: Array.isArray(raw.locationImages) ? raw.locationImages : [],
+    workImages: Array.isArray(raw.workImages) ? raw.workImages : [],
+    mediaGallery: Array.isArray(raw.mediaGallery) ? raw.mediaGallery : [],
+  };
+}
+
 const PartnerContext = createContext<PartnerContextType | undefined>(undefined);
 
 export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -56,7 +132,7 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
       const cached = safeStorage.getItem('kumbhakaran_partner_active_salon');
       if (cached) {
         const parsed = JSON.parse(cached);
-        if (parsed && parsed.id) return [parsed];
+        if (parsed && parsed.id) return [normalizeSalon(parsed)];
       }
     } catch {}
     return [];
@@ -107,11 +183,12 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
       // 1. Fetch via getMySalon (backend checks ownerId, memberships, and email)
       const mySalon = await defaultApiClient.getMySalon(user.email);
       if (mySalon && mySalon.id) {
-        setSalons([mySalon]);
-        setActiveSalonId(mySalon.id);
+        const normalized = normalizeSalon(mySalon);
+        setSalons([normalized]);
+        setActiveSalonId(normalized.id);
         setPartnerView('live-queue');
-        safeStorage.setItem('kumbhakaran_partner_active_salon', JSON.stringify(mySalon));
-        return mySalon;
+        safeStorage.setItem('kumbhakaran_partner_active_salon', JSON.stringify(normalized));
+        return normalized;
       }
 
       // 2. Fallback: If memberships contain a salonId, fetch public salon profile
@@ -120,11 +197,12 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
       if (ownerMem && ownerMem.salonId) {
         const memSalon = await defaultApiClient.getPublicSalonById(ownerMem.salonId);
         if (memSalon && memSalon.id) {
-          setSalons([memSalon]);
-          setActiveSalonId(memSalon.id);
+          const normalized = normalizeSalon(memSalon);
+          setSalons([normalized]);
+          setActiveSalonId(normalized.id);
           setPartnerView('live-queue');
-          safeStorage.setItem('kumbhakaran_partner_active_salon', JSON.stringify(memSalon));
-          return memSalon;
+          safeStorage.setItem('kumbhakaran_partner_active_salon', JSON.stringify(normalized));
+          return normalized;
         }
       }
     } catch (e) {
@@ -137,10 +215,11 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
       if (cached) {
         const parsed = JSON.parse(cached);
         if (parsed && parsed.id) {
-          setSalons([parsed]);
-          setActiveSalonId(parsed.id);
+          const normalized = normalizeSalon(parsed);
+          setSalons([normalized]);
+          setActiveSalonId(normalized.id);
           setPartnerView('live-queue');
-          return parsed;
+          return normalized;
         }
       }
     } catch {}
@@ -334,7 +413,7 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setSalons((prev) =>
       prev.map((s) => {
         if (s.id !== salonId) return s;
-        const updated = { ...s, ...updates };
+        const updated = normalizeSalon({ ...s, ...updates });
         safeStorage.setItem('kumbhakaran_partner_active_salon', JSON.stringify(updated));
         return updated;
       }),
@@ -351,7 +430,9 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setSalons((prev) =>
       prev.map((s) => {
         if (s.id !== salonId) return s;
-        return { ...s, services: [...s.services, newService] };
+        const updated = { ...s, services: [...(s.services || []), newService] };
+        safeStorage.setItem('kumbhakaran_partner_active_salon', JSON.stringify(updated));
+        return updated;
       }),
     );
     triggerNotification(`Added service "${newService.name}" (₹${newService.price})`);
@@ -361,10 +442,12 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setSalons((prev) =>
       prev.map((s) => {
         if (s.id !== salonId) return s;
-        return {
+        const updated = {
           ...s,
-          services: s.services.map((svc) => (svc.id === serviceId ? { ...svc, ...updates } : svc)),
+          services: (s.services || []).map((svc) => (svc.id === serviceId ? { ...svc, ...updates } : svc)),
         };
+        safeStorage.setItem('kumbhakaran_partner_active_salon', JSON.stringify(updated));
+        return updated;
       }),
     );
     triggerNotification('Service updated successfully');
@@ -374,10 +457,12 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setSalons((prev) =>
       prev.map((s) => {
         if (s.id !== salonId) return s;
-        return {
+        const updated = {
           ...s,
-          services: s.services.filter((svc) => svc.id !== serviceId),
+          services: (s.services || []).filter((svc) => svc.id !== serviceId),
         };
+        safeStorage.setItem('kumbhakaran_partner_active_salon', JSON.stringify(updated));
+        return updated;
       }),
     );
     triggerNotification('Service removed');
@@ -391,7 +476,9 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setSalons((prev) =>
       prev.map((s) => {
         if (s.id !== salonId) return s;
-        return { ...s, staff: [...s.staff, newMember] };
+        const updated = { ...s, staff: [...(s.staff || []), newMember] };
+        safeStorage.setItem('kumbhakaran_partner_active_salon', JSON.stringify(updated));
+        return updated;
       }),
     );
     triggerNotification(`Stylist ${newMember.name} added to roster`);
@@ -401,10 +488,12 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setSalons((prev) =>
       prev.map((s) => {
         if (s.id !== salonId) return s;
-        return {
+        const updated = {
           ...s,
-          staff: s.staff.map((st) => (st.id === staffId ? { ...st, ...updates } : st)),
+          staff: (s.staff || []).map((st) => (st.id === staffId ? { ...st, ...updates } : st)),
         };
+        safeStorage.setItem('kumbhakaran_partner_active_salon', JSON.stringify(updated));
+        return updated;
       }),
     );
     triggerNotification('Staff details updated');
@@ -414,7 +503,9 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setSalons((prev) =>
       prev.map((s) => {
         if (s.id !== salonId) return s;
-        return { ...s, staff: s.staff.filter((st) => st.id !== staffId) };
+        const updated = { ...s, staff: (s.staff || []).filter((st) => st.id !== staffId) };
+        safeStorage.setItem('kumbhakaran_partner_active_salon', JSON.stringify(updated));
+        return updated;
       }),
     );
     triggerNotification('Staff member removed');
@@ -424,14 +515,16 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setSalons((prev) =>
       prev.map((s) => {
         if (s.id !== salonId) return s;
-        return {
+        const updated = {
           ...s,
-          reviews: s.reviews.map((r) =>
+          reviews: (s.reviews || []).map((r) =>
             r.id === reviewId
               ? { ...r, ownerReply: { comment: replyComment, date: 'Just now' } }
               : r,
           ),
         };
+        safeStorage.setItem('kumbhakaran_partner_active_salon', JSON.stringify(updated));
+        return updated;
       }),
     );
     triggerNotification('Reply sent to customer review');
