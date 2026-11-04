@@ -1,13 +1,14 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   MapPin,
   Navigation,
   Search,
   CheckCircle2,
-  Crosshair,
-  Move,
-  Check,
   ExternalLink,
+  Sparkles,
+  Loader2,
+  Building2,
+  Compass,
 } from 'lucide-react';
 import {
   loadLeafletScript,
@@ -22,7 +23,7 @@ import {
 } from '@kumbhakaran/ui';
 
 export interface LocationPickerResult {
-  address: string;
+  address: string; // The landmark / street address (e.g. "Near Koni Chowk, Opp. Engineering College Gate")
   locality: string;
   city: string;
   state: string;
@@ -30,68 +31,180 @@ export interface LocationPickerResult {
   latitude: number;
   longitude: number;
   placeId?: string;
+  buildingOrShop?: string;
 }
 
 interface SalonLocationPickerProps {
+  value?: Partial<LocationPickerResult>;
   initialResult?: Partial<LocationPickerResult>;
-  onLocationConfirmed: (result: LocationPickerResult) => void;
+  onChange?: (result: LocationPickerResult) => void;
+  onLocationConfirmed?: (result: LocationPickerResult) => void;
 }
 
-type PickerOption = 'search' | 'gps' | 'pin' | 'coords';
+// Quick Landmark Direction Chips popular in Indian shop navigation
+const LANDMARK_PREFIX_CHIPS = [
+  'Near',
+  'Opposite (Opp.)',
+  'Beside',
+  'Behind',
+  'Next to',
+  'Left side of',
+  'At Chowk',
+];
 
 export const SalonLocationPicker: React.FC<SalonLocationPickerProps> = ({
+  value,
   initialResult,
+  onChange,
   onLocationConfirmed,
 }) => {
-  const [activeOption, setActiveOption] = useState<PickerOption>('search');
-  const [address, setAddress] = useState(initialResult?.address || '');
-  const [locality, setLocality] = useState(initialResult?.locality || 'Koramangala');
-  const [city, setCity] = useState(initialResult?.city || 'Bengaluru');
-  const [state, setState] = useState(initialResult?.state || 'Karnataka');
-  const [pincode, setPincode] = useState(initialResult?.pincode || '560034');
-  const [lat, setLat] = useState<number>(initialResult?.latitude || 12.9344);
-  const [lng, setLng] = useState<number>(initialResult?.longitude || 77.6258);
-  const [placeId, setPlaceId] = useState<string | undefined>(initialResult?.placeId);
+  const currentVal = value || initialResult;
 
-  // Manual coordinate input strings for easy typing
-  const [manualLatStr, setManualLatStr] = useState<string>(lat.toString());
-  const [manualLngStr, setManualLngStr] = useState<string>(lng.toString());
-  const [coordsError, setCoordsError] = useState<string | null>(null);
+  const [address, setAddress] = useState(currentVal?.address || '');
+  const [locality, setLocality] = useState(currentVal?.locality || '');
+  const [city, setCity] = useState(currentVal?.city || '');
+  const [state, setState] = useState(currentVal?.state || '');
+  const [pincode, setPincode] = useState(currentVal?.pincode || '');
+  const [buildingOrShop, setBuildingOrShop] = useState(currentVal?.buildingOrShop || '');
+  const [lat, setLat] = useState<number>(currentVal?.latitude || 22.1388);
+  const [lng, setLng] = useState<number>(currentVal?.longitude || 82.1453);
+  const [placeId, setPlaceId] = useState<string | undefined>(currentVal?.placeId);
 
-  // Search input & presets
-  const [searchQuery, setSearchQuery] = useState('');
+  // Status & Geolocation States
   const [isGpsLoading, setIsGpsLoading] = useState(false);
-  const [isConfirmed, setIsConfirmed] = useState(false);
+  const [isGeocoding, setIsGeocoding] = useState(false);
+  const [detectedPoi, setDetectedPoi] = useState<string | null>(null);
+  const [gpsActive, setGpsActive] = useState(false);
+
+  // Search autocomplete state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const searchTimeoutRef = useRef<any>(null);
+
+  // Map Engine state
   const [mapEngine, setMapEngine] = useState<'mapbox' | 'google' | 'leaflet'>('mapbox');
   const [isMapboxReady, setIsMapboxReady] = useState(false);
   const [isGoogleReady, setIsGoogleReady] = useState(false);
   const [isLeafletReady, setIsLeafletReady] = useState(false);
 
   const mapContainerRef = useRef<HTMLDivElement>(null);
-  
-  // Mapbox GL references
   const mapboxMapRef = useRef<any>(null);
   const mapboxMarkerRef = useRef<any>(null);
-
-  // Google Maps references
   const googleMapRef = useRef<any>(null);
   const googleMarkerRef = useRef<any>(null);
-
-  // Leaflet references
   const leafletMapRef = useRef<any>(null);
   const leafletMarkerRef = useRef<any>(null);
 
-  // Popular Hub Presets for Quick Location in India
-  const hubPresets = [
-    { name: 'Koramangala 4th Block, Bengaluru', locality: 'Koramangala', city: 'Bengaluru', state: 'Karnataka', pincode: '560034', lat: 12.9344, lng: 77.6258 },
-    { name: '100 Feet Road, Indiranagar, Bengaluru', locality: 'Indiranagar', city: 'Bengaluru', state: 'Karnataka', pincode: '560038', lat: 12.9719, lng: 77.6412 },
-    { name: 'Sector 1, HSR Layout, Bengaluru', locality: 'HSR Layout', city: 'Bengaluru', state: 'Karnataka', pincode: '560102', lat: 12.9121, lng: 77.6446 },
-    { name: 'Linking Road, Bandra West, Mumbai', locality: 'Bandra West', city: 'Mumbai', state: 'Maharashtra', pincode: '400050', lat: 19.0596, lng: 72.8295 },
-    { name: 'Connaught Place, Central Delhi', locality: 'Connaught Place', city: 'New Delhi', state: 'Delhi', pincode: '110001', lat: 28.6315, lng: 77.2167 },
-    { name: 'Jubilee Hills, Road No 36, Hyderabad', locality: 'Jubilee Hills', city: 'Hyderabad', state: 'Telangana', pincode: '500033', lat: 17.4319, lng: 78.4073 },
-  ];
+  // Helper to sync back to parent
+  const syncToParent = useCallback(
+    (overrides: Partial<LocationPickerResult> = {}) => {
+      const result: LocationPickerResult = {
+        address: overrides.address !== undefined ? overrides.address : address,
+        locality: overrides.locality !== undefined ? overrides.locality : locality,
+        city: overrides.city !== undefined ? overrides.city : city,
+        state: overrides.state !== undefined ? overrides.state : state,
+        pincode: overrides.pincode !== undefined ? overrides.pincode : pincode,
+        latitude: overrides.latitude !== undefined ? overrides.latitude : lat,
+        longitude: overrides.longitude !== undefined ? overrides.longitude : lng,
+        placeId: overrides.placeId !== undefined ? overrides.placeId : placeId,
+        buildingOrShop: overrides.buildingOrShop !== undefined ? overrides.buildingOrShop : buildingOrShop,
+      };
 
-  // 1. Initialize Map Engines (Mapbox GL prioritized when token configured, else Google Maps or Leaflet)
+      if (onChange) onChange(result);
+      if (onLocationConfirmed) onLocationConfirmed(result);
+    },
+    [address, locality, city, state, pincode, lat, lng, placeId, buildingOrShop, onChange, onLocationConfirmed]
+  );
+
+  // Reverse Geocode from Coordinates to Real Locality, City, State, PIN, and nearby POI/Road
+  const reverseGeocode = useCallback(
+    async (targetLat: number, targetLng: number) => {
+      setIsGeocoding(true);
+      try {
+        // Tier 1: OpenStreetMap Nominatim with full addressdetails
+        const nomRes = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${targetLat}&lon=${targetLng}&addressdetails=1`,
+          { headers: { 'User-Agent': 'KumbhakaranPartnerApp/1.0' } }
+        );
+
+        if (nomRes.ok) {
+          const data = await nomRes.json();
+          const addr = data.address || {};
+
+          const detectedCity = addr.city || addr.town || addr.district || addr.county || '';
+          const detectedState = addr.state || '';
+          const detectedPincode = addr.postcode || '';
+          const detectedLocality =
+            addr.suburb ||
+            addr.neighbourhood ||
+            addr.village ||
+            addr.hamlet ||
+            addr.county ||
+            detectedCity ||
+            '';
+          const road = addr.road || addr.street || '';
+          const poi = addr.amenity || addr.shop || addr.building || addr.college || addr.university || '';
+
+          const candidatePoi = poi || road || '';
+          if (candidatePoi) setDetectedPoi(candidatePoi);
+
+          setLocality(detectedLocality);
+          setCity(detectedCity);
+          setState(detectedState);
+          setPincode(detectedPincode);
+
+          syncToParent({
+            latitude: targetLat,
+            longitude: targetLng,
+            locality: detectedLocality,
+            city: detectedCity,
+            state: detectedState,
+            pincode: detectedPincode,
+          });
+          setIsGeocoding(false);
+          return;
+        }
+      } catch (err) {
+        console.warn('Nominatim reverse geocode fallback to BigDataCloud:', err);
+      }
+
+      // Tier 2: BigDataCloud Fallback
+      try {
+        const bdcRes = await fetch(
+          `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${targetLat}&longitude=${targetLng}&localityLanguage=en`
+        );
+        if (bdcRes.ok) {
+          const bdc = await bdcRes.json();
+          const detectedCity = bdc.city || bdc.locality || '';
+          const detectedLocality = bdc.locality || bdc.city || '';
+          const detectedState = bdc.principalSubdivision || '';
+          const detectedPincode = bdc.postcode || '';
+
+          setLocality(detectedLocality);
+          setCity(detectedCity);
+          setState(detectedState);
+          setPincode(detectedPincode);
+
+          syncToParent({
+            latitude: targetLat,
+            longitude: targetLng,
+            locality: detectedLocality,
+            city: detectedCity,
+            state: detectedState,
+            pincode: detectedPincode,
+          });
+        }
+      } catch (bdcErr) {
+        console.warn('BigDataCloud reverse geocode error:', bdcErr);
+      } finally {
+        setIsGeocoding(false);
+      }
+    },
+    [syncToParent]
+  );
+
+  // Initialize Map Engines (Mapbox GL prioritized when token configured, else Google or Leaflet)
   useEffect(() => {
     let isMounted = true;
 
@@ -130,7 +243,61 @@ export const SalonLocationPicker: React.FC<SalonLocationPickerProps> = ({
     };
   }, []);
 
-  // 2A. Mount Mapbox GL Map when active
+  // Update Map Position Helper
+  const updateMapPosition = useCallback(
+    (newLat: number, newLng: number, triggerReverseGeocode = true) => {
+      setLat(newLat);
+      setLng(newLng);
+
+      if (mapEngine === 'mapbox' && mapboxMapRef.current && mapboxMarkerRef.current) {
+        mapboxMapRef.current.flyTo({ center: [newLng, newLat], zoom: 16 });
+        mapboxMarkerRef.current.setLngLat([newLng, newLat]);
+      } else if (mapEngine === 'google' && googleMapRef.current && googleMarkerRef.current) {
+        googleMapRef.current.panTo({ lat: newLat, lng: newLng });
+        googleMarkerRef.current.setPosition({ lat: newLat, lng: newLng });
+      } else if (mapEngine === 'leaflet' && leafletMapRef.current && leafletMarkerRef.current) {
+        leafletMapRef.current.setView([newLat, newLng], 16);
+        leafletMarkerRef.current.setLatLng([newLat, newLng]);
+      }
+
+      if (triggerReverseGeocode) {
+        reverseGeocode(newLat, newLng);
+      }
+    },
+    [mapEngine, reverseGeocode]
+  );
+
+  // 1-Click Detect Live GPS Location
+  const handleUseCurrentLocation = useCallback(() => {
+    if (!navigator.geolocation) {
+      alert('Geolocation is not supported by your browser.');
+      return;
+    }
+    setIsGpsLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setIsGpsLoading(false);
+        setGpsActive(true);
+        const userLat = Number(pos.coords.latitude.toFixed(6));
+        const userLng = Number(pos.coords.longitude.toFixed(6));
+        updateMapPosition(userLat, userLng, true);
+      },
+      (err) => {
+        setIsGpsLoading(false);
+        alert(`Could not retrieve your location: ${err.message}. You can search your area or click on the map.`);
+      },
+      { enableHighAccuracy: true, timeout: 12000 }
+    );
+  }, [updateMapPosition]);
+
+  // Auto-fetch GPS on initial mount if locality is empty
+  useEffect(() => {
+    if (!currentVal?.locality && !locality) {
+      handleUseCurrentLocation();
+    }
+  }, []); // Run once on mount
+
+  // Mount Mapbox GL Map
   useEffect(() => {
     if (mapEngine !== 'mapbox' || !isMapboxReady || !mapContainerRef.current) return;
     const mapboxgl = (window as any).mapboxgl;
@@ -145,7 +312,7 @@ export const SalonLocationPicker: React.FC<SalonLocationPickerProps> = ({
           style: MAPBOX_DARK_STYLE,
           center: [lng, lat],
           zoom: 16,
-          pitch: 25,
+          pitch: 20,
           attributionControl: false,
         });
 
@@ -161,11 +328,7 @@ export const SalonLocationPicker: React.FC<SalonLocationPickerProps> = ({
           if (pos) {
             const newLat = Number(pos.lat.toFixed(6));
             const newLng = Number(pos.lng.toFixed(6));
-            setLat(newLat);
-            setLng(newLng);
-            setManualLatStr(newLat.toString());
-            setManualLngStr(newLng.toString());
-            setIsConfirmed(false);
+            updateMapPosition(newLat, newLng, true);
           }
         });
 
@@ -174,11 +337,7 @@ export const SalonLocationPicker: React.FC<SalonLocationPickerProps> = ({
             const newLat = Number(e.lngLat.lat.toFixed(6));
             const newLng = Number(e.lngLat.lng.toFixed(6));
             marker.setLngLat(e.lngLat);
-            setLat(newLat);
-            setLng(newLng);
-            setManualLatStr(newLat.toString());
-            setManualLngStr(newLng.toString());
-            setIsConfirmed(false);
+            updateMapPosition(newLat, newLng, true);
           }
         });
 
@@ -202,9 +361,9 @@ export const SalonLocationPicker: React.FC<SalonLocationPickerProps> = ({
         mapboxMarkerRef.current = null;
       }
     };
-  }, [mapEngine, isMapboxReady]);
+  }, [mapEngine, isMapboxReady, updateMapPosition]);
 
-  // 2A. Mount Google Maps when available
+  // Mount Google Maps
   useEffect(() => {
     if (mapEngine !== 'google' || !isGoogleReady || !mapContainerRef.current) return;
     const gmaps = (window as any).google?.maps;
@@ -241,11 +400,7 @@ export const SalonLocationPicker: React.FC<SalonLocationPickerProps> = ({
         if (pos) {
           const newLat = Number(pos.lat().toFixed(6));
           const newLng = Number(pos.lng().toFixed(6));
-          setLat(newLat);
-          setLng(newLng);
-          setManualLatStr(newLat.toString());
-          setManualLngStr(newLng.toString());
-          setIsConfirmed(false);
+          updateMapPosition(newLat, newLng, true);
         }
       });
 
@@ -254,11 +409,7 @@ export const SalonLocationPicker: React.FC<SalonLocationPickerProps> = ({
           const newLat = Number(e.latLng.lat().toFixed(6));
           const newLng = Number(e.latLng.lng().toFixed(6));
           marker.setPosition(e.latLng);
-          setLat(newLat);
-          setLng(newLng);
-          setManualLatStr(newLat.toString());
-          setManualLngStr(newLng.toString());
-          setIsConfirmed(false);
+          updateMapPosition(newLat, newLng, true);
         }
       });
 
@@ -270,9 +421,9 @@ export const SalonLocationPicker: React.FC<SalonLocationPickerProps> = ({
         googleMarkerRef.current.setPosition({ lat, lng });
       }
     }
-  }, [mapEngine, isGoogleReady]);
+  }, [mapEngine, isGoogleReady, updateMapPosition]);
 
-  // 2B. Mount Leaflet Map as resilient fallback
+  // Mount Leaflet
   useEffect(() => {
     if (mapEngine !== 'leaflet' || !isLeafletReady || !mapContainerRef.current) return;
     const L = (window as any).L;
@@ -286,25 +437,22 @@ export const SalonLocationPicker: React.FC<SalonLocationPickerProps> = ({
         attributionControl: false,
       });
 
-      // Prioritize Mapbox if token configured, otherwise use high-contrast OpenStreetMap Dark tiles (Zero Watermark, Zero API Key)
       const mapboxToken = (import.meta as any).env?.VITE_MAPBOX_ACCESS_TOKEN;
       if (mapboxToken && typeof mapboxToken === 'string' && mapboxToken.startsWith('pk.') && !mapboxToken.includes('dummy')) {
         L.tileLayer(`https://api.mapbox.com/styles/v1/mapbox/dark-v11/tiles/{z}/{x}/{y}?access_token=${mapboxToken}`, {
           maxZoom: 19,
           tileSize: 512,
           zoomOffset: -1,
-          attribution: '&copy; Mapbox &copy; OpenStreetMap',
+          attribution: '&copy; Mapbox',
         }).addTo(map);
       } else {
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
           maxZoom: 19,
           subdomains: ['a', 'b', 'c'],
           className: 'osm-dark-tiles',
-          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
         }).addTo(map);
       }
 
-      // Custom draggable amber entrance pin
       const pinHtml = `
         <div style="position: relative; width: 34px; height: 34px; transform: translate(-50%, -100%); cursor: grab;">
           <div style="position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 8px; height: 8px; background: #000; border-radius: 50%; opacity: 0.4;"></div>
@@ -332,11 +480,7 @@ export const SalonLocationPicker: React.FC<SalonLocationPickerProps> = ({
         if (pos) {
           const newLat = Number(pos.lat.toFixed(6));
           const newLng = Number(pos.lng.toFixed(6));
-          setLat(newLat);
-          setLng(newLng);
-          setManualLatStr(newLat.toString());
-          setManualLngStr(newLng.toString());
-          setIsConfirmed(false);
+          updateMapPosition(newLat, newLng, true);
         }
       });
 
@@ -345,11 +489,7 @@ export const SalonLocationPicker: React.FC<SalonLocationPickerProps> = ({
           const newLat = Number(e.latlng.lat.toFixed(6));
           const newLng = Number(e.latlng.lng.toFixed(6));
           marker.setLatLng(e.latlng);
-          setLat(newLat);
-          setLng(newLng);
-          setManualLatStr(newLat.toString());
-          setManualLngStr(newLng.toString());
-          setIsConfirmed(false);
+          updateMapPosition(newLat, newLng, true);
         }
       });
 
@@ -369,223 +509,154 @@ export const SalonLocationPicker: React.FC<SalonLocationPickerProps> = ({
         leafletMarkerRef.current = null;
       }
     };
-  }, [mapEngine, isLeafletReady]);
+  }, [mapEngine, isLeafletReady, updateMapPosition]);
 
-  // Update marker position when lat/lng change from presets or manual inputs
-  const updateMapPosition = (newLat: number, newLng: number) => {
-    setLat(newLat);
-    setLng(newLng);
-    setManualLatStr(newLat.toString());
-    setManualLngStr(newLng.toString());
-    setIsConfirmed(false);
+  // Live Location / Colony / Landmark Search
+  const handleSearchInput = (query: string) => {
+    setSearchQuery(query);
+    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
 
-    if (mapEngine === 'mapbox' && mapboxMapRef.current && mapboxMarkerRef.current) {
-      mapboxMapRef.current.flyTo({ center: [newLng, newLat], zoom: 16 });
-      mapboxMarkerRef.current.setLngLat([newLng, newLat]);
-    } else if (mapEngine === 'google' && googleMapRef.current && googleMarkerRef.current) {
-      googleMapRef.current.panTo({ lat: newLat, lng: newLng });
-      googleMarkerRef.current.setPosition({ lat: newLat, lng: newLng });
-    } else if (mapEngine === 'leaflet' && leafletMapRef.current && leafletMarkerRef.current) {
-      leafletMapRef.current.setView([newLat, newLng], 16);
-      leafletMarkerRef.current.setLatLng([newLat, newLng]);
-    }
-  };
-
-  // Option 1: Select preset location
-  const handleSelectPreset = (hub: typeof hubPresets[0]) => {
-    updateMapPosition(hub.lat, hub.lng);
-    setLocality(hub.locality);
-    setCity(hub.city);
-    setState(hub.state);
-    setPincode(hub.pincode);
-    setAddress(hub.name);
-  };
-
-  // Option 2: Use Device GPS
-  const handleUseCurrentLocation = () => {
-    if (!navigator.geolocation) {
-      alert('Geolocation is not supported by your browser');
-      return;
-    }
-    setIsGpsLoading(true);
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setIsGpsLoading(false);
-        const newLat = Number(pos.coords.latitude.toFixed(6));
-        const newLng = Number(pos.coords.longitude.toFixed(6));
-        updateMapPosition(newLat, newLng);
-      },
-      (err) => {
-        setIsGpsLoading(false);
-        alert(`Could not fetch device location: ${err.message}`);
-      },
-      { enableHighAccuracy: true, timeout: 10000 }
-    );
-  };
-
-  // Option 4: Apply manual coordinates
-  const handleApplyManualCoords = (e: React.FormEvent) => {
-    e.preventDefault();
-    setCoordsError(null);
-    const parsedLat = parseFloat(manualLatStr.trim());
-    const parsedLng = parseFloat(manualLngStr.trim());
-
-    if (isNaN(parsedLat) || parsedLat < -90 || parsedLat > 90) {
-      setCoordsError('Latitude must be a valid number between -90.0 and +90.0');
-      return;
-    }
-    if (isNaN(parsedLng) || parsedLng < -180 || parsedLng > 180) {
-      setCoordsError('Longitude must be a valid number between -180.0 and +180.0');
+    if (query.trim().length < 3) {
+      setSearchResults([]);
+      setIsSearching(false);
       return;
     }
 
-    updateMapPosition(parsedLat, parsedLng);
+    setIsSearching(true);
+    searchTimeoutRef.current = setTimeout(async () => {
+      try {
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/search?format=jsonv2&q=${encodeURIComponent(
+            query.trim()
+          )}&countrycodes=in&limit=5&addressdetails=1`,
+          { headers: { 'User-Agent': 'KumbhakaranPartnerApp/1.0' } }
+        );
+        if (res.ok) {
+          const items = await res.json();
+          setSearchResults(
+            items.map((it: any) => {
+              const a = it.address || {};
+              const short = it.name || a.road || a.suburb || a.village || a.city || query;
+              return {
+                shortName: short,
+                displayName: it.display_name,
+                lat: parseFloat(it.lat),
+                lng: parseFloat(it.lon),
+                locality: a.suburb || a.neighbourhood || a.village || a.county || a.city || '',
+                city: a.city || a.town || a.county || '',
+                state: a.state || '',
+                pincode: a.postcode || '',
+              };
+            })
+          );
+        }
+      } catch (err) {
+        console.warn('Search query error:', err);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 400);
   };
 
-  // Confirm final location
-  const handleConfirmLocation = () => {
-    setIsConfirmed(true);
-    onLocationConfirmed({
-      address: address.trim() || `${locality}, ${city}`,
-      locality: locality.trim(),
-      city: city.trim(),
-      state: state.trim(),
-      pincode: pincode.trim(),
-      latitude: lat,
-      longitude: lng,
-      placeId,
+  const handleSelectSearchResult = (result: any) => {
+    setSearchQuery(result.shortName);
+    setSearchResults([]);
+    updateMapPosition(result.lat, result.lng, false);
+
+    if (result.locality) setLocality(result.locality);
+    if (result.city) setCity(result.city);
+    if (result.state) setState(result.state);
+    if (result.pincode) setPincode(result.pincode);
+
+    syncToParent({
+      latitude: result.lat,
+      longitude: result.lng,
+      locality: result.locality,
+      city: result.city,
+      state: result.state,
+      pincode: result.pincode,
     });
   };
 
+  // Add Landmark Direction Prefix chip into the landmark text field
+  const handleAddPrefixChip = (prefix: string) => {
+    let cleanPrefix = prefix.replace(/\s*\([^)]*\)/, ''); // Remove (Opp.) helper
+    if (!address.toLowerCase().startsWith(cleanPrefix.toLowerCase())) {
+      const newAddress = address.trim()
+        ? `${cleanPrefix} ${address.trim()}`
+        : `${cleanPrefix} `;
+      setAddress(newAddress);
+      syncToParent({ address: newAddress });
+    }
+  };
+
+  // Append detected POI / road
+  const handleApplyDetectedPoi = () => {
+    if (!detectedPoi) return;
+    const newAddress = address.trim()
+      ? `${address.trim()}, Near ${detectedPoi}`
+      : `Near ${detectedPoi}`;
+    setAddress(newAddress);
+    syncToParent({ address: newAddress });
+  };
+
   return (
-    <div className="space-y-4">
-      {/* 4 Flexible Input Options */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+    <div className="space-y-3.5">
+      {/* TOP CONTROLS: 1-Click Current GPS + Fast Colony / Area Search */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
         <button
           type="button"
-          onClick={() => setActiveOption('search')}
-          className={`p-2.5 rounded-xl border text-left transition-all ${
-            activeOption === 'search'
-              ? 'bg-amber-500/10 border-amber-500/50 text-amber-400'
-              : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white'
-          }`}
+          onClick={handleUseCurrentLocation}
+          disabled={isGpsLoading}
+          className="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20 transition-all shrink-0 active:scale-[0.98]"
+          title="Detect live GPS coordinates of your salon device"
         >
-          <div className="flex items-center gap-1.5 text-xs font-bold">
-            <Search className="w-3.5 h-3.5" />
-            <span>Popular Hubs</span>
-          </div>
-          <p className="text-[10px] text-zinc-500 mt-0.5">Select top city localities</p>
+          {isGpsLoading ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <Navigation className="w-4 h-4 fill-black" />
+          )}
+          <span>{isGpsLoading ? 'Fetching GPS Location...' : 'Use Current GPS'}</span>
         </button>
 
-        <button
-          type="button"
-          onClick={() => {
-            setActiveOption('gps');
-            handleUseCurrentLocation();
-          }}
-          className={`p-2.5 rounded-xl border text-left transition-all ${
-            activeOption === 'gps'
-              ? 'bg-amber-500/10 border-amber-500/50 text-amber-400'
-              : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white'
-          }`}
-        >
-          <div className="flex items-center gap-1.5 text-xs font-bold">
-            <Navigation className="w-3.5 h-3.5" />
-            <span>Current GPS</span>
-          </div>
-          <p className="text-[10px] text-zinc-500 mt-0.5">Use salon device location</p>
-        </button>
+        {/* Search locality, colony or chowk */}
+        <div className="relative flex-1">
+          <Search className="w-3.5 h-3.5 text-zinc-400 absolute left-3 top-3 pointer-events-none" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => handleSearchInput(e.target.value)}
+            placeholder="Search colony, chowk, landmark, or PIN (e.g. Koni, Bilaspur)..."
+            className="w-full pl-9 pr-8 py-2.5 bg-zinc-900 border border-zinc-700/80 rounded-xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-amber-400 shadow-inner"
+          />
+          {isSearching && (
+            <Loader2 className="w-3.5 h-3.5 text-amber-400 animate-spin absolute right-3 top-3" />
+          )}
 
-        <button
-          type="button"
-          onClick={() => setActiveOption('pin')}
-          className={`p-2.5 rounded-xl border text-left transition-all ${
-            activeOption === 'pin'
-              ? 'bg-amber-500/10 border-amber-500/50 text-amber-400'
-              : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white'
-          }`}
-        >
-          <div className="flex items-center gap-1.5 text-xs font-bold">
-            <Move className="w-3.5 h-3.5" />
-            <span>Drag Pin</span>
-          </div>
-          <p className="text-[10px] text-zinc-500 mt-0.5">Pinpoint exact entrance</p>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setActiveOption('coords')}
-          className={`p-2.5 rounded-xl border text-left transition-all ${
-            activeOption === 'coords'
-              ? 'bg-amber-500/10 border-amber-500/50 text-amber-400'
-              : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white'
-          }`}
-        >
-          <div className="flex items-center gap-1.5 text-xs font-bold">
-            <Crosshair className="w-3.5 h-3.5" />
-            <span>Coordinates</span>
-          </div>
-          <p className="text-[10px] text-zinc-500 mt-0.5">Enter Lat / Long values</p>
-        </button>
+          {/* Autocomplete dropdown */}
+          {searchResults.length > 0 && (
+            <div className="absolute top-full left-0 right-0 mt-1 bg-zinc-900/98 backdrop-blur-md border border-zinc-700 rounded-xl shadow-2xl p-1 z-50 max-h-56 overflow-y-auto">
+              {searchResults.map((res, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => handleSelectSearchResult(res)}
+                  className="w-full text-left p-2 rounded-lg hover:bg-zinc-800 text-xs text-zinc-300 transition-colors flex items-start gap-2 border-b border-zinc-800/60 last:border-0"
+                >
+                  <MapPin className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
+                  <div className="min-w-0">
+                    <div className="font-bold text-white truncate">{res.shortName}</div>
+                    <div className="text-[10px] text-zinc-400 truncate">{res.displayName}</div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Option Panel 1: Search & Hub Presets */}
-      {activeOption === 'search' && (
-        <div className="p-3 bg-zinc-900/60 rounded-2xl border border-zinc-800 space-y-2">
-          <label className="text-[11px] font-semibold text-zinc-400">Quick Select Prime Commercial Hubs:</label>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 max-h-40 overflow-y-auto">
-            {hubPresets.map((hub, idx) => (
-              <button
-                key={idx}
-                type="button"
-                onClick={() => handleSelectPreset(hub)}
-                className="text-left p-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 hover:border-zinc-700 text-xs text-zinc-300 transition-colors"
-              >
-                <div className="font-bold text-white truncate">{hub.name}</div>
-                <div className="text-[10px] text-zinc-500">{hub.locality}, {hub.city}</div>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Option Panel 4: Manual Coordinates Form */}
-      {activeOption === 'coords' && (
-        <form onSubmit={handleApplyManualCoords} className="p-3 bg-zinc-900/60 rounded-2xl border border-zinc-800 space-y-2.5">
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <label className="text-[10px] font-semibold text-zinc-400 block mb-1">Latitude (°N/S)</label>
-              <input
-                type="text"
-                value={manualLatStr}
-                onChange={(e) => setManualLatStr(e.target.value)}
-                placeholder="12.9344"
-                className="w-full p-2 bg-zinc-900 border border-zinc-700 rounded-xl text-xs text-white"
-              />
-            </div>
-            <div>
-              <label className="text-[10px] font-semibold text-zinc-400 block mb-1">Longitude (°E/W)</label>
-              <input
-                type="text"
-                value={manualLngStr}
-                onChange={(e) => setManualLngStr(e.target.value)}
-                placeholder="77.6258"
-                className="w-full p-2 bg-zinc-900 border border-zinc-700 rounded-xl text-xs text-white"
-              />
-            </div>
-          </div>
-          {coordsError && <p className="text-[11px] text-red-400 font-medium">{coordsError}</p>}
-          <button
-            type="submit"
-            className="w-full py-2 bg-zinc-800 hover:bg-zinc-700 text-amber-400 text-xs font-bold rounded-xl transition-colors"
-          >
-            Apply Coordinates to Map Pin
-          </button>
-        </form>
-      )}
-
-      {/* Interactive Map with Live Draggable Entrance Marker */}
-      <div className="relative rounded-2xl overflow-hidden border border-zinc-800 bg-[#0c0c12] h-64 sm:h-72">
+      {/* Interactive Map with Drag-To-Entrance Pin */}
+      <div className="relative rounded-2xl overflow-hidden border border-zinc-800 bg-[#0c0c12] h-60 sm:h-72 shadow-xl">
         <style>{`
           .osm-dark-tiles {
             filter: invert(100%) hue-rotate(180deg) brightness(92%) contrast(90%) !important;
@@ -595,17 +666,18 @@ export const SalonLocationPicker: React.FC<SalonLocationPickerProps> = ({
           }
         `}</style>
         <div ref={mapContainerRef} className="w-full h-full" style={{ zIndex: 1 }} />
-        
-        {/* Top Hint Badge */}
-        <div className="absolute top-2.5 left-2.5 z-10 px-2.5 py-1 rounded-lg bg-black/80 backdrop-blur-md border border-zinc-800 text-[10px] font-semibold text-zinc-300 flex items-center gap-1.5">
-          <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>
-          <span>
-            {mapEngine === 'mapbox'
-              ? 'Mapbox Draggable Pin'
-              : mapEngine === 'google'
-              ? 'Google Maps Draggable Pin'
-              : 'Draggable Pin active'}
+
+        {/* Live GPS Coordinates and Status Badge */}
+        <div className="absolute top-2.5 left-2.5 z-10 px-2.5 py-1.5 rounded-xl bg-black/85 backdrop-blur-md border border-zinc-800 text-[10px] font-semibold text-zinc-300 flex items-center gap-2 shadow-lg">
+          <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse shrink-0"></span>
+          <span className="font-mono text-amber-300 font-bold">
+            {lat.toFixed(5)}, {lng.toFixed(5)}
           </span>
+          {isGeocoding && (
+            <span className="text-[10px] text-amber-400 flex items-center gap-1 border-l border-zinc-700 pl-2">
+              <Loader2 className="w-3 h-3 animate-spin" /> Detecting address...
+            </span>
+          )}
         </div>
 
         {/* Google Maps Verification Action */}
@@ -613,82 +685,172 @@ export const SalonLocationPicker: React.FC<SalonLocationPickerProps> = ({
           <button
             type="button"
             onClick={() => openGoogleMapsLocation(lat, lng)}
-            className="px-2.5 py-1 rounded-lg bg-black/80 backdrop-blur-md border border-zinc-800 text-[10px] font-bold text-amber-400 hover:text-white flex items-center gap-1 transition-colors"
-            title="Verify location in Google Maps app"
+            className="px-2.5 py-1.5 rounded-xl bg-black/85 backdrop-blur-md border border-zinc-800 text-[10px] font-bold text-amber-400 hover:text-white flex items-center gap-1.5 transition-colors shadow-lg"
+            title="Verify location marker in official Google Maps"
           >
             <span>Verify in Google Maps</span>
             <ExternalLink className="w-3 h-3" />
           </button>
         </div>
+
+        {/* Draggable hint pill at bottom of map */}
+        <div className="absolute bottom-2.5 left-1/2 -translate-x-1/2 z-10 px-3 py-1 rounded-full bg-black/80 backdrop-blur-md border border-zinc-800 text-[10px] text-zinc-300 flex items-center gap-1.5 pointer-events-none shadow-md">
+          <Compass className="w-3 h-3 text-amber-400" />
+          <span>Click anywhere or drag marker to pinpoint salon entrance</span>
+        </div>
       </div>
 
-      {/* Address Details Fields */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+      {/* INDIAN SHOP ADDRESS & LANDMARK DETAILS */}
+      <div className="bg-[#14141c] border border-zinc-800 rounded-2xl p-4 space-y-3.5 shadow-lg">
+        {/* SECTION 1: FAMOUS LANDMARK / CHOWK / NEARBY DUKAN */}
         <div>
-          <label className="text-[11px] font-semibold text-zinc-400 block mb-1">Locality / Area Name *</label>
-          <input
-            type="text"
-            required
-            value={locality}
-            onChange={(e) => setLocality(e.target.value)}
-            placeholder="e.g. Koramangala 4th Block"
-            className="w-full p-2.5 bg-zinc-900 border border-zinc-700 rounded-xl text-xs text-white"
-          />
-        </div>
+          <div className="flex items-center justify-between mb-1">
+            <label className="text-xs font-bold text-white flex items-center gap-1.5">
+              <span>Famous Landmark, Nearby Dukan or Chowk *</span>
+              <span className="text-[10px] bg-amber-500/20 text-amber-300 font-semibold px-2 py-0.2 rounded-full border border-amber-500/30">
+                Key for customers
+              </span>
+            </label>
+          </div>
+          <p className="text-[11px] text-zinc-400 mb-2">
+            How customers & delivery riders find your salon (e.g. Near Koni Chowk, Opp. Engineering College Gate, Beside Verma Medical).
+          </p>
 
-        <div>
-          <label className="text-[11px] font-semibold text-zinc-400 block mb-1">Postal PIN Code *</label>
-          <input
-            type="text"
-            required
-            value={pincode}
-            onChange={(e) => setPincode(e.target.value)}
-            placeholder="e.g. 560034"
-            className="w-full p-2.5 bg-zinc-900 border border-zinc-700 rounded-xl text-xs text-white"
-          />
-        </div>
+          {/* Quick-Add Landmark Direction Chips */}
+          <div className="flex flex-wrap items-center gap-1.5 mb-2">
+            <span className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider mr-1">
+              Add Direction:
+            </span>
+            {LANDMARK_PREFIX_CHIPS.map((chip, idx) => (
+              <button
+                key={idx}
+                type="button"
+                onClick={() => handleAddPrefixChip(chip)}
+                className="px-2 py-0.5 rounded-lg bg-zinc-900 hover:bg-amber-500/15 border border-zinc-700/80 hover:border-amber-400/50 text-[11px] text-zinc-300 hover:text-amber-300 font-medium transition-all"
+              >
+                + {chip}
+              </button>
+            ))}
+          </div>
 
-        <div className="sm:col-span-2">
-          <label className="text-[11px] font-semibold text-zinc-400 block mb-1">Building, Floor, Landmark *</label>
+          {/* Detected POI / Road helper chip */}
+          {detectedPoi && (
+            <div className="mb-2 p-2 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-between gap-2 text-xs">
+              <div className="flex items-center gap-1.5 text-amber-300 font-medium truncate">
+                <Sparkles className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                <span className="truncate">Detected landmark/road: <strong>{detectedPoi}</strong></span>
+              </div>
+              <button
+                type="button"
+                onClick={handleApplyDetectedPoi}
+                className="px-2.5 py-1 rounded-lg bg-amber-500 text-black text-[10px] font-bold hover:bg-amber-400 shrink-0"
+              >
+                Insert to Address
+              </button>
+            </div>
+          )}
+
           <input
             type="text"
             required
             value={address}
-            onChange={(e) => setAddress(e.target.value)}
-            placeholder="e.g. #42, 2nd Floor, 80ft Road, Next to Sony Signal"
-            className="w-full p-2.5 bg-zinc-900 border border-zinc-700 rounded-xl text-xs text-white"
+            onChange={(e) => {
+              setAddress(e.target.value);
+              syncToParent({ address: e.target.value });
+            }}
+            placeholder="e.g. Near Koni Chowk, Opp. Engineering College Gate, Next to Verma Medical"
+            className="w-full p-2.5 bg-zinc-900 border border-zinc-700/90 rounded-xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-amber-400"
           />
         </div>
-      </div>
 
-      {/* Confirmation & Status Bar */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
-        <div className="text-xs text-zinc-400">
-          <span className="font-semibold text-zinc-300">Selected GPS: </span>
-          <span className="font-mono text-amber-400">{lat.toFixed(5)}, {lng.toFixed(5)}</span>
+        {/* SECTION 2: SHOP NO. / BUILDING (OPTIONAL) */}
+        <div>
+          <label className="text-xs font-semibold text-zinc-300 block mb-1">
+            Shop No., Building or Floor <span className="text-zinc-500 font-normal">(Optional)</span>
+          </label>
+          <input
+            type="text"
+            value={buildingOrShop}
+            onChange={(e) => {
+              setBuildingOrShop(e.target.value);
+              syncToParent({ buildingOrShop: e.target.value });
+            }}
+            placeholder="e.g. Shop #4, Ground Floor, Sai Plaza"
+            className="w-full p-2.5 bg-zinc-900 border border-zinc-700/80 rounded-xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-amber-400"
+          />
         </div>
 
-        <button
-          type="button"
-          onClick={handleConfirmLocation}
-          className={`px-4 py-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-lg ${
-            isConfirmed
-              ? 'bg-emerald-500 text-black'
-              : 'bg-amber-500 hover:bg-amber-400 text-black'
-          }`}
-        >
-          {isConfirmed ? (
-            <>
-              <Check className="w-4 h-4" />
-              <span>Location Verified & Confirmed</span>
-            </>
-          ) : (
-            <>
-              <MapPin className="w-4 h-4 fill-black" />
-              <span>Confirm Salon Location</span>
-            </>
-          )}
-        </button>
+        {/* SECTION 3: LOCALITY, CITY, STATE & PIN CODE (AUTO-DETECTED FROM GPS) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 border-t border-zinc-800/80">
+          <div>
+            <label className="text-xs font-semibold text-zinc-300 block mb-1 flex items-center justify-between">
+              <span>Locality / Colony / Neighborhood *</span>
+              {locality && (
+                <span className="text-[10px] text-emerald-400 flex items-center gap-1 font-normal">
+                  <CheckCircle2 className="w-3 h-3" /> Auto-detected
+                </span>
+              )}
+            </label>
+            <input
+              type="text"
+              required
+              value={locality}
+              onChange={(e) => {
+                setLocality(e.target.value);
+                syncToParent({ locality: e.target.value });
+              }}
+              placeholder="e.g. Koni / Civil Lines"
+              className="w-full p-2.5 bg-zinc-900 border border-zinc-700/80 rounded-xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-amber-400"
+            />
+          </div>
+
+          <div>
+            <label className="text-xs font-semibold text-zinc-300 block mb-1">
+              Postal PIN Code *
+            </label>
+            <input
+              type="text"
+              required
+              value={pincode}
+              onChange={(e) => {
+                setPincode(e.target.value);
+                syncToParent({ pincode: e.target.value });
+              }}
+              placeholder="e.g. 495004"
+              className="w-full p-2.5 bg-zinc-900 border border-zinc-700/80 rounded-xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-amber-400"
+            />
+          </div>
+
+          <div className="sm:col-span-2">
+            <label className="text-xs font-semibold text-zinc-300 block mb-1">
+              City & State *
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              <input
+                type="text"
+                required
+                value={city}
+                onChange={(e) => {
+                  setCity(e.target.value);
+                  syncToParent({ city: e.target.value });
+                }}
+                placeholder="City (e.g. Bilaspur)"
+                className="w-full p-2.5 bg-zinc-900 border border-zinc-700/80 rounded-xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-amber-400"
+              />
+              <input
+                type="text"
+                required
+                value={state}
+                onChange={(e) => {
+                  setState(e.target.value);
+                  syncToParent({ state: e.target.value });
+                }}
+                placeholder="State (e.g. Chhattisgarh)"
+                className="w-full p-2.5 bg-zinc-900 border border-zinc-700/80 rounded-xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-amber-400"
+              />
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

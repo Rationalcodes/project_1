@@ -35,11 +35,11 @@ export const SalonRegistrationWizard: React.FC<SalonRegistrationWizardProps> = (
 
   // Location State
   const [address, setAddress] = useState('');
-  const [locality, setLocality] = useState('Koramangala');
-  const [city, setCity] = useState('Bengaluru');
-  const [state, setState] = useState('Karnataka');
-  const [pincode, setPincode] = useState('560034');
-  const [coordinates, setCoordinates] = useState({ lat: 12.9344, lng: 77.6258 });
+  const [locality, setLocality] = useState('');
+  const [city, setCity] = useState('');
+  const [state, setState] = useState('');
+  const [pincode, setPincode] = useState('');
+  const [coordinates, setCoordinates] = useState({ lat: 22.1388, lng: 82.1453 });
 
   // Hours & Stations
   const [openTime, setOpenTime] = useState('09:00 AM');
@@ -265,10 +265,9 @@ export const SalonRegistrationWizard: React.FC<SalonRegistrationWizardProps> = (
               </p>
             </div>
 
-            {/* Location selector */}
-            {/* 4-Option Location Picker Component */}
+            {/* Salon Location, Map & Address */}
             <SalonLocationPicker
-              initialResult={{
+              value={{
                 address,
                 locality,
                 city,
@@ -277,7 +276,7 @@ export const SalonRegistrationWizard: React.FC<SalonRegistrationWizardProps> = (
                 latitude: coordinates.lat,
                 longitude: coordinates.lng,
               }}
-              onLocationConfirmed={(res) => {
+              onChange={(res) => {
                 setAddress(res.address);
                 setLocality(res.locality);
                 setCity(res.city);
@@ -286,75 +285,6 @@ export const SalonRegistrationWizard: React.FC<SalonRegistrationWizardProps> = (
                 setCoordinates({ lat: res.latitude, lng: res.longitude });
               }}
             />
-
-            {/* Detailed Street Address */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-              <div className="sm:col-span-2">
-                <label className="text-xs font-semibold text-zinc-300 block mb-1">
-                  Street Address & Landmark *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                  placeholder="e.g. 42, 80 Feet Road, Near Sony Signal"
-                  className="w-full p-3 bg-zinc-900 border border-zinc-700 rounded-2xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-amber-400"
-                />
-              </div>
-
-              <div>
-                <label className="text-xs font-semibold text-zinc-300 block mb-1">
-                  Locality / Neighborhood *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={locality}
-                  onChange={(e) => setLocality(e.target.value)}
-                  placeholder="Koramangala 4th Block"
-                  className="w-full p-2.5 bg-zinc-900 border border-zinc-700 rounded-xl text-xs text-white"
-                />
-              </div>
-
-              <div>
-                <label className="text-xs font-semibold text-zinc-300 block mb-1">
-                  City & State *
-                </label>
-                <div className="grid grid-cols-2 gap-2">
-                  <input
-                    type="text"
-                    required
-                    value={city}
-                    onChange={(e) => setCity(e.target.value)}
-                    placeholder="Bengaluru"
-                    className="w-full p-2.5 bg-zinc-900 border border-zinc-700 rounded-xl text-xs text-white"
-                  />
-                  <input
-                    type="text"
-                    required
-                    value={state}
-                    onChange={(e) => setState(e.target.value)}
-                    placeholder="Karnataka"
-                    className="w-full p-2.5 bg-zinc-900 border border-zinc-700 rounded-xl text-xs text-white"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="text-xs font-semibold text-zinc-300 block mb-1">
-                  PIN Code *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={pincode}
-                  onChange={(e) => setPincode(e.target.value)}
-                  placeholder="560034"
-                  className="w-full p-2.5 bg-zinc-900 border border-zinc-700 rounded-xl text-xs text-white"
-                />
-              </div>
-            </div>
 
             <div className="flex justify-between pt-4">
               <button
@@ -366,7 +296,13 @@ export const SalonRegistrationWizard: React.FC<SalonRegistrationWizardProps> = (
               </button>
               <button
                 type="button"
-                onClick={() => setCurrentStep(3)}
+                onClick={() => {
+                  if (!locality.trim() || !city.trim() || !address.trim()) {
+                    alert("Please specify your salon's locality, city, and nearest famous landmark / chowk before proceeding.");
+                    return;
+                  }
+                  setCurrentStep(3);
+                }}
                 className="px-6 py-2.5 rounded-xl bg-amber-500 text-black font-bold text-xs hover:bg-amber-400 flex items-center gap-2 shadow-lg shadow-amber-500/20"
               >
                 <span>Next: Hours & Chairs</span>
