@@ -21,27 +21,19 @@ export const Header: React.FC = () => {
   return (
     <header className="sticky top-0 z-40 bg-[#0c0c10]/95 backdrop-blur-md border-b border-zinc-800/80 px-3 sm:px-4 py-2.5 sm:py-3 transition-all w-full max-w-full overflow-hidden">
       <div className="max-w-7xl mx-auto flex items-center justify-between gap-2 sm:gap-3 text-xs w-full">
-        {/* Brand */}
-        <div className="flex items-center gap-2 sm:gap-2.5 min-w-0 shrink">
-          <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-gradient-to-br from-amber-400 via-amber-500 to-amber-700 flex items-center justify-center shadow-lg shadow-amber-500/20 shrink-0">
-            <span className="font-black text-black text-xs sm:text-sm tracking-tighter">K</span>
-          </div>
-          <div className="min-w-0">
-            <div className="flex items-center gap-1.5 sm:gap-2">
-              <span className="font-extrabold tracking-wider text-slate-100 uppercase text-xs sm:text-[14px] font-['Syne',sans-serif]">
-                Kumbhkaran
-              </span>
-              <span className="font-bold tracking-widest text-amber-400 uppercase text-[10px] sm:text-[12px] font-['Syne',sans-serif]">
-                Salons
-              </span>
-              <span className="hidden sm:inline text-[10px] uppercase tracking-widest px-1.5 py-0.2 rounded bg-amber-500/15 text-amber-400 font-bold border border-amber-500/30 shrink-0">
-                Customer App
-              </span>
-            </div>
-            <p className="text-[10px] text-zinc-400 font-medium hidden md:block">
-              Too lazy to call. Too smart to wait.
-            </p>
-          </div>
+        {/* Official Brand Logo */}
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0 shrink group">
+          <img
+            src="/logo-white.png"
+            alt="Kumbhkaran Salons"
+            className="h-7 sm:h-8 md:h-9 w-auto max-w-[145px] sm:max-w-[185px] md:max-w-[215px] object-contain transition-transform group-hover:scale-105"
+            onError={(e) => {
+              (e.currentTarget as HTMLImageElement).src = '/logo.png';
+            }}
+          />
+          <span className="hidden sm:inline text-[9px] sm:text-[10px] uppercase tracking-widest px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-400 font-bold border border-amber-500/30 shrink-0 self-center">
+            Customer
+          </span>
         </div>
 
         <div className="flex items-center gap-2 shrink min-w-0">

@@ -42,8 +42,15 @@ export const PartnerPortal: React.FC = () => {
   if (!isAuthenticated) {
     return (
       <div className="max-w-xl mx-auto my-8 sm:my-12 p-4 sm:p-8 bg-gradient-to-b from-[#181824] via-[#12121a] to-[#0c0c10] border border-amber-500/30 rounded-3xl shadow-2xl text-center space-y-6">
-        <div className="w-16 h-16 rounded-3xl bg-amber-500/20 border border-amber-500/40 text-amber-400 flex items-center justify-center mx-auto shadow-xl shadow-amber-500/10">
-          <Store className="w-8 h-8 text-amber-400" />
+        <div className="flex flex-col items-center justify-center gap-3">
+          <img
+            src="/logo-white.png"
+            alt="Kumbhkaran Salons"
+            className="h-11 sm:h-13 w-auto object-contain drop-shadow-xl"
+            onError={(e) => {
+              (e.currentTarget as HTMLImageElement).src = '/logo.png';
+            }}
+          />
         </div>
 
         <div className="space-y-2">
