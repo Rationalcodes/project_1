@@ -30,7 +30,10 @@ export const ProfileScreen: React.FC = () => {
     setCustomerTab,
     triggerNotification,
     userLocation,
+    genderFilter,
   } = useSalon();
+
+  const isWomen = genderFilter === 'women';
 
   const [isEditingName, setIsEditingName] = useState(false);
   const [nameInput, setNameInput] = useState(userProfile.name);
@@ -56,11 +59,17 @@ export const ProfileScreen: React.FC = () => {
     <div className="space-y-6 pb-28 text-stone-900">
       {/* Google Authentication Status Card */}
       {!isAuthenticated ? (
-        <div className="bg-white border border-[#E8E2D8] rounded-3xl p-5 shadow-sm relative overflow-hidden">
+        <div className={`bg-white border rounded-3xl p-5 shadow-sm relative overflow-hidden ${
+          isWomen ? 'border-[#FED7CC]' : 'border-[#E8E2D8]'
+        }`}>
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-[10px] uppercase font-extrabold tracking-widest px-2 py-0.5 rounded bg-orange-50 text-[#FF6422] border border-orange-200">
+                <span className={`text-[10px] uppercase font-extrabold tracking-widest px-2 py-0.5 rounded border ${
+                  isWomen
+                    ? 'bg-rose-50 text-[#E11D48] border-rose-200'
+                    : 'bg-orange-50 text-[#FF6422] border-orange-200'
+                }`}>
                   Google Account
                 </span>
                 <span className="text-xs text-stone-500">Optional for customers</span>
@@ -114,17 +123,25 @@ export const ProfileScreen: React.FC = () => {
       )}
 
       {/* Customer Profile Header */}
-      <div className="bg-white border border-[#E8E2D8] rounded-3xl p-5 shadow-sm relative overflow-hidden">
+      <div className={`bg-white border rounded-3xl p-5 shadow-sm relative overflow-hidden ${
+        isWomen ? 'border-[#FED7CC]' : 'border-[#E8E2D8]'
+      }`}>
         <div className="flex items-center gap-4">
           <div className="relative">
             {authUser?.avatarUrl ? (
               <img
                 src={authUser.avatarUrl}
                 alt={authUser.name}
-                className="w-16 h-16 rounded-2xl object-cover border-2 border-[#FF6422] shadow-sm"
+                className={`w-16 h-16 rounded-2xl object-cover border-2 shadow-sm ${
+                  isWomen ? 'border-[#E11D48]' : 'border-[#FF6422]'
+                }`}
               />
             ) : (
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-orange-400 to-[#FF6422] flex items-center justify-center text-white font-extrabold text-2xl shadow-sm border-2 border-orange-300">
+              <div className={`w-16 h-16 rounded-2xl flex items-center justify-center text-white font-extrabold text-2xl shadow-sm border-2 ${
+                isWomen
+                  ? 'bg-gradient-to-br from-rose-400 to-[#E11D48] border-rose-300'
+                  : 'bg-gradient-to-br from-orange-400 to-[#FF6422] border-orange-300'
+              }`}>
                 {userProfile.name ? userProfile.name.charAt(0).toUpperCase() : 'C'}
               </div>
             )}
@@ -142,11 +159,15 @@ export const ProfileScreen: React.FC = () => {
                   onChange={(e) => setNameInput(e.target.value)}
                   placeholder="Enter your name..."
                   autoFocus
-                  className="px-2.5 py-1 bg-[#FAF7F2] border border-[#FF6422] rounded-xl text-sm font-bold text-stone-900 focus:outline-none"
+                  className={`px-2.5 py-1 bg-[#FAF7F2] border rounded-xl text-sm font-bold text-stone-900 focus:outline-none ${
+                    isWomen ? 'border-[#E11D48]' : 'border-[#FF6422]'
+                  }`}
                 />
                 <button
                   type="submit"
-                  className="p-1.5 rounded-lg bg-[#FF6422] text-white font-bold"
+                  className={`p-1.5 rounded-lg text-white font-bold ${
+                    isWomen ? 'bg-[#E11D48]' : 'bg-[#FF6422]'
+                  }`}
                 >
                   <Check className="w-3.5 h-3.5" />
                 </button>
@@ -159,7 +180,9 @@ export const ProfileScreen: React.FC = () => {
                 {!authUser && (
                   <button
                     onClick={() => setIsEditingName(true)}
-                    className="p-1 rounded-lg hover:bg-stone-100 text-stone-400 hover:text-[#FF6422] transition-colors"
+                    className={`p-1 rounded-lg hover:bg-stone-100 text-stone-400 transition-colors ${
+                      isWomen ? 'hover:text-[#E11D48]' : 'hover:text-[#FF6422]'
+                    }`}
                     title="Edit your display name"
                   >
                     <Edit2 className="w-3.5 h-3.5" />
@@ -169,7 +192,11 @@ export const ProfileScreen: React.FC = () => {
             )}
 
             <div className="mt-1 flex items-center gap-1.5">
-              <span className="text-[11px] text-orange-700 font-semibold bg-orange-50 px-2 py-0.5 rounded-full border border-orange-200">
+              <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full border ${
+                isWomen
+                  ? 'text-rose-700 bg-rose-50 border-rose-200'
+                  : 'text-orange-700 bg-orange-50 border-orange-200'
+              }`}>
                 {isAuthenticated ? 'Authenticated Customer' : 'Zero-Sign Up Walk-In Access'}
               </span>
             </div>
@@ -183,12 +210,18 @@ export const ProfileScreen: React.FC = () => {
         </div>
 
         {/* Quick Stats Grid */}
-        <div className="grid grid-cols-3 gap-2 mt-5 pt-4 border-t border-[#E8E2D8] text-center">
+        <div className={`grid grid-cols-3 gap-2 mt-5 pt-4 border-t text-center ${
+          isWomen ? 'border-[#FED7CC]' : 'border-[#E8E2D8]'
+        }`}>
           <div
             onClick={() => setCustomerTab('favourites')}
-            className="cursor-pointer hover:bg-orange-50/50 p-2 rounded-xl transition-colors"
+            className={`cursor-pointer p-2 rounded-xl transition-colors ${
+              isWomen ? 'hover:bg-rose-50/50' : 'hover:bg-orange-50/50'
+            }`}
           >
-            <div className="text-lg font-black text-[#FF6422]">{userProfile.savedSalons.length}</div>
+            <div className={`text-lg font-black ${isWomen ? 'text-[#E11D48]' : 'text-[#FF6422]'}`}>
+              {userProfile.savedSalons.length}
+            </div>
             <div className="text-[10px] text-stone-500 uppercase font-semibold">Favourites</div>
           </div>
 
@@ -206,9 +239,11 @@ export const ProfileScreen: React.FC = () => {
 
       {/* Customer Name Setting Card */}
       {!authUser && (
-        <section className="bg-white border border-[#E8E2D8] rounded-2xl p-4 space-y-3 shadow-xs">
+        <section className={`bg-white border rounded-2xl p-4 space-y-3 shadow-xs ${
+          isWomen ? 'border-[#FED7CC]' : 'border-[#E8E2D8]'
+        }`}>
           <h3 className="text-xs font-bold text-stone-500 uppercase tracking-wider flex items-center gap-1.5">
-            <User className="w-3.5 h-3.5 text-[#FF6422]" />
+            <User className={`w-3.5 h-3.5 ${isWomen ? 'text-[#E11D48]' : 'text-[#FF6422]'}`} />
             Your Display Name
           </h3>
 
@@ -220,7 +255,11 @@ export const ProfileScreen: React.FC = () => {
 
             <button
               onClick={() => setIsEditingName(true)}
-              className="px-3 py-1.5 rounded-xl bg-white border border-[#E2DDD5] hover:border-[#FF6422] text-xs text-[#FF6422] font-bold shadow-xs"
+              className={`px-3 py-1.5 rounded-xl bg-white border text-xs font-bold shadow-xs transition-colors ${
+                isWomen
+                  ? 'border-[#FED7CC] hover:border-[#E11D48] text-[#E11D48]'
+                  : 'border-[#E2DDD5] hover:border-[#FF6422] text-[#FF6422]'
+              }`}
             >
               {userProfile.name || 'Set Name'}
             </button>
@@ -229,18 +268,24 @@ export const ProfileScreen: React.FC = () => {
       )}
 
       {/* Location & Discovery Preferences */}
-      <section className="bg-white border border-[#E8E2D8] rounded-2xl p-4 space-y-3 shadow-xs">
+      <section className={`bg-white border rounded-2xl p-4 space-y-3 shadow-xs ${
+        isWomen ? 'border-[#FED7CC]' : 'border-[#E8E2D8]'
+      }`}>
         <h3 className="text-xs font-bold text-stone-500 uppercase tracking-wider flex items-center gap-1.5">
-          <MapPin className="w-3.5 h-3.5 text-[#FF6422]" />
+          <MapPin className={`w-3.5 h-3.5 ${isWomen ? 'text-[#E11D48]' : 'text-[#FF6422]'}`} />
           Location & Discovery
         </h3>
 
-        <div className="flex items-center justify-between text-xs py-1 border-b border-[#E8E2D8]">
+        <div className={`flex items-center justify-between text-xs py-1 border-b ${
+          isWomen ? 'border-[#FED7CC]' : 'border-[#E8E2D8]'
+        }`}>
           <div>
             <div className="text-stone-900 font-semibold">Active Area</div>
             <div className="text-[10px] text-stone-500">{userLocation ? userLocation.name : 'Not set'}</div>
           </div>
-          <span className="text-[11px] text-[#FF6422] font-semibold">GPS Coordinates active</span>
+          <span className={`text-[11px] font-semibold ${isWomen ? 'text-[#E11D48]' : 'text-[#FF6422]'}`}>
+            GPS Coordinates active
+          </span>
         </div>
 
         <div className="flex items-center justify-between text-xs py-1">
@@ -265,23 +310,35 @@ export const ProfileScreen: React.FC = () => {
       </section>
 
       {/* Salon Partner Portal Link */}
-      <div className="p-4 rounded-2xl bg-orange-50 border border-orange-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+      <div className={`p-4 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs ${
+        isWomen
+          ? 'bg-rose-50 border-rose-200'
+          : 'bg-orange-50 border-orange-200'
+      }`}>
         <div>
           <div className="text-xs font-bold text-stone-900 flex items-center gap-1.5">
-            <span>Own a Salon or Barber Studio?</span>
-            <span className="text-[10px] bg-orange-100 text-[#FF6422] font-bold px-2 py-0.5 rounded-full border border-orange-200">
+            <span>Own a Salon or Beauty Studio?</span>
+            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+              isWomen
+                ? 'bg-rose-100 text-[#E11D48] border-rose-200'
+                : 'bg-orange-100 text-[#FF6422] border-orange-200'
+            }`}>
               For Salons
             </span>
           </div>
           <div className="text-[11px] text-stone-600 mt-0.5">
-            Join Kumbhkaran Salons to broadcast your live queue, manage barbers, and fill empty chairs.
+            Join Kumbhkaran Salons to broadcast your live queue, manage stylists, and fill empty chairs.
           </div>
         </div>
         <a
           href="https://project-1-xq1k.vercel.app/"
           target="_blank"
           rel="noreferrer"
-          className="px-3.5 py-2 rounded-xl bg-[#FF6422] text-white text-xs font-bold hover:bg-orange-600 transition-colors flex items-center justify-center gap-1.5 shrink-0 shadow-md shadow-orange-500/20"
+          className={`px-3.5 py-2 rounded-xl text-white text-xs font-bold transition-colors flex items-center justify-center gap-1.5 shrink-0 shadow-md ${
+            isWomen
+              ? 'bg-[#E11D48] hover:bg-rose-700 shadow-rose-500/20'
+              : 'bg-[#FF6422] hover:bg-orange-600 shadow-orange-500/20'
+          }`}
         >
           <span>Open Partner OS</span>
           <ExternalLink className="w-3.5 h-3.5" />
@@ -289,8 +346,10 @@ export const ProfileScreen: React.FC = () => {
       </div>
 
       {/* Transparency Guarantee */}
-      <div className="p-4 rounded-2xl bg-white border border-[#E8E2D8] flex items-start gap-3 shadow-xs">
-        <ShieldCheck className="w-5 h-5 text-[#FF6422] shrink-0 mt-0.5" />
+      <div className={`p-4 rounded-2xl bg-white border flex items-start gap-3 shadow-xs ${
+        isWomen ? 'border-[#FED7CC]' : 'border-[#E8E2D8]'
+      }`}>
+        <ShieldCheck className={`w-5 h-5 shrink-0 mt-0.5 ${isWomen ? 'text-[#E11D48]' : 'text-[#FF6422]'}`} />
         <div className="text-xs text-stone-600 space-y-1">
           <div className="font-bold text-stone-900">The Kumbhkaran Salons Promise</div>
           <div>

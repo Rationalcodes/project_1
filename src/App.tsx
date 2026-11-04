@@ -21,7 +21,10 @@ const MainContent: React.FC = () => {
     customerTab,
     selectedSalonForDetail,
     setSelectedSalonForDetail,
+    genderFilter,
   } = useSalon();
+
+  const isWomen = genderFilter === 'women';
 
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [isDirectionsModalOpen, setIsDirectionsModalOpen] = useState(false);
@@ -55,7 +58,11 @@ const MainContent: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#FAF7F2] text-stone-900 flex flex-col font-sans selection:bg-orange-500/20 selection:text-orange-950 w-full max-w-full overflow-x-hidden">
+    <div className={`min-h-screen flex flex-col font-sans w-full max-w-full overflow-x-hidden transition-colors duration-300 ${
+      isWomen
+        ? 'bg-[#FFF8F5] text-stone-900 selection:bg-rose-500/20 selection:text-rose-950'
+        : 'bg-[#FAF7F2] text-stone-900 selection:bg-orange-500/20 selection:text-orange-950'
+    }`}>
       {/* Universal Responsive Header */}
       <Header />
 

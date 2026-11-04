@@ -46,23 +46,25 @@ export const HomeScreen: React.FC = () => {
     genderFilter,
   } = useSalon();
 
-  const groomingCategories =
-    genderFilter === 'women'
-      ? [
-          { name: 'All', icon: Sparkles },
-          { name: 'Hair', icon: Scissors },
-          { name: 'Spa', icon: Sparkles },
-          { name: 'Facial', icon: Sparkles },
-          { name: 'Combos', icon: Flame },
-        ]
-      : [
-          { name: 'All', icon: Sparkles },
-          { name: 'Hair', icon: Scissors },
-          { name: 'Beard', icon: Scissors },
-          { name: 'Combos', icon: Flame },
-          { name: 'Spa', icon: Sparkles },
-          { name: 'Facial', icon: Sparkles },
-        ];
+  const isWomen = genderFilter === 'women';
+
+  const groomingCategories = isWomen
+    ? [
+        { name: 'All', icon: Sparkles },
+        { name: 'Hair', icon: Scissors },
+        { name: 'Facial', icon: Sparkles },
+        { name: 'Spa', icon: Sparkles },
+        { name: 'Color', icon: Sparkles },
+        { name: 'Combos', icon: Flame },
+      ]
+    : [
+        { name: 'All', icon: Sparkles },
+        { name: 'Hair', icon: Scissors },
+        { name: 'Beard', icon: Scissors },
+        { name: 'Combos', icon: Flame },
+        { name: 'Spa', icon: Sparkles },
+        { name: 'Facial', icon: Sparkles },
+      ];
 
   // Filtering logic
   const filteredSalons = salons.filter((salon) => {
@@ -118,21 +120,39 @@ export const HomeScreen: React.FC = () => {
 
   return (
     <div className="space-y-6 pb-24 text-stone-900">
-      {/* Hero Branding & Greeting Section */}
-      <section className="relative overflow-hidden rounded-3xl bg-white border border-[#E8E2D8] p-5 sm:p-6 shadow-[0_4px_24px_rgba(40,20,10,0.04)]">
-        <div className="absolute top-0 right-0 -mr-16 -mt-16 w-52 h-52 rounded-full bg-orange-400/10 blur-3xl pointer-events-none" />
+      {/* Hero Branding & Greeting Section - Dynamic Dual Visual Experience */}
+      <section
+        className={`relative overflow-hidden rounded-3xl p-5 sm:p-6 transition-all duration-300 ${
+          isWomen
+            ? 'bg-gradient-to-br from-[#FFF0EA] via-[#FFF8F5] to-[#FFEBE5] border border-[#FED7CC] shadow-[0_4px_24px_rgba(225,29,72,0.06)]'
+            : 'bg-white border border-[#E8E2D8] shadow-[0_4px_24px_rgba(40,20,10,0.04)]'
+        }`}
+      >
+        <div
+          className={`absolute top-0 right-0 -mr-16 -mt-16 w-52 h-52 rounded-full blur-3xl pointer-events-none ${
+            isWomen ? 'bg-rose-400/15' : 'bg-orange-400/10'
+          }`}
+        />
 
         <div className="flex items-start justify-between">
           <div>
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-orange-50 border border-orange-200 text-[#FF6422] text-[11px] font-bold mb-2">
-              <Sparkles className="w-3 h-3 text-[#FF6422]" />
-              <span>Too lazy to call. Too smart to wait.</span>
+            <div
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold mb-2 ${
+                isWomen
+                  ? 'bg-rose-100/80 border border-rose-200 text-[#E11D48]'
+                  : 'bg-orange-50 border border-orange-200 text-[#FF6422]'
+              }`}
+            >
+              <Sparkles className={`w-3 h-3 ${isWomen ? 'text-[#E11D48]' : 'text-[#FF6422]'}`} />
+              <span>{isWomen ? 'Glow & Glamour. Without the wait.' : 'Too lazy to call. Too smart to wait.'}</span>
             </div>
             <h1 className="text-xl sm:text-2xl font-black text-stone-900 tracking-tight">
-              Skip the salon crowd today.
+              {isWomen ? 'Discover beauty & salon suites today.' : 'Skip the salon crowd today.'}
             </h1>
             <p className="text-xs text-stone-600 mt-1 max-w-sm">
-              Check live waiting counts at nearby grooming studios. Zero phone calls, 100% walk-in clarity.
+              {isWomen
+                ? 'Check live walk-in waiting counts at top salons, hair styling lounges & spas near you.'
+                : 'Check live waiting counts at nearby grooming studios. Zero phone calls, 100% walk-in clarity.'}
             </p>
           </div>
         </div>
@@ -140,14 +160,18 @@ export const HomeScreen: React.FC = () => {
         {/* Global Search Bar */}
         <div className="mt-4 relative">
           <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-stone-400">
-            <Search className="w-4 h-4 text-[#FF6422]" />
+            <Search className={`w-4 h-4 ${isWomen ? 'text-[#E11D48]' : 'text-[#FF6422]'}`} />
           </div>
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Find salons, services or stylists..."
-            className="w-full pl-10 pr-10 py-3 bg-[#FAF7F2] border border-[#E2DDD5] rounded-2xl text-xs text-stone-900 placeholder-stone-400 focus:outline-none focus:border-[#FF6422] focus:ring-1 focus:ring-[#FF6422] transition-all shadow-inner"
+            placeholder={isWomen ? 'Find beauty parlours, treatments or stylists...' : 'Find salons, services or stylists...'}
+            className={`w-full pl-10 pr-10 py-3 bg-[#FAF7F2] border rounded-2xl text-xs text-stone-900 placeholder-stone-400 focus:outline-none transition-all shadow-inner ${
+              isWomen
+                ? 'border-[#FED7CC] focus:border-[#E11D48] focus:ring-1 focus:ring-[#E11D48]'
+                : 'border-[#E2DDD5] focus:border-[#FF6422] focus:ring-1 focus:ring-[#FF6422]'
+            }`}
           />
           {searchQuery && (
             <button
@@ -273,17 +297,17 @@ export const HomeScreen: React.FC = () => {
         <>
           <LazyModeSelector />
 
-          {/* Popular Grooming Services Category Filter */}
+          {/* Popular Grooming / Beauty Services Category Filter */}
           <section>
             <div className="flex items-center justify-between mb-2.5">
               <h2 className="text-xs font-bold text-stone-900 uppercase tracking-wider flex items-center gap-1.5">
-                <Scissors className="w-3.5 h-3.5 text-[#FF6422]" />
-                Popular Grooming Services
+                <Scissors className={`w-3.5 h-3.5 ${isWomen ? 'text-[#E11D48]' : 'text-[#FF6422]'}`} />
+                {isWomen ? 'Popular Beauty & Styling Services' : 'Popular Grooming Services'}
               </h2>
               {selectedServiceFilter !== 'All' && (
                 <button
                   onClick={() => setSelectedServiceFilter('All')}
-                  className="text-[11px] text-[#FF6422] hover:underline font-semibold"
+                  className={`text-[11px] hover:underline font-semibold ${isWomen ? 'text-[#E11D48]' : 'text-[#FF6422]'}`}
                 >
                   View All
                 </button>
@@ -301,11 +325,15 @@ export const HomeScreen: React.FC = () => {
                     onClick={() => setSelectedServiceFilter(cat.name)}
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs whitespace-nowrap transition-all border ${
                       isSelected
-                        ? 'bg-[#FF6422] text-white font-bold border-orange-500 shadow-md shadow-orange-500/20'
-                        : 'bg-white text-stone-700 border-[#E2DDD5] hover:border-orange-300 hover:text-stone-900 shadow-xs'
+                        ? isWomen
+                          ? 'bg-[#E11D48] text-white font-bold border-rose-500 shadow-md shadow-rose-500/20'
+                          : 'bg-[#FF6422] text-white font-bold border-orange-500 shadow-md shadow-orange-500/20'
+                        : isWomen
+                          ? 'bg-white text-stone-700 border-[#FED7CC] hover:border-rose-300 hover:text-stone-900 shadow-xs'
+                          : 'bg-white text-stone-700 border-[#E2DDD5] hover:border-orange-300 hover:text-stone-900 shadow-xs'
                     }`}
                   >
-                    <Icon className={`w-3 h-3 ${isSelected ? 'text-white' : 'text-[#FF6422]'}`} />
+                    <Icon className={`w-3 h-3 ${isSelected ? 'text-white' : isWomen ? 'text-[#E11D48]' : 'text-[#FF6422]'}`} />
                     <span>{cat.name}</span>
                   </button>
                 );
@@ -344,7 +372,11 @@ export const HomeScreen: React.FC = () => {
                   <div
                     key={salon.id}
                     onClick={() => handleSalonCardClick(salon)}
-                    className="group bg-white hover:bg-[#FFFDF9] border border-[#E8E2D8] hover:border-orange-400 rounded-2xl p-3.5 transition-all duration-300 cursor-pointer shadow-[0_2px_12px_rgba(40,20,10,0.04)] hover:shadow-xl relative"
+                    className={`group transition-all duration-300 cursor-pointer p-3.5 relative ${
+                      isWomen
+                        ? 'rounded-3xl bg-white hover:bg-[#FFF8F5] border border-[#FED7CC] hover:border-rose-300 shadow-[0_2px_14px_rgba(225,29,72,0.05)] hover:shadow-xl'
+                        : 'rounded-2xl bg-white hover:bg-[#FFFDF9] border border-[#E8E2D8] hover:border-orange-400 shadow-[0_2px_12px_rgba(40,20,10,0.04)] hover:shadow-xl'
+                    }`}
                   >
                     {/* Favorite & Compare Quick Actions */}
                     <div className="absolute top-3 right-3 z-10 flex items-center gap-1.5">
@@ -500,7 +532,11 @@ export const HomeScreen: React.FC = () => {
                   <div
                     key={salon.id}
                     onClick={() => handleSalonCardClick(salon)}
-                    className="group bg-white hover:bg-[#FFFDF9] border border-[#E8E2D8] hover:border-orange-400 rounded-3xl p-4 transition-all duration-300 cursor-pointer shadow-[0_2px_12px_rgba(40,20,10,0.04)] hover:shadow-xl"
+                    className={`group transition-all duration-300 cursor-pointer p-4 ${
+                      isWomen
+                        ? 'rounded-3xl bg-white hover:bg-[#FFF8F5] border border-[#FED7CC] hover:border-rose-300 shadow-[0_2px_14px_rgba(225,29,72,0.05)] hover:shadow-xl'
+                        : 'rounded-3xl bg-white hover:bg-[#FFFDF9] border border-[#E8E2D8] hover:border-orange-400 shadow-[0_2px_12px_rgba(40,20,10,0.04)] hover:shadow-xl'
+                    }`}
                   >
                     <div className="flex flex-col sm:flex-row gap-4">
                       {/* Photo with overlay */}

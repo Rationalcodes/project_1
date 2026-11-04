@@ -22,7 +22,7 @@ export interface LocationOption {
 }
 
 export type SalonType = 'unisex' | 'men' | 'women';
-export type GenderFilter = 'all' | 'men' | 'women';
+export type GenderFilter = 'men' | 'women';
 
 export const getSalonType = (salon: Salon): SalonType => {
   if (salon.salonType) return salon.salonType;
@@ -56,7 +56,6 @@ export const getSalonType = (salon: Salon): SalonType => {
 };
 
 export const matchesGenderFilter = (salon: Salon, filter: GenderFilter): boolean => {
-  if (filter === 'all') return true;
   const type = getSalonType(salon);
   if (filter === 'men') {
     // Men filter includes Men-specific studios AND Unisex studios
@@ -191,9 +190,9 @@ export const SalonProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [genderFilter, setGenderFilterState] = useState<GenderFilter>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('kumbhakaran_gender_filter');
-      if (saved === 'men' || saved === 'women' || saved === 'all') return saved;
+      if (saved === 'men' || saved === 'women') return saved;
     }
-    return 'all';
+    return 'men';
   });
 
   const setGenderFilter = (filter: GenderFilter) => {
@@ -201,13 +200,6 @@ export const SalonProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     if (typeof window !== 'undefined') {
       localStorage.setItem('kumbhakaran_gender_filter', filter);
     }
-    triggerNotification(
-      filter === 'all'
-        ? 'Showing all studios'
-        : filter === 'men'
-        ? "Switched to Men's Grooming"
-        : "Switched to Women's Salons & Beauty"
-    );
   };
   const [userLocation, setUserLocationState] = useState<LocationOption | null>(() => {
     if (typeof window !== 'undefined') {

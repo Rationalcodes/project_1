@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { useSalon, getEstimatedWaitMinutes, getQueueDisplay, getQueueFreshness, matchesGenderFilter, getSalonType } from '../../context/SalonContext';
 import { Salon } from '../../types';
+import { redirectToGoogleMaps } from '@kumbhakaran/ui';
 
 type SortOption = 'distance' | 'queue' | 'rating' | 'price';
 
@@ -40,10 +41,11 @@ export const ExploreScreen: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [maxPrice, setMaxPrice] = useState<number>(1000);
 
-  const categories =
-    genderFilter === 'women'
-      ? ['All', 'Hair', 'Spa', 'Facial', 'Color', 'Combos']
-      : ['All', 'Hair', 'Beard', 'Combos', 'Spa', 'Facial'];
+  const isWomen = genderFilter === 'women';
+
+  const categories = isWomen
+    ? ['All', 'Hair', 'Spa', 'Facial', 'Color', 'Combos']
+    : ['All', 'Hair', 'Beard', 'Combos', 'Spa', 'Facial'];
 
   // Sorting & Filtering
   const processedSalons = salons
@@ -83,21 +85,27 @@ export const ExploreScreen: React.FC = () => {
           Browse & Compare Studios
         </h1>
         <p className="text-xs text-stone-500 mt-0.5">
-          Find the ideal salon match with real-time walk-in visibility
+          {isWomen
+            ? 'Discover curated ladies & unisex beauty studios with live queues'
+            : 'Find the ideal salon match with real-time walk-in visibility'}
         </p>
       </div>
 
       {/* Search Bar */}
       <div className="relative">
         <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-stone-400">
-          <Search className="w-4 h-4 text-[#FF6422]" />
+          <Search className={`w-4 h-4 ${isWomen ? 'text-[#E11D48]' : 'text-[#FF6422]'}`} />
         </div>
         <input
           type="text"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Search by salon name, locality or service..."
-          className="w-full pl-10 pr-4 py-2.5 bg-white border border-[#E2DDD5] rounded-2xl text-xs text-stone-900 placeholder-stone-400 focus:outline-none focus:border-[#FF6422] shadow-xs"
+          placeholder={isWomen ? "Search parlour name, beauty service, or locality..." : "Search by salon name, locality or service..."}
+          className={`w-full pl-10 pr-4 py-2.5 bg-white border ${
+            isWomen
+              ? 'border-[#FED7CC] focus:border-[#E11D48]'
+              : 'border-[#E2DDD5] focus:border-[#FF6422]'
+          } rounded-2xl text-xs text-stone-900 placeholder-stone-400 focus:outline-none shadow-xs transition-colors`}
         />
       </div>
 
@@ -105,13 +113,15 @@ export const ExploreScreen: React.FC = () => {
       <div>
         <div className="flex items-center justify-between mb-2">
           <span className="text-[11px] font-bold text-stone-500 uppercase tracking-wider flex items-center gap-1">
-            <ArrowUpDown className="w-3 h-3 text-[#FF6422]" /> Sort Salons By:
+            <ArrowUpDown className={`w-3 h-3 ${isWomen ? 'text-[#E11D48]' : 'text-[#FF6422]'}`} /> Sort Salons By:
           </span>
 
           {comparisonList.length > 0 && (
             <button
               onClick={() => setIsCompareOpen(true)}
-              className="text-xs text-[#FF6422] font-bold hover:underline flex items-center gap-1"
+              className={`text-xs font-bold hover:underline flex items-center gap-1 ${
+                isWomen ? 'text-[#E11D48]' : 'text-[#FF6422]'
+              }`}
             >
               <SlidersHorizontal className="w-3.5 h-3.5" />
               Compare ({comparisonList.length})
@@ -124,8 +134,12 @@ export const ExploreScreen: React.FC = () => {
             onClick={() => setSortBy('queue')}
             className={`px-3 py-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 border transition-all ${
               sortBy === 'queue'
-                ? 'bg-[#FF6422] text-white border-orange-500 shadow-sm shadow-orange-500/20 font-bold'
-                : 'bg-white text-stone-700 border-[#E2DDD5] hover:border-orange-300'
+                ? isWomen
+                  ? 'bg-[#E11D48] text-white border-rose-500 shadow-sm shadow-rose-500/20 font-bold'
+                  : 'bg-[#FF6422] text-white border-orange-500 shadow-sm shadow-orange-500/20 font-bold'
+                : isWomen
+                  ? 'bg-white text-stone-700 border-[#FED7CC] hover:border-rose-300'
+                  : 'bg-white text-stone-700 border-[#E2DDD5] hover:border-orange-300'
             }`}
           >
             <Users className="w-3.5 h-3.5" /> Lowest Queue
@@ -135,8 +149,12 @@ export const ExploreScreen: React.FC = () => {
             onClick={() => setSortBy('distance')}
             className={`px-3 py-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 border transition-all ${
               sortBy === 'distance'
-                ? 'bg-[#FF6422] text-white border-orange-500 shadow-sm shadow-orange-500/20 font-bold'
-                : 'bg-white text-stone-700 border-[#E2DDD5] hover:border-orange-300'
+                ? isWomen
+                  ? 'bg-[#E11D48] text-white border-rose-500 shadow-sm shadow-rose-500/20 font-bold'
+                  : 'bg-[#FF6422] text-white border-orange-500 shadow-sm shadow-orange-500/20 font-bold'
+                : isWomen
+                  ? 'bg-white text-stone-700 border-[#FED7CC] hover:border-rose-300'
+                  : 'bg-white text-stone-700 border-[#E2DDD5] hover:border-orange-300'
             }`}
           >
             <Navigation className="w-3.5 h-3.5" /> Nearest First
@@ -146,8 +164,12 @@ export const ExploreScreen: React.FC = () => {
             onClick={() => setSortBy('rating')}
             className={`px-3 py-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 border transition-all ${
               sortBy === 'rating'
-                ? 'bg-[#FF6422] text-white border-orange-500 shadow-sm shadow-orange-500/20 font-bold'
-                : 'bg-white text-stone-700 border-[#E2DDD5] hover:border-orange-300'
+                ? isWomen
+                  ? 'bg-[#E11D48] text-white border-rose-500 shadow-sm shadow-rose-500/20 font-bold'
+                  : 'bg-[#FF6422] text-white border-orange-500 shadow-sm shadow-orange-500/20 font-bold'
+                : isWomen
+                  ? 'bg-white text-stone-700 border-[#FED7CC] hover:border-rose-300'
+                  : 'bg-white text-stone-700 border-[#E2DDD5] hover:border-orange-300'
             }`}
           >
             <Star className="w-3.5 h-3.5" /> Top Rated
@@ -157,8 +179,12 @@ export const ExploreScreen: React.FC = () => {
             onClick={() => setSortBy('price')}
             className={`px-3 py-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 border transition-all ${
               sortBy === 'price'
-                ? 'bg-[#FF6422] text-white border-orange-500 shadow-sm shadow-orange-500/20 font-bold'
-                : 'bg-white text-stone-700 border-[#E2DDD5] hover:border-orange-300'
+                ? isWomen
+                  ? 'bg-[#E11D48] text-white border-rose-500 shadow-sm shadow-rose-500/20 font-bold'
+                  : 'bg-[#FF6422] text-white border-orange-500 shadow-sm shadow-orange-500/20 font-bold'
+                : isWomen
+                  ? 'bg-white text-stone-700 border-[#FED7CC] hover:border-rose-300'
+                  : 'bg-white text-stone-700 border-[#E2DDD5] hover:border-orange-300'
             }`}
           >
             <span>₹</span> Lowest Price
@@ -167,7 +193,7 @@ export const ExploreScreen: React.FC = () => {
       </div>
 
       {/* Filter Row: Service Category chips + Open Now toggle */}
-      <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-[#E8E2D8]">
+      <div className={`flex flex-wrap items-center justify-between gap-2 pt-1 border-t ${isWomen ? 'border-[#FED7CC]' : 'border-[#E8E2D8]'}`}>
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
           {categories.map((cat) => (
             <button
@@ -175,8 +201,12 @@ export const ExploreScreen: React.FC = () => {
               onClick={() => setSelectedCategory(cat)}
               className={`px-3 py-1 rounded-full text-[11px] font-semibold whitespace-nowrap border transition-all ${
                 selectedCategory === cat
-                  ? 'bg-[#FF6422] text-white border-orange-500 shadow-xs'
-                  : 'bg-white text-stone-700 border-[#E2DDD5] hover:border-orange-300'
+                  ? isWomen
+                    ? 'bg-[#E11D48] text-white border-rose-500 shadow-xs'
+                    : 'bg-[#FF6422] text-white border-orange-500 shadow-xs'
+                  : isWomen
+                    ? 'bg-white text-stone-700 border-[#FED7CC] hover:border-rose-300'
+                    : 'bg-white text-stone-700 border-[#E2DDD5] hover:border-orange-300'
               }`}
             >
               {cat}
@@ -205,13 +235,23 @@ export const ExploreScreen: React.FC = () => {
 
       {/* Salon Cards */}
       {processedSalons.length === 0 ? (
-        <div className="bg-white border border-[#E8E2D8] rounded-3xl p-8 text-center space-y-3 shadow-sm">
-          <div className="w-12 h-12 rounded-2xl bg-orange-50 border border-orange-200 text-[#FF6422] flex items-center justify-center mx-auto">
-            <Search className="w-6 h-6 text-[#FF6422]" />
+        <div className={`bg-white border rounded-3xl p-8 text-center space-y-3 shadow-sm ${
+          isWomen ? 'border-[#FED7CC]' : 'border-[#E8E2D8]'
+        }`}>
+          <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mx-auto border ${
+            isWomen
+              ? 'bg-rose-50 border-rose-200 text-[#E11D48]'
+              : 'bg-orange-50 border-orange-200 text-[#FF6422]'
+          }`}>
+            <Search className="w-6 h-6" />
           </div>
-          <h3 className="text-base font-bold text-stone-900">No registered studios found</h3>
+          <h3 className="text-base font-bold text-stone-900">
+            {isWomen ? 'No beauty studios found' : 'No registered studios found'}
+          </h3>
           <p className="text-xs text-stone-500 max-w-sm mx-auto">
-            No approved salons match your search or filters in this locality. Try searching another area or register your own salon studio.
+            {isWomen
+              ? 'No ladies or unisex beauty studios match your search or filters in this locality. Try searching another area or register your salon.'
+              : 'No approved salons match your search or filters in this locality. Try searching another area or register your own salon studio.'}
           </p>
           <div className="pt-2 flex flex-wrap justify-center gap-2">
             <button
@@ -220,7 +260,9 @@ export const ExploreScreen: React.FC = () => {
                 setSelectedCategory('All');
                 setOpenOnly(false);
               }}
-              className="px-4 py-2 rounded-xl bg-[#FF6422] text-white font-bold text-xs hover:bg-orange-600 shadow-xs"
+              className={`px-4 py-2 rounded-xl text-white font-bold text-xs shadow-xs ${
+                isWomen ? 'bg-[#E11D48] hover:bg-rose-700' : 'bg-[#FF6422] hover:bg-orange-600'
+              }`}
             >
               Reset Filters
             </button>
@@ -228,7 +270,11 @@ export const ExploreScreen: React.FC = () => {
               href="https://project-1-xq1k.vercel.app"
               target="_blank"
               rel="noopener noreferrer"
-              className="px-4 py-2 rounded-xl bg-white border border-[#E2DDD5] text-[#FF6422] font-bold text-xs hover:border-[#FF6422] shadow-xs"
+              className={`px-4 py-2 rounded-xl bg-white border font-bold text-xs shadow-xs ${
+                isWomen
+                  ? 'border-[#FED7CC] text-[#E11D48] hover:border-[#E11D48]'
+                  : 'border-[#E2DDD5] text-[#FF6422] hover:border-[#FF6422]'
+              }`}
             >
               Register Your Salon Business ↗
             </a>
@@ -242,12 +288,17 @@ export const ExploreScreen: React.FC = () => {
           const freshness = getQueueFreshness(salon.lastQueueUpdate);
           const isSaved = userProfile.savedSalons.includes(salon.id);
           const isComparing = comparisonList.includes(salon.id);
+          const salonType = getSalonType(salon);
 
           return (
             <div
               key={salon.id}
               onClick={() => setSelectedSalonForDetail(salon)}
-              className="group bg-white hover:bg-[#FFFDF9] border border-[#E8E2D8] hover:border-orange-400 rounded-3xl overflow-hidden shadow-[0_4px_20px_rgba(40,20,10,0.04)] hover:shadow-xl transition-all duration-300 cursor-pointer"
+              className={`group bg-white border overflow-hidden shadow-[0_4px_20px_rgba(40,20,10,0.04)] hover:shadow-xl transition-all duration-300 cursor-pointer ${
+                isWomen
+                  ? 'rounded-3xl border-[#FED7CC] hover:border-rose-400 hover:bg-[#FFFDFB]'
+                  : 'rounded-2xl border-[#E8E2D8] hover:border-orange-400 hover:bg-[#FFFDF9]'
+              }`}
             >
               {/* Large Salon Photograph with overlays */}
               <div className="h-48 sm:h-56 w-full relative overflow-hidden">
@@ -272,7 +323,11 @@ export const ExploreScreen: React.FC = () => {
                         toggleCompareSalon(salon.id);
                       }}
                       className={`p-2 rounded-full backdrop-blur-md transition-colors border ${
-                        isComparing ? 'bg-[#FF6422] text-white border-orange-500 shadow-xs' : 'bg-white/90 text-stone-600 hover:text-stone-900 border-stone-200 shadow-xs'
+                        isComparing
+                          ? isWomen
+                            ? 'bg-[#E11D48] text-white border-rose-500 shadow-xs'
+                            : 'bg-[#FF6422] text-white border-orange-500 shadow-xs'
+                          : 'bg-white/90 text-stone-600 hover:text-stone-900 border-stone-200 shadow-xs'
                       }`}
                       title={isComparing ? 'Remove from compare' : 'Add to compare'}
                     >
@@ -295,25 +350,55 @@ export const ExploreScreen: React.FC = () => {
                 {/* Bottom of photo details */}
                 <div className="absolute bottom-3 left-4 right-4 flex items-end justify-between">
                   <div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <h2 className="text-lg sm:text-xl font-black text-white drop-shadow-md">
                         {salon.name}
                       </h2>
                       {salon.isVerified && (
-                        <CheckCircle2 className="w-4 h-4 text-[#FF6422]" />
+                        <CheckCircle2 className={`w-4 h-4 ${isWomen ? 'text-rose-400' : 'text-[#FF6422]'}`} />
                       )}
+                      {/* Salon Type Pill Badge */}
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border shadow-xs ${
+                        salonType === 'men'
+                          ? 'bg-blue-900/80 text-blue-100 border-blue-400/40 backdrop-blur-md'
+                          : salonType === 'women'
+                          ? 'bg-rose-900/80 text-rose-100 border-rose-400/40 backdrop-blur-md'
+                          : 'bg-stone-900/80 text-stone-100 border-stone-400/40 backdrop-blur-md'
+                      }`}>
+                        {salonType === 'men' ? '👨 Men Only' : salonType === 'women' ? '👩 Women Only' : '✨ Unisex Studio'}
+                      </span>
                     </div>
-                    <div className="flex items-center gap-2 mt-0.5">
+                    <div className="flex items-center gap-2 mt-1">
                       <span className="text-xs text-stone-200 drop-shadow line-clamp-1">
                         {salon.locality} • {salon.distanceKm} km
                       </span>
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-white/90 text-[10px] font-bold text-[#FF6422] border border-orange-200 backdrop-blur-sm shadow-xs">
-                        {salon.distanceKm} km
-                      </span>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          redirectToGoogleMaps(
+                            {
+                              lat: salon.coordinates.lat,
+                              lng: salon.coordinates.lng,
+                              name: salon.name,
+                              address: salon.address,
+                            },
+                            userLocation || undefined,
+                          );
+                        }}
+                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-white/90 hover:bg-white text-[10px] font-bold border backdrop-blur-sm transition-colors shadow-xs ${
+                          isWomen
+                            ? 'text-[#E11D48] border-rose-200'
+                            : 'text-[#FF6422] border-orange-200'
+                        }`}
+                        title="Open directions in Google Maps"
+                      >
+                        <Navigation className={`w-2.5 h-2.5 ${isWomen ? 'fill-[#E11D48] text-[#E11D48]' : 'fill-[#FF6422] text-[#FF6422]'}`} />
+                        <span>Directions ↗</span>
+                      </button>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-1 bg-white/95 backdrop-blur-md px-2.5 py-1 rounded-xl text-amber-800 font-bold text-xs border border-amber-200 shadow-xs">
+                  <div className="flex items-center gap-1 bg-white/95 backdrop-blur-md px-2.5 py-1 rounded-xl text-amber-800 font-bold text-xs border border-amber-200 shadow-xs shrink-0">
                     <Star className="w-3.5 h-3.5 fill-amber-500 text-amber-500" />
                     <span>{salon.rating}</span>
                     <span className="text-stone-400 font-normal">({salon.reviewCount})</span>
@@ -328,9 +413,13 @@ export const ExploreScreen: React.FC = () => {
                   {salon.services.slice(0, 4).map((s) => (
                     <span
                       key={s.id}
-                      className="text-[11px] font-medium bg-[#FAF7F2] text-stone-700 border border-[#E2DDD5] px-2.5 py-1 rounded-lg"
+                      className={`text-[11px] font-medium border px-2.5 py-1 rounded-lg ${
+                        isWomen
+                          ? 'bg-[#FFF9F6] text-stone-700 border-[#FED7CC]'
+                          : 'bg-[#FAF7F2] text-stone-700 border-[#E2DDD5]'
+                      }`}
                     >
-                      {s.name} <span className="text-[#FF6422] font-semibold">₹{s.price}</span>
+                      {s.name} <span className={`font-semibold ${isWomen ? 'text-[#E11D48]' : 'text-[#FF6422]'}`}>₹{s.price}</span>
                     </span>
                   ))}
                   {salon.services.length > 4 && (
@@ -341,7 +430,7 @@ export const ExploreScreen: React.FC = () => {
                 </div>
 
                 {/* Bottom info strip */}
-                <div className="pt-3 border-t border-[#E8E2D8] flex items-center justify-between text-xs">
+                <div className={`pt-3 border-t flex items-center justify-between text-xs ${isWomen ? 'border-[#FED7CC]' : 'border-[#E8E2D8]'}`}>
                   <div className="flex items-center gap-3">
                     <div>
                       <div className="text-[10px] text-stone-500">Starting at</div>
@@ -363,7 +452,11 @@ export const ExploreScreen: React.FC = () => {
                         e.stopPropagation();
                         setSelectedSalonForDetail(salon);
                       }}
-                      className="px-3.5 py-1.5 rounded-xl bg-[#FF6422] text-white font-bold text-xs hover:bg-orange-600 transition-colors flex items-center gap-1 shadow-xs"
+                      className={`px-3.5 py-1.5 rounded-xl text-white font-bold text-xs transition-colors flex items-center gap-1 shadow-xs ${
+                        isWomen
+                          ? 'bg-[#E11D48] hover:bg-rose-700'
+                          : 'bg-[#FF6422] hover:bg-orange-600'
+                      }`}
                     >
                       View Details <ArrowRight className="w-3 h-3" />
                     </button>

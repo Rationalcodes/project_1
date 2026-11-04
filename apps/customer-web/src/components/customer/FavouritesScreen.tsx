@@ -9,9 +9,11 @@ export const FavouritesScreen: React.FC = () => {
     toggleFavorite,
     setSelectedSalonForDetail,
     setCustomerTab,
-    triggerNotification
+    triggerNotification,
+    genderFilter,
   } = useSalon();
 
+  const isWomen = genderFilter === 'women';
   const savedSalons = salons.filter(s => userProfile.savedSalons.includes(s.id));
 
   return (
@@ -19,23 +21,35 @@ export const FavouritesScreen: React.FC = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-black text-stone-900 tracking-tight">
-            Favourite Grooming Spots
+            {isWomen ? 'Favourite Beauty Studios' : 'Favourite Grooming Spots'}
           </h1>
           <p className="text-xs text-stone-500 mt-0.5">
-            Keep an instant eye on live walk-in queues at your top salons
+            Keep an instant eye on live walk-in queues at your top studios
           </p>
         </div>
 
-        <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-orange-50 border border-orange-200 text-[#FF6422] text-xs font-bold shadow-xs">
-          <Heart className="w-3.5 h-3.5 fill-[#FF6422]" />
+        <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs font-bold shadow-xs ${
+          isWomen
+            ? 'bg-rose-50 border-rose-200 text-[#E11D48]'
+            : 'bg-orange-50 border-orange-200 text-[#FF6422]'
+        }`}>
+          <Heart className={`w-3.5 h-3.5 ${isWomen ? 'fill-[#E11D48]' : 'fill-[#FF6422]'}`} />
           <span>{savedSalons.length} Saved</span>
         </div>
       </div>
 
       {/* Queue Alert Settings Banner */}
-      <div className="bg-gradient-to-r from-orange-50 via-amber-50/40 to-white border border-orange-200 rounded-2xl p-4 flex items-center justify-between gap-3 shadow-xs">
+      <div className={`border rounded-2xl p-4 flex items-center justify-between gap-3 shadow-xs ${
+        isWomen
+          ? 'bg-gradient-to-r from-rose-50 via-pink-50/40 to-white border-[#FED7CC]'
+          : 'bg-gradient-to-r from-orange-50 via-amber-50/40 to-white border-orange-200'
+      }`}>
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-orange-100 text-[#FF6422] flex items-center justify-center shrink-0 shadow-xs">
+          <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-xs ${
+            isWomen
+              ? 'bg-rose-100 text-[#E11D48]'
+              : 'bg-orange-100 text-[#FF6422]'
+          }`}>
             <Bell className="w-5 h-5" />
           </div>
           <div>
@@ -47,25 +61,35 @@ export const FavouritesScreen: React.FC = () => {
         </div>
 
         <button
-          onClick={() => triggerNotification("Queue push alerts enabled for your favourite salons")}
-          className="px-3 py-1.5 rounded-xl bg-[#FF6422] text-white font-bold text-xs hover:bg-orange-600 transition-colors shrink-0 shadow-xs"
+          onClick={() => triggerNotification("Queue push alerts enabled for your favourite studios")}
+          className={`px-3 py-1.5 rounded-xl text-white font-bold text-xs transition-colors shrink-0 shadow-xs ${
+            isWomen
+              ? 'bg-[#E11D48] hover:bg-rose-700'
+              : 'bg-[#FF6422] hover:bg-orange-600'
+          }`}
         >
           {userProfile.notifyOnShortQueue ? 'Active' : 'Enable'}
         </button>
       </div>
 
       {savedSalons.length === 0 ? (
-        <div className="bg-white border border-[#E8E2D8] rounded-3xl p-10 text-center space-y-3 shadow-sm">
+        <div className={`bg-white border rounded-3xl p-10 text-center space-y-3 shadow-sm ${
+          isWomen ? 'border-[#FED7CC]' : 'border-[#E8E2D8]'
+        }`}>
           <Heart className="w-10 h-10 text-stone-300 mx-auto" />
           <h3 className="text-sm font-bold text-stone-900">No Favourites Added Yet</h3>
           <p className="text-xs text-stone-500 max-w-xs mx-auto">
-            Tap the heart icon on any salon card to save it here for quick walk-in monitoring.
+            Tap the heart icon on any studio card to save it here for quick walk-in monitoring.
           </p>
           <button
             onClick={() => setCustomerTab('explore')}
-            className="px-4 py-2 rounded-xl bg-[#FF6422] text-white font-bold text-xs hover:bg-orange-600 transition-colors inline-block shadow-xs"
+            className={`px-4 py-2 rounded-xl text-white font-bold text-xs transition-colors inline-block shadow-xs ${
+              isWomen
+                ? 'bg-[#E11D48] hover:bg-rose-700'
+                : 'bg-[#FF6422] hover:bg-orange-600'
+            }`}
           >
-            Discover Salons
+            Discover Studios
           </button>
         </div>
       ) : (
@@ -79,7 +103,11 @@ export const FavouritesScreen: React.FC = () => {
               <div
                 key={salon.id}
                 onClick={() => setSelectedSalonForDetail(salon)}
-                className="bg-white hover:bg-[#FFFDF9] border border-[#E8E2D8] hover:border-orange-400 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 transition-all cursor-pointer shadow-[0_2px_12px_rgba(40,20,10,0.04)] hover:shadow-xl"
+                className={`bg-white border p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 transition-all cursor-pointer shadow-[0_2px_12px_rgba(40,20,10,0.04)] hover:shadow-xl ${
+                  isWomen
+                    ? 'rounded-3xl border-[#FED7CC] hover:border-rose-400 hover:bg-[#FFFDFB]'
+                    : 'rounded-2xl border-[#E8E2D8] hover:border-orange-400 hover:bg-[#FFFDF9]'
+                }`}
               >
                 <div className="flex items-center gap-3.5">
                   <img src={salon.coverImage} alt={salon.name} className="w-16 h-16 rounded-xl object-cover shrink-0" />
@@ -98,7 +126,9 @@ export const FavouritesScreen: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between w-full sm:w-auto gap-4 pt-2 sm:pt-0 border-t sm:border-t-0 border-[#E8E2D8]">
+                <div className={`flex items-center justify-between w-full sm:w-auto gap-4 pt-2 sm:pt-0 border-t sm:border-t-0 ${
+                  isWomen ? 'border-[#FED7CC]' : 'border-[#E8E2D8]'
+                }`}>
                   {/* Live Queue Badge */}
                   <div className={`px-3 py-1.5 rounded-xl border text-center ${queueInfo.badgeClass}`}>
                     <div className="text-base font-extrabold flex items-center justify-center gap-1">
@@ -124,7 +154,11 @@ export const FavouritesScreen: React.FC = () => {
 
                     <button
                       onClick={() => setSelectedSalonForDetail(salon)}
-                      className="px-3.5 py-1.5 rounded-xl bg-[#FF6422] text-white font-bold text-xs hover:bg-orange-600 transition-colors flex items-center gap-1 shadow-xs"
+                      className={`px-3.5 py-1.5 rounded-xl text-white font-bold text-xs transition-colors flex items-center gap-1 shadow-xs ${
+                        isWomen
+                          ? 'bg-[#E11D48] hover:bg-rose-700'
+                          : 'bg-[#FF6422] hover:bg-orange-600'
+                      }`}
                     >
                       <span>View</span> <ArrowRight className="w-3 h-3" />
                     </button>
