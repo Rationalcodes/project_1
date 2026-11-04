@@ -380,7 +380,7 @@ export const HomeScreen: React.FC = () => {
                           <AlertTriangle className="w-3 h-3 text-[#FF6422]" /> Outdated
                         </span>
                       )}
-                      <span className="text-stone-500">{salon.openingHours.formatted.split('(')[0]}</span>
+                      <span className="text-stone-500">{(salon.openingHours?.formatted || '09:00 AM – 09:30 PM').split('(')[0]}</span>
                     </div>
                   </div>
                 );

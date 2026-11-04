@@ -128,7 +128,7 @@ export const CompareModal: React.FC = () => {
                         <Clock className="w-3 h-3 text-[#FF6422]" /> Hours
                       </span>
                       <span className="font-semibold text-stone-700 text-[11px] truncate max-w-[120px]">
-                        {salon.openingHours.open} - {salon.openingHours.close}
+                        {salon.openingHours?.open || '09:00 AM'} - {salon.openingHours?.close || '09:30 PM'}
                       </span>
                     </div>
                   </div>

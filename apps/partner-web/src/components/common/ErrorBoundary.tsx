@@ -35,6 +35,11 @@ export class ErrorBoundary extends Component<Props, State> {
     this.setState({ errorInfo });
   }
 
+  handleReload = () => {
+    safeStorage.removeItem('kumbhakaran_partner_active_salon');
+    window.location.reload();
+  };
+
   handleHardReset = () => {
     safeStorage.removeItem('kumbhakaran_partner_token');
     safeStorage.removeItem('kumbhakaran_partner_user');
@@ -81,7 +86,7 @@ export class ErrorBoundary extends Component<Props, State> {
             <div className="flex flex-col sm:flex-row gap-3 pt-2">
               <button
                 type="button"
-                onClick={() => window.location.reload()}
+                onClick={this.handleReload}
                 className="flex-1 py-3 px-4 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-lg shadow-amber-500/20 cursor-pointer"
               >
                 <RefreshCw className="w-4 h-4" />
