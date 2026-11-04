@@ -93,10 +93,10 @@ export const Header: React.FC = () => {
 
   return (
     <header className="sticky top-0 z-40 w-full max-w-full overflow-visible transition-colors duration-300">
-      {/* 1. TOP ROOF BAR (JioMart Base behind tabs) */}
+      {/* 1. TOP ROOF BAR (JioMart Warm Wine / Auburn base behind tabs) */}
       <div
-        className={`w-full px-3 pt-2.5 transition-colors duration-300 ${
-          isWomen ? 'bg-[#3A0A16]' : 'bg-[#1C110A]'
+        className={`w-full px-3 pt-2 transition-colors duration-300 ${
+          isWomen ? 'bg-[#780A1C]' : 'bg-[#781308]'
         }`}
       >
         <div className="max-w-md mx-auto flex items-end justify-center gap-2">
@@ -104,36 +104,38 @@ export const Header: React.FC = () => {
           <button
             type="button"
             onClick={() => setGenderFilter('men')}
-            className={`flex-1 py-2.5 px-3 font-black text-xs sm:text-sm tracking-wider flex items-center justify-center gap-1.5 transition-all duration-200 cursor-pointer select-none ${
+            className={`flex-1 py-2.5 px-3 flex items-center justify-center gap-1.5 transition-all duration-200 cursor-pointer select-none ${
               !isWomen
-                ? 'bg-[#FF5722] text-[#1C110A] rounded-t-2xl rounded-b-none shadow-md z-10'
-                : 'bg-white text-[#FF5722] rounded-2xl shadow-sm hover:bg-stone-50 mb-1 active:scale-98'
+                ? 'bg-[#FF5722] text-stone-950 font-black text-xs sm:text-sm tracking-wider rounded-t-2xl rounded-b-none border-none shadow-none translate-y-[1px] z-10'
+                : 'bg-white text-[#FF5722] font-black text-xs sm:text-sm tracking-wider rounded-full shadow-sm hover:bg-stone-50 mb-1 active:scale-95'
             }`}
           >
-            <span className="text-base leading-none">✂</span>
-            <span className="font-extrabold tracking-wider">MEN</span>
+            <span className="text-sm sm:text-base leading-none">✂</span>
+            <span>MEN</span>
           </button>
 
           {/* WOMEN TAB */}
           <button
             type="button"
             onClick={() => setGenderFilter('women')}
-            className={`flex-1 py-2.5 px-3 font-black text-xs sm:text-sm tracking-wider flex items-center justify-center gap-1.5 transition-all duration-200 cursor-pointer select-none ${
+            className={`flex-1 py-2.5 px-3 flex items-center justify-center gap-1.5 transition-all duration-200 cursor-pointer select-none ${
               isWomen
-                ? 'bg-[#FFDFD6] text-[#7A0D22] rounded-t-2xl rounded-b-none shadow-md z-10'
-                : 'bg-white text-[#C93B57] rounded-2xl shadow-sm hover:bg-stone-50 mb-1 active:scale-98'
+                ? 'bg-[#FFDFD6] text-[#7A0D22] font-black text-xs sm:text-sm tracking-wider rounded-t-2xl rounded-b-none border-none shadow-none translate-y-[1px] z-10'
+                : 'bg-white text-[#C93B57] font-black text-xs sm:text-sm tracking-wider rounded-full shadow-sm hover:bg-stone-50 mb-1 active:scale-95'
             }`}
           >
-            <span className="text-base leading-none">✨</span>
-            <span className="font-extrabold tracking-wider">WOMEN</span>
+            <span className="text-sm sm:text-base leading-none">✨</span>
+            <span>WOMEN</span>
           </button>
         </div>
       </div>
 
-      {/* 2. THE SEAMLESS CANOPY (Blends directly from active tab with zero line or gap) */}
+      {/* 2. THE SEAMLESS CANOPY (Naturally fused with active tab, softly rounded at bottom) */}
       <div
-        className={`w-full px-3 sm:px-6 pt-2.5 pb-3 transition-colors duration-300 shadow-md ${
-          isWomen ? 'bg-[#FFDFD6]' : 'bg-[#FF5722]'
+        className={`w-full px-3 sm:px-6 pt-2 pb-3.5 rounded-b-3xl transition-colors duration-300 ${
+          isWomen
+            ? 'bg-[#FFDFD6] shadow-[0_8px_24px_rgba(225,29,72,0.08)]'
+            : 'bg-[#FF5722] shadow-[0_8px_24px_rgba(255,87,34,0.18)]'
         }`}
       >
         <div className="max-w-7xl mx-auto space-y-2.5">
@@ -279,7 +281,7 @@ export const Header: React.FC = () => {
               }}
               className={`flex items-center gap-1.5 p-2 sm:px-3 sm:py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer shadow-xs ${
                 isWomen
-                  ? 'bg-white/85 hover:bg-white text-[#7A0D22] border border-rose-200/60'
+                  ? 'bg-white/90 hover:bg-white text-[#7A0D22] border border-rose-200/60'
                   : 'bg-white/20 hover:bg-white/30 text-white border border-white/25 backdrop-blur-xs'
               }`}
               title={isAuthenticated ? `Profile: ${authUser?.name}` : 'Sign in with Google'}
@@ -303,7 +305,7 @@ export const Header: React.FC = () => {
             </button>
           </div>
 
-          {/* Search Row: JioMart-Style Crisp White Pill Embedded in the Canopy */}
+          {/* Search Row: JioMart-Style Crisp White Pill Embedded in Canopy */}
           <div className="relative w-full">
             <div className="relative flex items-center bg-white rounded-full shadow-md overflow-hidden transition-all focus-within:ring-2 focus-within:ring-black/10">
               <div className="pl-3.5 pr-2 flex items-center pointer-events-none">
@@ -337,7 +339,7 @@ export const Header: React.FC = () => {
             </div>
           </div>
 
-          {/* Quick Category Pills Bar: Scrollable Horizontal Strip inside Canopy */}
+          {/* Quick Category Pills Bar: Scrollable Horizontal Strip inside Canopy with hidden scrollbar */}
           <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pt-0.5 pb-0.5">
             {groomingCategories.map((cat) => {
               const Icon = cat.icon;
@@ -352,10 +354,10 @@ export const Header: React.FC = () => {
                     isWomen
                       ? isActive
                         ? 'bg-[#E11D48] text-white shadow-xs scale-102'
-                        : 'bg-white/70 text-[#7A0D22] hover:bg-white'
+                        : 'bg-white/70 text-[#7A0D22] hover:bg-white border border-rose-200/50'
                       : isActive
                         ? 'bg-white text-[#FF5722] font-black shadow-xs scale-102'
-                        : 'bg-white/20 text-white hover:bg-white/30 backdrop-blur-xs'
+                        : 'bg-white/20 text-white hover:bg-white/30 backdrop-blur-xs border border-white/15'
                   }`}
                 >
                   <Icon className="w-3 h-3 shrink-0" />
