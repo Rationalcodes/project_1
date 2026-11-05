@@ -22,6 +22,7 @@ export const Header: React.FC = () => {
     authUser,
     isAuthenticated,
     userProfile,
+    customerTab,
     setCustomerTab,
     setSelectedSalonForDetail,
     genderFilter,
@@ -350,33 +351,35 @@ export const Header: React.FC = () => {
             </div>
           </div>
 
-          {/* Quick Category Pills Bar: Scrollable Horizontal Strip inside Canopy with hidden scrollbar */}
-          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pt-0.5 pb-0.5">
-            {groomingCategories.map((cat) => {
-              const Icon = cat.icon;
-              const isActive = selectedServiceFilter === cat.name;
+          {/* Quick Category Pills Bar: Scrollable Horizontal Strip inside Canopy - Only shown on Explore screen as requested */}
+          {customerTab === 'explore' && (
+            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pt-0.5 pb-0.5">
+              {groomingCategories.map((cat) => {
+                const Icon = cat.icon;
+                const isActive = selectedServiceFilter === cat.name;
 
-              return (
-                <button
-                  key={cat.name}
-                  type="button"
-                  onClick={() => setSelectedServiceFilter(cat.name)}
-                  className={`shrink-0 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
-                    isWomen
-                      ? isActive
-                        ? 'bg-[#E11D48] text-white shadow-xs scale-102'
-                        : 'bg-white/70 text-[#7A0D22] hover:bg-white border border-rose-200/50'
-                      : isActive
-                        ? 'bg-white text-[#FF723A] font-black shadow-xs scale-102'
-                        : 'bg-white/20 text-white hover:bg-white/30 backdrop-blur-xs border border-white/15'
-                  }`}
-                >
-                  <Icon className="w-3 h-3 shrink-0" />
-                  <span>{cat.name}</span>
-                </button>
-              );
-            })}
-          </div>
+                return (
+                  <button
+                    key={cat.name}
+                    type="button"
+                    onClick={() => setSelectedServiceFilter(cat.name)}
+                    className={`shrink-0 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                      isWomen
+                        ? isActive
+                          ? 'bg-[#E11D48] text-white shadow-xs scale-102'
+                          : 'bg-white/70 text-[#7A0D22] hover:bg-white border border-rose-200/50'
+                        : isActive
+                          ? 'bg-white text-[#FF723A] font-black shadow-xs scale-102'
+                          : 'bg-white/20 text-white hover:bg-white/30 backdrop-blur-xs border border-white/15'
+                    }`}
+                  >
+                    <Icon className="w-3 h-3 shrink-0" />
+                    <span>{cat.name}</span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
     </header>

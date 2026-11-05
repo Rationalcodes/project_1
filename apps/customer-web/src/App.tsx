@@ -42,7 +42,7 @@ const CustomerMainContent: React.FC = () => {
       case 'explore':
         return <ExploreScreen />;
       case 'map':
-        return <HomeScreen />;
+        return <MapScreen />;
       case 'favourites':
         return <FavouritesScreen />;
       case 'profile':

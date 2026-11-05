@@ -35,11 +35,12 @@ export const ExploreScreen: React.FC = () => {
     setIsCompareOpen,
     userLocation,
     genderFilter,
+    selectedServiceFilter,
+    setSelectedServiceFilter,
   } = useSalon();
 
   const [sortBy, setSortBy] = useState<SortOption>('queue');
   const [openOnly, setOpenOnly] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [maxPrice, setMaxPrice] = useState<number>(1000);
 
   const isWomen = genderFilter === 'women';
@@ -55,8 +56,8 @@ export const ExploreScreen: React.FC = () => {
       if (openOnly && !salon.isOpen) return false;
       if (salon.startingPrice > maxPrice) return false;
 
-      if (selectedCategory !== 'All') {
-        const hasCategory = salon.services.some(s => s.category === selectedCategory);
+      if (selectedServiceFilter !== 'All') {
+        const hasCategory = salon.services.some(s => s.category === selectedServiceFilter);
         if (!hasCategory) return false;
       }
 
@@ -199,9 +200,9 @@ export const ExploreScreen: React.FC = () => {
           {categories.map((cat) => (
             <button
               key={cat}
-              onClick={() => setSelectedCategory(cat)}
+              onClick={() => setSelectedServiceFilter(cat)}
               className={`px-3 py-1 rounded-full text-[11px] font-semibold whitespace-nowrap border transition-all ${
-                selectedCategory === cat
+                selectedServiceFilter === cat
                   ? isWomen
                     ? 'bg-[#E11D48] text-white border-rose-500 shadow-xs'
                     : 'bg-[#FF6422] text-white border-orange-500 shadow-xs'
@@ -258,7 +259,7 @@ export const ExploreScreen: React.FC = () => {
             <button
               onClick={() => {
                 setSearchQuery('');
-                setSelectedCategory('All');
+                setSelectedServiceFilter('All');
                 setOpenOnly(false);
               }}
               className={`px-4 py-2 rounded-xl text-white font-bold text-xs shadow-xs ${
