@@ -35,7 +35,7 @@ interface PartnerContextType {
   setPartnerView: (view: PartnerView) => void;
   ownerTab: PartnerView;
   setOwnerTab: (view: PartnerView) => void;
-  registerSalon: (data: SalonRegistrationInput) => Salon;
+  registerSalon: (data: SalonRegistrationInput) => Promise<Salon>;
   updateQueue: (salonId: string, delta: number, manualValue?: number) => void;
   updateSalonInfo: (salonId: string, updates: Partial<Salon>) => void;
   addService: (salonId: string, service: Omit<Service, 'id'>) => void;
@@ -429,8 +429,20 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
     triggerNotification('Signed out from Partner OS');
   };
 
-  const registerSalon = (data: SalonRegistrationInput): Salon => {
-    const newId = `salon-partner-${Date.now()}`;
+  const registerSalon = async (data: SalonRegistrationInput): Promise<Salon> => {
+    let backendSalonId: string | null = null;
+    try {
+      const res = await defaultApiClient.registerSalon(data);
+      if (res?.salon?.id) {
+        backendSalonId = res.salon.id;
+      }
+    } catch (err: any) {
+      console.error('Backend registration error:', err);
+      triggerNotification(`Registration error: ${err.message || 'Could not save salon to cloud'}`);
+      throw err;
+    }
+
+    const newId = backendSalonId || `salon-${Date.now()}`;
     const startingPrice =
       data.services && data.services.length > 0
         ? Math.min(...data.services.map((s) => s.price))
@@ -503,14 +515,11 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
       monthlyRevenue: 0,
     };
 
-    setSalons((prev) => [newSalon, ...prev]);
+    setSalons((prev) => [newSalon, ...prev.filter((s) => s.id !== newId)]);
     setActiveSalonId(newId);
     setPartnerView('live-queue');
     safeStorage.setItem('kumbhakaran_partner_active_salon', JSON.stringify(newSalon));
     triggerNotification(`🎉 Salon "${newSalon.name}" registered successfully! Your live walk-in queue is ready.`);
-
-    // Asynchronously synchronize with NestJS backend
-    defaultApiClient.registerSalon(data);
 
     return newSalon;
   };

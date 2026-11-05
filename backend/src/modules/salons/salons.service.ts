@@ -23,25 +23,40 @@ export class SalonsService {
   constructor(private readonly prisma: PrismaService) {}
 
   async registerSalon(dto: RegisterSalonDto, resolvedOwnerId?: string): Promise<any> {
-    const ownerId = resolvedOwnerId || dto.ownerId || `owner-${Date.now()}`;
     const searchEmail = dto.email?.toLowerCase().trim();
+    let effectiveOwnerId = resolvedOwnerId;
+
+    if (!effectiveOwnerId && searchEmail) {
+      try {
+        const existingUser = await this.prisma.user.findFirst({
+          where: { email: { equals: searchEmail, mode: 'insensitive' } },
+        });
+        if (existingUser) {
+          effectiveOwnerId = existingUser.id;
+        }
+      } catch (e) {
+        this.logger.warn(`Could not lookup existing user by email: ${(e as Error).message}`);
+      }
+    }
+
+    const ownerId = effectiveOwnerId || dto.ownerId || `owner-${Date.now()}`;
 
     // 1. Enforce 1 Gmail ID = 1 Salon policy (Idempotent: update existing if already registered)
     try {
       let existingSalon: any = null;
-      if (searchEmail || resolvedOwnerId) {
+      if (searchEmail || effectiveOwnerId) {
         existingSalon = await this.prisma.salon.findFirst({
           where: {
             OR: [
               ...(searchEmail ? [{ email: searchEmail }] : []),
-              ...(resolvedOwnerId ? [{ ownerId: resolvedOwnerId }] : []),
+              ...(effectiveOwnerId ? [{ ownerId: effectiveOwnerId }] : []),
             ],
           },
         });
       }
 
       if (existingSalon) {
-        this.logger.log(`Found existing salon ${existingSalon.id} for ${searchEmail || resolvedOwnerId}. Updating salon.`);
+        this.logger.log(`Found existing salon ${existingSalon.id} for ${searchEmail || effectiveOwnerId}. Updating salon.`);
         await this.prisma.$executeRawUnsafe(
           `UPDATE salons
            SET name = $1, tagline = $2, owner_name = $3, phone = $4,
@@ -235,7 +250,8 @@ export class SalonsService {
 
       this.logger.log(`✅ Salon ${newSalonRecord.id} successfully registered in PostGIS database.`);
     } catch (err) {
-      this.logger.warn(`Database insert skipped or failed (${(err as Error).message}). Storing in local state.`);
+      this.logger.error(`Database insert failed (${(err as Error).message}). Local state updated.`);
+      throw new BadRequestException(`Failed to register salon in database: ${(err as Error).message}`);
     }
 
     // Always maintain local memory state for high availability

@@ -25,6 +25,8 @@ interface SalonRegistrationWizardProps {
 export const SalonRegistrationWizard: React.FC<SalonRegistrationWizardProps> = ({ onSuccess }) => {
   const { registerSalon, partnerUser, activeSalon, setPartnerView } = useSalon();
   const [currentStep, setCurrentStep] = useState<number>(1);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [submissionError, setSubmissionError] = useState<string | null>(null);
 
   // Form State: Pre-fill with existing salon if available for this Gmail ID
   const [salonName, setSalonName] = useState(activeSalon?.name || '');
@@ -73,12 +75,15 @@ export const SalonRegistrationWizard: React.FC<SalonRegistrationWizardProps> = (
     }
   };
 
-  const handleSubmitRegistration = (e: React.FormEvent) => {
+  const handleSubmitRegistration = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!salonName.trim() || !ownerName.trim()) {
       alert("Please fill in Salon Name and Owner Name.");
       return;
     }
+
+    setIsSubmitting(true);
+    setSubmissionError(null);
 
     const regData: SalonRegistrationInput = {
       name: salonName,
@@ -104,8 +109,14 @@ export const SalonRegistrationWizard: React.FC<SalonRegistrationWizardProps> = (
       masterBarberName: masterBarber || ownerName
     };
 
-    registerSalon(regData);
-    onSuccess();
+    try {
+      await registerSalon(regData);
+      onSuccess();
+    } catch (err: any) {
+      setSubmissionError(err?.message || 'Failed to register salon. Please check your network and details.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -552,21 +563,29 @@ export const SalonRegistrationWizard: React.FC<SalonRegistrationWizardProps> = (
               </div>
             </div>
 
+            {submissionError && (
+              <div className="p-3.5 rounded-2xl bg-red-500/10 border border-red-500/30 text-red-400 text-xs">
+                <strong>Registration Error:</strong> {submissionError}
+              </div>
+            )}
+
             <div className="flex justify-between pt-4">
               <button
                 type="button"
                 onClick={() => setCurrentStep(3)}
-                className="px-4 py-2 rounded-xl text-zinc-400 hover:text-white text-xs flex items-center gap-1.5"
+                disabled={isSubmitting}
+                className="px-4 py-2 rounded-xl text-zinc-400 hover:text-white text-xs flex items-center gap-1.5 disabled:opacity-50"
               >
                 <ArrowLeft className="w-4 h-4" /> Back
               </button>
 
               <button
                 type="submit"
-                className="px-8 py-3 rounded-2xl bg-gradient-to-r from-amber-400 to-amber-500 text-black font-extrabold text-sm hover:from-amber-300 hover:to-amber-400 shadow-xl shadow-amber-500/30 flex items-center gap-2 cursor-pointer transition-all"
+                disabled={isSubmitting}
+                className="px-8 py-3 rounded-2xl bg-gradient-to-r from-amber-400 to-amber-500 text-black font-extrabold text-sm hover:from-amber-300 hover:to-amber-400 shadow-xl shadow-amber-500/30 flex items-center gap-2 cursor-pointer transition-all disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 <CheckCircle2 className="w-4 h-4" />
-                <span>Launch & Open Live Queue</span>
+                <span>{isSubmitting ? 'Registering Studio...' : 'Launch & Open Live Queue'}</span>
               </button>
             </div>
           </div>

@@ -48,44 +48,55 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const refreshSalons = async () => {
     try {
-      const res = await defaultApiClient.getAdminSalons();
+      let res: any[] | null = await defaultApiClient.getAdminSalons();
+      if (!res || !Array.isArray(res) || res.length === 0) {
+        // Fallback to public discovery endpoint to ensure registered salons are always visible to admin
+        const publicRes = await defaultApiClient.getNearbySalons(undefined, undefined, undefined);
+        if (publicRes && Array.isArray(publicRes.salons)) {
+          res = publicRes.salons;
+        }
+      }
+
       if (res && Array.isArray(res)) {
         setSalons(
           res.map((s: any) => ({
             id: s.id,
             name: s.name,
             tagline: s.tagline || 'Verified Kumbhakaran Salon Partner',
-            ownerName: s.ownerName,
-            ownerId: s.ownerId,
-            phone: s.phone,
-            email: s.email,
-            address: s.address,
-            locality: s.locality,
-            city: s.city,
-            state: s.state,
-            pincode: s.pincode,
-            coordinates: s.coordinates || { lat: 12.9352, lng: 77.6245 },
-            currentQueue: s.currentQueue || 0,
-            avgServiceTimeMinutes: 20,
-            activeBarbers: s.staffCount || 2,
-            distanceKm: 0,
-            startingPrice: s.startingPrice || 150,
+            ownerName: s.ownerName || s.owner_name || 'Salon Partner',
+            ownerId: s.ownerId || s.owner_id || '',
+            phone: s.phone || '',
+            email: s.email || '',
+            address: s.address || `${s.locality || ''}, ${s.city || ''}`,
+            locality: s.locality || '',
+            city: s.city || '',
+            state: s.state || 'Chhattisgarh',
+            pincode: s.pincode || '',
+            coordinates: s.coordinates || {
+              lat: Number(s.latitude) || 22.1385,
+              lng: Number(s.longitude) || 82.1437,
+            },
+            currentQueue: Number(s.currentQueue ?? s.current_queue ?? 0),
+            avgServiceTimeMinutes: Number(s.avgServiceTimeMinutes ?? s.avg_service_time_minutes ?? 20),
+            activeBarbers: Number(s.activeBarbers ?? s.staffCount ?? 2),
+            distanceKm: Number(s.distanceKm ?? 0),
+            startingPrice: Number(s.startingPrice ?? s.starting_price ?? 150),
             isOpen: s.isOpen ?? true,
             isVerified: s.isVerified ?? false,
             status: s.status || 'active',
-            rating: s.rating || 5.0,
-            reviewCount: s.reviewCount || 0,
-            lastQueueUpdate: new Date().toISOString(),
-            coverImage: s.coverImage || '',
+            rating: Number(s.rating) || 5.0,
+            reviewCount: Number(s.reviewCount ?? s.review_count ?? 0),
+            lastQueueUpdate: s.lastQueueUpdate || new Date().toISOString(),
+            coverImage: s.coverImage || s.cover_image || '',
             images: s.coverImage ? [s.coverImage] : [],
             services: s.services || [],
             staff: s.staff || [],
             reviews: s.reviews || [],
             ratingBreakdown: { haircutQuality: 5, staffBehaviour: 5, cleanliness: 5, pricing: 5, overallExperience: 5 },
             openingHours: {
-              open: '09:00 AM',
-              close: '09:30 PM',
-              formatted: '09:00 AM – 09:30 PM (All Days)',
+              open: s.openingHoursOpen || '09:00 AM',
+              close: s.openingHoursClose || '09:30 PM',
+              formatted: s.openingHoursFormatted || '09:00 AM – 09:30 PM (All Days)',
             },
             todayCustomersServed: 0,
             todayRevenue: 0,
@@ -101,9 +112,11 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   };
 
-  // Restore authenticated session from localStorage
+  // Restore authenticated session from localStorage & populate salons
   useEffect(() => {
     let isMounted = true;
+    refreshSalons();
+
     const savedToken = safeStorage.getItem('kumbhakaran_admin_token');
     if (savedToken) {
       defaultApiClient.setAuthToken(savedToken);
@@ -111,9 +124,7 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         if (isMounted) {
           if (res?.user) {
             setAdminUser(res.user);
-            if (res.user.role === 'ADMIN') {
-              refreshSalons();
-            }
+            refreshSalons();
           }
         }
       });

@@ -773,14 +773,21 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       if (isInitial && isMounted) setIsLoadingSalons(true);
       try {
         let res = await defaultApiClient.getNearbySalons(queryLat, queryLng, queryRadius, lazyFilter);
-        if (!res || !res.salons || res.salons.length === 0) {
-          // If no salons found in local 25km radius, seamlessly fallback to all verified studios across India
-          res = await defaultApiClient.getNearbySalons(undefined, undefined, undefined, lazyFilter);
+        let discoveredSalons = res?.salons || [];
+
+        // If local radius returns fewer than 3 studios or none, fetch all studios across India so customers & owners can always discover newly onboarded studios
+        if (discoveredSalons.length < 3) {
+          const nationalRes = await defaultApiClient.getNearbySalons(undefined, undefined, undefined, lazyFilter);
+          if (nationalRes?.salons && nationalRes.salons.length > 0) {
+            const existingIds = new Set(discoveredSalons.map((s) => s.id));
+            const additional = nationalRes.salons.filter((s) => !existingIds.has(s.id));
+            discoveredSalons = [...discoveredSalons, ...additional];
+          }
         }
 
         if (isMounted) {
-          if (res && res.salons && res.salons.length > 0) {
-            const mapped = mapApiSalons(res.salons, userLocation);
+          if (discoveredSalons.length > 0) {
+            const mapped = mapApiSalons(discoveredSalons, userLocation);
             setSalons(mapped);
 
             // Also keep selectedSalonForDetail live if customer is viewing a modal or direct link

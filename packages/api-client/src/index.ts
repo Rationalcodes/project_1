@@ -340,43 +340,49 @@ export class KumbhakaranApiClient {
   // ==========================================================================
 
   /**
-   * Partner Salon Registration (requires Bearer token)
+   * Partner Salon Registration (Persists salon to Supabase PostgreSQL)
    */
   async registerSalon(payload: SalonRegistrationInput) {
-    try {
-      const res = await fetch(`${this.baseUrl}/salons/register`, {
-        method: 'POST',
-        headers: this.getHeaders({
-          'Content-Type': 'application/json',
-        }),
-        body: JSON.stringify({
-          name: payload.name,
-          tagline: payload.tagline,
-          ownerName: payload.ownerName,
-          phone: payload.phone,
-          email: payload.email,
-          address: payload.address,
-          locality: payload.locality,
-          city: payload.city,
-          state: payload.state,
-          pincode: payload.pincode,
-          latitude: payload.coordinates.lat,
-          longitude: payload.coordinates.lng,
-          coverImage: payload.coverImage,
-          activeBarbers: payload.activeBarbers,
-          services: payload.services.map((s) => ({
-            name: s.name,
-            category: s.category,
-            price: s.price,
-            durationMinutes: s.durationMinutes,
-          })),
-        }),
-      });
-      if (!res.ok) return null;
-      return await res.json();
-    } catch {
-      return null;
+    const res = await fetch(`${this.baseUrl}/salons/register`, {
+      method: 'POST',
+      headers: this.getHeaders({
+        'Content-Type': 'application/json',
+      }),
+      body: JSON.stringify({
+        name: payload.name,
+        tagline: payload.tagline,
+        ownerName: payload.ownerName,
+        phone: payload.phone,
+        email: payload.email,
+        address: payload.address,
+        locality: payload.locality,
+        city: payload.city,
+        state: payload.state,
+        pincode: payload.pincode,
+        latitude: payload.coordinates.lat,
+        longitude: payload.coordinates.lng,
+        coverImage: payload.coverImage,
+        activeBarbers: payload.activeBarbers,
+        services: payload.services.map((s) => ({
+          name: s.name,
+          category: s.category,
+          price: s.price,
+          durationMinutes: s.durationMinutes,
+        })),
+      }),
+    });
+
+    if (!res.ok) {
+      let errorMsg = `Salon registration failed (HTTP ${res.status})`;
+      try {
+        const body = await res.json();
+        if (body?.message) {
+          errorMsg = Array.isArray(body.message) ? body.message.join(', ') : body.message;
+        }
+      } catch {}
+      throw new Error(errorMsg);
     }
+    return await res.json();
   }
 
   /**

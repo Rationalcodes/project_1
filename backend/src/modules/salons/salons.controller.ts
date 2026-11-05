@@ -44,7 +44,7 @@ export class SalonsController {
   ) {}
 
   @Post('register')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(OptionalJwtAuthGuard)
   @ApiBearerAuth()
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
@@ -58,7 +58,7 @@ export class SalonsController {
   })
   async registerSalon(
     @Body() dto: RegisterSalonDto,
-    @CurrentUser() user: AuthenticatedUser,
+    @CurrentUser() user?: AuthenticatedUser,
   ) {
     return this.salonsService.registerSalon(dto, user?.id);
   }

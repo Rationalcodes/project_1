@@ -229,7 +229,93 @@ export const HomeScreen: React.FC = () => {
         </div>
       </section>
 
-      {/* 2. HOW IT WORKS (SIMPLE & DIRECT) */}
+      {/* 2. LIVE PARTNER STUDIOS GRID */}
+      {genderMatchedSalons.length > 0 && (
+        <section className="bg-white rounded-3xl border border-[#E8E2D8] p-4 sm:p-6 shadow-xs space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-base sm:text-lg font-bold text-stone-900 flex items-center gap-2">
+                <span>Live Partner Studios</span>
+                <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-xs font-bold border border-emerald-200">
+                  {genderMatchedSalons.length} Live
+                </span>
+              </h2>
+              <p className="text-xs text-stone-500 mt-0.5">
+                Real-time queues updated directly by barbers
+              </p>
+            </div>
+            <button
+              onClick={() => setCustomerTab('explore')}
+              className={`text-xs font-bold flex items-center gap-1 hover:underline cursor-pointer ${
+                isWomen ? 'text-[#E11D48]' : 'text-[#FF6422]'
+              }`}
+            >
+              <span>Explore All</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {genderMatchedSalons.map((salon) => (
+              <div
+                key={salon.id}
+                onClick={() => handleSalonCardClick(salon)}
+                className="group p-3 rounded-2xl bg-[#FAF7F2] hover:bg-white border border-[#E8E2D8] hover:border-orange-300 transition-all cursor-pointer flex flex-col justify-between shadow-xs"
+              >
+                <div className="flex items-start gap-3">
+                  <div className="w-12 h-12 rounded-xl overflow-hidden shrink-0 bg-stone-200 ring-1 ring-black/5">
+                    {salon.coverImage || salon.posterImage || (salon.images && salon.images[0]) ? (
+                      <img
+                        src={salon.coverImage || salon.posterImage || salon.images[0]}
+                        alt={salon.name}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-stone-800 text-white font-bold text-xs">
+                        {salon.name.slice(0, 2).toUpperCase()}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1">
+                      <h3 className="text-xs font-bold text-stone-900 truncate">
+                        {salon.name}
+                      </h3>
+                      {salon.isVerified && (
+                        <CheckCircle2 className="w-3.5 h-3.5 text-[#FF6422] shrink-0" />
+                      )}
+                    </div>
+                    <p className="text-[11px] text-stone-500 truncate mt-0.5">
+                      {salon.locality} • {salon.city}
+                    </p>
+                    <div className="flex items-center gap-2 text-[10px] mt-1">
+                      <span className="font-semibold text-stone-700">₹{salon.startingPrice} onwards</span>
+                      <span className="text-stone-300">•</span>
+                      <span className="text-emerald-700 font-bold flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                        {salon.currentQueue} waiting
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-3 pt-2.5 border-t border-[#E8E2D8]/70 flex items-center justify-between text-[11px]">
+                  <span className="text-stone-400">
+                    ~{getEstimatedWaitMinutes(salon.currentQueue, salon.avgServiceTimeMinutes, salon.activeBarbers)} min wait
+                  </span>
+                  <span className={`font-bold flex items-center gap-0.5 ${isWomen ? 'text-[#E11D48]' : 'text-[#FF6422]'}`}>
+                    <span>Check Queue</span>
+                    <ArrowRight className="w-3 h-3" />
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* 3. HOW IT WORKS (SIMPLE & DIRECT) */}
       <section className="bg-white rounded-3xl border border-[#E8E2D8] p-5 sm:p-6 shadow-xs">
         <div className="mb-4">
           <h2 className="text-base sm:text-lg font-bold text-stone-900">
