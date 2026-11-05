@@ -418,8 +418,8 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         id: item.id,
         name: item.name,
         tagline: item.tagline || 'Verified Kumbhakaran Salon Partner',
-        coverImage: item.coverImage || 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=1200&q=80',
-        images: [item.coverImage || 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=1200&q=80'],
+        coverImage: item.coverImage || '',
+        images: item.coverImage ? [item.coverImage] : [],
         rating: Number(item.rating) || 5.0,
         reviewCount: Number(item.reviewCount) || 0,
         currentQueue: item.currentQueue,
@@ -448,9 +448,7 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           : [
               { id: `svc-${item.id}-1`, name: 'Signature Haircut', category: 'Hair', price: Number(item.startingPrice) || 150, durationMinutes: 25, isAvailable: true, description: 'Master stylist haircut' },
             ],
-        staff: [
-          { id: `st-${item.id}-1`, name: 'Master Barber', role: 'Stylist', experience: '5 Years', photo: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80', specialties: ['Fade', 'Beard'], status: 'active', rating: 4.9 },
-        ],
+        staff: (item as any).staff || [],
         ratingBreakdown: { haircutQuality: 5, staffBehaviour: 5, cleanliness: 5, pricing: 5, overallExperience: 5 },
         reviews: (() => {
           let cached: Review[] = [];

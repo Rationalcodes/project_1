@@ -13,6 +13,7 @@ import {
   ArrowRight,
   ArrowLeft,
   Camera,
+  Upload,
   IndianRupee,
   ShieldCheck
 } from 'lucide-react';
@@ -58,14 +59,7 @@ export const SalonRegistrationWizard: React.FC<SalonRegistrationWizardProps> = (
   ]);
 
   // Photo
-  const [coverImage, setCoverImage] = useState('https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=1200&q=80');
-
-  const photoPresets = [
-    { label: 'Gentleman Barbershop', url: 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=1200&q=80' },
-    { label: 'Modern Fade Studio', url: 'https://images.unsplash.com/photo-1512690459411-b9245aed614b?auto=format&fit=crop&w=1200&q=80' },
-    { label: 'Leather Lounge Club', url: 'https://images.unsplash.com/photo-1585747860715-2ba37e788b70?auto=format&fit=crop&w=1200&q=80' },
-    { label: 'Unisex Spa Suite', url: 'https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=1200&q=80' }
-  ];
+  const [coverImage, setCoverImage] = useState('');
 
   const handleServicePriceChange = (index: number, newPrice: number) => {
     const updated = [...services];
@@ -447,24 +441,51 @@ export const SalonRegistrationWizard: React.FC<SalonRegistrationWizardProps> = (
             {/* Salon Photograph Presets */}
             <div>
               <label className="text-xs font-semibold text-zinc-300 flex items-center gap-1.5 mb-1.5">
-                <Camera className="w-3.5 h-3.5 text-amber-400" /> Select Studio Photograph Style
+                <Camera className="w-3.5 h-3.5 text-amber-400" /> Studio Cover Photograph
               </label>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                {photoPresets.map((p, idx) => (
-                  <div
-                    key={idx}
-                    onClick={() => setCoverImage(p.url)}
-                    className={`cursor-pointer rounded-xl overflow-hidden border-2 relative transition-all ${
-                      coverImage === p.url ? 'border-amber-400 ring-2 ring-amber-400/30' : 'border-zinc-800 opacity-60 hover:opacity-100'
-                    }`}
-                  >
-                    <img src={p.url} alt={p.label} className="w-full h-16 object-cover" />
-                    <div className="p-1 bg-black/80 text-[10px] text-zinc-300 truncate text-center">
-                      {p.label}
-                    </div>
-                  </div>
-                ))}
+              <div className="flex gap-2 mb-2">
+                <input
+                  type="url"
+                  value={coverImage}
+                  onChange={(e) => setCoverImage(e.target.value)}
+                  placeholder="Paste image URL or click Upload"
+                  className="flex-1 p-2.5 bg-zinc-900 border border-zinc-700 rounded-xl text-xs text-white"
+                />
+                <label className="px-3 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-semibold rounded-xl text-xs cursor-pointer flex items-center gap-1 shrink-0">
+                  <Upload className="w-3.5 h-3.5" />
+                  <span>Upload</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      const reader = new FileReader();
+                      reader.onload = () => {
+                        setCoverImage(reader.result as string);
+                      };
+                      reader.readAsDataURL(file);
+                    }}
+                  />
+                </label>
               </div>
+              {coverImage ? (
+                <div className="h-32 rounded-xl overflow-hidden border border-zinc-700 relative">
+                  <img src={coverImage} alt="Cover Preview" className="w-full h-full object-cover" />
+                  <button
+                    type="button"
+                    onClick={() => setCoverImage('')}
+                    className="absolute top-2 right-2 px-2 py-0.5 bg-black/70 hover:bg-rose-600 text-white text-[10px] rounded-lg font-bold"
+                  >
+                    Remove
+                  </button>
+                </div>
+              ) : (
+                <div className="p-3 bg-zinc-900/50 border border-dashed border-zinc-700 rounded-xl text-center text-xs text-zinc-500">
+                  Optional: Upload now or set your cover photo & loop video anytime in your studio dashboard.
+                </div>
+              )}
             </div>
 
             <div className="flex justify-between pt-4">

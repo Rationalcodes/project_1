@@ -58,7 +58,7 @@ export const SalonRegistrationWizard: React.FC<SalonRegistrationWizardProps> = (
   ]);
 
   // Photo
-  const [coverImage, setCoverImage] = useState('https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=1200&q=80');
+  const [coverImage, setCoverImage] = useState('');
 
   const photoPresets = [
     { label: 'Gentleman Barbershop', url: 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=1200&q=80' },

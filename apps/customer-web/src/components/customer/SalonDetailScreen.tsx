@@ -27,7 +27,8 @@ import {
   Eye,
   Maximize2,
   X,
-  ChevronLeft
+  ChevronLeft,
+  Store
 } from 'lucide-react';
 import { useSalon, getEstimatedWaitMinutes, getQueueDisplay, getQueueFreshness } from '../../context/CustomerContext';
 import { Service, Staff } from '@kumbhakaran/shared-types';
@@ -72,22 +73,12 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
 
   // Curated Location & Work media collections
   const locationPhotos = (salon.locationImages && salon.locationImages.length > 0)
-    ? salon.locationImages
-    : [
-        salon.posterImage || salon.coverImage || 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=1200&q=80',
-        'https://images.unsplash.com/photo-1585747860715-2ba37e788b70?auto=format&fit=crop&w=1200&q=80',
-        'https://images.unsplash.com/photo-1521590832167-7bcbfaa6381f?auto=format&fit=crop&w=1200&q=80',
-        'https://images.unsplash.com/photo-1512690459411-b9245aed614b?auto=format&fit=crop&w=1200&q=80'
-      ];
+    ? salon.locationImages.filter((url) => !url.includes('images.unsplash.com'))
+    : [];
 
   const workPhotos = (salon.workImages && salon.workImages.length > 0)
-    ? salon.workImages
-    : [
-        'https://images.unsplash.com/photo-1622286342621-4bd786c2447c?auto=format&fit=crop&w=1200&q=80',
-        'https://images.unsplash.com/photo-1599351431202-1e0f0137899a?auto=format&fit=crop&w=1200&q=80',
-        'https://images.unsplash.com/photo-1517832606589-7629c339590a?auto=format&fit=crop&w=1200&q=80',
-        'https://images.unsplash.com/photo-1621605815971-fbc98d665033?auto=format&fit=crop&w=1200&q=80'
-      ];
+    ? salon.workImages.filter((url) => !url.includes('images.unsplash.com'))
+    : [];
 
   // Aggregated gallery items for filtering and interactive lightbox
   const galleryItems = [
@@ -197,12 +188,21 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
             >
               <source src={salon.loopVideoUrl} type="video/mp4" />
             </video>
-          ) : (
+          ) : ((salon.images && salon.images[activeGalleryIndex]) || salon.posterImage || salon.coverImage) ? (
             <img
-              src={salon.images[activeGalleryIndex] || salon.posterImage || salon.coverImage}
+              src={(salon.images && salon.images[activeGalleryIndex]) || salon.posterImage || salon.coverImage}
               alt={salon.name}
               className="w-full h-full object-cover transition-all duration-500"
             />
+          ) : (
+            <div className="w-full h-full bg-gradient-to-br from-stone-900 via-stone-800 to-stone-900 flex flex-col items-center justify-center text-white p-6 text-center">
+              <Store className="w-12 h-12 text-[#FF6422] mb-2" />
+              <div className="text-xl font-black">{salon.name}</div>
+              <div className="text-xs text-stone-400 mt-1">{salon.locality}, {salon.city}</div>
+              <div className="mt-3 px-3 py-1 rounded-full bg-white/10 text-[11px] font-semibold text-stone-300 border border-white/10">
+                Verified Kumbhkaran Walk-In Studio
+              </div>
+            </div>
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-black/10 pointer-events-none" />
 

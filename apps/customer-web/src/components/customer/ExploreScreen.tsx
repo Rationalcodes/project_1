@@ -13,7 +13,8 @@ import {
   Flame,
   Sparkles,
   Heart,
-  ArrowRight
+  ArrowRight,
+  Store
 } from 'lucide-react';
 import { useSalon, getEstimatedWaitMinutes, getQueueDisplay, getQueueFreshness, matchesGenderFilter, getSalonType } from '../../context/CustomerContext';
 import { Salon } from '@kumbhakaran/shared-types';
@@ -290,11 +291,19 @@ export const ExploreScreen: React.FC = () => {
             >
               {/* Large Salon Photograph with overlays */}
               <div className="h-48 sm:h-56 w-full relative overflow-hidden">
-                <img
-                  src={salon.coverImage}
-                  alt={salon.name}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                />
+                {salon.coverImage ? (
+                  <img
+                    src={salon.coverImage}
+                    alt={salon.name}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-gradient-to-br from-stone-800 to-stone-900 flex flex-col items-center justify-center text-white p-4 text-center">
+                    <Store className="w-10 h-10 text-[#FF6422] mb-1.5" />
+                    <span className="text-sm font-black line-clamp-1">{salon.name}</span>
+                    <span className="text-xs text-stone-400">{salon.locality}</span>
+                  </div>
+                )}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/10" />
 
                 {/* Top overlay badges */}

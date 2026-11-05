@@ -299,11 +299,18 @@ export const HomeScreen: React.FC = () => {
                     <div className="flex gap-3">
                       {/* Photo with Live Queue Badge Overlay */}
                       <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-xl overflow-hidden relative shrink-0">
-                        <img
-                          src={salon.coverImage}
-                          alt={salon.name}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                        />
+                        {salon.coverImage ? (
+                          <img
+                            src={salon.coverImage}
+                            alt={salon.name}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-gradient-to-br from-stone-800 to-stone-900 flex flex-col items-center justify-center text-white p-2 text-center">
+                            <Store className="w-6 h-6 text-[#FF6422] mb-1" />
+                            <span className="text-[10px] font-black line-clamp-1">{salon.name}</span>
+                          </div>
+                        )}
                         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
                         <div className="absolute bottom-1.5 left-1.5 right-1.5">
                           <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold shadow-xs ${queueInfo.pillClass}`}>

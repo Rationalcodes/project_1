@@ -70,40 +70,13 @@ export function normalizeSalon(raw: any): Salon {
         experience: st.experience || '4 Years',
         specialization: st.specialization || (Array.isArray(st.specialties) ? st.specialties.join(', ') : 'Hair styling & Grooming'),
         rating: Number(st.rating || 5.0),
-        reviewsCount: Number(st.reviewsCount || 15),
-        avatarUrl: st.avatarUrl || st.photo || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
-        photo: st.photo || st.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
+        reviewsCount: Number(st.reviewsCount || 0),
+        avatarUrl: st.avatarUrl || st.photo || '',
+        photo: st.photo || st.avatarUrl || '',
         status: st.status || 'active',
         isAvailable: st.status === 'active' || st.isAvailable !== false,
       }))
-    : [
-        {
-          id: `staff-${raw.id}-1`,
-          name: raw.ownerName || 'Lead Stylist',
-          role: 'Master Barber',
-          experience: '5+ Years',
-          specialization: 'Classic Fades, Beard Grooming',
-          rating: 5.0,
-          reviewsCount: 18,
-          avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
-          photo: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
-          status: 'active',
-          isAvailable: true,
-        },
-        {
-          id: `staff-${raw.id}-2`,
-          name: 'Senior Stylist',
-          role: 'Hair & Beard Specialist',
-          experience: '3 Years',
-          specialization: 'Modern Cuts & Hair Spa',
-          rating: 4.9,
-          reviewsCount: 14,
-          avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80',
-          photo: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80',
-          status: 'active',
-          isAvailable: true,
-        },
-      ];
+    : [];
 
   return {
     ...raw,
@@ -115,9 +88,7 @@ export function normalizeSalon(raw: any): Salon {
     staff,
     services: Array.isArray(raw.services) ? raw.services : [],
     reviews: Array.isArray(raw.reviews) ? raw.reviews : [],
-    images: Array.isArray(raw.images) && raw.images.length > 0 ? raw.images : [
-      raw.coverImage || 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=800&q=80'
-    ],
+    images: Array.isArray(raw.images) && raw.images.length > 0 ? raw.images : (raw.coverImage ? [raw.coverImage] : []),
     locationImages: Array.isArray(raw.locationImages) ? raw.locationImages : [],
     workImages: Array.isArray(raw.workImages) ? raw.workImages : [],
     mediaGallery: Array.isArray(raw.mediaGallery) ? raw.mediaGallery : [],

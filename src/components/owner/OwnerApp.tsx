@@ -108,21 +108,13 @@ export const OwnerApp: React.FC = () => {
   const [newLocationUrl, setNewLocationUrl] = useState('');
   const [newWorkUrl, setNewWorkUrl] = useState('');
 
-  const locationPhotosList = (activeSalon.locationImages && activeSalon.locationImages.length > 0)
-    ? activeSalon.locationImages
-    : [
-        activeSalon.posterImage || activeSalon.coverImage || 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=1200&q=80',
-        'https://images.unsplash.com/photo-1585747860715-2ba37e788b70?auto=format&fit=crop&w=1200&q=80',
-        'https://images.unsplash.com/photo-1521590832167-7bcbfaa6381f?auto=format&fit=crop&w=1200&q=80'
-      ];
+  const locationPhotosList = (activeSalon.locationImages && Array.isArray(activeSalon.locationImages))
+    ? activeSalon.locationImages.filter((url) => !url.includes('images.unsplash.com'))
+    : [];
 
-  const workPhotosList = (activeSalon.workImages && activeSalon.workImages.length > 0)
-    ? activeSalon.workImages
-    : [
-        'https://images.unsplash.com/photo-1622286342621-4bd786c2447c?auto=format&fit=crop&w=1200&q=80',
-        'https://images.unsplash.com/photo-1599351431202-1e0f0137899a?auto=format&fit=crop&w=1200&q=80',
-        'https://images.unsplash.com/photo-1517832606589-7629c339590a?auto=format&fit=crop&w=1200&q=80'
-      ];
+  const workPhotosList = (activeSalon.workImages && Array.isArray(activeSalon.workImages))
+    ? activeSalon.workImages.filter((url) => !url.includes('images.unsplash.com'))
+    : [];
 
   const handleSaveHeroMedia = (e: React.FormEvent) => {
     e.preventDefault();

@@ -72,22 +72,12 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
 
   // Curated Location & Work media collections
   const locationPhotos = (salon.locationImages && salon.locationImages.length > 0)
-    ? salon.locationImages
-    : [
-        salon.posterImage || salon.coverImage || 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=1200&q=80',
-        'https://images.unsplash.com/photo-1585747860715-2ba37e788b70?auto=format&fit=crop&w=1200&q=80',
-        'https://images.unsplash.com/photo-1521590832167-7bcbfaa6381f?auto=format&fit=crop&w=1200&q=80',
-        'https://images.unsplash.com/photo-1512690459411-b9245aed614b?auto=format&fit=crop&w=1200&q=80'
-      ];
+    ? salon.locationImages.filter((url) => !url.includes('images.unsplash.com'))
+    : [];
 
   const workPhotos = (salon.workImages && salon.workImages.length > 0)
-    ? salon.workImages
-    : [
-        'https://images.unsplash.com/photo-1622286342621-4bd786c2447c?auto=format&fit=crop&w=1200&q=80',
-        'https://images.unsplash.com/photo-1599351431202-1e0f0137899a?auto=format&fit=crop&w=1200&q=80',
-        'https://images.unsplash.com/photo-1517832606589-7629c339590a?auto=format&fit=crop&w=1200&q=80',
-        'https://images.unsplash.com/photo-1621605815971-fbc98d665033?auto=format&fit=crop&w=1200&q=80'
-      ];
+    ? salon.workImages.filter((url) => !url.includes('images.unsplash.com'))
+    : [];
 
   // Aggregated gallery items for filtering and interactive lightbox
   const galleryItems = [

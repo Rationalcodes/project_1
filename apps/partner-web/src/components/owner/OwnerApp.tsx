@@ -90,7 +90,9 @@ export const OwnerApp: React.FC = () => {
 
   // Media & Showcase Studio state (declared unconditionally)
   const [mediaSubTab, setMediaSubTab] = useState<'poster-video' | 'location' | 'work'>('poster-video');
-  const [posterUrlInput, setPosterUrlInput] = useState(activeSalon?.posterImage || activeSalon?.coverImage || '');
+  const rawInitialPoster = activeSalon?.posterImage || activeSalon?.coverImage || '';
+  const cleanInitialPoster = rawInitialPoster.includes('images.unsplash.com') ? '' : rawInitialPoster;
+  const [posterUrlInput, setPosterUrlInput] = useState(cleanInitialPoster);
   const [loopVideoUrlInput, setLoopVideoUrlInput] = useState(activeSalon?.loopVideoUrl || '');
   const [newLocationUrl, setNewLocationUrl] = useState('');
   const [newLocationTitle, setNewLocationTitle] = useState('');
@@ -142,28 +144,22 @@ export const OwnerApp: React.FC = () => {
     { id: 'settings', label: 'Salon Settings', icon: Settings }
   ];
 
-  const locationPhotosList = (activeSalon.locationImages && activeSalon.locationImages.length > 0)
-    ? activeSalon.locationImages
-    : [
-        activeSalon.posterImage || activeSalon.coverImage || 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=1200&q=80',
-        'https://images.unsplash.com/photo-1585747860715-2ba37e788b70?auto=format&fit=crop&w=1200&q=80',
-        'https://images.unsplash.com/photo-1521590832167-7bcbfaa6381f?auto=format&fit=crop&w=1200&q=80'
-      ];
+  const locationPhotosList = (activeSalon.locationImages && Array.isArray(activeSalon.locationImages))
+    ? activeSalon.locationImages.filter(url => !url.includes('images.unsplash.com'))
+    : [];
 
-  const workPhotosList = (activeSalon.workImages && activeSalon.workImages.length > 0)
-    ? activeSalon.workImages
-    : [
-        'https://images.unsplash.com/photo-1622286342621-4bd786c2447c?auto=format&fit=crop&w=1200&q=80',
-        'https://images.unsplash.com/photo-1599351431202-1e0f0137899a?auto=format&fit=crop&w=1200&q=80',
-        'https://images.unsplash.com/photo-1517832606589-7629c339590a?auto=format&fit=crop&w=1200&q=80'
-      ];
+  const workPhotosList = (activeSalon.workImages && Array.isArray(activeSalon.workImages))
+    ? activeSalon.workImages.filter(url => !url.includes('images.unsplash.com'))
+    : [];
 
   const handleSaveHeroMedia = (e: React.FormEvent) => {
     e.preventDefault();
+    const cleanPoster = posterUrlInput.trim();
+    const cleanVideo = loopVideoUrlInput.trim();
     updateSalonInfo(activeSalon.id, {
-      posterImage: posterUrlInput.trim() || activeSalon.coverImage,
-      coverImage: posterUrlInput.trim() || activeSalon.coverImage,
-      loopVideoUrl: loopVideoUrlInput.trim()
+      posterImage: cleanPoster,
+      coverImage: cleanPoster,
+      loopVideoUrl: cleanVideo
     });
     triggerNotification('Poster and loop video showcase updated!');
   };
@@ -1262,8 +1258,15 @@ export const OwnerApp: React.FC = () => {
                   <span className="text-zinc-500">Visible to all nearby walk-in customers</span>
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  {locationPhotosList.map((url, idx) => (
+                {locationPhotosList.length === 0 ? (
+                  <div className="p-8 border border-zinc-800 rounded-2xl text-center text-xs text-zinc-500 bg-zinc-900/40 space-y-1">
+                    <MapPin className="w-8 h-8 text-zinc-600 mx-auto mb-2" />
+                    <div className="font-semibold text-zinc-300">No studio location photos added yet</div>
+                    <p className="text-zinc-500 text-[11px]">Upload photos of your salon chairs, waiting lounge, and exterior front facade.</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    {locationPhotosList.map((url, idx) => (
                     <div key={idx} className="group relative h-36 rounded-2xl overflow-hidden border border-zinc-800 bg-zinc-900">
                       <img src={url} alt={`Location ${idx}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-80" />
@@ -1281,6 +1284,7 @@ export const OwnerApp: React.FC = () => {
                     </div>
                   ))}
                 </div>
+                )}
               </div>
             </div>
           )}
@@ -1344,8 +1348,15 @@ export const OwnerApp: React.FC = () => {
                   <span className="text-zinc-500">Inspires customers on what cut to request</span>
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  {workPhotosList.map((url, idx) => (
+                {workPhotosList.length === 0 ? (
+                  <div className="p-8 border border-zinc-800 rounded-2xl text-center text-xs text-zinc-500 bg-zinc-900/40 space-y-1">
+                    <Scissors className="w-8 h-8 text-zinc-600 mx-auto mb-2" />
+                    <div className="font-semibold text-zinc-300">No haircut portfolio photos added yet</div>
+                    <p className="text-zinc-500 text-[11px]">Upload photos of real cuts, beard trims, and styling transformations done at your studio.</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    {workPhotosList.map((url, idx) => (
                     <div key={idx} className="group relative h-36 rounded-2xl overflow-hidden border border-zinc-800 bg-zinc-900">
                       <img src={url} alt={`Work ${idx}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-80" />
@@ -1363,6 +1374,7 @@ export const OwnerApp: React.FC = () => {
                     </div>
                   ))}
                 </div>
+                )}
               </div>
             </div>
           )}

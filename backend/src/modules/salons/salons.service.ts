@@ -111,7 +111,7 @@ export class SalonsService {
       pincode: dto.pincode,
       latitude: dto.latitude,
       longitude: dto.longitude,
-      coverImage: dto.coverImage || 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=1200&q=80',
+      coverImage: dto.coverImage || '',
       openingHoursFormatted,
       currentQueue: 0,
       avgServiceTimeMinutes: dto.avgServiceTimeMinutes || 20,
@@ -352,7 +352,8 @@ export class SalonsService {
     try {
       const rows: any[] = await this.prisma.$queryRawUnsafe(
         `SELECT id, name, tagline, address, locality, city, state, pincode,
-                latitude, longitude, cover_image, opening_hours_formatted,
+                latitude, longitude, cover_image, poster_image, loop_video_url,
+                location_images, work_images, opening_hours_formatted,
                 current_queue, avg_service_time_minutes, active_barbers,
                 rating, review_count, starting_price, is_open, is_verified,
                 status, last_queue_update
@@ -429,24 +430,14 @@ export class SalonsService {
         lat: Number(salonData.latitude || 28.6139),
         lng: Number(salonData.longitude || 77.2090),
       },
-      coverImage: salonData.coverImage || salonData.cover_image || 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=800&q=80',
-      posterImage: salonData.posterImage || salonData.poster_image || salonData.coverImage || salonData.cover_image || 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=800&q=80',
+      coverImage: salonData.coverImage || salonData.cover_image || '',
+      posterImage: salonData.posterImage || salonData.poster_image || salonData.coverImage || salonData.cover_image || '',
       loopVideoUrl: salonData.loopVideoUrl || salonData.loop_video_url || '',
-      images: salonData.images || [
-        salonData.coverImage || salonData.cover_image || 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=800&q=80',
-        'https://images.unsplash.com/photo-1585747860715-2ba37e788b70?auto=format&fit=crop&w=800&q=80',
-        'https://images.unsplash.com/photo-1622286342621-4bd786c2447c?auto=format&fit=crop&w=800&q=80',
-      ],
-      locationImages: salonData.locationImages || salonData.location_images || [
-        'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=800&q=80',
-        'https://images.unsplash.com/photo-1585747860715-2ba37e788b70?auto=format&fit=crop&w=800&q=80',
-        'https://images.unsplash.com/photo-1521590832167-7bcbfaa6381f?auto=format&fit=crop&w=800&q=80',
-      ],
-      workImages: salonData.workImages || salonData.work_images || [
-        'https://images.unsplash.com/photo-1622286342621-4bd786c2447c?auto=format&fit=crop&w=800&q=80',
-        'https://images.unsplash.com/photo-1599351431202-1e0f0137899a?auto=format&fit=crop&w=800&q=80',
-        'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=800&q=80',
-      ],
+      images: Array.isArray(salonData.images) && salonData.images.length > 0
+        ? salonData.images
+        : (salonData.coverImage || salonData.cover_image ? [salonData.coverImage || salonData.cover_image] : []),
+      locationImages: Array.isArray(salonData.locationImages) ? salonData.locationImages : (Array.isArray(salonData.location_images) ? salonData.location_images : []),
+      workImages: Array.isArray(salonData.workImages) ? salonData.workImages : (Array.isArray(salonData.work_images) ? salonData.work_images : []),
       mediaGallery: salonData.mediaGallery || salonData.media_gallery || [],
       openingHoursFormatted: salonData.openingHoursFormatted || salonData.opening_hours_formatted || '09:00 AM – 09:30 PM (All Days)',
       openingHours: {
@@ -481,40 +472,13 @@ export class SalonsService {
             experience: st.experience || '4 Years',
             specialization: Array.isArray(st.specialties) ? st.specialties.join(', ') : (st.specialization || 'Hair styling & Grooming'),
             rating: Number(st.rating || 5.0),
-            reviewsCount: Number(st.reviewsCount || 15),
-            avatarUrl: st.photo || st.avatarUrl || st.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
-            photo: st.photo || st.avatarUrl || st.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
+            reviewsCount: Number(st.reviewsCount || 0),
+            avatarUrl: st.photo || st.avatarUrl || st.avatar_url || '',
+            photo: st.photo || st.avatarUrl || st.avatar_url || '',
             status: st.status || 'active',
             isAvailable: st.status === 'active' || st.isAvailable !== false,
           }))
-        : [
-            {
-              id: `staff-${salonData.id}-1`,
-              name: salonData.ownerName || salonData.owner_name || 'Lead Stylist',
-              role: 'Master Barber',
-              experience: '5+ Years',
-              specialization: 'Classic Fades, Beard Grooming',
-              rating: 5.0,
-              reviewsCount: 18,
-              avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
-              photo: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
-              status: 'active',
-              isAvailable: true,
-            },
-            {
-              id: `staff-${salonData.id}-2`,
-              name: 'Senior Stylist',
-              role: 'Hair & Beard Specialist',
-              experience: '3 Years',
-              specialization: 'Modern Cuts & Hair Spa',
-              rating: 4.9,
-              reviewsCount: 14,
-              avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80',
-              photo: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80',
-              status: 'active',
-              isAvailable: true,
-            },
-          ],
+        : [],
       ratingBreakdown: salonData.ratingBreakdown || {
         serviceQuality: 4.9,
         waitingTimeAccuracy: 4.8,
@@ -706,6 +670,29 @@ export class SalonsService {
       }
       if (dto.isOpen !== undefined) {
         await this.prisma.$executeRawUnsafe(`UPDATE salons SET is_open = $1 WHERE id = $2;`, dto.isOpen, id);
+      }
+      if (dto.coverImage !== undefined) {
+        await this.prisma.$executeRawUnsafe(`UPDATE salons SET cover_image = $1 WHERE id = $2;`, dto.coverImage || null, id);
+      }
+      if (dto.posterImage !== undefined) {
+        await this.prisma.$executeRawUnsafe(`UPDATE salons SET poster_image = $1 WHERE id = $2;`, dto.posterImage || null, id);
+      }
+      if (dto.loopVideoUrl !== undefined) {
+        await this.prisma.$executeRawUnsafe(`UPDATE salons SET loop_video_url = $1 WHERE id = $2;`, dto.loopVideoUrl || null, id);
+      }
+      if (dto.locationImages !== undefined) {
+        await this.prisma.$executeRawUnsafe(
+          `UPDATE salons SET location_images = $1::jsonb WHERE id = $2;`,
+          JSON.stringify(dto.locationImages || []),
+          id,
+        );
+      }
+      if (dto.workImages !== undefined) {
+        await this.prisma.$executeRawUnsafe(
+          `UPDATE salons SET work_images = $1::jsonb WHERE id = $2;`,
+          JSON.stringify(dto.workImages || []),
+          id,
+        );
       }
     } catch {
       // Handled via local update
