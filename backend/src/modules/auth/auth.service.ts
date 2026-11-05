@@ -385,13 +385,18 @@ export class AuthService {
       this.logger.warn(`Could not sync owned salon membership: ${(e as Error).message}`);
     }
 
-    return {
+    const userPayload = {
       id: user.id,
       email: user.email,
       name: user.name,
       avatarUrl: user.avatarUrl,
       phone: user.phone,
       role: user.role,
+    };
+
+    return {
+      user: userPayload,
+      ...userPayload,
       memberships,
     };
   }

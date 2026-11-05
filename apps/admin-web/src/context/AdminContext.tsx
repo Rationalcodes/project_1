@@ -35,8 +35,37 @@ const AdminContext = createContext<AdminContextType | undefined>(undefined);
 
 export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [salons, setSalons] = useState<Salon[]>(INITIAL_SALONS);
-  const [adminTab, setAdminTab] = useState<AdminTab>('overview');
-  const [adminUser, setAdminUser] = useState<AuthUser | null>(null);
+  const [adminTab, setAdminTabState] = useState<AdminTab>(() => {
+    try {
+      const saved = safeStorage.getItem('kumbhakaran_admin_tab') as AdminTab;
+      if (saved && ['overview', 'salons', 'reviews', 'audit'].includes(saved)) {
+        return saved;
+      }
+    } catch {}
+    return 'overview';
+  });
+
+  const setAdminTab = (tab: AdminTab) => {
+    setAdminTabState(tab);
+    try {
+      safeStorage.setItem('kumbhakaran_admin_tab', tab);
+    } catch {}
+  };
+
+  const [adminUser, setAdminUser] = useState<AuthUser | null>(() => {
+    try {
+      const savedToken = safeStorage.getItem('kumbhakaran_admin_token');
+      if (savedToken) {
+        defaultApiClient.setAuthToken(savedToken);
+      }
+      const savedUser = safeStorage.getItem('kumbhakaran_admin_user');
+      if (savedUser) {
+        const parsed = JSON.parse(savedUser);
+        if (parsed && (parsed.email || parsed.id)) return parsed;
+      }
+    } catch {}
+    return null;
+  });
   const [notificationMessage, setNotificationMessage] = useState<string | null>(null);
 
   const triggerNotification = (msg: string) => {
@@ -120,13 +149,24 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const savedToken = safeStorage.getItem('kumbhakaran_admin_token');
     if (savedToken) {
       defaultApiClient.setAuthToken(savedToken);
-      defaultApiClient.getCurrentUser().then((res) => {
+      defaultApiClient.getCurrentUser().then((res: any) => {
         if (isMounted) {
-          if (res?.user) {
-            setAdminUser(res.user);
+          const freshUser = res?.user || (res?.email ? res : null);
+          if (freshUser) {
+            setAdminUser(freshUser);
+            try {
+              safeStorage.setItem('kumbhakaran_admin_user', JSON.stringify(freshUser));
+            } catch {}
             refreshSalons();
+          } else {
+            // Token has been invalidated or expired
+            setAdminUser(null);
+            safeStorage.removeItem('kumbhakaran_admin_token');
+            safeStorage.removeItem('kumbhakaran_admin_user');
           }
         }
+      }).catch(() => {
+        // Network timeout / transient issue: retain optimistic session from localStorage
       });
     }
 
@@ -170,6 +210,8 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       const res = await defaultApiClient.loginWithGoogle(credential, clientId);
       if (res && res.accessToken) {
         safeStorage.setItem('kumbhakaran_admin_token', res.accessToken);
+        safeStorage.setItem('kumbhakaran_admin_user', JSON.stringify(res.user));
+        defaultApiClient.setAuthToken(res.accessToken);
         setAdminUser(res.user);
         if (res.user.role === 'ADMIN') {
           triggerNotification(`Welcome to Kumbhkaran Salons HQ, ${res.user.name}`);
@@ -193,6 +235,8 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       await defaultApiClient.logout();
     } catch {}
     safeStorage.removeItem('kumbhakaran_admin_token');
+    safeStorage.removeItem('kumbhakaran_admin_user');
+    safeStorage.removeItem('kumbhakaran_admin_tab');
     defaultApiClient.setAuthToken(null);
     setAdminUser(null);
     setSalons([]);

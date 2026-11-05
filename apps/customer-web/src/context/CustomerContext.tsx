@@ -228,13 +228,42 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return INITIAL_SALONS;
   });
   const [activeSalonId, setActiveSalonId] = useState<string>('salon-1');
-  const [customerTab, setCustomerTab] = useState<CustomerTab>('home');
+  const [customerTab, setCustomerTabState] = useState<CustomerTab>(() => {
+    try {
+      const saved = safeStorage.getItem('kumbhakaran_customer_tab') as CustomerTab;
+      if (saved && ['home', 'explore', 'saved', 'profile', 'compare'].includes(saved)) {
+        return saved;
+      }
+    } catch {}
+    return 'home';
+  });
+
+  const setCustomerTab = (tab: CustomerTab) => {
+    setCustomerTabState(tab);
+    try {
+      safeStorage.setItem('kumbhakaran_customer_tab', tab);
+    } catch {}
+  };
+
   const [selectedSalonForDetail, setSelectedSalonForDetail] = useState<Salon | null>(null);
   const [isExpressWalkin, setIsExpressWalkin] = useState<boolean>(() => getTargetSalonFromUrl().isExpressWalkin);
 
 
   const [userProfile, setUserProfile] = useState<CustomerProfile>(loadStoredUserProfile);
-  const [authUser, setAuthUser] = useState<AuthUser | null>(null);
+  const [authUser, setAuthUser] = useState<AuthUser | null>(() => {
+    try {
+      const savedToken = safeStorage.getItem('kumbhakaran_customer_token');
+      if (savedToken) {
+        defaultApiClient.setAuthToken(savedToken);
+      }
+      const savedUser = safeStorage.getItem('kumbhakaran_customer_user');
+      if (savedUser) {
+        const parsed = JSON.parse(savedUser);
+        if (parsed && (parsed.email || parsed.id)) return parsed;
+      }
+    } catch {}
+    return null;
+  });
   // Strictly take location from user only — never assume or force a default locality
   const [userLocation, setUserLocationState] = useState<LocationOption | null>(() => {
     try {
@@ -663,17 +692,27 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const savedToken = safeStorage.getItem('kumbhakaran_customer_token');
     if (savedToken) {
       defaultApiClient.setAuthToken(savedToken);
-      defaultApiClient.getCurrentUser().then((res) => {
+      defaultApiClient.getCurrentUser().then((res: any) => {
         if (isMounted) {
-          if (res?.user) {
-            setAuthUser(res.user);
+          const freshUser = res?.user || (res?.email ? res : null);
+          if (freshUser) {
+            setAuthUser(freshUser);
+            try {
+              safeStorage.setItem('kumbhakaran_customer_user', JSON.stringify(freshUser));
+            } catch {}
             persistProfile((prev) => ({
               ...prev,
-              name: res.user.name,
-              avatar: res.user.avatarUrl || prev.avatar,
+              name: freshUser.name,
+              avatar: freshUser.avatarUrl || prev.avatar,
             }));
+          } else {
+            setAuthUser(null);
+            safeStorage.removeItem('kumbhakaran_customer_token');
+            safeStorage.removeItem('kumbhakaran_customer_user');
           }
         }
+      }).catch(() => {
+        // Network timeout: retain optimistic session from localStorage
       });
     }
     return () => {
@@ -686,6 +725,8 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       const res = await defaultApiClient.loginWithGoogle(credential, clientId);
       if (res && res.accessToken) {
         safeStorage.setItem('kumbhakaran_customer_token', res.accessToken);
+        safeStorage.setItem('kumbhakaran_customer_user', JSON.stringify(res.user));
+        defaultApiClient.setAuthToken(res.accessToken);
         setAuthUser(res.user);
         persistProfile((prev) => ({
           ...prev,
@@ -711,6 +752,8 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       // Ignore network errors on logout
     }
     safeStorage.removeItem('kumbhakaran_customer_token');
+    safeStorage.removeItem('kumbhakaran_customer_user');
+    safeStorage.removeItem('kumbhakaran_customer_tab');
     defaultApiClient.setAuthToken(null);
     setAuthUser(null);
     triggerNotification('Signed out successfully');

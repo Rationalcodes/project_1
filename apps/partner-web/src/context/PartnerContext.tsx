@@ -150,18 +150,34 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
     return '';
   });
 
-  const [partnerView, setPartnerView] = useState<PartnerView>(() => {
+  const [partnerView, setPartnerViewState] = useState<PartnerView>(() => {
     try {
-      const cached = safeStorage.getItem('kumbhakaran_partner_active_salon');
-      if (cached) return 'live-queue';
+      const saved = safeStorage.getItem('kumbhakaran_partner_view') as PartnerView;
+      if (saved && ['live-queue', 'services', 'staff', 'analytics', 'reviews', 'settings', 'register-new', 'register'].includes(saved)) {
+        return saved;
+      }
     } catch {}
     return 'live-queue';
   });
 
+  const setPartnerView = (view: PartnerView) => {
+    setPartnerViewState(view);
+    try {
+      safeStorage.setItem('kumbhakaran_partner_view', view);
+    } catch {}
+  };
+
   const [partnerUser, setPartnerUser] = useState<AuthUser | null>(() => {
     try {
+      const savedToken = safeStorage.getItem('kumbhakaran_partner_token');
+      if (savedToken) {
+        defaultApiClient.setAuthToken(savedToken);
+      }
       const cached = safeStorage.getItem('kumbhakaran_partner_user');
-      if (cached) return JSON.parse(cached);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed && (parsed.email || parsed.id)) return parsed;
+      }
     } catch {}
     return null;
   });
@@ -415,14 +431,22 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
     const savedToken = safeStorage.getItem('kumbhakaran_partner_token');
     if (savedToken) {
       defaultApiClient.setAuthToken(savedToken);
-      defaultApiClient.getCurrentUser().then(async (res) => {
+      defaultApiClient.getCurrentUser().then(async (res: any) => {
         if (!isMounted) return;
-        if (res?.user) {
-          setPartnerUser(res.user);
+        const freshUser = res?.user || (res?.email ? res : null);
+        if (freshUser) {
+          setPartnerUser(freshUser);
           setMemberships(res.memberships || []);
-          safeStorage.setItem('kumbhakaran_partner_user', JSON.stringify(res.user));
-          await loadUserSalon(res.user, res.memberships);
+          safeStorage.setItem('kumbhakaran_partner_user', JSON.stringify(freshUser));
+          await loadUserSalon(freshUser, res.memberships);
+        } else {
+          // Invalidate session if token rejected
+          setPartnerUser(null);
+          safeStorage.removeItem('kumbhakaran_partner_token');
+          safeStorage.removeItem('kumbhakaran_partner_user');
         }
+      }).catch(() => {
+        // Network timeout / transient issue: retain optimistic session from localStorage
       });
     }
     return () => {
@@ -436,6 +460,7 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
       if (res && res.accessToken) {
         safeStorage.setItem('kumbhakaran_partner_token', res.accessToken);
         safeStorage.setItem('kumbhakaran_partner_user', JSON.stringify(res.user));
+        defaultApiClient.setAuthToken(res.accessToken);
         setPartnerUser(res.user);
         setMemberships(res.memberships || []);
         triggerNotification(`Welcome back, ${res.user.name}!`);
@@ -458,6 +483,7 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
     safeStorage.removeItem('kumbhakaran_partner_token');
     safeStorage.removeItem('kumbhakaran_partner_user');
     safeStorage.removeItem('kumbhakaran_partner_active_salon');
+    safeStorage.removeItem('kumbhakaran_partner_view');
     defaultApiClient.setAuthToken(null);
     setPartnerUser(null);
     setMemberships([]);
