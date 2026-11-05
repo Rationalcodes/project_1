@@ -40,7 +40,8 @@ import {
   QrCode,
   Printer,
   Download,
-  Copy
+  Copy,
+  X
 } from 'lucide-react';
 import QRCode from 'qrcode';
 import { OwnerTab, Service, Staff, QueueEntry } from '@kumbhakaran/shared-types';
@@ -73,6 +74,7 @@ export const OwnerApp: React.FC = () => {
   // Walk-in Counter QR Standee state & URL generator
   const [partnerQrDataUrl, setPartnerQrDataUrl] = useState<string>('');
   const [copiedQueueLink, setCopiedQueueLink] = useState(false);
+  const [showStandeeModal, setShowStandeeModal] = useState(false);
 
   const getCustomerQueueUrl = (salonId: string) => {
     if (typeof window === 'undefined') {
@@ -98,124 +100,287 @@ export const OwnerApp: React.FC = () => {
 
   const handlePrintDeskStandee = () => {
     if (!activeSalon || !partnerQrDataUrl) return;
-    const printWindow = window.open('', '_blank');
+    const printWindow = window.open('', '_blank', 'width=800,height=920');
     if (!printWindow) return;
     const directLink = getCustomerQueueUrl(activeSalon.id);
+
+    const salonBgImage =
+      activeSalon.coverImage ||
+      (activeSalon.images && activeSalon.images[0]) ||
+      'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=1200&q=80';
+
+    const localityText = activeSalon.locality
+      ? `${activeSalon.locality} • ${activeSalon.city || 'Chhattisgarh'}`
+      : activeSalon.address || 'Kumbhkaran Partner Studio';
 
     printWindow.document.write(`
       <!DOCTYPE html>
       <html>
         <head>
+          <meta charset="utf-8" />
           <title>Kumbhkaran Salons - Counter QR Standee - ${activeSalon.name}</title>
           <style>
-            @page { size: A4 portrait; margin: 15mm; }
+            @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800;900&family=Syne:wght@700;800;900&display=swap');
+            @page {
+              size: A4 portrait;
+              margin: 10mm;
+            }
+            * {
+              box-sizing: border-box;
+            }
             body {
-              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-              text-align: center;
-              color: #1F1F1F;
+              font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
               margin: 0;
-              padding: 40px 20px;
+              padding: 30px 16px;
+              background: #09090c;
+              color: #ffffff;
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              justify-content: center;
+              min-height: 100vh;
+              -webkit-print-color-adjust: exact !important;
+              print-color-adjust: exact !important;
             }
-            .card {
-              max-width: 480px;
-              margin: 0 auto;
-              border: 3px solid #FF6422;
-              border-radius: 28px;
-              padding: 40px 30px;
-              box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+            .no-print-bar {
+              position: fixed;
+              top: 16px;
+              left: 50%;
+              transform: translateX(-50%);
+              z-index: 999;
+              display: flex;
+              align-items: center;
+              gap: 12px;
+              background: rgba(20, 20, 28, 0.95);
+              backdrop-filter: blur(12px);
+              padding: 10px 20px;
+              border-radius: 9999px;
+              border: 1px solid rgba(255, 255, 255, 0.15);
+              box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
             }
-            .brand {
-              font-size: 26px;
-              font-weight: 900;
-              color: #FF6422;
-              letter-spacing: -0.5px;
-              margin-bottom: 2px;
-            }
-            .tagline {
-              font-size: 12px;
-              color: #666;
-              margin-bottom: 24px;
-              text-transform: uppercase;
-              letter-spacing: 1.5px;
+            .btn {
+              display: inline-flex;
+              align-items: center;
+              gap: 8px;
+              padding: 8px 18px;
+              font-size: 13px;
               font-weight: 800;
+              border-radius: 9999px;
+              cursor: pointer;
+              border: none;
+              transition: all 0.15s ease;
             }
-            .shop-name {
-              font-size: 28px;
+            .btn-primary {
+              background: #f59e0b;
+              color: #000000;
+              box-shadow: 0 4px 14px rgba(245, 158, 11, 0.4);
+            }
+            .btn-primary:hover {
+              background: #fbbf24;
+            }
+            .btn-secondary {
+              background: #27272a;
+              color: #e4e4e7;
+            }
+            .btn-secondary:hover {
+              background: #3f3f46;
+            }
+            .standee-container {
+              position: relative;
+              max-width: 480px;
+              width: 100%;
+              margin: 45px auto 20px auto;
+              border-radius: 36px;
+              overflow: hidden;
+              border: 3.5px solid #f59e0b;
+              box-shadow: 0 25px 60px rgba(0, 0, 0, 0.65);
+              background: #111116;
+            }
+            /* Salon Background Image with contrast darkening */
+            .salon-bg-image {
+              position: absolute;
+              inset: 0;
+              background-image: url('${salonBgImage}');
+              background-size: cover;
+              background-position: center;
+              filter: brightness(0.32) saturate(1.2);
+              z-index: 0;
+            }
+            .salon-bg-overlay {
+              position: absolute;
+              inset: 0;
+              background: radial-gradient(circle at 50% 25%, rgba(12, 10, 9, 0.50) 0%, rgba(8, 8, 12, 0.92) 100%);
+              z-index: 1;
+            }
+            .standee-body {
+              position: relative;
+              z-index: 2;
+              padding: 44px 32px 36px 32px;
+              text-align: center;
+            }
+            .brand-badge {
+              display: inline-flex;
+              align-items: center;
+              gap: 6px;
+              background: rgba(245, 158, 11, 0.2);
+              border: 1px solid rgba(245, 158, 11, 0.5);
+              color: #fbbf24;
+              font-size: 11px;
+              font-weight: 800;
+              letter-spacing: 1.5px;
+              text-transform: uppercase;
+              padding: 6px 16px;
+              border-radius: 9999px;
+              margin-bottom: 14px;
+            }
+            .salon-name {
+              font-family: 'Syne', sans-serif;
+              font-size: 32px;
               font-weight: 900;
-              color: #111;
-              margin-bottom: 4px;
+              color: #ffffff;
+              margin: 0 0 4px 0;
+              letter-spacing: -0.5px;
+              text-shadow: 0 2px 10px rgba(0, 0, 0, 0.85);
             }
-            .shop-locality {
-              font-size: 15px;
-              color: #777;
-              margin-bottom: 24px;
+            .salon-locality {
+              font-size: 14px;
+              font-weight: 600;
+              color: #d4d4d8;
+              margin: 0 0 20px 0;
+              text-shadow: 0 1px 4px rgba(0, 0, 0, 0.85);
             }
-            .qr-box {
-              background: #FFF;
-              padding: 16px;
+            /* High-contrast solid white container with padding & rounded borders for 100% QR camera scanning */
+            .qr-card-wrapper {
+              margin: 0 auto 20px auto;
               display: inline-block;
-              border: 2px solid #EEE;
-              border-radius: 20px;
-              margin-bottom: 20px;
+              background: #ffffff;
+              padding: 20px 20px 16px 20px;
+              border-radius: 28px;
+              border: 3.5px solid #f59e0b;
+              box-shadow: 0 18px 45px rgba(0, 0, 0, 0.55), 0 0 0 4px rgba(255, 255, 255, 0.95);
             }
-            .qr-img {
+            .qr-code-img {
               width: 250px;
               height: 250px;
               display: block;
+              border-radius: 12px;
             }
-            .instructions {
-              font-size: 19px;
+            .camera-label {
+              margin-top: 10px;
+              background: #18181b;
+              color: #fbbf24;
+              font-size: 10px;
               font-weight: 800;
-              color: #111;
-              margin-bottom: 8px;
+              letter-spacing: 1px;
+              padding: 4px 12px;
+              border-radius: 9999px;
+              display: inline-block;
+              border: 1px solid rgba(245, 158, 11, 0.4);
             }
-            .subtext {
+            .cta-title {
+              font-size: 21px;
+              font-weight: 900;
+              color: #fbbf24;
+              margin: 0 0 6px 0;
+              text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
+            }
+            .cta-desc {
               font-size: 13px;
-              color: #666;
+              color: #e4e4e7;
               line-height: 1.5;
               max-width: 360px;
               margin: 0 auto 20px auto;
+              text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
             }
-            .badges {
+            .perks {
               display: flex;
               justify-content: center;
-              gap: 10px;
+              gap: 8px;
+              margin-bottom: 20px;
+              flex-wrap: wrap;
+            }
+            .perk-item {
+              background: rgba(255, 255, 255, 0.12);
+              backdrop-filter: blur(8px);
+              border: 1px solid rgba(255, 255, 255, 0.2);
+              padding: 5px 12px;
+              border-radius: 9999px;
               font-size: 11px;
               font-weight: 700;
-              color: #444;
+              color: #ffffff;
             }
-            .badge {
-              background: #F8F6F2;
-              padding: 6px 12px;
-              border-radius: 20px;
-              border: 1px solid #E5E0D8;
+            .footer-note {
+              border-top: 1px solid rgba(255, 255, 255, 0.15);
+              padding-top: 16px;
+              font-size: 10px;
+              color: #a1a1aa;
+              font-family: monospace;
+            }
+            @media print {
+              body {
+                padding: 0;
+                background: transparent;
+              }
+              .no-print, .no-print-bar {
+                display: none !important;
+              }
+              .standee-container {
+                margin: 0 auto;
+                box-shadow: none;
+                max-width: 100%;
+                border-width: 2.5px;
+                page-break-inside: avoid;
+              }
             }
           </style>
         </head>
         <body>
-          <div class="card">
-            <div class="brand">Kumbhkaran Salons</div>
-            <div class="tagline">Official Walk-In Partner</div>
-            <div class="shop-name">${activeSalon.name}</div>
-            <div class="shop-locality">📍 ${activeSalon.locality}</div>
-            <div class="qr-box">
-              <img class="qr-img" src="${partnerQrDataUrl}" alt="Scan QR" />
-            </div>
-            <div class="instructions">Scan to Check Wait & Join Queue</div>
-            <div class="subtext">
-              Point your smartphone camera to choose haircuts or grooming services and join the live walk-in queue.
-            </div>
-            <div class="badges">
-              <span class="badge">⚡ Zero App Download</span>
-              <span class="badge">💈 Live Chair Turn</span>
-              <span class="badge">₹0 Extra Fee</span>
+          <div class="no-print-bar no-print">
+            <button class="btn btn-primary" onclick="window.print()">
+              🖨️ Print Standee (A4 / Tabletop)
+            </button>
+            <button class="btn btn-secondary" onclick="window.close()">
+              Close
+            </button>
+          </div>
+
+          <div class="standee-container">
+            <div class="salon-bg-image"></div>
+            <div class="salon-bg-overlay"></div>
+
+            <div class="standee-body">
+              <div class="brand-badge">⚡ Kumbhkaran Salons Live Pass</div>
+              <h1 class="salon-name">${activeSalon.name}</h1>
+              <p class="salon-locality">📍 ${localityText}</p>
+
+              <!-- Solid white container with padding & rounded borders for 100% camera visibility -->
+              <div class="qr-card-wrapper">
+                <img src="${partnerQrDataUrl}" class="qr-code-img" alt="Counter QR Code" />
+                <div class="camera-label">📸 SCAN WITH ANY PHONE CAMERA</div>
+              </div>
+
+              <div class="cta-title">Scan to Check Wait & Join Queue</div>
+              <p class="cta-desc">
+                Skip waiting in crowd. Scan to see live barber queue, select services, and take your token immediately.
+              </p>
+
+              <div class="perks">
+                <span class="perk-item">⚡ Zero App Download</span>
+                <span class="perk-item">💈 Live Chair Turn</span>
+                <span class="perk-item">₹0 Extra Fee</span>
+              </div>
+
+              <div class="footer-note">
+                ${directLink}
+              </div>
             </div>
           </div>
+
           <script>
             window.onload = function() {
               setTimeout(function() {
                 window.print();
-              }, 300);
+              }, 400);
             };
           </script>
         </body>
@@ -778,6 +943,16 @@ export const OwnerApp: React.FC = () => {
               <div className="flex items-center gap-2 flex-wrap">
                 <button
                   type="button"
+                  onClick={() => setShowStandeeModal(true)}
+                  className="px-3.5 py-2 rounded-xl bg-zinc-900 border border-amber-500/30 hover:border-amber-400 text-amber-400 font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-xs active:scale-95"
+                  title="Print Counter QR Standee for Your Salon"
+                >
+                  <QrCode className="w-4 h-4 text-amber-400" />
+                  <span>Desk QR Standee</span>
+                </button>
+
+                <button
+                  type="button"
                   onClick={() => setShowAddCustomerModal(true)}
                   className="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-extrabold text-xs flex items-center gap-1.5 shadow-lg shadow-amber-500/20 active:scale-95 transition-all cursor-pointer"
                 >
@@ -821,14 +996,24 @@ export const OwnerApp: React.FC = () => {
                 <p className="text-xs text-zinc-500 mt-1 max-w-sm mx-auto">
                   When walk-ins arrive, use <strong className="text-amber-400">+ ADD CUSTOMER</strong> above or log their name & phone number so you can call them when their turn arrives.
                 </p>
-                <button
-                  type="button"
-                  onClick={() => setShowAddCustomerModal(true)}
-                  className="mt-4 px-4 py-2 rounded-xl bg-zinc-900 border border-zinc-700 hover:border-amber-500/50 text-xs font-bold text-amber-400 inline-flex items-center gap-1.5 transition-all cursor-pointer"
-                >
-                  <UserPlus className="w-3.5 h-3.5" />
-                  <span>Log First Customer</span>
-                </button>
+                <div className="mt-4 flex items-center justify-center gap-2 flex-wrap">
+                  <button
+                    type="button"
+                    onClick={() => setShowAddCustomerModal(true)}
+                    className="px-4 py-2 rounded-xl bg-zinc-900 border border-zinc-700 hover:border-amber-500/50 text-xs font-bold text-amber-400 inline-flex items-center gap-1.5 transition-all cursor-pointer"
+                  >
+                    <UserPlus className="w-3.5 h-3.5" />
+                    <span>Log First Customer</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowStandeeModal(true)}
+                    className="px-4 py-2 rounded-xl bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500/20 text-xs font-bold text-amber-300 inline-flex items-center gap-1.5 transition-all cursor-pointer"
+                  >
+                    <Printer className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Print Counter Standee</span>
+                  </button>
+                </div>
               </div>
             ) : (
               <div className="mt-5 grid grid-cols-1 md:grid-cols-2 gap-3.5">
@@ -2084,6 +2269,151 @@ export const OwnerApp: React.FC = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* COUNTER QR STANDEE PREVIEW & PRINT MODAL */}
+      {showStandeeModal && (
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-[#12121a] border border-zinc-800 rounded-3xl p-6 sm:p-7 max-w-lg w-full shadow-2xl animate-in fade-in zoom-in-95 my-auto">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between pb-4 border-b border-zinc-800">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-2xl bg-amber-500/20 text-amber-400 flex items-center justify-center border border-amber-500/30">
+                  <QrCode className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-white font-['Syne',sans-serif]">
+                    Counter QR Standee
+                  </h3>
+                  <p className="text-[11px] text-zinc-400">
+                    Tabletop poster with your salon photo background
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowStandeeModal(false)}
+                className="text-zinc-400 hover:text-white p-1.5 rounded-full hover:bg-zinc-800 transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Standee Live Card Preview with Salon Background & White Padded Rounded QR Container */}
+            <div className="relative rounded-3xl overflow-hidden border-2 border-amber-500/40 shadow-2xl p-5 text-center my-4 group">
+              {/* Salon Shop Photo in Background */}
+              <div
+                className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
+                style={{
+                  backgroundImage: `url(${
+                    activeSalon.coverImage ||
+                    (activeSalon.images && activeSalon.images[0]) ||
+                    'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=1200&q=80'
+                  })`,
+                  filter: 'brightness(0.32) saturate(1.2)',
+                }}
+              />
+              <div className="absolute inset-0 bg-gradient-to-b from-stone-900/50 via-stone-950/75 to-black/95" />
+
+              <div className="relative z-10 flex flex-col items-center">
+                <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300 text-[10px] font-black uppercase tracking-wider mb-1.5">
+                  <span>⚡ Official Walk-In Partner</span>
+                </div>
+                <h3 className="text-base font-black text-white font-['Syne',sans-serif] drop-shadow-md">
+                  {activeSalon.name}
+                </h3>
+                <p className="text-[11px] text-zinc-300 mb-2 drop-shadow">
+                  📍 {activeSalon.locality || activeSalon.address}
+                </p>
+
+                {/* Solid White Padded Container with Rounded Borders for 100% Camera Scannability */}
+                <div className="bg-white p-3.5 pb-2.5 rounded-3xl border-3 border-amber-500 shadow-2xl shadow-black/80 my-1">
+                  {partnerQrDataUrl ? (
+                    <img
+                      src={partnerQrDataUrl}
+                      alt={`QR Code for ${activeSalon.name}`}
+                      className="w-40 h-40 object-contain rounded-xl"
+                    />
+                  ) : (
+                    <div className="w-40 h-40 flex items-center justify-center text-zinc-400 text-xs">
+                      Generating QR...
+                    </div>
+                  )}
+                  <div className="mt-1.5 px-2 py-0.5 rounded-full bg-zinc-900 text-amber-400 text-[9px] font-black tracking-wider uppercase inline-block">
+                    📸 Scan with phone camera
+                  </div>
+                </div>
+
+                <div className="text-xs font-black text-amber-300 mt-2 drop-shadow">
+                  Scan to Check Wait & Join Queue
+                </div>
+                <div className="text-[10px] text-zinc-300 mt-0.5 max-w-xs drop-shadow">
+                  Place this standee on your counter for customer walk-in check-in
+                </div>
+              </div>
+            </div>
+
+            {/* Direct URL input with copy */}
+            <div className="space-y-1.5 my-3">
+              <label className="text-[11px] font-semibold text-zinc-300 flex items-center gap-1.5">
+                <Store className="w-3.5 h-3.5 text-amber-400" />
+                <span>Your Customer Direct Queue Link</span>
+              </label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  readOnly
+                  value={getCustomerQueueUrl(activeSalon.id)}
+                  className="flex-1 px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-xl text-xs font-mono text-zinc-200 select-all focus:outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    const url = getCustomerQueueUrl(activeSalon.id);
+                    navigator.clipboard.writeText(url);
+                    setCopiedQueueLink(true);
+                    setTimeout(() => setCopiedQueueLink(false), 2500);
+                  }}
+                  className={`px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                    copiedQueueLink
+                      ? 'bg-emerald-500 text-white'
+                      : 'bg-amber-500 hover:bg-amber-400 text-black shadow-md shadow-amber-500/20'
+                  }`}
+                >
+                  {copiedQueueLink ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                  <span>{copiedQueueLink ? 'Copied!' : 'Copy'}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Action Buttons: Print, Download, Close */}
+            <div className="grid grid-cols-2 gap-2 pt-2">
+              <button
+                type="button"
+                onClick={handlePrintDeskStandee}
+                className="py-2.5 px-4 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-black text-xs font-extrabold flex items-center justify-center gap-1.5 shadow-lg shadow-amber-500/25 transition-all cursor-pointer active:scale-95"
+              >
+                <Printer className="w-4 h-4" />
+                <span>Print Standee (A4)</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  if (!partnerQrDataUrl) return;
+                  const a = document.createElement('a');
+                  a.href = partnerQrDataUrl;
+                  a.download = `${activeSalon.name.toLowerCase().replace(/[^a-z0-9]/g, '_')}_qr.png`;
+                  a.click();
+                }}
+                className="py-2.5 px-4 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+              >
+                <Download className="w-4 h-4 text-emerald-400" />
+                <span>Download QR PNG</span>
+              </button>
+            </div>
           </div>
         </div>
       )}

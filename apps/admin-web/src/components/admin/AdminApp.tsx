@@ -82,144 +82,286 @@ export const AdminApp: React.FC = () => {
   }, [walkinQrSalon, useLocalOrigin]);
 
   const handlePrintStandee = (salon: Salon, qrImgUrl: string, walkinUrl: string) => {
-    const printWindow = window.open('', '_blank', 'width=800,height=900');
+    const printWindow = window.open('', '_blank', 'width=800,height=920');
     if (!printWindow) return;
+
+    const salonBgImage =
+      salon.coverImage ||
+      (salon.images && salon.images[0]) ||
+      'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=1200&q=80';
+
+    const localityText = salon.locality
+      ? `${salon.locality} • ${salon.city || 'Chhattisgarh'}`
+      : salon.address || 'Kumbhkaran Partner Studio';
+
     printWindow.document.write(`
       <!DOCTYPE html>
       <html>
         <head>
+          <meta charset="utf-8" />
           <title>Express Walk-in Standee - ${salon.name}</title>
           <style>
-            @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800;900&family=Syne:wght@700;800&display=swap');
+            @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800;900&family=Syne:wght@700;800;900&display=swap');
+            @page {
+              size: A4 portrait;
+              margin: 10mm;
+            }
+            * {
+              box-sizing: border-box;
+            }
             body {
               font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
               margin: 0;
-              padding: 40px 20px;
-              background: #fff;
-              color: #1c1917;
+              padding: 30px 16px;
+              background: #09090c;
+              color: #ffffff;
               display: flex;
               flex-direction: column;
               align-items: center;
               justify-content: center;
               min-height: 100vh;
-              box-sizing: border-box;
+              -webkit-print-color-adjust: exact !important;
+              print-color-adjust: exact !important;
             }
-            .standee-card {
-              border: 3px solid #ea580c;
-              border-radius: 28px;
-              padding: 40px 32px;
-              max-width: 480px;
-              width: 100%;
-              text-align: center;
-              box-shadow: 0 10px 30px rgba(0,0,0,0.06);
+            .no-print-bar {
+              position: fixed;
+              top: 16px;
+              left: 50%;
+              transform: translateX(-50%);
+              z-index: 999;
+              display: flex;
+              align-items: center;
+              gap: 12px;
+              background: rgba(20, 20, 28, 0.95);
+              backdrop-filter: blur(12px);
+              padding: 10px 20px;
+              border-radius: 9999px;
+              border: 1px solid rgba(255, 255, 255, 0.15);
+              box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
             }
-            .brand-badge {
-              display: inline-block;
-              background: #ffedd5;
-              color: #ea580c;
+            .btn {
+              display: inline-flex;
+              align-items: center;
+              gap: 8px;
+              padding: 8px 18px;
               font-size: 13px;
               font-weight: 800;
+              border-radius: 9999px;
+              cursor: pointer;
+              border: none;
+              transition: all 0.15s ease;
+            }
+            .btn-primary {
+              background: #ea580c;
+              color: #ffffff;
+              box-shadow: 0 4px 14px rgba(234, 88, 12, 0.4);
+            }
+            .btn-primary:hover {
+              background: #f97316;
+            }
+            .btn-secondary {
+              background: #27272a;
+              color: #e4e4e7;
+            }
+            .btn-secondary:hover {
+              background: #3f3f46;
+            }
+            .standee-container {
+              position: relative;
+              max-width: 480px;
+              width: 100%;
+              margin: 45px auto 20px auto;
+              border-radius: 36px;
+              overflow: hidden;
+              border: 3.5px solid #ea580c;
+              box-shadow: 0 25px 60px rgba(0, 0, 0, 0.65);
+              background: #111116;
+            }
+            /* Salon Background Image with contrast darkening */
+            .salon-bg-image {
+              position: absolute;
+              inset: 0;
+              background-image: url('${salonBgImage}');
+              background-size: cover;
+              background-position: center;
+              filter: brightness(0.32) saturate(1.2);
+              z-index: 0;
+            }
+            .salon-bg-overlay {
+              position: absolute;
+              inset: 0;
+              background: radial-gradient(circle at 50% 25%, rgba(12, 10, 9, 0.50) 0%, rgba(8, 8, 12, 0.92) 100%);
+              z-index: 1;
+            }
+            .standee-body {
+              position: relative;
+              z-index: 2;
+              padding: 44px 32px 36px 32px;
+              text-align: center;
+            }
+            .brand-badge {
+              display: inline-flex;
+              align-items: center;
+              gap: 6px;
+              background: rgba(234, 88, 12, 0.2);
+              border: 1px solid rgba(234, 88, 12, 0.5);
+              color: #fdba74;
+              font-size: 11px;
+              font-weight: 800;
+              letter-spacing: 1.5px;
               text-transform: uppercase;
-              letter-spacing: 2px;
               padding: 6px 16px;
               border-radius: 9999px;
-              margin-bottom: 16px;
+              margin-bottom: 14px;
             }
             .salon-name {
               font-family: 'Syne', sans-serif;
-              font-size: 30px;
-              font-weight: 800;
-              margin: 0 0 6px 0;
-              color: #0c0a09;
+              font-size: 32px;
+              font-weight: 900;
+              color: #ffffff;
+              margin: 0 0 4px 0;
+              letter-spacing: -0.5px;
+              text-shadow: 0 2px 10px rgba(0, 0, 0, 0.85);
             }
             .salon-locality {
               font-size: 14px;
-              color: #78716c;
-              margin: 0 0 24px 0;
+              font-weight: 600;
+              color: #d4d4d8;
+              margin: 0 0 20px 0;
+              text-shadow: 0 1px 4px rgba(0, 0, 0, 0.85);
             }
-            .qr-wrapper {
-              background: #fff;
-              border: 2px dashed #fed7aa;
-              border-radius: 20px;
-              padding: 16px;
+            /* High-contrast solid white container with padding & rounded borders for 100% QR camera scanning */
+            .qr-card-wrapper {
+              margin: 0 auto 20px auto;
               display: inline-block;
-              margin-bottom: 24px;
+              background: #ffffff;
+              padding: 20px 20px 16px 20px;
+              border-radius: 28px;
+              border: 3.5px solid #ea580c;
+              box-shadow: 0 18px 45px rgba(0, 0, 0, 0.55), 0 0 0 4px rgba(255, 255, 255, 0.95);
             }
-            .qr-img {
+            .qr-code-img {
               width: 250px;
               height: 250px;
               display: block;
+              border-radius: 12px;
+            }
+            .camera-label {
+              margin-top: 10px;
+              background: #18181b;
+              color: #fdba74;
+              font-size: 10px;
+              font-weight: 800;
+              letter-spacing: 1px;
+              padding: 4px 12px;
+              border-radius: 9999px;
+              display: inline-block;
+              border: 1px solid rgba(234, 88, 12, 0.4);
             }
             .cta-title {
-              font-size: 22px;
+              font-size: 21px;
               font-weight: 900;
-              color: #ea580c;
-              margin: 0 0 8px 0;
+              color: #fdba74;
+              margin: 0 0 6px 0;
+              text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
             }
             .cta-desc {
               font-size: 13px;
-              color: #57534e;
+              color: #e4e4e7;
               line-height: 1.5;
-              margin: 0 0 20px 0;
+              max-width: 360px;
+              margin: 0 auto 20px auto;
+              text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
             }
             .perks {
               display: flex;
               justify-content: center;
-              gap: 14px;
-              font-size: 11px;
-              font-weight: 700;
-              color: #44403c;
-              border-top: 1px solid #f5f5f4;
-              padding-top: 16px;
+              gap: 8px;
+              margin-bottom: 20px;
+              flex-wrap: wrap;
             }
             .perk-item {
-              display: flex;
-              align-items: center;
-              gap: 4px;
+              background: rgba(255, 255, 255, 0.12);
+              backdrop-filter: blur(8px);
+              border: 1px solid rgba(255, 255, 255, 0.2);
+              padding: 5px 12px;
+              border-radius: 9999px;
+              font-size: 11px;
+              font-weight: 700;
+              color: #ffffff;
             }
             .footer-note {
-              margin-top: 24px;
+              border-top: 1px solid rgba(255, 255, 255, 0.15);
+              padding-top: 16px;
               font-size: 10px;
-              color: #a8a29e;
+              color: #a1a1aa;
               font-family: monospace;
             }
             @media print {
-              body { padding: 0; }
-              .standee-card { border-width: 2px; box-shadow: none; }
+              body {
+                padding: 0;
+                background: transparent;
+              }
+              .no-print, .no-print-bar {
+                display: none !important;
+              }
+              .standee-container {
+                margin: 0 auto;
+                box-shadow: none;
+                max-width: 100%;
+                border-width: 2.5px;
+                page-break-inside: avoid;
+              }
             }
           </style>
         </head>
         <body>
-          <div class="standee-card">
-            <div class="brand-badge">⚡ Kumbhkaran Salons Live Pass</div>
-            <h1 class="salon-name">${salon.name}</h1>
-            <p class="salon-locality">${salon.locality || salon.address}</p>
+          <div class="no-print-bar no-print">
+            <button class="btn btn-primary" onclick="window.print()">
+              🖨️ Print Standee (A4 / Tabletop)
+            </button>
+            <button class="btn btn-secondary" onclick="window.close()">
+              Close
+            </button>
+          </div>
 
-            <div class="qr-wrapper">
-              <img src="${qrImgUrl}" class="qr-img" alt="QR Code" />
-            </div>
+          <div class="standee-container">
+            <div class="salon-bg-image"></div>
+            <div class="salon-bg-overlay"></div>
 
-            <div class="cta-title">Scan to Join Live Queue</div>
-            <p class="cta-desc">
-              Point your phone camera at this QR code.<br/>
-              Enter your name to take your token immediately.
-            </p>
+            <div class="standee-body">
+              <div class="brand-badge">⚡ Kumbhkaran Salons Live Pass</div>
+              <h1 class="salon-name">${salon.name}</h1>
+              <p class="salon-locality">📍 ${localityText}</p>
 
-            <div class="perks">
-              <div class="perk-item">✓ 100% Free Pass</div>
-              <div class="perk-item">•</div>
-              <div class="perk-item">✓ Zero Crowd Waiting</div>
-              <div class="perk-item">•</div>
-              <div class="perk-item">✓ Live Turn Updates</div>
-            </div>
+              <!-- Solid white container with padding & rounded borders for 100% camera visibility -->
+              <div class="qr-card-wrapper">
+                <img src="${qrImgUrl}" class="qr-code-img" alt="QR Code" />
+                <div class="camera-label">📸 SCAN WITH ANY PHONE CAMERA</div>
+              </div>
 
-            <div class="footer-note">
-              ${walkinUrl}
+              <div class="cta-title">Scan to Check Wait & Join Queue</div>
+              <p class="cta-desc">
+                Skip waiting in crowd. Scan to see live barber queue, select services, and take your token immediately.
+              </p>
+
+              <div class="perks">
+                <span class="perk-item">⚡ Zero App Download</span>
+                <span class="perk-item">💈 Live Chair Turn</span>
+                <span class="perk-item">₹0 Extra Fee</span>
+              </div>
+
+              <div class="footer-note">
+                ${walkinUrl}
+              </div>
             </div>
           </div>
+
           <script>
             window.onload = function() {
-              window.print();
+              setTimeout(function() {
+                window.print();
+              }, 400);
             };
           </script>
         </body>
@@ -862,24 +1004,57 @@ export const AdminApp: React.FC = () => {
               </div>
             </div>
 
-            {/* QR Code Preview */}
-            <div className="flex flex-col items-center justify-center p-4 bg-white rounded-2xl border border-zinc-200 shadow-inner my-3">
-              {qrDataUrl ? (
-                <img
-                  src={qrDataUrl}
-                  alt={`QR Code for ${walkinQrSalon.name}`}
-                  className="w-48 h-48 object-contain"
-                />
-              ) : (
-                <div className="w-48 h-48 flex items-center justify-center text-zinc-400 text-xs">
-                  Generating QR Code...
+            {/* Express Standee Preview with Salon Background Image & White Padded Rounded QR Container */}
+            <div className="relative rounded-3xl overflow-hidden border-2 border-orange-500/40 shadow-2xl p-5 text-center my-4 group">
+              {/* Salon Shop Photo in Background */}
+              <div
+                className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
+                style={{
+                  backgroundImage: `url(${
+                    walkinQrSalon.coverImage ||
+                    (walkinQrSalon.images && walkinQrSalon.images[0]) ||
+                    'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=1200&q=80'
+                  })`,
+                  filter: 'brightness(0.32) saturate(1.2)',
+                }}
+              />
+              <div className="absolute inset-0 bg-gradient-to-b from-stone-900/50 via-stone-950/75 to-black/95" />
+
+              <div className="relative z-10 flex flex-col items-center">
+                <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-orange-500/20 border border-orange-500/40 text-orange-300 text-[10px] font-black uppercase tracking-wider mb-1.5">
+                  <span>⚡ Express Standee Preview</span>
                 </div>
-              )}
-              <div className="text-[11px] font-extrabold text-stone-800 mt-2 text-center">
-                Scan with any phone camera to check in
-              </div>
-              <div className="text-[10px] text-stone-500 font-mono">
-                {walkinQrSalon.name} • Token Check-In
+                <h3 className="text-base font-black text-white font-['Syne',sans-serif] drop-shadow-md">
+                  {walkinQrSalon.name}
+                </h3>
+                <p className="text-[11px] text-zinc-300 mb-2 drop-shadow">
+                  📍 {walkinQrSalon.locality || walkinQrSalon.address}
+                </p>
+
+                {/* Solid White Padded Container with Rounded Borders for 100% Camera Scannability */}
+                <div className="bg-white p-3.5 pb-2.5 rounded-3xl border-3 border-orange-500 shadow-2xl shadow-black/80 my-1">
+                  {qrDataUrl ? (
+                    <img
+                      src={qrDataUrl}
+                      alt={`QR Code for ${walkinQrSalon.name}`}
+                      className="w-40 h-40 object-contain rounded-xl"
+                    />
+                  ) : (
+                    <div className="w-40 h-40 flex items-center justify-center text-zinc-400 text-xs">
+                      Generating QR...
+                    </div>
+                  )}
+                  <div className="mt-1.5 px-2 py-0.5 rounded-full bg-zinc-900 text-amber-400 text-[9px] font-black tracking-wider uppercase inline-block">
+                    📸 Scan with phone camera
+                  </div>
+                </div>
+
+                <div className="text-xs font-black text-amber-300 mt-2 drop-shadow">
+                  Scan to Check Wait & Join Queue
+                </div>
+                <div className="text-[10px] text-zinc-300 mt-0.5 max-w-xs drop-shadow">
+                  Ready to print for your front desk or reception standee
+                </div>
               </div>
             </div>
 
