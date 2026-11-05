@@ -3,6 +3,8 @@ import { useSalon } from '../../context/PartnerContext';
 import { SalonRegistrationWizard } from './SalonRegistrationWizard';
 import { OwnerApp } from '../owner/OwnerApp';
 import { GoogleSignInButton } from '@kumbhakaran/ui';
+import logoWhite from '../../assets/logo-white.png';
+import logoFallback from '../../assets/logo.png';
 import {
   Store,
   PlusCircle,
@@ -43,11 +45,11 @@ export const PartnerPortal: React.FC = () => {
       <div className="max-w-xl mx-auto my-8 sm:my-12 p-4 sm:p-8 bg-gradient-to-b from-[#181824] via-[#12121a] to-[#0c0c10] border border-amber-500/30 rounded-3xl shadow-2xl text-center space-y-6">
         <div className="flex flex-col items-center justify-center gap-3">
           <img
-            src="/logo-white.png"
+            src={logoWhite}
             alt="SLOON - Unisex Grooming Network"
             className="h-11 sm:h-13 w-auto object-contain drop-shadow-xl"
             onError={(e) => {
-              (e.currentTarget as HTMLImageElement).src = '/logo.png';
+              (e.currentTarget as HTMLImageElement).src = logoFallback;
             }}
           />
         </div>

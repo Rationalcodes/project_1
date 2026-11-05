@@ -14,6 +14,9 @@ import {
   Package,
 } from 'lucide-react';
 import { useCustomer, POPULAR_LOCATIONS } from '../../context/CustomerContext';
+import logoWhite from '../../assets/logo-white.png';
+import logoTransparent from '../../assets/logo-transparent.png';
+import logoFallback from '../../assets/logo.png';
 
 export const Header: React.FC = () => {
   const {
@@ -158,11 +161,11 @@ export const Header: React.FC = () => {
                 title="SLOON Home"
               >
                 <img
-                  src={isWomen ? '/logo-transparent.png' : '/logo-white.png'}
+                  src={isWomen ? logoTransparent : logoWhite}
                   alt="SLOON - Unisex Grooming Network"
                   className="h-7 xs:h-8 sm:h-9 w-auto max-w-[170px] sm:max-w-[220px] object-contain transition-transform group-hover:scale-102 drop-shadow-xs"
                   onError={(e) => {
-                    (e.currentTarget as HTMLImageElement).src = '/logo.png';
+                    (e.currentTarget as HTMLImageElement).src = logoFallback;
                   }}
                 />
               </button>

@@ -3,6 +3,8 @@ import { AdminProvider, useAdmin } from './context/AdminContext';
 import { AdminApp } from './components/admin/AdminApp';
 import { NotificationToast } from './components/common/NotificationToast';
 import { GoogleSignInButton } from '@kumbhakaran/ui';
+import logoWhite from './assets/logo-white.png';
+import logoFallback from './assets/logo.png';
 import {
   ShieldCheck,
   ExternalLink,
@@ -23,11 +25,11 @@ const AdminMainContent: React.FC = () => {
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 sm:gap-3 min-w-0 shrink group">
             <img
-              src="/logo-white.png"
+              src={logoWhite}
               alt="SLOON - Unisex Grooming Network"
               className="h-7 sm:h-8 md:h-9 w-auto max-w-[145px] sm:max-w-[185px] md:max-w-[215px] object-contain transition-transform group-hover:scale-105"
               onError={(e) => {
-                (e.currentTarget as HTMLImageElement).src = '/logo.png';
+                (e.currentTarget as HTMLImageElement).src = logoFallback;
               }}
             />
             <span className="hidden sm:inline text-[10px] uppercase tracking-widest px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-400 font-bold border border-amber-500/30 shrink-0 self-center">
