@@ -217,7 +217,16 @@ export function getTargetSalonFromUrl(): UrlTargetInfo {
 }
 
 export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [salons, setSalons] = useState<Salon[]>(INITIAL_SALONS);
+  const [salons, setSalons] = useState<Salon[]>(() => {
+    try {
+      const cached = safeStorage.getItem('kumbhakaran_cached_salons');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {}
+    return INITIAL_SALONS;
+  });
   const [activeSalonId, setActiveSalonId] = useState<string>('salon-1');
   const [customerTab, setCustomerTab] = useState<CustomerTab>('home');
   const [selectedSalonForDetail, setSelectedSalonForDetail] = useState<Salon | null>(null);
@@ -789,6 +798,9 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           if (discoveredSalons.length > 0) {
             const mapped = mapApiSalons(discoveredSalons, userLocation);
             setSalons(mapped);
+            try {
+              safeStorage.setItem('kumbhakaran_cached_salons', JSON.stringify(mapped));
+            } catch {}
 
             // Also keep selectedSalonForDetail live if customer is viewing a modal or direct link
             const targetId = getTargetSalonFromUrl().salonId;
@@ -809,15 +821,10 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                 isOpen: match.isOpen,
               };
             });
-          } else if (isInitial) {
-            setSalons(INITIAL_SALONS);
           }
         }
       } catch (err) {
-        console.warn('Discovery API call failed:', err);
-        if (isInitial && isMounted) {
-          setSalons(INITIAL_SALONS);
-        }
+        console.warn('Discovery API call failed (retaining cached salons):', err);
       } finally {
         if (isInitial && isMounted) {
           setIsLoadingSalons(false);

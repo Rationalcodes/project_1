@@ -472,8 +472,35 @@ export const SalonRegistrationWizard: React.FC<SalonRegistrationWizardProps> = (
                       const file = e.target.files?.[0];
                       if (!file) return;
                       const reader = new FileReader();
-                      reader.onload = () => {
-                        setCoverImage(reader.result as string);
+                      reader.onload = (event) => {
+                        const dataUrl = event.target?.result as string;
+                        const img = new Image();
+                        img.onload = () => {
+                          const canvas = document.createElement('canvas');
+                          let width = img.width;
+                          let height = img.height;
+                          const maxDim = 900;
+                          if (width > maxDim || height > maxDim) {
+                            if (width > height) {
+                              height = Math.round((height * maxDim) / width);
+                              width = maxDim;
+                            } else {
+                              width = Math.round((width * maxDim) / height);
+                              height = maxDim;
+                            }
+                          }
+                          canvas.width = width;
+                          canvas.height = height;
+                          const ctx = canvas.getContext('2d');
+                          if (ctx) {
+                            ctx.drawImage(img, 0, 0, width, height);
+                            setCoverImage(canvas.toDataURL('image/jpeg', 0.78));
+                          } else {
+                            setCoverImage(dataUrl);
+                          }
+                        };
+                        img.onerror = () => setCoverImage(dataUrl);
+                        img.src = dataUrl;
                       };
                       reader.readAsDataURL(file);
                     }}

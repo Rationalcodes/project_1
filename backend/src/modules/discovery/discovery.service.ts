@@ -109,11 +109,10 @@ export class DiscoveryService {
           const locImages = Array.isArray(row.location_images) ? row.location_images : [];
           const workImages = Array.isArray(row.work_images) ? row.work_images : [];
           const effectiveCover = row.cover_image || row.poster_image || locImages[0] || workImages[0] || '';
-          const allImages = [
-            ...(effectiveCover ? [effectiveCover] : []),
-            ...locImages,
-            ...workImages,
-          ].filter((v: string, i: number, a: string[]) => a.indexOf(v) === i);
+          // Avoid duplicating identical image data across coverImage, posterImage and images in the discovery JSON payload
+          const distinctGallery = [...locImages, ...workImages].filter(
+            (v: string, i: number, a: string[]) => v && v !== effectiveCover && a.indexOf(v) === i,
+          );
 
           return {
             id: row.id,
@@ -132,9 +131,9 @@ export class DiscoveryService {
             isOpen: Boolean(row.is_open),
             isVerified: Boolean(row.is_verified),
             coverImage: effectiveCover,
-            posterImage: row.poster_image || effectiveCover,
+            posterImage: (row.poster_image && row.poster_image !== effectiveCover) ? row.poster_image : '',
             loopVideoUrl: row.loop_video_url || '',
-            images: allImages,
+            images: distinctGallery,
             locationImages: locImages,
             workImages: workImages,
             lastQueueUpdate: row.last_queue_update || new Date().toISOString(),

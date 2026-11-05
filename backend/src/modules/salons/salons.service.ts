@@ -886,19 +886,24 @@ export class SalonsService {
         salonId,
       );
       let waitIndex = 0;
-      return rows.map((r) => {
+      let inServiceIndex = 0;
+      return rows.map((r, idx) => {
+        const tokenNum = Number(r.position) > 0 ? Number(r.position) : (idx + 1);
+        const ticketNumber = `#${String(tokenNum).padStart(2, '0')}`;
+
         if (r.status === 'in_service') {
+          inServiceIndex += 1;
           return {
             ...r,
-            ticketNumber: `#01`,
-            position: 1,
+            ticketNumber,
+            position: inServiceIndex, // Chair 1, Chair 2...
           };
         }
         waitIndex += 1;
         return {
           ...r,
-          ticketNumber: `#0${waitIndex}`.slice(-3),
-          position: waitIndex,
+          ticketNumber,
+          position: waitIndex, // Position #1 in line, Position #2 in line...
         };
       });
     } catch (err) {
@@ -917,11 +922,23 @@ export class SalonsService {
     const cleanService = (dto.serviceName || '').trim() || 'Haircut & Styling';
 
     try {
+      // Monotonic ticket numbering for the day (counting all tickets issued today)
       const maxRow: any[] = await this.prisma.$queryRawUnsafe(
-        `SELECT COALESCE(MAX(position), 0) AS max_pos FROM salon_queue_entries WHERE salon_id = $1 AND status = 'waiting';`,
+        `SELECT COALESCE(MAX(position), 0) AS max_pos 
+         FROM salon_queue_entries 
+         WHERE salon_id = $1 
+           AND joined_at >= CURRENT_DATE;`,
         salonId,
       );
-      const nextPos = Number(maxRow[0]?.max_pos || 0) + 1;
+      let nextPos = Number(maxRow[0]?.max_pos || 0) + 1;
+      const activeMax: any[] = await this.prisma.$queryRawUnsafe(
+        `SELECT COALESCE(MAX(position), 0) AS max_pos FROM salon_queue_entries WHERE salon_id = $1 AND status IN ('waiting', 'in_service');`,
+        salonId,
+      );
+      const activeNext = Number(activeMax[0]?.max_pos || 0) + 1;
+      if (activeNext > nextPos) {
+        nextPos = activeNext;
+      }
 
       await this.prisma.$executeRawUnsafe(
         `INSERT INTO salon_queue_entries (id, salon_id, position, customer_name, phone, service_name, status, joined_at, device_id, user_id)
@@ -959,7 +976,7 @@ export class SalonsService {
         entry: {
           id: entryId,
           position: nextPos,
-          ticketNumber: `#0${nextPos}`.slice(-3),
+          ticketNumber: `#${String(nextPos).padStart(2, '0')}`,
           customerName: cleanName,
           phone: cleanPhone,
           serviceName: cleanService,
