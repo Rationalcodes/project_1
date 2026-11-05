@@ -1,61 +1,34 @@
 import React, { useState } from 'react';
 import {
-  Search,
-  MapPin,
   Star,
-  Users,
   Clock,
-  Navigation,
   ArrowRight,
   Scissors,
   CheckCircle2,
-  AlertTriangle,
-  Heart,
-  SlidersHorizontal,
-  Store,
   Compass,
   ShieldCheck,
-  Zap,
   PhoneCall,
   HelpCircle,
   ChevronDown,
   ChevronUp,
   FileText,
-  BadgePercent,
-  Building2,
-  Coffee,
   Play,
   User,
 } from 'lucide-react';
 import {
   useSalon,
   getEstimatedWaitMinutes,
-  getQueueDisplay,
-  getQueueFreshness,
   matchesGenderFilter,
-  getSalonType,
 } from '../../context/CustomerContext';
-import { LazyModeSelector } from '../common/LazyModeSelector';
 import { Salon } from '@kumbhakaran/shared-types';
-import { redirectToGoogleMaps } from '@kumbhakaran/ui';
 
 export const HomeScreen: React.FC = () => {
   const {
     salons,
-    searchQuery,
-    setSearchQuery,
-    lazyFilter,
-    userLocation,
-    isLoadingSalons,
-    userProfile,
-    toggleFavorite,
-    addToRecentlyViewed,
-    setSelectedSalonForDetail,
-    setCustomerTab,
-    comparisonList,
-    toggleCompareSalon,
-    setIsCompareOpen,
     genderFilter,
+    setCustomerTab,
+    setSelectedSalonForDetail,
+    addToRecentlyViewed,
   } = useSalon();
 
   const isWomen = genderFilter === 'women';
@@ -63,52 +36,10 @@ export const HomeScreen: React.FC = () => {
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
   const [showFullTerms, setShowFullTerms] = useState(false);
 
-  // Filter salons by gender, search, and wait time
-  const filteredSalons = salons.filter((salon) => {
-    if (!matchesGenderFilter(salon, genderFilter)) return false;
-
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      const matchName = salon.name.toLowerCase().includes(q);
-      const matchLocality = salon.locality.toLowerCase().includes(q);
-      const matchServices = salon.services.some((s) => s.name.toLowerCase().includes(q));
-      const matchStaff = salon.staff.some((st) => st.name.toLowerCase().includes(q));
-      if (!matchName && !matchLocality && !matchServices && !matchStaff) return false;
-    }
-
-    const waitTime = getEstimatedWaitMinutes(
-      salon.currentQueue,
-      salon.avgServiceTimeMinutes,
-      salon.activeBarbers
-    );
-    if (lazyFilter === '0-5' && waitTime > 5) return false;
-    if (lazyFilter === '5-15' && (waitTime <= 5 || waitTime > 15)) return false;
-    if (lazyFilter === '15-30' && (waitTime <= 15 || waitTime > 30)) return false;
-    if (lazyFilter === '30+' && waitTime <= 30) return false;
-
-    return true;
-  });
-
   const genderMatchedSalons = salons.filter((s) => matchesGenderFilter(s, genderFilter));
 
-  // Featured shop spotlight
+  // Featured shop spotlight / local shop advertisement
   const featuredShop = genderMatchedSalons.find((s) => s.isVerified) || genderMatchedSalons[0];
-
-  // Shortest queues (< 3 people)
-  const shortestQueueSalons = [...genderMatchedSalons]
-    .filter((s) => s.isOpen)
-    .sort((a, b) => a.currentQueue - b.currentQueue)
-    .slice(0, 4);
-
-  // Top rated salons
-  const topRatedSalons = [...genderMatchedSalons]
-    .sort((a, b) => b.rating - a.rating)
-    .slice(0, 3);
-
-  // Recently viewed
-  const recentlyViewedSalons = salons.filter((s) =>
-    userProfile.recentlyViewed.includes(s.id)
-  );
 
   const handleSalonCardClick = (salon: Salon) => {
     addToRecentlyViewed(salon.id);
@@ -215,7 +146,7 @@ export const HomeScreen: React.FC = () => {
             </div>
           </div>
 
-          {/* Featured Local Studio Spotlight */}
+          {/* Featured Local Studio Spotlight / Shop Ad */}
           {featuredShop && (
             <div className="mt-3.5 pt-3 border-t border-stone-200/70">
               <div className="flex items-center justify-between text-[11px] mb-1.5 px-0.5">
@@ -296,495 +227,9 @@ export const HomeScreen: React.FC = () => {
             </div>
           )}
         </div>
-
-        {/* Comparison Bar Trigger (if items selected) */}
-        {comparisonList.length > 0 && (
-          <div className="mt-3 bg-orange-50 border border-orange-200 rounded-xl p-2.5 flex items-center justify-between text-xs">
-            <div className="flex items-center gap-2 text-orange-900 font-semibold">
-              <SlidersHorizontal className="w-3.5 h-3.5 text-[#FF723A]" />
-              <span>{comparisonList.length} salons in compare list</span>
-            </div>
-            <button
-              onClick={() => setIsCompareOpen(true)}
-              className="px-3 py-1 rounded-lg bg-[#FF723A] text-white font-bold text-[11px] hover:bg-orange-600 transition-colors shadow-xs"
-            >
-              Compare Now
-            </button>
-          </div>
-        )}
       </section>
 
-      {/* Loading Skeleton */}
-      {isLoadingSalons && salons.length === 0 && (
-        <div className="py-12 text-center text-xs text-stone-500 flex items-center justify-center gap-2">
-          <div className="w-4 h-4 border-2 border-[#FF723A] border-t-transparent rounded-full animate-spin" />
-          <span>Finding salons near you...</span>
-        </div>
-      )}
-
-      {/* 2. WAIT-TIME FILTER */}
-      <LazyModeSelector />
-
-      {/* 3. SHORTEST WAIT RIGHT NOW */}
-      <section>
-        <div className="flex items-center justify-between mb-3">
-          <div>
-            <h2 className="text-sm sm:text-base font-bold text-stone-900 flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-              Shortest wait right now
-            </h2>
-            <p className="text-[11px] text-stone-500">
-              Salons with the least crowd at this moment
-            </p>
-          </div>
-          <button
-            onClick={() => setCustomerTab('explore')}
-            className={`text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors ${
-              isWomen ? 'text-[#E11D48] hover:text-rose-800' : 'text-[#FF6422] hover:text-orange-700'
-            }`}
-          >
-            <span>See all</span>
-            <ArrowRight className="w-3.5 h-3.5" />
-          </button>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-          {shortestQueueSalons.map((salon) => {
-            const queueInfo = getQueueDisplay(salon.currentQueue, salon.isOpen);
-            const waitTime = getEstimatedWaitMinutes(
-              salon.currentQueue,
-              salon.avgServiceTimeMinutes,
-              salon.activeBarbers
-            );
-            const freshness = getQueueFreshness(salon.lastQueueUpdate);
-            const isSaved = userProfile.savedSalons.includes(salon.id);
-
-            return (
-              <div
-                key={salon.id}
-                onClick={() => handleSalonCardClick(salon)}
-                className={`group transition-all duration-300 cursor-pointer p-3.5 relative ${
-                  isWomen
-                    ? 'rounded-3xl bg-white hover:bg-[#FFF8F5] border border-[#FED7CC] hover:border-rose-300 shadow-[0_2px_14px_rgba(225,29,72,0.05)] hover:shadow-xl'
-                    : 'rounded-2xl bg-white hover:bg-[#FFFDF9] border border-[#E8E2D8] hover:border-orange-400 shadow-[0_2px_12px_rgba(40,20,10,0.04)] hover:shadow-xl'
-                }`}
-              >
-                {/* Favorite & Compare Quick Actions */}
-                <div className="absolute top-3 right-3 z-10 flex items-center gap-1.5">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      toggleCompareSalon(salon.id);
-                    }}
-                    title="Compare"
-                    className={`p-1.5 rounded-full backdrop-blur-md transition-colors border ${
-                      comparisonList.includes(salon.id)
-                        ? 'bg-[#FF6422] text-white border-orange-500 shadow-xs'
-                        : 'bg-white/90 text-stone-600 hover:text-stone-900 border-stone-200 shadow-xs'
-                    }`}
-                  >
-                    <SlidersHorizontal className="w-3.5 h-3.5" />
-                  </button>
-
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      toggleFavorite(salon.id);
-                    }}
-                    title="Save"
-                    className="p-1.5 rounded-full bg-white/90 text-stone-500 hover:text-rose-500 border border-stone-200 backdrop-blur-md transition-colors shadow-xs"
-                  >
-                    <Heart
-                      className={`w-3.5 h-3.5 ${
-                        isSaved ? 'fill-rose-500 text-rose-500' : ''
-                      }`}
-                    />
-                  </button>
-                </div>
-
-                <div className="flex gap-3">
-                  {/* Photo / Loop Video */}
-                  <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-xl overflow-hidden relative shrink-0">
-                    {salon.loopVideoUrl ? (
-                      <video
-                        src={salon.loopVideoUrl}
-                        autoPlay
-                        loop
-                        muted
-                        playsInline
-                        poster={salon.coverImage || salon.posterImage}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      />
-                    ) : salon.coverImage ||
-                      salon.posterImage ||
-                      (salon.images && salon.images[0]) ||
-                      (salon.locationImages && salon.locationImages[0]) ||
-                      (salon.workImages && salon.workImages[0]) ? (
-                      <img
-                        src={
-                          salon.coverImage ||
-                          salon.posterImage ||
-                          (salon.images && salon.images[0]) ||
-                          (salon.locationImages && salon.locationImages[0]) ||
-                          (salon.workImages && salon.workImages[0])
-                        }
-                        alt={salon.name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-gradient-to-br from-stone-800 to-stone-900 flex flex-col items-center justify-center text-white p-2 text-center">
-                        <Store className="w-6 h-6 text-[#FF6422] mb-1" />
-                        <span className="text-[10px] font-black line-clamp-1">
-                          {salon.name}
-                        </span>
-                      </div>
-                    )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
-                    {salon.loopVideoUrl && (
-                      <span className="absolute top-1.5 left-1.5 px-2 py-0.5 rounded-full bg-black/75 backdrop-blur-xs text-[9px] font-bold text-white flex items-center gap-1 shadow-xs pointer-events-none">
-                        <Play className="w-2.5 h-2.5 fill-white" />
-                        <span>Video</span>
-                      </span>
-                    )}
-                    <div className="absolute bottom-1.5 left-1.5 right-1.5">
-                      <span
-                        className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold shadow-xs ${queueInfo.pillClass}`}
-                      >
-                        <span className={`w-1.5 h-1.5 rounded-full ${queueInfo.dotClass}`} />
-                        {salon.currentQueue} waiting
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Salon Details */}
-                  <div className="flex-1 min-w-0 flex flex-col justify-between">
-                    <div>
-                      <div className="flex items-center gap-1.5">
-                        <h3 className="text-sm font-bold text-stone-900 group-hover:text-[#FF6422] transition-colors truncate">
-                          {salon.name}
-                        </h3>
-                        {salon.isVerified && (
-                          <CheckCircle2 className="w-3.5 h-3.5 text-[#FF6422] shrink-0" />
-                        )}
-                      </div>
-
-                      <div className="flex items-center gap-2 mt-1 text-xs">
-                        <span className="flex items-center gap-1 text-amber-800 font-bold bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded">
-                          <Star className="w-3 h-3 fill-amber-500 text-amber-500" />
-                          {salon.rating}
-                        </span>
-                        <span className="text-[11px] text-stone-500">
-                          ({salon.reviewCount})
-                        </span>
-                        <span className="text-stone-300">•</span>
-                        <span className="text-[11px] text-stone-500 truncate">
-                          {salon.locality}
-                        </span>
-                        <span className="text-stone-300">•</span>
-                        <span
-                          className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full border ${
-                            getSalonType(salon) === 'men'
-                              ? 'bg-blue-50 text-blue-700 border-blue-200'
-                              : getSalonType(salon) === 'women'
-                              ? 'bg-rose-50 text-rose-700 border-rose-200'
-                              : 'bg-stone-100 text-stone-600 border-stone-200'
-                          }`}
-                        >
-                          {getSalonType(salon) === 'men'
-                            ? 'Men'
-                            : getSalonType(salon) === 'women'
-                            ? 'Women'
-                            : 'Unisex'}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="mt-2 pt-2 border-t border-[#E8E2D8] flex items-center justify-between text-xs">
-                      <div>
-                        <div className="text-[10px] text-stone-500">Haircut from</div>
-                        <div className="font-bold text-stone-900">
-                          ₹{salon.startingPrice}
-                        </div>
-                      </div>
-
-                      <div className="text-right">
-                        <div className="text-[10px] text-stone-500">Wait</div>
-                        <div className="font-bold text-emerald-700">~{waitTime} mins</div>
-                      </div>
-
-                      <div className="text-right">
-                        <div className="text-[10px] text-stone-500">Distance</div>
-                        <div className="font-medium text-stone-700">
-                          {salon.distanceKm} km
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Queue Freshness */}
-                <div className="mt-2 flex items-center justify-between text-[10px] text-stone-500 px-1">
-                  <span className="flex items-center gap-1">
-                    <Clock className="w-3 h-3 text-stone-400" />
-                    {freshness.text}
-                  </span>
-                  {freshness.isStale && (
-                    <span className="flex items-center gap-0.5 text-orange-700 font-medium">
-                      <AlertTriangle className="w-3 h-3 text-[#FF6422]" /> Outdated
-                    </span>
-                  )}
-                  <span className="text-stone-500">
-                    {(salon.openingHours?.formatted || '09:00 AM – 09:30 PM').split('(')[0]}
-                  </span>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </section>
-
-      {/* 4. ALL SALONS NEARBY */}
-      <section>
-        <div className="flex items-center justify-between mb-3">
-          <div>
-            <h2 className="text-sm sm:text-base font-bold text-stone-900 flex items-center gap-1.5">
-              <MapPin className="w-4 h-4 text-[#FF6422]" />
-              All salons nearby ({filteredSalons.length})
-            </h2>
-            <p className="text-[11px] text-stone-500">
-              {userLocation
-                ? `Sorted by distance from ${userLocation.name.split(',')[0]}`
-                : 'Verified local salons in Bilaspur'}
-            </p>
-          </div>
-          <button
-            onClick={() => setCustomerTab('map')}
-            className="text-xs text-[#FF6422] hover:text-orange-700 font-semibold"
-          >
-            View Map
-          </button>
-        </div>
-
-        <div className="space-y-3.5">
-          {filteredSalons.map((salon) => {
-            const queueInfo = getQueueDisplay(salon.currentQueue, salon.isOpen);
-            const waitTime = getEstimatedWaitMinutes(
-              salon.currentQueue,
-              salon.avgServiceTimeMinutes,
-              salon.activeBarbers
-            );
-            const freshness = getQueueFreshness(salon.lastQueueUpdate);
-            const isSaved = userProfile.savedSalons.includes(salon.id);
-
-            return (
-              <div
-                key={salon.id}
-                onClick={() => handleSalonCardClick(salon)}
-                className={`group transition-all duration-300 cursor-pointer p-4 ${
-                  isWomen
-                    ? 'rounded-3xl bg-white hover:bg-[#FFF8F5] border border-[#FED7CC] hover:border-rose-300 shadow-[0_2px_14px_rgba(225,29,72,0.05)] hover:shadow-xl'
-                    : 'rounded-2xl bg-white hover:bg-[#FFFDF9] border border-[#E8E2D8] hover:border-orange-400 shadow-[0_2px_12px_rgba(40,20,10,0.04)] hover:shadow-xl'
-                }`}
-              >
-                <div className="flex flex-col sm:flex-row gap-4">
-                  {/* Photo with overlay */}
-                  <div className="sm:w-44 h-40 rounded-2xl overflow-hidden relative shrink-0">
-                    {salon.loopVideoUrl ? (
-                      <video
-                        src={salon.loopVideoUrl}
-                        autoPlay
-                        loop
-                        muted
-                        playsInline
-                        poster={salon.coverImage || salon.posterImage}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      />
-                    ) : salon.coverImage ||
-                      salon.posterImage ||
-                      (salon.images && salon.images[0]) ||
-                      (salon.locationImages && salon.locationImages[0]) ? (
-                      <img
-                        src={
-                          salon.coverImage ||
-                          salon.posterImage ||
-                          (salon.images && salon.images[0]) ||
-                          (salon.locationImages && salon.locationImages[0])
-                        }
-                        alt={salon.name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-gradient-to-br from-stone-800 to-stone-900 flex flex-col items-center justify-center text-white p-3 text-center">
-                        <Store className="w-8 h-8 text-[#FF6422] mb-1" />
-                        <span className="text-xs font-bold">{salon.name}</span>
-                      </div>
-                    )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent pointer-events-none" />
-                    {salon.loopVideoUrl && (
-                      <span className="absolute top-2.5 right-2.5 px-2.5 py-1 rounded-full bg-black/75 backdrop-blur-xs text-[10px] font-bold text-white flex items-center gap-1 shadow-xs pointer-events-none">
-                        <Play className="w-2.5 h-2.5 fill-white" />
-                        <span>Video</span>
-                      </span>
-                    )}
-
-                    {/* Live Queue Badge */}
-                    <div className="absolute top-2.5 left-2.5">
-                      <span
-                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold shadow-md backdrop-blur-md ${queueInfo.badgeClass}`}
-                      >
-                        <Users className="w-3.5 h-3.5" />
-                        {salon.currentQueue} waiting
-                      </span>
-                    </div>
-
-                    {/* Action buttons */}
-                    <div className="absolute top-2.5 right-2.5 flex items-center gap-1.5">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          toggleCompareSalon(salon.id);
-                        }}
-                        className={`p-2 rounded-full backdrop-blur-md transition-colors border ${
-                          comparisonList.includes(salon.id)
-                            ? 'bg-[#FF6422] text-white border-orange-500 shadow-xs'
-                            : 'bg-white/90 text-stone-600 hover:text-stone-900 border-stone-200 shadow-xs'
-                        }`}
-                        title="Compare"
-                      >
-                        <SlidersHorizontal className="w-3.5 h-3.5" />
-                      </button>
-
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          toggleFavorite(salon.id);
-                        }}
-                        className="p-2 rounded-full bg-white/90 text-stone-500 hover:text-rose-500 border border-stone-200 backdrop-blur-md transition-colors shadow-xs"
-                        title="Save"
-                      >
-                        <Heart
-                          className={`w-3.5 h-3.5 ${
-                            isSaved ? 'fill-rose-500 text-rose-500' : ''
-                          }`}
-                        />
-                      </button>
-                    </div>
-
-                    <div className="absolute bottom-2 left-2.5 right-2.5 flex items-center justify-between text-xs">
-                      <span className="font-medium text-emerald-800 bg-white/90 px-2 py-0.5 rounded-full backdrop-blur-sm shadow-xs border border-emerald-200 text-[11px]">
-                        ~{waitTime}m wait
-                      </span>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          redirectToGoogleMaps(
-                            {
-                              lat: salon.coordinates.lat,
-                              lng: salon.coordinates.lng,
-                              name: salon.name,
-                              address: salon.address,
-                            },
-                            userLocation || undefined
-                          );
-                        }}
-                        className="text-[#FF6422] font-bold bg-white/95 hover:bg-orange-50 px-2 py-0.5 rounded-full backdrop-blur-sm flex items-center gap-1 border border-orange-200 transition-colors cursor-pointer shadow-xs text-[11px]"
-                        title="Get directions in Google Maps"
-                      >
-                        <Navigation className="w-2.5 h-2.5 fill-[#FF6422]" />
-                        <span>{userLocation ? `${salon.distanceKm} km ↗` : 'Directions ↗'}</span>
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Body Content */}
-                  <div className="flex-1 flex flex-col justify-between">
-                    <div>
-                      <div className="flex items-start justify-between gap-2">
-                        <div>
-                          <div className="flex items-center gap-1.5">
-                            <h3 className="text-base font-bold text-stone-900 group-hover:text-[#FF6422] transition-colors">
-                              {salon.name}
-                            </h3>
-                            {salon.isVerified && (
-                              <CheckCircle2 className="w-4 h-4 text-[#FF6422] shrink-0" />
-                            )}
-                          </div>
-                          <p className="text-xs text-stone-500 line-clamp-1 mt-0.5">
-                            {salon.tagline}
-                          </p>
-                        </div>
-
-                        {/* Rating */}
-                        <div className="flex items-center gap-1 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-xl text-amber-800 font-bold text-xs shrink-0 shadow-xs">
-                          <Star className="w-3.5 h-3.5 fill-amber-500 text-amber-500" />
-                          <span>{salon.rating}</span>
-                          <span className="text-stone-400 font-normal">
-                            ({salon.reviewCount})
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Services preview */}
-                      <div className="flex flex-wrap gap-1.5 mt-2.5">
-                        {salon.services.slice(0, 3).map((svc) => (
-                          <span
-                            key={svc.id}
-                            className="text-[10px] font-medium bg-[#FAF7F2] text-stone-700 border border-[#E2DDD5] px-2 py-0.5 rounded-md"
-                          >
-                            {svc.name} • ₹{svc.price}
-                          </span>
-                        ))}
-                        {salon.services.length > 3 && (
-                          <span className="text-[10px] text-stone-500 self-center">
-                            +{salon.services.length - 3} more
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Bottom Status Strip */}
-                    <div className="mt-4 pt-3 border-t border-[#E8E2D8] flex flex-wrap items-center justify-between gap-2 text-xs">
-                      <div className="flex items-center gap-3">
-                        <span className="text-stone-900 font-bold text-sm">
-                          ₹{salon.startingPrice}{' '}
-                          <span className="text-[11px] font-normal text-stone-500">
-                            starting
-                          </span>
-                        </span>
-                        <span className="text-stone-300">•</span>
-                        <span className="text-stone-600 flex items-center gap-1 text-[11px]">
-                          <Navigation className="w-3 h-3 text-[#FF6422]" />
-                          {salon.locality}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        <span
-                          className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${freshness.badgeClass}`}
-                        >
-                          {freshness.text}
-                        </span>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleSalonCardClick(salon);
-                          }}
-                          className="px-3 py-1 rounded-xl bg-[#FF6422] text-white font-bold text-xs hover:bg-orange-600 transition-colors flex items-center gap-1 shadow-xs cursor-pointer"
-                        >
-                          <span>View</span>
-                          <ArrowRight className="w-3 h-3" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </section>
-
-      {/* 5. HOW IT WORKS (SIMPLE & DIRECT) */}
+      {/* 2. HOW IT WORKS (SIMPLE & DIRECT) */}
       <section className="bg-white rounded-3xl border border-[#E8E2D8] p-5 sm:p-6 shadow-xs">
         <div className="mb-4">
           <h2 className="text-base sm:text-lg font-bold text-stone-900">
@@ -828,7 +273,7 @@ export const HomeScreen: React.FC = () => {
         </div>
       </section>
 
-      {/* 6. SIMPLE, FAIR, TRANSPARENT */}
+      {/* 3. SIMPLE, FAIR, TRANSPARENT */}
       <section className="bg-white rounded-3xl border border-[#E8E2D8] p-5 sm:p-6 shadow-xs">
         <div className="mb-4">
           <h2 className="text-base sm:text-lg font-bold text-stone-900">
@@ -882,7 +327,7 @@ export const HomeScreen: React.FC = () => {
         </div>
       </section>
 
-      {/* 7. FOR SALON OWNERS */}
+      {/* 4. FOR SALON OWNERS */}
       <section className="bg-gradient-to-r from-stone-900 to-stone-800 rounded-3xl p-5 sm:p-6 text-white relative overflow-hidden shadow-md">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="max-w-lg">
@@ -910,7 +355,7 @@ export const HomeScreen: React.FC = () => {
         </div>
       </section>
 
-      {/* 8. FREQUENTLY ASKED QUESTIONS */}
+      {/* 5. FREQUENTLY ASKED QUESTIONS */}
       <section className="bg-white rounded-3xl border border-[#E8E2D8] p-5 sm:p-6 shadow-xs">
         <div className="flex items-center gap-2 mb-4">
           <HelpCircle className="w-4 h-4 text-[#FF6422]" />
@@ -959,7 +404,7 @@ export const HomeScreen: React.FC = () => {
         </div>
       </section>
 
-      {/* 9. GUIDELINES & TERMS */}
+      {/* 6. GUIDELINES & TERMS */}
       <section className="bg-[#FAF7F2] rounded-3xl border border-[#E8E2D8] p-4 sm:p-5 shadow-xs">
         <div className="flex items-center justify-between gap-3 mb-2">
           <div className="flex items-center gap-2">
@@ -1019,7 +464,7 @@ export const HomeScreen: React.FC = () => {
         )}
       </section>
 
-      {/* 10. FOOTER */}
+      {/* 7. FOOTER */}
       <footer className="pt-6 border-t border-stone-200 text-stone-500 text-xs">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center gap-2">
