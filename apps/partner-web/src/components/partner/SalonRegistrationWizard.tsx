@@ -125,7 +125,7 @@ export const SalonRegistrationWizard: React.FC<SalonRegistrationWizardProps> = (
       <div className="text-center mb-6">
         <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-400 text-xs font-bold mb-2">
           <Store className="w-3.5 h-3.5" />
-          <span>Kumbhkaran Salons Partner Onboarding</span>
+          <span>SLOON Partner Onboarding</span>
         </div>
         <h2 className="text-xl sm:text-2xl font-black text-white font-['Syne',sans-serif]">
           Register Your Salon
@@ -144,7 +144,7 @@ export const SalonRegistrationWizard: React.FC<SalonRegistrationWizardProps> = (
             </div>
             <div className="text-xs text-zinc-300 font-semibold mt-0.5">{activeSalon.name} • {activeSalon.city}</div>
             <p className="text-[11px] text-zinc-400">
-              Your salon is already live on Kumbhkaran. Submitting will update your studio profile.
+              Your salon is already live on SLOON. Submitting will update your studio profile.
             </p>
           </div>
           <button
@@ -586,7 +586,7 @@ export const SalonRegistrationWizard: React.FC<SalonRegistrationWizardProps> = (
             <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-3.5 flex items-start gap-2.5 text-xs text-zinc-300">
               <ShieldCheck className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
               <div>
-                <strong className="text-white">Walk-in Transparency Activation:</strong> Upon registering, your studio will immediately appear on the Kumbhkaran Salons Discovery Map with coordinates ({coordinates.lat.toFixed(4)}°, {coordinates.lng.toFixed(4)}°). Customers will see your live waiting count!
+                <strong className="text-white">Walk-in Transparency Activation:</strong> Upon registering, your studio will immediately appear on the SLOON Discovery Map with coordinates ({coordinates.lat.toFixed(4)}°, {coordinates.lng.toFixed(4)}°). Customers will see your live waiting count!
               </div>
             </div>
 

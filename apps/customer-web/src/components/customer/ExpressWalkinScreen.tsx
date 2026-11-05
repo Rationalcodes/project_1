@@ -139,7 +139,7 @@ export const ExpressWalkinScreen: React.FC<ExpressWalkinScreenProps> = ({
         </div>
         <h2 className="text-xl font-black text-stone-900">Connecting to Salon Counter...</h2>
         <p className="text-xs text-stone-500 mt-1 max-w-sm">
-          Securing your live queue session with Kumbhkaran Salons network.
+          Securing your live queue session with SLOON network.
         </p>
         <button
           onClick={onDismiss}
@@ -484,7 +484,7 @@ export const ExpressWalkinScreen: React.FC<ExpressWalkinScreenProps> = ({
 
       {/* Trust & Platform Guarantee */}
       <div className="mt-5 text-center text-[11px] text-stone-600">
-        100% Free Live Queue Pass • Powered by <span className="font-extrabold text-stone-900">Kumbhkaran Salons</span>
+        100% Free Live Queue Pass • Powered by <span className="font-extrabold text-stone-900">SLOON</span>
       </div>
     </div>
   );

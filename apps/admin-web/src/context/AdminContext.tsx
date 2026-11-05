@@ -214,7 +214,7 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         defaultApiClient.setAuthToken(res.accessToken);
         setAdminUser(res.user);
         if (res.user.role === 'ADMIN') {
-          triggerNotification(`Welcome to Kumbhkaran Salons HQ, ${res.user.name}`);
+          triggerNotification(`Welcome to SLOON HQ, ${res.user.name}`);
           refreshSalons();
         } else {
           triggerNotification(`Signed in as ${res.user.email} (Role: ${res.user.role})`);

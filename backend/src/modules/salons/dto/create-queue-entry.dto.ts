@@ -17,6 +17,21 @@ export class CreateQueueEntryDto {
   @IsString()
   serviceName?: string;
 
+  @ApiPropertyOptional({ example: 'srv_123', description: 'Optional Service ID' })
+  @IsOptional()
+  @IsString()
+  serviceId?: string;
+
+  @ApiPropertyOptional({ example: 'staff_1', description: 'Optional preferred staff member' })
+  @IsOptional()
+  @IsString()
+  preferredStaffId?: string;
+
+  @ApiPropertyOptional({ description: 'Special customer request or instructions' })
+  @IsOptional()
+  @IsString()
+  notes?: string;
+
   @ApiPropertyOptional({ example: 'dev_1793838383', description: 'Device fingerprint ID for cross-visit recognition' })
   @IsOptional()
   @IsString()

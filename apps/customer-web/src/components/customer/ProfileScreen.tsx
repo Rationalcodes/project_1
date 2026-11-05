@@ -323,7 +323,7 @@ export const ProfileScreen: React.FC = () => {
       }`}>
         <ShieldCheck className={`w-5 h-5 shrink-0 mt-0.5 ${isWomen ? 'text-[#E11D48]' : 'text-[#FF6422]'}`} />
         <div className="text-xs text-stone-600 space-y-1">
-          <div className="font-bold text-stone-900">The Kumbhkaran Salons Promise</div>
+          <div className="font-bold text-stone-900">The SLOON Promise</div>
           <div>
             We never share your private phone number or email with salons. No booking fees, no upfront payments, and no marketing spam. Just pure walk-in transparency.
           </div>

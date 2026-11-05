@@ -233,7 +233,7 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
   const handleShare = () => {
     if (navigator.share) {
       navigator.share({
-        title: `${salon.name} - Kumbhkaran Salons Live Queue`,
+        title: `${salon.name} - SLOON Live Queue`,
         text: `Check out live queue at ${salon.name}: ${salon.currentQueue} people waiting right now!`,
         url: window.location.href
       }).catch(() => {});
@@ -312,7 +312,7 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
               <div className="text-xl font-black">{salon.name}</div>
               <div className="text-xs text-stone-400 mt-1">{salon.locality}, {salon.city}</div>
               <div className="mt-3 px-3 py-1 rounded-full bg-white/10 text-[11px] font-semibold text-stone-300 border border-white/10">
-                Verified Kumbhkaran Walk-In Studio
+                Verified SLOON Walk-In Studio
               </div>
             </div>
           )}
@@ -652,7 +652,7 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
         <div className="mt-4 pt-3 border-t border-[#E8E2D8] flex items-start gap-2.5 text-xs text-stone-600 bg-orange-50/50 p-3 rounded-2xl border border-orange-100">
           <Info className="w-4 h-4 text-[#FF6422] shrink-0 mt-0.5" />
           <p>
-            <strong className="text-stone-900">Walk-in policy:</strong> Kumbhkaran Salons eliminates blind waiting. Check the live queue or take a token to walk straight in without wasting time.
+            <strong className="text-stone-900">Walk-in policy:</strong> SLOON eliminates blind waiting. Check the live queue or take a token to walk straight in without wasting time.
           </p>
         </div>
       </section>

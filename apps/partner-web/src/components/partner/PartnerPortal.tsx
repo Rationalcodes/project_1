@@ -59,7 +59,7 @@ export const PartnerPortal: React.FC = () => {
             Salon Partner Access
           </span>
           <h1 className="text-2xl font-black text-white font-['Syne',sans-serif]">
-            Welcome to Kumbhkaran Salons Partner OS
+            Welcome to SLOON Partner OS
           </h1>
           <p className="text-xs text-zinc-400 max-w-md mx-auto">
             Manage your physical walk-in queue, update salon pricing, view analytics, and welcome eager customers with zero booking fees.
@@ -102,7 +102,7 @@ export const PartnerPortal: React.FC = () => {
               <span className="text-xs text-zinc-400">partner.kumbhakaran.app</span>
             </div>
             <h1 className="text-lg sm:text-xl font-black text-white mt-0.5 font-['Syne',sans-serif]">
-              Kumbhkaran Salons for Owners
+              SLOON for Owners
             </h1>
             <p className="text-xs text-zinc-400">
               Manage your physical queue, update prices, and welcome walk-in customers with zero booking fees.

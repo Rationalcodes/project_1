@@ -106,7 +106,7 @@ const AdminMainContent: React.FC = () => {
                 Restricted Access
               </span>
               <h1 className="text-xl sm:text-2xl font-black text-white font-['Syne',sans-serif]">
-                Kumbhkaran Salons HQ
+                SLOON HQ
               </h1>
               <p className="text-xs text-zinc-400 max-w-sm mx-auto">
                 Platform administration, partner verification, review moderation, and system telemetry.

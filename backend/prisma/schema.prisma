@@ -44,6 +44,7 @@ model Salon {
   avgServiceTimeMinutes   Int      @default(20) @map("avg_service_time_minutes")
   activeBarbers           Int      @default(2) @map("active_barbers")
   isOpen                  Boolean  @default(true) @map("is_open")
+  queueStatus             String?  @default("open") @map("queue_status") @db.VarChar(20) // 'open', 'paused', 'closed'
   lastQueueUpdate         DateTime @default(now()) @map("last_queue_update") @db.Timestamptz
 
   // Platform governance
@@ -63,6 +64,9 @@ model Salon {
   staff                   SalonStaff[]
   reviews                 SalonReview[]
   members                 SalonMember[]
+  queueEntries            SalonQueueEntry[]
+  serviceSessions         ServiceSession[]
+  queueEvents             QueueEvent[]
 
   @@map("salons")
 }
@@ -87,18 +91,26 @@ model SalonService {
 
 // 3. Salon Staff Entity
 model SalonStaff {
-  id          String   @id @db.VarChar(64)
-  salonId     String   @map("salon_id") @db.VarChar(64)
-  name        String   @db.VarChar(255)
-  role        String?  @default("Master Barber") @db.VarChar(100)
-  experience  String?  @db.VarChar(50)
-  specialties String[]
-  photo       String?
-  status      String   @default("active") @db.VarChar(20)
-  rating      Decimal  @default(4.9) @db.Decimal(2, 1)
-  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
+  id                   String            @id @db.VarChar(64)
+  salonId              String            @map("salon_id") @db.VarChar(64)
+  name                 String            @db.VarChar(255)
+  role                 String?           @default("Master Barber") @db.VarChar(100)
+  experience           String?           @db.VarChar(50)
+  specialties          String[]
+  photo                String?
+  status               String            @default("active") @db.VarChar(20) // 'active', 'inactive'
+  availability         String            @default("AVAILABLE") @map("availability") @db.VarChar(20) // 'AVAILABLE', 'BUSY', 'ON_BREAK', 'OFFLINE'
+  currentQueueEntryId  String?           @map("current_queue_entry_id") @db.VarChar(64)
+  breakStartedAt       DateTime?         @map("break_started_at") @db.Timestamptz
+  workingHoursStart    String?           @default("09:00 AM") @map("working_hours_start") @db.VarChar(20)
+  workingHoursEnd      String?           @default("09:00 PM") @map("working_hours_end") @db.VarChar(20)
+  assignedServices     String[]          @default([]) @map("assigned_services")
+  rating               Decimal           @default(4.9) @db.Decimal(2, 1)
+  createdAt            DateTime          @default(now()) @map("created_at") @db.Timestamptz
 
-  salon       Salon    @relation(fields: [salonId], references: [id], onDelete: Cascade)
+  salon                Salon             @relation(fields: [salonId], references: [id], onDelete: Cascade)
+  assignedQueueEntries SalonQueueEntry[]
+  serviceSessions      ServiceSession[]
 
   @@map("salon_staff")
 }
@@ -180,4 +192,88 @@ model AdminAuditLog {
   @@index([actorId], map: "idx_audit_actor")
   @@index([targetId], map: "idx_audit_target")
   @@map("admin_audit_logs")
+}
+
+// 8. Salon Queue Entries Entity (Live Common Salon Queue)
+model SalonQueueEntry {
+  id                      String          @id @db.VarChar(64)
+  salonId                 String          @map("salon_id") @db.VarChar(64)
+  position                Int             @default(1)
+  ticketNumber            String?         @map("ticket_number") @db.VarChar(32)
+  customerName            String          @map("customer_name") @db.VarChar(100)
+  phone                   String?         @db.VarChar(50)
+  serviceName             String          @map("service_name") @db.VarChar(255)
+  serviceId               String?         @map("service_id") @db.VarChar(64)
+  serviceDuration         Int             @default(20) @map("service_duration")
+  servicePrice            Decimal         @default(150.0) @map("service_price") @db.Decimal(10, 2)
+  assignedStaffId         String?         @map("assigned_staff_id") @db.VarChar(64)
+  status                  String          @default("waiting") @db.VarChar(20) // 'waiting', 'called', 'in_service', 'completed', 'skipped', 'cancelled', 'no_show'
+  joinedAt                DateTime        @default(now()) @map("joined_at") @db.Timestamptz
+  calledAt                DateTime?       @map("called_at") @db.Timestamptz
+  startedAt               DateTime?       @map("started_at") @db.Timestamptz
+  servedAt                DateTime?       @map("served_at") @db.Timestamptz
+  cancelledAt             DateTime?       @map("cancelled_at") @db.Timestamptz
+  estimatedWaitMinutes    Int             @default(0) @map("estimated_wait_minutes")
+  estimatedStartTime      DateTime?       @map("estimated_start_time") @db.Timestamptz
+  estimatedCompletionTime DateTime?       @map("estimated_completion_time") @db.Timestamptz
+  extendedMinutes         Int             @default(0) @map("extended_minutes")
+  deviceId                String?         @map("device_id") @db.VarChar(128)
+  userId                  String?         @map("user_id") @db.VarChar(64)
+  notes                   String?
+  cancellationReason      String?         @map("cancellation_reason") @db.VarChar(255)
+  updatedAt               DateTime        @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  salon                   Salon           @relation(fields: [salonId], references: [id], onDelete: Cascade)
+  assignedStaff           SalonStaff?     @relation(fields: [assignedStaffId], references: [id], onDelete: SetNull)
+  serviceSession          ServiceSession?
+  events                  QueueEvent[]
+
+  @@index([salonId, status], map: "idx_queue_salon_status")
+  @@index([salonId, joinedAt], map: "idx_queue_joined")
+  @@map("salon_queue_entries")
+}
+
+// 9. Service Sessions (Historical completed service records)
+model ServiceSession {
+  id                      String          @id @db.VarChar(64)
+  salonId                 String          @map("salon_id") @db.VarChar(64)
+  queueEntryId            String?         @unique @map("queue_entry_id") @db.VarChar(64)
+  staffId                 String?         @map("staff_id") @db.VarChar(64)
+  customerName            String          @map("customer_name") @db.VarChar(100)
+  serviceName             String          @map("service_name") @db.VarChar(255)
+  startedAt               DateTime        @map("started_at") @db.Timestamptz
+  completedAt             DateTime?       @map("completed_at") @db.Timestamptz
+  expectedDurationMinutes Int             @map("expected_duration_minutes")
+  actualDurationMinutes   Int?            @map("actual_duration_minutes")
+  price                   Decimal         @db.Decimal(10, 2)
+  notes                   String?
+  createdAt               DateTime        @default(now()) @map("created_at") @db.Timestamptz
+
+  salon                   Salon           @relation(fields: [salonId], references: [id], onDelete: Cascade)
+  queueEntry              SalonQueueEntry? @relation(fields: [queueEntryId], references: [id], onDelete: SetNull)
+  staff                   SalonStaff?     @relation(fields: [staffId], references: [id], onDelete: SetNull)
+
+  @@index([salonId, startedAt], map: "idx_sessions_salon")
+  @@map("service_sessions")
+}
+
+// 10. Queue Events Audit Log
+model QueueEvent {
+  id                      String          @id @db.VarChar(64)
+  salonId                 String          @map("salon_id") @db.VarChar(64)
+  queueEntryId            String?         @map("queue_entry_id") @db.VarChar(64)
+  actorId                 String?         @map("actor_id") @db.VarChar(64)
+  actorRole               String?         @map("actor_role") @db.VarChar(50)
+  eventType               String          @map("event_type") @db.VarChar(50)
+  fromStatus              String?         @map("from_status") @db.VarChar(20)
+  toStatus                String?         @map("to_status") @db.VarChar(20)
+  details                 Json?
+  createdAt               DateTime        @default(now()) @map("created_at") @db.Timestamptz
+
+  salon                   Salon           @relation(fields: [salonId], references: [id], onDelete: Cascade)
+  queueEntry              SalonQueueEntry? @relation(fields: [queueEntryId], references: [id], onDelete: Cascade)
+
+  @@index([queueEntryId, createdAt], map: "idx_events_entry")
+  @@index([salonId, createdAt], map: "idx_events_salon")
+  @@map("queue_events")
 }

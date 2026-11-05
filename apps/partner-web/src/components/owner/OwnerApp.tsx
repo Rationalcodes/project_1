@@ -111,14 +111,14 @@ export const OwnerApp: React.FC = () => {
 
     const localityText = activeSalon.locality
       ? `${activeSalon.locality} • ${activeSalon.city || 'Chhattisgarh'}`
-      : activeSalon.address || 'Kumbhkaran Partner Studio';
+      : activeSalon.address || 'SLOON Partner Studio';
 
     printWindow.document.write(`
       <!DOCTYPE html>
       <html>
         <head>
           <meta charset="utf-8" />
-          <title>Kumbhkaran Salons - Counter QR Standee - ${activeSalon.name}</title>
+          <title>SLOON - Counter QR Standee - ${activeSalon.name}</title>
           <style>
             @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800;900&family=Syne:wght@700;800;900&display=swap');
             @page {
@@ -349,7 +349,7 @@ export const OwnerApp: React.FC = () => {
             <div class="salon-bg-overlay"></div>
 
             <div class="standee-body">
-              <div class="brand-badge">⚡ Kumbhkaran Salons Live Pass</div>
+              <div class="brand-badge">⚡ SLOON Live Pass</div>
               <h1 class="salon-name">${activeSalon.name}</h1>
               <p class="salon-locality">📍 ${localityText}</p>
 
@@ -2111,7 +2111,7 @@ export const OwnerApp: React.FC = () => {
               className="w-full p-2.5 bg-zinc-900 border border-zinc-700 rounded-xl text-white"
             />
             <p className="text-[10px] text-zinc-500 mt-1">
-              Directs verified Kumbhkaran Salons customers to your official Google Business Profile review dialog after leaving feedback.
+              Directs verified SLOON customers to your official Google Business Profile review dialog after leaving feedback.
             </p>
           </div>
 

@@ -76,7 +76,7 @@ export const LocationPermissionBanner: React.FC = () => {
                 Share your location for live salon queues near you?
               </h4>
               <p className="text-[11px] sm:text-xs text-stone-600 mt-0.5 leading-relaxed">
-                Kumbhkaran Salons measures live walk-in queues and walking distances using PostGIS spatial search.
+                SLOON measures live walk-in queues and walking distances using PostGIS spatial search.
               </p>
 
               {showManualInput ? (

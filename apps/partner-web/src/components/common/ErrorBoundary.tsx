@@ -55,7 +55,7 @@ export class ErrorBoundary extends Component<Props, State> {
             <div className="flex flex-col items-center gap-3">
               <img
                 src="/logo-white.png"
-                alt="Kumbhkaran Salons"
+                alt="SLOON"
                 className="h-10 w-auto object-contain drop-shadow-xl"
                 onError={(e) => {
                   (e.currentTarget as HTMLImageElement).src = '/logo.png';

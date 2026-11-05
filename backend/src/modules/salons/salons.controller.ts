@@ -24,6 +24,17 @@ import { RegisterSalonDto } from './dto/register-salon.dto';
 import { UpdateSalonDto } from './dto/update-salon.dto';
 import { UpdateQueueDto } from './dto/update-queue.dto';
 import { CreateQueueEntryDto } from './dto/create-queue-entry.dto';
+import {
+  StartServiceDto,
+  CompleteServiceDto,
+  ExtendServiceDto,
+  ReassignStaffDto,
+  CancelQueueEntryDto,
+  UpdateQueueStatusDto,
+  ClearQueueDto,
+  UpdateStaffStatusDto,
+  UpsertServiceDto,
+} from './dto/queue-action.dto';
 import { PublicSalonResponseDto, PublicReviewDto } from './dto/public-salon-response.dto';
 import { CreateReviewDto } from './dto/create-review.dto';
 import { SalonOwnerGuard } from './guards/salon-owner.guard';
@@ -190,6 +201,15 @@ export class SalonsController {
     return this.salonsService.updateQueue(id, dto, user.id);
   }
 
+  @Get(':id/queue-overview')
+  @ApiOperation({
+    summary: 'Get live queue overview with staff availability & stats',
+    description: 'Returns real-time queue overview, live timer calculations, and active staff states.',
+  })
+  async getQueueOverview(@Param('id') id: string) {
+    return this.salonsService.getQueueOverview(id);
+  }
+
   @Get(':id/queue-entries')
   @ApiOperation({
     summary: 'Get live walk-in waiting queue entries for a salon',
@@ -201,21 +221,147 @@ export class SalonsController {
   }
 
   @Post(':id/queue-entries')
+  @UseGuards(OptionalJwtAuthGuard)
   @ApiOperation({
     summary: 'Add a customer to the live walk-in queue',
     description:
-      'Adds a customer with their name, phone, and generates their queue ID / ticket number.',
+      'Adds a customer with their name, phone, and locks immutable service duration and price snapshots.',
   })
   async addQueueEntry(
     @Param('id') id: string,
     @Body() dto: CreateQueueEntryDto,
+    @CurrentUser() user?: AuthenticatedUser,
   ) {
-    return this.salonsService.addQueueEntry(id, dto);
+    return this.salonsService.addQueueEntry(id, dto, user?.id);
+  }
+
+  @Post(':id/queue-entries/:entryId/start')
+  @UseGuards(JwtAuthGuard, SalonOwnerGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Start service for a customer with assigned staff member' })
+  async startService(
+    @Param('id') id: string,
+    @Param('entryId') entryId: string,
+    @Body() dto: StartServiceDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.salonsService.startService(id, entryId, dto, user.id);
+  }
+
+  @Post(':id/queue-entries/:entryId/complete')
+  @UseGuards(JwtAuthGuard, SalonOwnerGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Complete service for a customer and save history' })
+  async completeService(
+    @Param('id') id: string,
+    @Param('entryId') entryId: string,
+    @Body() dto: CompleteServiceDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.salonsService.completeService(id, entryId, dto, user.id);
+  }
+
+  @Post(':id/queue-entries/:entryId/call')
+  @UseGuards(JwtAuthGuard, SalonOwnerGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Call customer when chair is ready' })
+  async callCustomer(
+    @Param('id') id: string,
+    @Param('entryId') entryId: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.salonsService.callCustomer(id, entryId, user.id);
+  }
+
+  @Post(':id/queue-entries/:entryId/skip')
+  @UseGuards(JwtAuthGuard, SalonOwnerGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Skip customer who is temporarily absent' })
+  async skipCustomer(
+    @Param('id') id: string,
+    @Param('entryId') entryId: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.salonsService.skipCustomer(id, entryId, user.id);
+  }
+
+  @Post(':id/queue-entries/:entryId/recall')
+  @UseGuards(JwtAuthGuard, SalonOwnerGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Recall skipped customer back into the queue' })
+  async recallCustomer(
+    @Param('id') id: string,
+    @Param('entryId') entryId: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.salonsService.recallCustomer(id, entryId, user.id);
+  }
+
+  @Post(':id/queue-entries/:entryId/cancel')
+  @UseGuards(OptionalJwtAuthGuard)
+  @ApiOperation({ summary: 'Cancel queue entry with optional reason' })
+  async cancelQueueEntry(
+    @Param('id') id: string,
+    @Param('entryId') entryId: string,
+    @Body() dto: CancelQueueEntryDto,
+    @CurrentUser() user?: AuthenticatedUser,
+  ) {
+    return this.salonsService.cancelQueueEntry(id, entryId, dto, user?.id);
+  }
+
+  @Post(':id/queue-entries/:entryId/extend')
+  @UseGuards(JwtAuthGuard, SalonOwnerGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Extend active in-service duration' })
+  async extendService(
+    @Param('id') id: string,
+    @Param('entryId') entryId: string,
+    @Body() dto: ExtendServiceDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.salonsService.extendService(id, entryId, dto, user.id);
+  }
+
+  @Post(':id/queue-entries/:entryId/reassign')
+  @UseGuards(JwtAuthGuard, SalonOwnerGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Reassign customer to a different staff member' })
+  async reassignStaff(
+    @Param('id') id: string,
+    @Param('entryId') entryId: string,
+    @Body() dto: ReassignStaffDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.salonsService.reassignStaff(id, entryId, dto, user.id);
+  }
+
+  @Patch(':id/queue-status')
+  @UseGuards(JwtAuthGuard, SalonOwnerGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Change queue operational status (open / paused / closed)' })
+  async updateQueueStatus(
+    @Param('id') id: string,
+    @Body() dto: UpdateQueueStatusDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.salonsService.updateQueueStatus(id, dto, user.id);
+  }
+
+  @Post(':id/queue/clear')
+  @UseGuards(JwtAuthGuard, SalonOwnerGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Clear active queue while strictly preserving service history' })
+  async clearQueue(
+    @Param('id') id: string,
+    @Body() dto: ClearQueueDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.salonsService.clearQueue(id, dto, user.id);
   }
 
   @Patch(':id/queue-entries/:entryId')
   @ApiOperation({
-    summary: 'Update a customer queue entry status (e.g. in_service, completed, cancelled)',
+    summary: 'Update a customer queue entry status (Backwards-compatible)',
   })
   async updateQueueEntryStatus(
     @Param('id') id: string,
@@ -227,9 +373,88 @@ export class SalonsController {
 
   @Delete(':id/queue-entries')
   @ApiOperation({
-    summary: 'Reset or clear all waiting customers in queue',
+    summary: 'Reset or clear all waiting customers in queue (Backwards-compatible)',
   })
   async clearQueueEntries(@Param('id') id: string) {
     return this.salonsService.clearQueueEntries(id);
+  }
+
+  // ==========================================================================
+  // STAFF & SERVICE MANAGEMENT ENDPOINTS
+  // ==========================================================================
+
+  @Get(':id/staff')
+  @ApiOperation({ summary: 'Get all staff members for a salon' })
+  async getSalonStaff(@Param('id') id: string) {
+    return this.salonsService.getSalonStaff(id);
+  }
+
+  @Patch(':id/staff/:staffId/status')
+  @UseGuards(JwtAuthGuard, SalonOwnerGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Update staff member availability status (AVAILABLE / ON_BREAK / OFFLINE)' })
+  async updateStaffStatus(
+    @Param('id') id: string,
+    @Param('staffId') staffId: string,
+    @Body() dto: UpdateStaffStatusDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.salonsService.updateStaffStatus(id, staffId, dto, user.id);
+  }
+
+  @Get(':id/services')
+  @ApiOperation({ summary: 'Get all configured services for a salon' })
+  async getSalonServices(@Param('id') id: string) {
+    return this.salonsService.getSalonServices(id);
+  }
+
+  @Post(':id/services')
+  @UseGuards(JwtAuthGuard, SalonOwnerGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Create a new salon service with custom duration and price' })
+  async createSalonService(
+    @Param('id') id: string,
+    @Body() dto: UpsertServiceDto,
+  ) {
+    return this.salonsService.upsertSalonService(id, dto);
+  }
+
+  @Patch(':id/services/:serviceId')
+  @UseGuards(JwtAuthGuard, SalonOwnerGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Update salon service duration, price, or details' })
+  async updateSalonService(
+    @Param('id') id: string,
+    @Param('serviceId') serviceId: string,
+    @Body() dto: UpsertServiceDto,
+  ) {
+    return this.salonsService.upsertSalonService(id, dto, serviceId);
+  }
+
+  @Delete(':id/services/:serviceId')
+  @UseGuards(JwtAuthGuard, SalonOwnerGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Deactivate a salon service' })
+  async deleteSalonService(
+    @Param('id') id: string,
+    @Param('serviceId') serviceId: string,
+  ) {
+    return this.salonsService.deleteSalonService(id, serviceId);
+  }
+
+  @Get(':id/service-history')
+  @UseGuards(JwtAuthGuard, SalonOwnerGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get historical service sessions' })
+  async getServiceHistory(
+    @Param('id') id: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.salonsService.getServiceHistory(
+      id,
+      page ? parseInt(page, 10) : 1,
+      limit ? parseInt(limit, 10) : 50,
+    );
   }
 }

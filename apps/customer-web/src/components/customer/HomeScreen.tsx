@@ -48,7 +48,7 @@ export const HomeScreen: React.FC = () => {
 
   const faqs = [
     {
-      q: 'Is Kumbhkaran free to use?',
+      q: 'Is SLOON free to use?',
       a: 'Yes, 100% free. You only pay your salon directly at the counter for your haircut or styling. There are no platform fees or booking charges.',
     },
     {
@@ -57,7 +57,7 @@ export const HomeScreen: React.FC = () => {
     },
     {
       q: 'Do I need to book an appointment?',
-      a: 'No appointments needed. Kumbhkaran is made for walk-ins. Check the crowd from home, head over when wait times are low, and walk right in.',
+      a: 'No appointments needed. SLOON is made for walk-ins. Check the crowd from home, head over when wait times are low, and walk right in.',
     },
     {
       q: 'Can I get in line from home?',
@@ -333,7 +333,7 @@ export const HomeScreen: React.FC = () => {
             </div>
             <h3 className="text-xs font-bold text-stone-900">Check the line</h3>
             <p className="text-xs text-stone-600 mt-1 leading-relaxed">
-              Open Kumbhkaran to see live waiting numbers and estimated wait times before heading out.
+              Open SLOON to see live waiting numbers and estimated wait times before heading out.
             </p>
           </div>
 
@@ -424,7 +424,7 @@ export const HomeScreen: React.FC = () => {
               Own a salon in Bilaspur?
             </h3>
             <p className="text-xs text-stone-300 mt-1 leading-relaxed">
-              List your shop on Kumbhkaran for free. Update your waiting line in one tap, reduce waiting room crowd, and bring in more walk-ins.
+              List your shop on SLOON for free. Update your waiting line in one tap, reduce waiting room crowd, and bring in more walk-ins.
             </p>
           </div>
 
@@ -450,7 +450,7 @@ export const HomeScreen: React.FC = () => {
               Frequently asked questions
             </h3>
             <p className="text-xs text-stone-500">
-              Common questions about Kumbhkaran Salons
+              Common questions about SLOON
             </p>
           </div>
         </div>
@@ -514,7 +514,7 @@ export const HomeScreen: React.FC = () => {
         </div>
 
         <p className="text-xs text-stone-600 leading-relaxed">
-          Kumbhkaran connects customers with local salons for live queue tracking. All payments are handled directly at the shop.
+          SLOON connects customers with local salons for live queue tracking. All payments are handled directly at the shop.
         </p>
 
         {showFullTerms && (
@@ -559,7 +559,7 @@ export const HomeScreen: React.FC = () => {
             </div>
             <div>
               <span className="font-bold text-stone-900 text-sm">
-                Kumbhkaran Salons
+                SLOON
               </span>
               <p className="text-[11px] text-stone-500">
                 Live salon queues in Bilaspur
@@ -605,7 +605,7 @@ export const HomeScreen: React.FC = () => {
 
         <div className="mt-4 pt-3 border-t border-stone-100 flex flex-col sm:flex-row items-center justify-between gap-2 text-[11px] text-stone-400">
           <span>
-            © {new Date().getFullYear()} Kumbhkaran Salons. All rights reserved.
+            © {new Date().getFullYear()} SLOON. All rights reserved.
           </span>
           <span>
             Built with care in Bilaspur.

@@ -70,7 +70,7 @@ export const Header: React.FC = () => {
     try {
       const geoRes = await fetch(
         `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(trimmed + ', India')}&limit=1`,
-        { headers: { 'User-Agent': 'KumbhkaranSalons/1.0' } }
+        { headers: { 'User-Agent': 'SloonSalons/1.0' } }
       );
       if (geoRes.ok) {
         const results = await geoRes.json();
