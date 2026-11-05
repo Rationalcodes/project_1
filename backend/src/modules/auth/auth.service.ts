@@ -116,8 +116,9 @@ export class AuthService {
     }
 
     // Official project client IDs for Kumbhkaran Salons (Google Cloud Project #871471875670)
-    authorizedAudiences.add('871471875670-ifpho22l5oa0r59kgsvvuoe3r7t5a2l9.apps.googleusercontent.com');
+    authorizedAudiences.add('871471875670-l7e7llt3kviigohqmtip7t13kpp59nre.apps.googleusercontent.com');
     authorizedAudiences.add('871471875670-5erjemuob83qh5a4nmlm20s305fk0gof.apps.googleusercontent.com');
+    authorizedAudiences.add('871471875670-ifpho22l5oa0r59kgsvvuoe3r7t5a2l9.apps.googleusercontent.com');
 
     // If the token claims an audience from the user's official Google Cloud Project (project number 871471875670),
     // include it in the allowed audience list so Google's cryptographic verification checks against it
