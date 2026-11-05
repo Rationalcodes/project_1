@@ -33,9 +33,15 @@ import {
   Ticket,
   PhoneCall,
   Check,
-  RefreshCw
+  RefreshCw,
+  QrCode,
+  Download,
+  Printer,
+  Copy,
+  Plus
 } from 'lucide-react';
-import { useSalon, getEstimatedWaitMinutes, getQueueDisplay, getQueueFreshness } from '../../context/CustomerContext';
+import QRCode from 'qrcode';
+import { useSalon, getEstimatedWaitMinutes, getQueueDisplay, getQueueFreshness, getTargetSalonFromUrl } from '../../context/CustomerContext';
 import { Service, Staff } from '@kumbhakaran/shared-types';
 import { redirectToGoogleMaps, openGoogleMapsLocation, SalonMapboxView } from '@kumbhakaran/ui';
 
@@ -72,6 +78,35 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
   const [joinPhone, setJoinPhone] = useState(userProfile.phone || '');
   const [joinService, setJoinService] = useState('Haircut & Styling');
   const [isJoining, setIsJoining] = useState(false);
+  const [showQrModal, setShowQrModal] = useState(false);
+  const [qrDataUrl, setQrDataUrl] = useState<string>('');
+  const [copiedLink, setCopiedLink] = useState(false);
+
+  // Generate QR Code for direct deep link
+  useEffect(() => {
+    if (selectedSalonForDetail?.id) {
+      const origin = typeof window !== 'undefined' ? window.location.origin : 'https://www.kumbhkaransalons.in';
+      const url = `${origin}/?salon=${selectedSalonForDetail.id}&join=true`;
+      QRCode.toDataURL(url, {
+        width: 360,
+        margin: 2,
+        color: { dark: '#1F1F1F', light: '#FFFFFF' },
+      })
+        .then(setQrDataUrl)
+        .catch(() => {});
+    }
+  }, [selectedSalonForDetail?.id]);
+
+  // Auto-open Join Queue modal if link or QR included join=true or action=queue
+  useEffect(() => {
+    const { autoJoin, serviceName } = getTargetSalonFromUrl();
+    if (serviceName) {
+      setJoinService(serviceName);
+    }
+    if (autoJoin && !activeTicket && selectedSalonForDetail?.isOpen) {
+      setShowJoinQueueModal(true);
+    }
+  }, [selectedSalonForDetail?.id, activeTicket, selectedSalonForDetail?.isOpen]);
 
   useEffect(() => {
     if (userProfile.name && !joinName) {

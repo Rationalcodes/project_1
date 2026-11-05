@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import {
   Salon,
   Service,
@@ -168,11 +168,50 @@ const loadStoredUserProfile = (): CustomerProfile => {
   };
 };
 
+
+export interface UrlTargetInfo {
+  salonId: string | null;
+  autoJoin: boolean;
+  serviceName: string | null;
+}
+
+export function getTargetSalonFromUrl(): UrlTargetInfo {
+  if (typeof window === 'undefined') {
+    return { salonId: null, autoJoin: false, serviceName: null };
+  }
+  try {
+    const params = new URLSearchParams(window.location.search);
+    let salonId = params.get('salon') || params.get('s') || params.get('id') || params.get('queue') || null;
+    const autoJoin = params.get('join') === 'true' || params.get('action') === 'queue' || params.has('queue');
+    const serviceName = params.get('service') || null;
+
+    if (!salonId && window.location.pathname) {
+      const match = window.location.pathname.match(/\/salon\/([a-zA-Z0-9_-]+)/i);
+      if (match && match[1]) {
+        salonId = match[1];
+      }
+    }
+
+    if (!salonId && window.location.hash) {
+      const match = window.location.hash.match(/#\/?salon[-/]([a-zA-Z0-9_-]+)/i);
+      if (match && match[1]) {
+        salonId = match[1];
+      }
+    }
+
+    return { salonId, autoJoin, serviceName };
+  } catch {
+    return { salonId: null, autoJoin: false, serviceName: null };
+  }
+}
+
 export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [salons, setSalons] = useState<Salon[]>(INITIAL_SALONS);
   const [activeSalonId, setActiveSalonId] = useState<string>('salon-1');
   const [customerTab, setCustomerTab] = useState<CustomerTab>('home');
   const [selectedSalonForDetail, setSelectedSalonForDetail] = useState<Salon | null>(null);
+
+
   const [userProfile, setUserProfile] = useState<CustomerProfile>(loadStoredUserProfile);
   const [authUser, setAuthUser] = useState<AuthUser | null>(null);
   // Strictly take location from user only — never assume or force a default locality
@@ -216,6 +255,96 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setGenderFilterState(filter);
     safeStorage.setItem('kumbhakaran_gender_filter', filter);
   };
+
+  // Synchronize browser URL bar and back button navigation with selected salon
+  const handleSetSelectedSalonForDetail = useCallback(
+    (update: Salon | null | ((prev: Salon | null) => Salon | null)) => {
+      setSelectedSalonForDetail((prev) => {
+        const next = typeof update === 'function' ? update(prev) : update;
+        if (typeof window !== 'undefined') {
+          try {
+            const url = new URL(window.location.href);
+            if (next && next.id) {
+              url.searchParams.set('salon', next.id);
+              window.history.pushState({ salonId: next.id }, '', url.toString());
+            } else {
+              url.searchParams.delete('salon');
+              url.searchParams.delete('s');
+              url.searchParams.delete('id');
+              url.searchParams.delete('queue');
+              url.searchParams.delete('action');
+              url.searchParams.delete('join');
+              url.searchParams.delete('service');
+              const cleanPath = url.pathname.startsWith('/salon/') ? '/' : url.pathname;
+              window.history.pushState({}, '', cleanPath + (url.search ? url.search : ''));
+            }
+          } catch {}
+        }
+        return next;
+      });
+    },
+    [],
+  );
+
+  // Check URL on startup for direct link or QR scan
+  useEffect(() => {
+    const { salonId } = getTargetSalonFromUrl();
+    if (!salonId) return;
+
+    let isMounted = true;
+
+    // 1. Check if already in initial list
+    const existing = salons.find((s) => s.id === salonId);
+    if (existing) {
+      setSelectedSalonForDetail(existing);
+      return;
+    }
+
+    // 2. Fetch directly from database by ID so QR/link opens immediately anywhere
+    defaultApiClient
+      .getPublicSalonById(salonId)
+      .then((res) => {
+        if (!isMounted || !res || !res.id) return;
+        const mapped = mapApiSalons([res], userLocation)[0];
+        setSalons((prev) => {
+          if (prev.some((s) => s.id === mapped.id)) return prev;
+          return [mapped, ...prev];
+        });
+        setSelectedSalonForDetail(mapped);
+      })
+      .catch((err) => {
+        console.warn('Could not load salon from direct link/QR:', err);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  // Listen to browser forward/back buttons for seamless navigation
+  useEffect(() => {
+    const onPopState = () => {
+      const { salonId } = getTargetSalonFromUrl();
+      if (salonId) {
+        const found = salons.find((s) => s.id === salonId);
+        if (found) {
+          setSelectedSalonForDetail(found);
+        } else {
+          defaultApiClient.getPublicSalonById(salonId).then((res) => {
+            if (res && res.id) {
+              const mapped = mapApiSalons([res], userLocation)[0];
+              setSelectedSalonForDetail(mapped);
+            }
+          }).catch(() => {});
+        }
+      } else {
+        setSelectedSalonForDetail(null);
+      }
+    };
+
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, [salons, userLocation]);
 
   const setUserLocation = (loc: LocationOption) => {
     setUserLocationState(loc);
@@ -599,9 +728,16 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             const mapped = mapApiSalons(res.salons, userLocation);
             setSalons(mapped);
 
-            // Also keep selectedSalonForDetail live if customer is viewing a modal
+            // Also keep selectedSalonForDetail live if customer is viewing a modal or direct link
+            const targetId = getTargetSalonFromUrl().salonId;
             setSelectedSalonForDetail((prev) => {
-              if (!prev) return prev;
+              if (!prev) {
+                if (targetId) {
+                  const match = mapped.find((m) => m.id === targetId);
+                  if (match) return match;
+                }
+                return prev;
+              }
               const match = mapped.find((m) => m.id === prev.id);
               if (!match) return prev;
               return {
@@ -913,7 +1049,7 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         customerTab,
         setCustomerTab,
         selectedSalonForDetail,
-        setSelectedSalonForDetail,
+        setSelectedSalonForDetail: handleSetSelectedSalonForDetail,
         userProfile,
         authUser,
         isAuthenticated: Boolean(authUser),

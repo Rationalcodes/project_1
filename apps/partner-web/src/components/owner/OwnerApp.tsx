@@ -37,7 +37,12 @@ import {
   UserPlus,
   RefreshCw,
   XCircle,
+  QrCode,
+  Printer,
+  Download,
+  Copy
 } from 'lucide-react';
+import QRCode from 'qrcode';
 import { OwnerTab, Service, Staff, QueueEntry } from '@kumbhakaran/shared-types';
 import { openGoogleMapsLocation } from '@kumbhakaran/ui';
 
@@ -64,6 +69,160 @@ export const OwnerApp: React.FC = () => {
     updateCustomerStatus,
     clearQueue,
   } = useSalon();
+
+  // Walk-in Counter QR Standee state & URL generator
+  const [partnerQrDataUrl, setPartnerQrDataUrl] = useState<string>('');
+  const [copiedQueueLink, setCopiedQueueLink] = useState(false);
+
+  const getCustomerQueueUrl = (salonId: string) => {
+    if (typeof window === 'undefined') {
+      return `https://www.kumbhkaransalons.in/?salon=${salonId}&join=true`;
+    }
+    const isLocal = ['localhost', '127.0.0.1'].includes(window.location.hostname);
+    const base = isLocal ? `http://${window.location.hostname}:5173` : 'https://www.kumbhkaransalons.in';
+    return `${base}/?salon=${salonId}&join=true`;
+  };
+
+  useEffect(() => {
+    if (activeSalon?.id) {
+      const queueUrl = getCustomerQueueUrl(activeSalon.id);
+      QRCode.toDataURL(queueUrl, {
+        width: 400,
+        margin: 2,
+        color: { dark: '#111111', light: '#FFFFFF' },
+      })
+        .then(setPartnerQrDataUrl)
+        .catch(() => {});
+    }
+  }, [activeSalon?.id]);
+
+  const handlePrintDeskStandee = () => {
+    if (!activeSalon || !partnerQrDataUrl) return;
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+    const directLink = getCustomerQueueUrl(activeSalon.id);
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Kumbhkaran Salons - Counter QR Standee - ${activeSalon.name}</title>
+          <style>
+            @page { size: A4 portrait; margin: 15mm; }
+            body {
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+              text-align: center;
+              color: #1F1F1F;
+              margin: 0;
+              padding: 40px 20px;
+            }
+            .card {
+              max-width: 480px;
+              margin: 0 auto;
+              border: 3px solid #FF6422;
+              border-radius: 28px;
+              padding: 40px 30px;
+              box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+            }
+            .brand {
+              font-size: 26px;
+              font-weight: 900;
+              color: #FF6422;
+              letter-spacing: -0.5px;
+              margin-bottom: 2px;
+            }
+            .tagline {
+              font-size: 12px;
+              color: #666;
+              margin-bottom: 24px;
+              text-transform: uppercase;
+              letter-spacing: 1.5px;
+              font-weight: 800;
+            }
+            .shop-name {
+              font-size: 28px;
+              font-weight: 900;
+              color: #111;
+              margin-bottom: 4px;
+            }
+            .shop-locality {
+              font-size: 15px;
+              color: #777;
+              margin-bottom: 24px;
+            }
+            .qr-box {
+              background: #FFF;
+              padding: 16px;
+              display: inline-block;
+              border: 2px solid #EEE;
+              border-radius: 20px;
+              margin-bottom: 20px;
+            }
+            .qr-img {
+              width: 250px;
+              height: 250px;
+              display: block;
+            }
+            .instructions {
+              font-size: 19px;
+              font-weight: 800;
+              color: #111;
+              margin-bottom: 8px;
+            }
+            .subtext {
+              font-size: 13px;
+              color: #666;
+              line-height: 1.5;
+              max-width: 360px;
+              margin: 0 auto 20px auto;
+            }
+            .badges {
+              display: flex;
+              justify-content: center;
+              gap: 10px;
+              font-size: 11px;
+              font-weight: 700;
+              color: #444;
+            }
+            .badge {
+              background: #F8F6F2;
+              padding: 6px 12px;
+              border-radius: 20px;
+              border: 1px solid #E5E0D8;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="card">
+            <div class="brand">Kumbhkaran Salons</div>
+            <div class="tagline">Official Walk-In Partner</div>
+            <div class="shop-name">${activeSalon.name}</div>
+            <div class="shop-locality">📍 ${activeSalon.locality}</div>
+            <div class="qr-box">
+              <img class="qr-img" src="${partnerQrDataUrl}" alt="Scan QR" />
+            </div>
+            <div class="instructions">Scan to Check Wait & Join Queue</div>
+            <div class="subtext">
+              Point your smartphone camera to choose haircuts or grooming services and join the live walk-in queue.
+            </div>
+            <div class="badges">
+              <span class="badge">⚡ Zero App Download</span>
+              <span class="badge">💈 Live Chair Turn</span>
+              <span class="badge">₹0 Extra Fee</span>
+            </div>
+          </div>
+          <script>
+            window.onload = function() {
+              setTimeout(function() {
+                window.print();
+              }, 300);
+            };
+          </script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
 
   // Local state for queue manual input
   const [manualQueueInput, setManualQueueInput] = useState<string>('');
