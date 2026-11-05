@@ -16,7 +16,7 @@ const PartnerMainContent: React.FC = () => {
           <div className="flex items-center gap-2 sm:gap-3 min-w-0 shrink group">
             <img
               src="/logo-white.png"
-              alt="Kumbhkaran Salons"
+              alt="SLOON - Unisex Grooming Network"
               className="h-7 sm:h-8 md:h-9 w-auto max-w-[145px] sm:max-w-[185px] md:max-w-[215px] object-contain transition-transform group-hover:scale-105"
               onError={(e) => {
                 (e.currentTarget as HTMLImageElement).src = '/logo.png';

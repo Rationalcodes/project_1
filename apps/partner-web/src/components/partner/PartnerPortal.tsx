@@ -44,7 +44,7 @@ export const PartnerPortal: React.FC = () => {
         <div className="flex flex-col items-center justify-center gap-3">
           <img
             src="/logo-white.png"
-            alt="Kumbhkaran Salons"
+            alt="SLOON - Unisex Grooming Network"
             className="h-11 sm:h-13 w-auto object-contain drop-shadow-xl"
             onError={(e) => {
               (e.currentTarget as HTMLImageElement).src = '/logo.png';
