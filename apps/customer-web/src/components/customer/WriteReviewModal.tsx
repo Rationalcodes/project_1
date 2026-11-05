@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useSalon } from '../../context/CustomerContext';
-import { Star, X, CheckCircle2, User, ExternalLink, Copy, Check, Sparkles } from 'lucide-react';
+import { Star, X, CheckCircle2, User, ExternalLink, Copy, Check, Share2 } from 'lucide-react';
 
 interface WriteReviewModalProps {
   isOpen: boolean;
@@ -134,7 +134,7 @@ export const WriteReviewModal: React.FC<WriteReviewModalProps> = ({ isOpen, onCl
             {/* Google Reviews Sync Prompt */}
             <div className="bg-[#FAF7F2] border border-[#E8E2D8] rounded-2xl p-4 text-left space-y-3 shadow-xs">
               <div className="flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-[#FF6422] shrink-0" />
+                <Share2 className="w-4 h-4 text-[#FF6422] shrink-0" />
                 <h4 className="text-xs font-bold text-stone-900">
                   Also post to Google Reviews?
                 </h4>

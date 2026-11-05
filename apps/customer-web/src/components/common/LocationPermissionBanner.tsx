@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Navigation, MapPin, X, Sparkles } from 'lucide-react';
+import { Navigation, MapPin, X } from 'lucide-react';
 import { useCustomer, POPULAR_LOCATIONS } from '../../context/CustomerContext';
 import { safeStorage } from '../../utils/safeStorage';
 

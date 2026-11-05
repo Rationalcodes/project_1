@@ -10,11 +10,10 @@ import {
   Scissors,
   CheckCircle2,
   SlidersHorizontal,
-  Flame,
-  Sparkles,
   Heart,
   ArrowRight,
-  Store
+  Store,
+  Play,
 } from 'lucide-react';
 import { useSalon, getEstimatedWaitMinutes, getQueueDisplay, getQueueFreshness, matchesGenderFilter, getSalonType } from '../../context/CustomerContext';
 import { Salon } from '@kumbhakaran/shared-types';
@@ -317,8 +316,9 @@ export const ExploreScreen: React.FC = () => {
                 )}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/10 pointer-events-none" />
                 {salon.loopVideoUrl && (
-                  <span className="absolute top-3 right-20 px-2.5 py-1 rounded-full bg-black/75 backdrop-blur-xs text-[10px] font-bold text-amber-400 flex items-center gap-1 shadow-md pointer-events-none">
-                    🎥 Loop Video
+                  <span className="absolute top-3 right-20 px-2.5 py-1 rounded-full bg-black/75 backdrop-blur-xs text-[10px] font-bold text-white flex items-center gap-1 shadow-md pointer-events-none">
+                    <Play className="w-2.5 h-2.5 fill-white" />
+                    <span>Video</span>
                   </span>
                 )}
 
@@ -378,7 +378,7 @@ export const ExploreScreen: React.FC = () => {
                           ? 'bg-rose-900/80 text-rose-100 border-rose-400/40 backdrop-blur-md'
                           : 'bg-stone-900/80 text-stone-100 border-stone-400/40 backdrop-blur-md'
                       }`}>
-                        {salonType === 'men' ? '👨 Men Only' : salonType === 'women' ? '👩 Women Only' : '✨ Unisex Studio'}
+                        {salonType === 'men' ? 'Men' : salonType === 'women' ? 'Women' : 'Unisex'}
                       </span>
                     </div>
                     <div className="flex items-center gap-2 mt-1">

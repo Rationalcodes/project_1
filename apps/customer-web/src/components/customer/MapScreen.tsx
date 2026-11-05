@@ -299,7 +299,7 @@ export const MapScreen: React.FC = () => {
       const isSelected = selectedMarkerSalon?.id === salon.id;
       const salonBadgeHtml = `
         <div style="background: ${isSelected ? primaryHex : '#FFFFFF'}; color: ${isSelected ? '#FFFFFF' : '#1C1917'}; border: 2px solid ${primaryHex}; border-radius: 9999px; padding: 4px 10px; font-size: 11px; font-weight: 800; display: flex; align-items: center; gap: 5px; box-shadow: 0 4px 14px ${isWomen ? 'rgba(225, 29, 72, 0.25)' : 'rgba(232, 89, 12, 0.25)'}; cursor: pointer; transition: transform 0.15s ease; white-space: nowrap;">
-          <span>${isWomen ? '✨' : '✂'} ${salon.name.length > 14 ? salon.name.slice(0, 14) + '…' : salon.name}</span>
+          <span>${salon.name.length > 14 ? salon.name.slice(0, 14) + '…' : salon.name}</span>
           <span style="background: ${isSelected ? '#FFFFFF' : primaryHex}; color: ${isSelected ? primaryHex : '#FFFFFF'}; border-radius: 9999px; padding: 1px 6px; font-size: 10px; font-weight: 900;">
             ${salon.currentQueue}Q
           </span>

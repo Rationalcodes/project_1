@@ -13,7 +13,6 @@ import {
   Star,
   Settings,
   ChevronDown,
-  Sparkles,
   ArrowRight,
   TrendingUp,
   MapPin,

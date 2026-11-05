@@ -5,7 +5,6 @@ import {
   Search,
   CheckCircle2,
   ExternalLink,
-  Sparkles,
   Loader2,
   Building2,
   Compass,
@@ -806,7 +805,7 @@ export const SalonLocationPicker: React.FC<SalonLocationPickerProps> = ({
           {nearbyLandmarks.length > 0 && (
             <div className="mb-2.5 p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 space-y-1.5">
               <div className="text-[10px] text-amber-400 uppercase font-bold tracking-wider flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                <MapPin className="w-3.5 h-3.5 text-amber-400" />
                 <span>Detected Famous Nearby Landmarks & Spots (Click to set):</span>
               </div>
               <div className="flex flex-wrap gap-1.5">

@@ -8,7 +8,6 @@ import {
   Clock,
   Bell,
   Star,
-  Sparkles,
   Edit2,
   Check,
   ShieldCheck,

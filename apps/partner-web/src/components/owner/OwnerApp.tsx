@@ -24,7 +24,6 @@ import {
   Check,
   MapPin,
   Phone,
-  Sparkles,
   Info,
   ExternalLink,
   Film,

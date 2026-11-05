@@ -7,7 +7,6 @@ import {
   Clock,
   Navigation,
   ArrowRight,
-  Sparkles,
   Scissors,
   CheckCircle2,
   AlertTriangle,
@@ -25,6 +24,8 @@ import {
   BadgePercent,
   Building2,
   Coffee,
+  Play,
+  User,
 } from 'lucide-react';
 import {
   useSalon,
@@ -167,7 +168,7 @@ export const HomeScreen: React.FC = () => {
               }`}
             >
               {isWomen ? (
-                <Sparkles className="w-3 h-3 text-[#E11D48]" />
+                <User className="w-3 h-3 text-[#E11D48]" />
               ) : (
                 <Scissors className="w-3 h-3 text-[#FF6422]" />
               )}
@@ -259,8 +260,8 @@ export const HomeScreen: React.FC = () => {
                       />
                     )}
                     {featuredShop.loopVideoUrl && (
-                      <span className="absolute top-0.5 left-0.5 px-1 py-0.2 rounded bg-black/80 text-[8px] text-amber-300 font-bold">
-                        🎥
+                      <span className="absolute top-1 left-1 px-1.5 py-0.5 rounded bg-black/80 text-white font-bold flex items-center gap-0.5 text-[9px]">
+                        <Play className="w-2.5 h-2.5 fill-white" />
                       </span>
                     )}
                   </div>
@@ -440,8 +441,9 @@ export const HomeScreen: React.FC = () => {
                     )}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
                     {salon.loopVideoUrl && (
-                      <span className="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded-full bg-black/75 backdrop-blur-xs text-[9px] font-bold text-amber-400 flex items-center gap-0.5 shadow-xs pointer-events-none">
-                        🎥 Video
+                      <span className="absolute top-1.5 left-1.5 px-2 py-0.5 rounded-full bg-black/75 backdrop-blur-xs text-[9px] font-bold text-white flex items-center gap-1 shadow-xs pointer-events-none">
+                        <Play className="w-2.5 h-2.5 fill-white" />
+                        <span>Video</span>
                       </span>
                     )}
                     <div className="absolute bottom-1.5 left-1.5 right-1.5">
@@ -619,8 +621,9 @@ export const HomeScreen: React.FC = () => {
                     )}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent pointer-events-none" />
                     {salon.loopVideoUrl && (
-                      <span className="absolute top-2.5 right-2.5 px-2 py-0.5 rounded-full bg-black/75 backdrop-blur-xs text-[10px] font-bold text-amber-400 flex items-center gap-0.5 shadow-xs pointer-events-none">
-                        🎥 Video
+                      <span className="absolute top-2.5 right-2.5 px-2.5 py-1 rounded-full bg-black/75 backdrop-blur-xs text-[10px] font-bold text-white flex items-center gap-1 shadow-xs pointer-events-none">
+                        <Play className="w-2.5 h-2.5 fill-white" />
+                        <span>Video</span>
                       </span>
                     )}
 

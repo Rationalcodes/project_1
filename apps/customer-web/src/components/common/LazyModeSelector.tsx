@@ -1,7 +1,7 @@
 import React from 'react';
 import { useSalon, getEstimatedWaitMinutes } from '../../context/CustomerContext';
 import { LazyFilter } from '@kumbhakaran/shared-types';
-import { Zap, Coffee, Clock, Coffee as Hourglass, Sparkles } from 'lucide-react';
+import { Zap, Coffee, Clock, Hourglass } from 'lucide-react';
 
 export const LazyModeSelector: React.FC = () => {
   const { lazyFilter, setLazyFilter, salons } = useSalon();
@@ -19,7 +19,7 @@ export const LazyModeSelector: React.FC = () => {
     {
       id: '0-5',
       label: '0–5 min',
-      sublabel: 'No time to waste',
+      sublabel: 'Quick walk-in',
       icon: Zap,
       accentColor: 'text-emerald-600',
       borderActive: 'border-emerald-400',
@@ -29,7 +29,7 @@ export const LazyModeSelector: React.FC = () => {
     {
       id: '5-15',
       label: '5–15 min',
-      sublabel: 'Just chilling',
+      sublabel: 'Short wait',
       icon: Coffee,
       accentColor: 'text-amber-600',
       borderActive: 'border-amber-400',
@@ -39,7 +39,7 @@ export const LazyModeSelector: React.FC = () => {
     {
       id: '15-30',
       label: '15–30 min',
-      sublabel: 'A little patience',
+      sublabel: 'Moderate wait',
       icon: Clock,
       accentColor: 'text-[#FF6422]',
       borderActive: 'border-orange-400',
@@ -49,7 +49,7 @@ export const LazyModeSelector: React.FC = () => {
     {
       id: '30+',
       label: '30+ min',
-      sublabel: 'Maybe somewhere else!',
+      sublabel: 'Long wait',
       icon: Hourglass,
       accentColor: 'text-rose-600',
       borderActive: 'border-rose-400',
@@ -70,14 +70,14 @@ export const LazyModeSelector: React.FC = () => {
       <div className="flex items-center justify-between mb-2.5">
         <div className="flex items-center gap-1.5">
           <div className="w-5 h-5 rounded-md bg-orange-100 text-[#FF6422] flex items-center justify-center">
-            <Sparkles className="w-3.5 h-3.5" />
+            <Clock className="w-3.5 h-3.5" />
           </div>
           <div>
             <h3 className="text-xs font-bold text-stone-900 uppercase tracking-wider">
-              Lazy Mode Filter
+              Wait Time Filter
             </h3>
             <p className="text-[10px] text-stone-500">
-              Filter by your exact patience limit right now
+              Filter salons by current waiting time
             </p>
           </div>
         </div>

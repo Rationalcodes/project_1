@@ -12,7 +12,8 @@ import {
   Share2,
   Scissors,
   User,
-  Sparkles,
+  LayoutGrid,
+  Camera,
   AlertTriangle,
   Info,
   Calendar,
@@ -816,10 +817,10 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
           {/* Sub-Category Filters */}
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
             {[
-              { id: 'all' as const, label: `All Media (${galleryItems.length})`, icon: Sparkles },
-              { id: 'location' as const, label: `📍 Location (${locationPhotos.length})`, icon: MapPin },
-              { id: 'work' as const, label: `💈 Our Work (${workPhotos.length})`, icon: Scissors },
-              ...(salon.loopVideoUrl ? [{ id: 'video' as const, label: `🎥 Loop Video (1)`, icon: Film }] : []),
+              { id: 'all' as const, label: `All Media (${galleryItems.length})`, icon: LayoutGrid },
+              { id: 'location' as const, label: `Location (${locationPhotos.length})`, icon: MapPin },
+              { id: 'work' as const, label: `Our Work (${workPhotos.length})`, icon: Scissors },
+              ...(salon.loopVideoUrl ? [{ id: 'video' as const, label: `Video Tour (1)`, icon: Play }] : []),
             ].map((f) => {
               const Icon = f.icon;
               const isSelected = galleryFilter === f.id;
@@ -899,7 +900,7 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
 
           {/* Informational Callout */}
           <div className="p-3.5 rounded-2xl bg-orange-50/50 border border-orange-200 flex items-center gap-2.5 text-xs text-stone-700">
-            <Sparkles className="w-4 h-4 text-[#FF6422] shrink-0" />
+            <Camera className="w-4 h-4 text-[#FF6422] shrink-0" />
             <span>
               Real photos and loop video captured directly on location at <strong className="text-stone-900">{salon.name}</strong>, {salon.locality}.
             </span>

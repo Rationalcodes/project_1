@@ -6,9 +6,12 @@ import {
   Search,
   User,
   X,
-  Sparkles,
   Scissors,
-  Flame,
+  LayoutGrid,
+  Smile,
+  Droplets,
+  Palette,
+  Package,
 } from 'lucide-react';
 import { useCustomer, POPULAR_LOCATIONS } from '../../context/CustomerContext';
 
@@ -40,20 +43,20 @@ export const Header: React.FC = () => {
 
   const groomingCategories = isWomen
     ? [
-        { name: 'All', icon: Sparkles },
+        { name: 'All', icon: LayoutGrid },
         { name: 'Hair', icon: Scissors },
-        { name: 'Facial', icon: Sparkles },
-        { name: 'Spa', icon: Sparkles },
-        { name: 'Color', icon: Sparkles },
-        { name: 'Combos', icon: Flame },
+        { name: 'Facial', icon: Smile },
+        { name: 'Spa', icon: Droplets },
+        { name: 'Color', icon: Palette },
+        { name: 'Combos', icon: Package },
       ]
     : [
-        { name: 'All', icon: Sparkles },
+        { name: 'All', icon: LayoutGrid },
         { name: 'Hair', icon: Scissors },
         { name: 'Beard', icon: Scissors },
-        { name: 'Combos', icon: Flame },
-        { name: 'Spa', icon: Sparkles },
-        { name: 'Facial', icon: Sparkles },
+        { name: 'Combos', icon: Package },
+        { name: 'Spa', icon: Droplets },
+        { name: 'Facial', icon: Smile },
       ];
 
   const handleApplyCustomLocation = async (e: React.FormEvent) => {
@@ -112,7 +115,7 @@ export const Header: React.FC = () => {
                 : 'bg-white text-[#FF723A] font-black text-xs sm:text-sm tracking-wider rounded-full shadow-sm hover:bg-stone-50 mb-1 active:scale-95'
             }`}
           >
-            <span className="text-sm sm:text-base leading-none">✂</span>
+            <Scissors className="w-3.5 h-3.5 shrink-0" />
             <span>MEN</span>
           </button>
 
@@ -126,7 +129,7 @@ export const Header: React.FC = () => {
                 : 'bg-white text-[#C93B57] font-black text-xs sm:text-sm tracking-wider rounded-full shadow-sm hover:bg-stone-50 mb-1 active:scale-95'
             }`}
           >
-            <span className="text-sm sm:text-base leading-none">✨</span>
+            <User className="w-3.5 h-3.5 shrink-0" />
             <span>WOMEN</span>
           </button>
         </div>

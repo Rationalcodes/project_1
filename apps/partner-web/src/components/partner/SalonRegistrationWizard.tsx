@@ -9,7 +9,6 @@ import {
   Scissors,
   UserCheck,
   CheckCircle2,
-  Sparkles,
   ArrowRight,
   ArrowLeft,
   Camera,
@@ -566,7 +565,7 @@ export const SalonRegistrationWizard: React.FC<SalonRegistrationWizardProps> = (
                 type="submit"
                 className="px-8 py-3 rounded-2xl bg-gradient-to-r from-amber-400 to-amber-500 text-black font-extrabold text-sm hover:from-amber-300 hover:to-amber-400 shadow-xl shadow-amber-500/30 flex items-center gap-2 cursor-pointer transition-all"
               >
-                <Sparkles className="w-4 h-4" />
+                <CheckCircle2 className="w-4 h-4" />
                 <span>Launch & Open Live Queue</span>
               </button>
             </div>
