@@ -3,6 +3,7 @@ import {
   Post,
   Get,
   Body,
+  Param,
   UseGuards,
   HttpCode,
   HttpStatus,
@@ -78,5 +79,26 @@ export class AuthController {
   })
   async logout(@CurrentUser() user: AuthenticatedUser) {
     return this.authService.logout(user.id);
+  }
+
+  @Get('device-profile/:deviceId')
+  @ApiOperation({
+    summary: 'Get customer device profile by device ID',
+    description:
+      'Retrieves mapped anonymous visitor profile (name, saved salons, preferences) for device continuity across sessions without sign-in.',
+  })
+  async getDeviceProfile(@Param('deviceId') deviceId: string) {
+    return this.authService.getDeviceProfile(deviceId);
+  }
+
+  @Post('device-profile')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Save or update customer device profile',
+    description:
+      'Persists visitor name, saved salons, and preferences mapped to device ID for persistent recognition on next visit.',
+  })
+  async saveDeviceProfile(@Body() body: any) {
+    return this.authService.saveDeviceProfile(body);
   }
 }

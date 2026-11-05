@@ -19,6 +19,12 @@ export const WriteReviewModal: React.FC<WriteReviewModalProps> = ({ isOpen, onCl
   const [overallExperience, setOverallExperience] = useState(5);
   const [verifiedVisit, setVerifiedVisit] = useState(true);
 
+  React.useEffect(() => {
+    if (userProfile.name && !customerName) {
+      setCustomerName(userProfile.name);
+    }
+  }, [userProfile.name, isOpen]);
+
   // Dual review sync states
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);

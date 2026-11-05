@@ -142,7 +142,7 @@ export const ProfileScreen: React.FC = () => {
                   ? 'bg-gradient-to-br from-rose-400 to-[#E11D48] border-rose-300'
                   : 'bg-gradient-to-br from-orange-400 to-[#FF6422] border-orange-300'
               }`}>
-                {userProfile.name ? userProfile.name.charAt(0).toUpperCase() : 'C'}
+                {userProfile.name ? userProfile.name.charAt(0).toUpperCase() : <User className="w-8 h-8" />}
               </div>
             )}
             <span className="absolute -bottom-1 -right-1 w-5 h-5 bg-emerald-500 rounded-full flex items-center justify-center text-[10px] text-white font-extrabold shadow">
@@ -174,8 +174,11 @@ export const ProfileScreen: React.FC = () => {
               </form>
             ) : (
               <div className="flex items-center gap-2">
-                <h2 className="text-lg font-extrabold text-stone-900 truncate">
-                  {authUser?.name || userProfile.name}
+                <h2
+                  onClick={() => !authUser && setIsEditingName(true)}
+                  className={`text-lg font-extrabold text-stone-900 truncate ${!authUser ? 'cursor-pointer hover:underline' : ''}`}
+                >
+                  {authUser?.name || userProfile.name || 'Set your name'}
                 </h2>
                 {!authUser && (
                   <button
@@ -197,14 +200,20 @@ export const ProfileScreen: React.FC = () => {
                   ? 'text-rose-700 bg-rose-50 border-rose-200'
                   : 'text-orange-700 bg-orange-50 border-orange-200'
               }`}>
-                {isAuthenticated ? 'Authenticated Customer' : 'Zero-Sign Up Walk-In Access'}
+                {isAuthenticated
+                  ? 'Authenticated Customer'
+                  : userProfile.name
+                  ? 'Device-Synced Walk-In Profile'
+                  : 'Walk-In Customer (No Sign-Up)'}
               </span>
             </div>
 
             <p className="text-[11px] text-stone-500 mt-1">
               {isAuthenticated
                 ? `Signed in as ${authUser?.email}`
-                : 'No phone number or password required. Pure walk-in clarity.'}
+                : userProfile.name
+                ? 'Your name and saved salons are remembered on this device across visits.'
+                : 'No password required. Set your name so salons and reviews recognize you.'}
             </p>
           </div>
         </div>

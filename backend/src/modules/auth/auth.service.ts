@@ -363,4 +363,77 @@ export class AuthService {
   findLocalUser(userId: string) {
     return this.localUsers.get(userId);
   }
+
+  /**
+   * Fetch device profile mapped by anonymous device ID
+   */
+  async getDeviceProfile(deviceId: string) {
+    if (!deviceId) return null;
+    try {
+      const records: any[] = await this.prisma.$queryRawUnsafe(
+        `SELECT * FROM customer_device_profiles WHERE device_id = $1 LIMIT 1`,
+        deviceId,
+      );
+      if (records && records.length > 0) {
+        const row = records[0];
+        return {
+          deviceId: row.device_id,
+          name: row.name,
+          avatar: row.avatar,
+          savedSalons: row.saved_salons || [],
+          recentlyViewed: row.recently_viewed || [],
+          genderFilter: row.gender_filter || 'men',
+          preferredLocality: row.preferred_locality,
+          updatedAt: row.updated_at,
+        };
+      }
+    } catch (err) {
+      this.logger.warn(`Failed to query customer_device_profiles for ${deviceId}: ${err}`);
+    }
+    return null;
+  }
+
+  /**
+   * Save or update device profile mapped by anonymous device ID
+   */
+  async saveDeviceProfile(dto: {
+    deviceId: string;
+    name?: string;
+    avatar?: string;
+    savedSalons?: string[];
+    recentlyViewed?: string[];
+    genderFilter?: string;
+    preferredLocality?: string;
+  }) {
+    if (!dto.deviceId) {
+      throw new BadRequestException('deviceId is required');
+    }
+
+    try {
+      await this.prisma.$executeRawUnsafe(
+        `INSERT INTO customer_device_profiles (device_id, name, avatar, saved_salons, recently_viewed, gender_filter, preferred_locality, updated_at)
+         VALUES ($1, $2, $3, $4::jsonb, $5::jsonb, $6, $7, NOW())
+         ON CONFLICT (device_id) DO UPDATE SET
+           name = COALESCE(EXCLUDED.name, customer_device_profiles.name),
+           avatar = COALESCE(EXCLUDED.avatar, customer_device_profiles.avatar),
+           saved_salons = COALESCE(EXCLUDED.saved_salons, customer_device_profiles.saved_salons),
+           recently_viewed = COALESCE(EXCLUDED.recently_viewed, customer_device_profiles.recently_viewed),
+           gender_filter = COALESCE(EXCLUDED.gender_filter, customer_device_profiles.gender_filter),
+           preferred_locality = COALESCE(EXCLUDED.preferred_locality, customer_device_profiles.preferred_locality),
+           updated_at = NOW()`,
+        dto.deviceId,
+        dto.name || null,
+        dto.avatar || null,
+        JSON.stringify(dto.savedSalons || []),
+        JSON.stringify(dto.recentlyViewed || []),
+        dto.genderFilter || 'men',
+        dto.preferredLocality || null,
+      );
+
+      return { success: true, deviceId: dto.deviceId };
+    } catch (err) {
+      this.logger.warn(`Failed to upsert customer_device_profile for ${dto.deviceId}: ${err}`);
+      return { success: false, error: String(err) };
+    }
+  }
 }

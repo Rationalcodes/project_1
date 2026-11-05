@@ -21,6 +21,7 @@ export const Header: React.FC = () => {
     triggerNotification,
     authUser,
     isAuthenticated,
+    userProfile,
     setCustomerTab,
     setSelectedSalonForDetail,
     genderFilter,
@@ -284,7 +285,13 @@ export const Header: React.FC = () => {
                   ? 'bg-white/90 hover:bg-white text-[#7A0D22] border border-rose-200/60'
                   : 'bg-white/20 hover:bg-white/30 text-white border border-white/25 backdrop-blur-xs'
               }`}
-              title={isAuthenticated ? `Profile: ${authUser?.name}` : 'Sign in with Google'}
+              title={
+                isAuthenticated
+                  ? `Profile: ${authUser?.name}`
+                  : userProfile.name
+                  ? `Profile: ${userProfile.name}`
+                  : 'Profile & Settings'
+              }
             >
               {authUser?.avatarUrl ? (
                 <img
@@ -299,8 +306,12 @@ export const Header: React.FC = () => {
                   }`}
                 />
               )}
-              <span className="hidden sm:inline truncate max-w-[80px]">
-                {isAuthenticated ? authUser?.name?.split(' ')[0] : 'Sign In'}
+              <span className="hidden sm:inline truncate max-w-[90px]">
+                {isAuthenticated
+                  ? authUser?.name?.split(' ')[0]
+                  : userProfile.name
+                  ? userProfile.name.split(' ')[0]
+                  : 'Profile'}
               </span>
             </button>
           </div>

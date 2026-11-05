@@ -453,6 +453,52 @@ export class KumbhakaranApiClient {
     return await res.json();
   }
 
+  // ==========================================================================
+  // DEVICE PROFILE PERSISTENCE (Zero-Sign In Device Mapping)
+  // ==========================================================================
+
+  /**
+   * Fetch customer device profile mapped to anonymous device ID
+   */
+  async getDeviceProfile(deviceId: string): Promise<any | null> {
+    try {
+      const res = await fetch(`${this.baseUrl}/auth/device-profile/${encodeURIComponent(deviceId)}`, {
+        headers: this.getHeaders(),
+      });
+      if (!res.ok) return null;
+      return await res.json();
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Save or update customer device profile mapped to device ID
+   */
+  async saveDeviceProfile(profile: {
+    deviceId: string;
+    name?: string;
+    avatar?: string;
+    savedSalons?: string[];
+    recentlyViewed?: string[];
+    genderFilter?: string;
+    preferredLocality?: string;
+  }): Promise<any | null> {
+    try {
+      const res = await fetch(`${this.baseUrl}/auth/device-profile`, {
+        method: 'POST',
+        headers: this.getHeaders({
+          'Content-Type': 'application/json',
+        }),
+        body: JSON.stringify(profile),
+      });
+      if (!res.ok) return null;
+      return await res.json();
+    } catch {
+      return null;
+    }
+  }
+
   /**
    * Permanently delete a salon and all associated records (requires ADMIN role and exact confirmation)
    */

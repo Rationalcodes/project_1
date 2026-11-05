@@ -123,12 +123,51 @@ interface CustomerContextType {
 
 const CustomerContext = createContext<CustomerContextType | undefined>(undefined);
 
+export const getOrCreateDeviceId = (): string => {
+  try {
+    let deviceId = safeStorage.getItem('kumbhakaran_device_id');
+    if (!deviceId) {
+      deviceId = `dev_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+      safeStorage.setItem('kumbhakaran_device_id', deviceId);
+    }
+    return deviceId;
+  } catch {
+    return `dev_${Date.now()}`;
+  }
+};
+
+const loadStoredUserProfile = (): CustomerProfile => {
+  try {
+    const saved = safeStorage.getItem('kumbhakaran_customer_profile');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (parsed && typeof parsed === 'object') {
+        const cleanName = parsed.name && parsed.name !== 'Guest User' ? parsed.name : '';
+        return {
+          ...INITIAL_USER,
+          name: cleanName,
+          avatar: parsed.avatar || INITIAL_USER.avatar,
+          savedSalons: Array.isArray(parsed.savedSalons) ? parsed.savedSalons : [],
+          recentlyViewed: Array.isArray(parsed.recentlyViewed) ? parsed.recentlyViewed : [],
+          preferredLocality: parsed.preferredLocality || '',
+          notifyOnShortQueue: parsed.notifyOnShortQueue ?? true,
+          queueAlertThreshold: parsed.queueAlertThreshold ?? 2,
+        };
+      }
+    }
+  } catch {}
+  return {
+    ...INITIAL_USER,
+    name: '',
+  };
+};
+
 export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [salons, setSalons] = useState<Salon[]>(INITIAL_SALONS);
   const [activeSalonId, setActiveSalonId] = useState<string>('salon-1');
   const [customerTab, setCustomerTab] = useState<CustomerTab>('home');
   const [selectedSalonForDetail, setSelectedSalonForDetail] = useState<Salon | null>(null);
-  const [userProfile, setUserProfile] = useState<CustomerProfile>(INITIAL_USER);
+  const [userProfile, setUserProfile] = useState<CustomerProfile>(loadStoredUserProfile);
   const [authUser, setAuthUser] = useState<AuthUser | null>(null);
   // Strictly take location from user only — never assume or force a default locality
   const [userLocation, setUserLocationState] = useState<LocationOption | null>(() => {
@@ -243,6 +282,71 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }, 4000);
   };
 
+  const persistProfile = (updater: (prev: CustomerProfile) => CustomerProfile) => {
+    setUserProfile((prev) => {
+      const next = updater(prev);
+      try {
+        safeStorage.setItem('kumbhakaran_customer_profile', JSON.stringify(next));
+        const deviceId = getOrCreateDeviceId();
+        defaultApiClient
+          .saveDeviceProfile({
+            deviceId,
+            name: next.name || undefined,
+            savedSalons: next.savedSalons,
+            recentlyViewed: next.recentlyViewed,
+            genderFilter,
+            preferredLocality: next.preferredLocality,
+          })
+          .catch(() => {});
+      } catch (e) {
+        console.error('Failed to persist user profile:', e);
+      }
+      return next;
+    });
+  };
+
+  // Synchronize device profile mapping with server for cross-session continuity
+  useEffect(() => {
+    let isMounted = true;
+    const deviceId = getOrCreateDeviceId();
+
+    defaultApiClient
+      .getDeviceProfile(deviceId)
+      .then((deviceProfile) => {
+        if (isMounted && deviceProfile) {
+          setUserProfile((prev) => {
+            const finalName =
+              prev.name ||
+              (deviceProfile.name && deviceProfile.name !== 'Guest User' ? deviceProfile.name : '');
+            const mergedSaved = Array.from(
+              new Set([...prev.savedSalons, ...(deviceProfile.savedSalons || [])]),
+            );
+            const mergedRecent = Array.from(
+              new Set([...prev.recentlyViewed, ...(deviceProfile.recentlyViewed || [])]),
+            );
+
+            const updated: CustomerProfile = {
+              ...prev,
+              name: finalName,
+              savedSalons: mergedSaved,
+              recentlyViewed: mergedRecent,
+              preferredLocality: prev.preferredLocality || deviceProfile.preferredLocality || '',
+            };
+
+            try {
+              safeStorage.setItem('kumbhakaran_customer_profile', JSON.stringify(updated));
+            } catch {}
+            return updated;
+          });
+        }
+      })
+      .catch(() => {});
+
+    return () => {
+      isMounted = false;
+    };
+  }, [genderFilter]);
+
   // Restore authenticated session from localStorage
   useEffect(() => {
     let isMounted = true;
@@ -253,7 +357,7 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         if (isMounted) {
           if (res?.user) {
             setAuthUser(res.user);
-            setUserProfile((prev) => ({
+            persistProfile((prev) => ({
               ...prev,
               name: res.user.name,
               avatar: res.user.avatarUrl || prev.avatar,
@@ -273,7 +377,7 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       if (res && res.accessToken) {
         safeStorage.setItem('kumbhakaran_customer_token', res.accessToken);
         setAuthUser(res.user);
-        setUserProfile((prev) => ({
+        persistProfile((prev) => ({
           ...prev,
           name: res.user.name,
           avatar: res.user.avatarUrl || prev.avatar,
@@ -536,15 +640,15 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const updateCustomerName = (name: string) => {
     const trimmed = name.trim();
     if (!trimmed) return;
-    setUserProfile((prev) => ({
+    persistProfile((prev) => ({
       ...prev,
       name: trimmed,
     }));
-    triggerNotification(`Name updated to "${trimmed}"`);
+    triggerNotification(`Name saved as "${trimmed}"`);
   };
 
   const toggleFavorite = (salonId: string) => {
-    setUserProfile((prev) => {
+    persistProfile((prev) => {
       const exists = prev.savedSalons.includes(salonId);
       const nextSaved = exists
         ? prev.savedSalons.filter((id) => id !== salonId)
@@ -558,7 +662,7 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   const addToRecentlyViewed = (salonId: string) => {
-    setUserProfile((prev) => {
+    persistProfile((prev) => {
       const filtered = prev.recentlyViewed.filter((id) => id !== salonId);
       return { ...prev, recentlyViewed: [salonId, ...filtered].slice(0, 8) };
     });
