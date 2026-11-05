@@ -98,3 +98,10 @@
 .leaflet-container {
   background-color: #FAF7F2 !important;
 }
+
+.leaflet-div-icon,
+.salon-radar-marker,
+.google-maps-radar-marker {
+  background: transparent !important;
+  border: none !important;
+}

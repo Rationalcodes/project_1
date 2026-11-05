@@ -14,6 +14,7 @@ import {
   RefreshCw,
   Layers,
   ExternalLink,
+  Store,
 } from 'lucide-react';
 import {
   useCustomer,
@@ -198,12 +199,19 @@ export const MapScreen: React.FC = () => {
         title: `${salon.name} • ${salon.currentQueue} waiting`,
         icon: {
           path: 'M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z',
-          fillColor: isSelected ? primaryHex : salon.isOpen ? (isWomen ? '#FB7185' : '#F59F00') : '#9CA3AF',
+          fillColor: isSelected ? primaryHex : salon.isOpen ? (isWomen ? '#E11D48' : '#EA4335') : '#9CA3AF',
           fillOpacity: 1,
           strokeColor: '#ffffff',
           strokeWeight: 1.5,
           scale: isSelected ? 1.8 : 1.4,
           anchor: new gmaps.Point(12, 22),
+        },
+        label: {
+          text: salon.name,
+          color: '#1F1F1F',
+          fontSize: '11px',
+          fontWeight: '700',
+          className: 'google-maps-label',
         },
         zIndex: isSelected ? 100 : 10,
       });
@@ -294,26 +302,46 @@ export const MapScreen: React.FC = () => {
       L.marker([userLocation.lat, userLocation.lng], { icon: userIcon, title: 'Your Location' }).addTo(layer);
     }
 
-    // Salon Markers
+    // Salon Markers - Authentic Google Maps Location Pin & Place Label
     visibleSalons.forEach((salon) => {
       const isSelected = selectedMarkerSalon?.id === salon.id;
+      const pinColor = isSelected
+        ? (isWomen ? '#E11D48' : '#FF6422')
+        : (isWomen ? '#E11D48' : '#EA4335');
+
       const salonBadgeHtml = `
-        <div style="background: ${isSelected ? primaryHex : '#FFFFFF'}; color: ${isSelected ? '#FFFFFF' : '#1C1917'}; border: 2px solid ${primaryHex}; border-radius: 9999px; padding: 4px 10px; font-size: 11px; font-weight: 800; display: flex; align-items: center; gap: 5px; box-shadow: 0 4px 14px ${isWomen ? 'rgba(225, 29, 72, 0.25)' : 'rgba(232, 89, 12, 0.25)'}; cursor: pointer; transition: transform 0.15s ease; white-space: nowrap;">
-          <span>${salon.name.length > 14 ? salon.name.slice(0, 14) + '…' : salon.name}</span>
-          <span style="background: ${isSelected ? '#FFFFFF' : primaryHex}; color: ${isSelected ? primaryHex : '#FFFFFF'}; border-radius: 9999px; padding: 1px 6px; font-size: 10px; font-weight: 900;">
-            ${salon.currentQueue}Q
-          </span>
+        <div style="display: inline-flex; align-items: center; cursor: pointer; user-select: none; transition: transform 0.15s ease; filter: drop-shadow(0 2px 5px rgba(0,0,0,0.3)); ${isSelected ? 'transform: scale(1.12); z-index: 999;' : ''}">
+          <!-- Iconic Google Maps Teardrop Location Pin -->
+          <div style="width: 28px; height: 38px; flex-shrink: 0; position: relative;">
+            <svg width="28" height="38" viewBox="0 0 28 38" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M14 0C6.268 0 0 6.268 0 14C0 24.5 14 38 14 38C14 38 28 24.5 28 14C28 6.268 21.732 0 14 0Z" fill="${pinColor}" stroke="#FFFFFF" stroke-width="1.5"/>
+              <circle cx="14" cy="14" r="5.5" fill="#FFFFFF"/>
+              <circle cx="14" cy="14" r="2.5" fill="${pinColor}"/>
+            </svg>
+          </div>
+          <!-- Google Maps Business Name & Live Queue Text with White Halo -->
+          <div style="display: flex; flex-direction: column; justify-content: center; margin-left: 4px; pointer-events: none;">
+            <span style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 12px; font-weight: 800; color: #1F1F1F; text-shadow: -1px -1px 0 #FFF, 1px -1px 0 #FFF, -1px 1px 0 #FFF, 1px 1px 0 #FFF, 0 0 4px #FFF, 0 0 6px #FFF; white-space: nowrap; line-height: 1.2; letter-spacing: -0.2px;">
+              ${salon.name}
+            </span>
+            <span style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 10px; font-weight: 700; color: ${salon.currentQueue === 0 ? '#188038' : '#D93025'}; text-shadow: -1px -1px 0 #FFF, 1px -1px 0 #FFF, -1px 1px 0 #FFF, 1px 1px 0 #FFF, 0 0 3px #FFF; white-space: nowrap; line-height: 1.2; margin-top: 1px;">
+              ${salon.currentQueue === 0 ? '● No wait' : `● ${salon.currentQueue} waiting`}
+            </span>
+          </div>
         </div>
       `;
 
       const salonIcon = L.divIcon({
-        className: 'salon-radar-marker',
+        className: 'google-maps-radar-marker',
         html: salonBadgeHtml,
-        iconSize: [130, 30],
-        iconAnchor: [65, 15],
+        iconSize: [220, 42],
+        iconAnchor: [14, 38],
       });
 
-      const marker = L.marker([salon.coordinates.lat, salon.coordinates.lng], { icon: salonIcon });
+      const marker = L.marker([salon.coordinates.lat, salon.coordinates.lng], {
+        icon: salonIcon,
+        zIndexOffset: isSelected ? 1000 : 100,
+      });
       marker.on('click', () => {
         setSelectedMarkerSalon(salon);
         if (leafletMapRef.current) {
@@ -591,11 +619,20 @@ export const MapScreen: React.FC = () => {
               <div className={`bg-white/95 backdrop-blur-md border rounded-2xl p-3 shadow-xl flex items-center gap-3 ${
                 isWomen ? 'border-rose-200' : 'border-orange-200'
               }`}>
-                <img
-                  src={selectedMarkerSalon.coverImage}
-                  alt={selectedMarkerSalon.name}
-                  className="w-16 h-16 rounded-xl object-cover shrink-0 border border-stone-200"
-                />
+                {selectedMarkerSalon.coverImage || selectedMarkerSalon.posterImage || (selectedMarkerSalon.locationImages && selectedMarkerSalon.locationImages[0]) || (selectedMarkerSalon.images && selectedMarkerSalon.images[0]) ? (
+                  <img
+                    src={selectedMarkerSalon.coverImage || selectedMarkerSalon.posterImage || (selectedMarkerSalon.locationImages && selectedMarkerSalon.locationImages[0]) || (selectedMarkerSalon.images && selectedMarkerSalon.images[0])}
+                    alt={selectedMarkerSalon.name}
+                    className="w-16 h-16 rounded-xl object-cover shrink-0 border border-stone-200"
+                    onError={(e) => {
+                      (e.currentTarget as HTMLImageElement).style.display = 'none';
+                    }}
+                  />
+                ) : (
+                  <div className="w-16 h-16 rounded-xl bg-orange-50 border border-orange-200 flex flex-col items-center justify-center shrink-0 text-[#FF6422]">
+                    <Store className="w-6 h-6" />
+                  </div>
+                )}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5 text-[10px]">
                     <span className={`font-bold ${isWomen ? 'text-[#E11D48]' : 'text-[#FF6422]'}`}>
