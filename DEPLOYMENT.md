@@ -164,7 +164,7 @@ Deploy the backend first so you have its live URL (e.g. `https://kumbhakaran-bac
   * `NODE_ENV`: `production`
   * `PORT`: `10000`
   * `DATABASE_URL`: `postgresql://postgres.mgblemlqjnmkhhcfibpb:[YOUR_NEW_SUPABASE_PASSWORD]@aws-0-eu-west-1.pooler.supabase.com:5432/postgres`
-  * `GOOGLE_CLIENT_ID`: `871471875670-5erjemuob83qh5a4nmlm20s305fk0gof.apps.googleusercontent.com`
+  * `GOOGLE_CLIENT_ID`: `871471875670-ifpho22l5oa0r59kgsvvuoe3r7t5a2l9.apps.googleusercontent.com`
   * `JWT_SECRET`: `kumbhakaran-production-jwt-secret-key-32chars`
   * `JWT_EXPIRES_IN`: `24h`
 
@@ -182,7 +182,7 @@ Deploy the three frontend applications on Vercel as separate projects linked to 
 3. Framework Preset: **Vite**
 4. Configure **Environment Variables**:
    * `VITE_API_BASE_URL`: `https://kumbhakaran-backend.onrender.com/api/v1`
-   * `VITE_GOOGLE_CLIENT_ID`: `871471875670-5erjemuob83qh5a4nmlm20s305fk0gof.apps.googleusercontent.com`
+   * `VITE_GOOGLE_CLIENT_ID`: `871471875670-ifpho22l5oa0r59kgsvvuoe3r7t5a2l9.apps.googleusercontent.com`
    * `VITE_GOOGLE_MAPS_API_KEY`: (Your Google Maps Browser Key)
 5. Click **Deploy**.
 6. Note the deployed URL: e.g. `https://kumbhakaran-customer.vercel.app`
@@ -195,7 +195,7 @@ Deploy the three frontend applications on Vercel as separate projects linked to 
 3. Framework Preset: **Vite**
 4. Configure **Environment Variables**:
    * `VITE_API_BASE_URL`: `https://kumbhakaran-backend.onrender.com/api/v1`
-   * `VITE_GOOGLE_CLIENT_ID`: `871471875670-5erjemuob83qh5a4nmlm20s305fk0gof.apps.googleusercontent.com`
+   * `VITE_GOOGLE_CLIENT_ID`: `871471875670-ifpho22l5oa0r59kgsvvuoe3r7t5a2l9.apps.googleusercontent.com`
    * `VITE_CUSTOMER_APP_URL`: `https://kumbhakaran-customer.vercel.app` (URL from Project 1)
    * `VITE_GOOGLE_MAPS_API_KEY`: (Your Google Maps Browser Key)
 5. Click **Deploy**.
@@ -209,7 +209,7 @@ Deploy the three frontend applications on Vercel as separate projects linked to 
 3. Framework Preset: **Vite**
 4. Configure **Environment Variables**:
    * `VITE_API_BASE_URL`: `https://kumbhakaran-backend.onrender.com/api/v1`
-   * `VITE_GOOGLE_CLIENT_ID`: `871471875670-5erjemuob83qh5a4nmlm20s305fk0gof.apps.googleusercontent.com`
+   * `VITE_GOOGLE_CLIENT_ID`: `871471875670-ifpho22l5oa0r59kgsvvuoe3r7t5a2l9.apps.googleusercontent.com`
    * `VITE_CUSTOMER_APP_URL`: `https://kumbhakaran-customer.vercel.app`
    * `VITE_PARTNER_APP_URL`: `https://kumbhakaran-partner.vercel.app`
 5. Click **Deploy**.
@@ -222,7 +222,7 @@ Deploy the three frontend applications on Vercel as separate projects linked to 
 After obtaining your Vercel URLs, add them to your Google Cloud Console to allow Google Sign-in on the deployed URLs:
 
 1. Open **[Google Cloud Console Credentials](https://console.cloud.google.com/apis/credentials)**.
-2. Select your Client ID: `871471875670-5erjemuob83qh5a4nmlm20s305fk0gof.apps.googleusercontent.com`.
+2. Select your Client ID: `871471875670-ifpho22l5oa0r59kgsvvuoe3r7t5a2l9.apps.googleusercontent.com`.
 3. Under **Authorized JavaScript origins**, add your new production URLs:
    * `https://kumbhakaran-customer.vercel.app`
    * `https://kumbhakaran-partner.vercel.app`
