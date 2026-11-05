@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import QRCode from 'qrcode';
 import { useSalon } from '../../context/AdminContext';
 import {
   ShieldCheck,
@@ -21,7 +22,14 @@ import {
   Building,
   CreditCard,
   Sliders,
-  Sparkles
+  Sparkles,
+  QrCode,
+  Printer,
+  Download,
+  ExternalLink,
+  Copy,
+  Link2,
+  X
 } from 'lucide-react';
 import { AdminTab, Salon } from '@kumbhakaran/shared-types';
 import { openGoogleMapsLocation } from '@kumbhakaran/ui';
@@ -43,6 +51,193 @@ export const AdminApp: React.FC = () => {
   const [deleteTargetSalon, setDeleteTargetSalon] = useState<Salon | null>(null);
   const [deleteConfirmInput, setDeleteConfirmInput] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Express Walk-In QR & Deep Link generator
+  const [walkinQrSalon, setWalkinQrSalon] = useState<Salon | null>(null);
+  const [qrDataUrl, setQrDataUrl] = useState<string>('');
+  const [copiedLink, setCopiedLink] = useState(false);
+  const [useLocalOrigin, setUseLocalOrigin] = useState(false);
+
+  const getWalkinUrl = (salonId: string, forceLocal = false) => {
+    if (forceLocal && typeof window !== 'undefined' && window.location.hostname === 'localhost') {
+      return `http://localhost:3000/?salon=${salonId}&walkin=true`;
+    }
+    return `https://kumbhkaransalons.in/?salon=${salonId}&walkin=true`;
+  };
+
+  useEffect(() => {
+    if (walkinQrSalon) {
+      const url = getWalkinUrl(walkinQrSalon.id, useLocalOrigin);
+      QRCode.toDataURL(url, {
+        width: 400,
+        margin: 2,
+        color: { dark: '#1c1917', light: '#ffffff' },
+      })
+        .then(setQrDataUrl)
+        .catch(console.error);
+    } else {
+      setQrDataUrl('');
+      setCopiedLink(false);
+    }
+  }, [walkinQrSalon, useLocalOrigin]);
+
+  const handlePrintStandee = (salon: Salon, qrImgUrl: string, walkinUrl: string) => {
+    const printWindow = window.open('', '_blank', 'width=800,height=900');
+    if (!printWindow) return;
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Express Walk-in Standee - ${salon.name}</title>
+          <style>
+            @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800;900&family=Syne:wght@700;800&display=swap');
+            body {
+              font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+              margin: 0;
+              padding: 40px 20px;
+              background: #fff;
+              color: #1c1917;
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              justify-content: center;
+              min-height: 100vh;
+              box-sizing: border-box;
+            }
+            .standee-card {
+              border: 3px solid #ea580c;
+              border-radius: 28px;
+              padding: 40px 32px;
+              max-width: 480px;
+              width: 100%;
+              text-align: center;
+              box-shadow: 0 10px 30px rgba(0,0,0,0.06);
+            }
+            .brand-badge {
+              display: inline-block;
+              background: #ffedd5;
+              color: #ea580c;
+              font-size: 13px;
+              font-weight: 800;
+              text-transform: uppercase;
+              letter-spacing: 2px;
+              padding: 6px 16px;
+              border-radius: 9999px;
+              margin-bottom: 16px;
+            }
+            .salon-name {
+              font-family: 'Syne', sans-serif;
+              font-size: 30px;
+              font-weight: 800;
+              margin: 0 0 6px 0;
+              color: #0c0a09;
+            }
+            .salon-locality {
+              font-size: 14px;
+              color: #78716c;
+              margin: 0 0 24px 0;
+            }
+            .qr-wrapper {
+              background: #fff;
+              border: 2px dashed #fed7aa;
+              border-radius: 20px;
+              padding: 16px;
+              display: inline-block;
+              margin-bottom: 24px;
+            }
+            .qr-img {
+              width: 250px;
+              height: 250px;
+              display: block;
+            }
+            .cta-title {
+              font-size: 22px;
+              font-weight: 900;
+              color: #ea580c;
+              margin: 0 0 8px 0;
+            }
+            .cta-desc {
+              font-size: 13px;
+              color: #57534e;
+              line-height: 1.5;
+              margin: 0 0 20px 0;
+            }
+            .perks {
+              display: flex;
+              justify-content: center;
+              gap: 14px;
+              font-size: 11px;
+              font-weight: 700;
+              color: #44403c;
+              border-top: 1px solid #f5f5f4;
+              padding-top: 16px;
+            }
+            .perk-item {
+              display: flex;
+              align-items: center;
+              gap: 4px;
+            }
+            .footer-note {
+              margin-top: 24px;
+              font-size: 10px;
+              color: #a8a29e;
+              font-family: monospace;
+            }
+            @media print {
+              body { padding: 0; }
+              .standee-card { border-width: 2px; box-shadow: none; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="standee-card">
+            <div class="brand-badge">⚡ Kumbhkaran Salons Live Pass</div>
+            <h1 class="salon-name">${salon.name}</h1>
+            <p class="salon-locality">${salon.locality || salon.address}</p>
+
+            <div class="qr-wrapper">
+              <img src="${qrImgUrl}" class="qr-img" alt="QR Code" />
+            </div>
+
+            <div class="cta-title">Scan to Join Live Queue</div>
+            <p class="cta-desc">
+              Point your phone camera at this QR code.<br/>
+              Enter your name to take your token immediately.
+            </p>
+
+            <div class="perks">
+              <div class="perk-item">✓ 100% Free Pass</div>
+              <div class="perk-item">•</div>
+              <div class="perk-item">✓ Zero Crowd Waiting</div>
+              <div class="perk-item">•</div>
+              <div class="perk-item">✓ Live Turn Updates</div>
+            </div>
+
+            <div class="footer-note">
+              ${walkinUrl}
+            </div>
+          </div>
+          <script>
+            window.onload = function() {
+              window.print();
+            };
+          </script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
+
+  const handleDownloadQr = (salon: Salon, qrImgUrl: string) => {
+    if (!qrImgUrl) return;
+    const a = document.createElement('a');
+    a.href = qrImgUrl;
+    a.download = `${salon.name.toLowerCase().replace(/[^a-z0-9]/g, '_')}_express_qr.png`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    triggerNotification(`Downloaded QR Code for ${salon.name}`);
+  };
 
   // Stats calculation
   const totalSalons = salons.length;
@@ -251,6 +446,14 @@ export const AdminApp: React.FC = () => {
                       <td className="py-3 text-right">
                         <div className="flex items-center justify-end gap-1.5">
                           <button
+                            onClick={() => setWalkinQrSalon(salon)}
+                            className="px-2 py-1 rounded-lg bg-orange-500/15 hover:bg-orange-500/25 text-orange-400 border border-orange-500/30 text-[11px] font-bold flex items-center gap-1 transition-colors cursor-pointer"
+                            title="Generate Express Walk-in Link & QR Standee"
+                          >
+                            <QrCode className="w-3 h-3 text-orange-400" />
+                            <span>QR Link</span>
+                          </button>
+                          <button
                             onClick={() => {
                               const newStatus = salon.status === 'active' ? 'suspended' : 'active';
                               updateSalonStatus(salon.id, newStatus);
@@ -340,6 +543,15 @@ export const AdminApp: React.FC = () => {
 
                 <div className="flex items-center gap-2 self-end sm:self-center">
                   <button
+                    onClick={() => setWalkinQrSalon(salon)}
+                    className="px-3 py-1.5 rounded-xl font-bold border bg-orange-500/15 hover:bg-orange-500/25 text-orange-400 border-orange-500/40 flex items-center gap-1.5 transition-colors cursor-pointer text-xs"
+                    title="Generate Express Walk-in Link & Counter QR Standee"
+                  >
+                    <QrCode className="w-3.5 h-3.5 text-orange-400" />
+                    <span>Walk-in Link & QR</span>
+                  </button>
+
+                  <button
                     onClick={() => verifySalon(salon.id, !salon.isVerified)}
                     className={`px-3 py-1.5 rounded-xl font-bold border ${
                       salon.isVerified
@@ -402,6 +614,14 @@ export const AdminApp: React.FC = () => {
                 </div>
 
                 <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setWalkinQrSalon(salon)}
+                    className="px-3 py-1.5 rounded-xl font-bold border bg-orange-500/15 hover:bg-orange-500/25 text-orange-400 border-orange-500/40 flex items-center gap-1.5 transition-colors cursor-pointer text-xs"
+                    title="Generate Express Walk-in Link & QR Standee"
+                  >
+                    <QrCode className="w-3.5 h-3.5 text-orange-400" />
+                    <span>Walk-in Link</span>
+                  </button>
                   <button
                     onClick={() => verifySalon(salon.id, true)}
                     className="px-3.5 py-1.5 rounded-xl bg-amber-500 text-black font-bold hover:bg-amber-400"
@@ -602,6 +822,150 @@ export const AdminApp: React.FC = () => {
                 <Trash2 className="w-3.5 h-3.5" />
                 <span>{isDeleting ? 'Deleting Permanently...' : 'Permanently Delete Salon'}</span>
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* EXPRESS WALK-IN LINK & QR STANDEE MODAL */}
+      {walkinQrSalon && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-[#15151e] border border-zinc-800 rounded-3xl p-6 sm:p-7 max-w-lg w-full shadow-2xl text-slate-100 animate-in fade-in zoom-in-95">
+            <div className="flex items-center justify-between pb-4 border-b border-zinc-800">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-2xl bg-orange-500/20 text-orange-400 border border-orange-500/30 flex items-center justify-center">
+                  <QrCode className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white flex items-center gap-2">
+                    Express Walk-in Link & Standee
+                  </h3>
+                  <p className="text-xs text-zinc-400">
+                    {walkinQrSalon.name} • {walkinQrSalon.locality}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setWalkinQrSalon(null)}
+                className="text-zinc-400 hover:text-white p-1.5 rounded-full hover:bg-zinc-800 transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Explanation banner */}
+            <div className="my-4 bg-orange-500/10 border border-orange-500/20 rounded-2xl p-3 text-xs text-orange-300 flex items-start gap-2.5">
+              <Sparkles className="w-4 h-4 text-orange-400 shrink-0 mt-0.5" />
+              <div className="leading-relaxed">
+                <strong className="text-white">Direct Customer Name Popup:</strong> Opening this link or scanning the counter QR immediately presents the customer with the Name & Token check-in popup for this salon. Regular visitors exploring <span className="font-mono text-orange-200">kumbhkaransalons.in</span> directly will browse normally and will not see this popup.
+              </div>
+            </div>
+
+            {/* QR Code Preview */}
+            <div className="flex flex-col items-center justify-center p-4 bg-white rounded-2xl border border-zinc-200 shadow-inner my-3">
+              {qrDataUrl ? (
+                <img
+                  src={qrDataUrl}
+                  alt={`QR Code for ${walkinQrSalon.name}`}
+                  className="w-48 h-48 object-contain"
+                />
+              ) : (
+                <div className="w-48 h-48 flex items-center justify-center text-zinc-400 text-xs">
+                  Generating QR Code...
+                </div>
+              )}
+              <div className="text-[11px] font-extrabold text-stone-800 mt-2 text-center">
+                Scan with any phone camera to check in
+              </div>
+              <div className="text-[10px] text-stone-500 font-mono">
+                {walkinQrSalon.name} • Token Check-In
+              </div>
+            </div>
+
+            {/* Link Copy Field */}
+            <div className="space-y-1.5 my-3">
+              <div className="flex items-center justify-between text-xs text-zinc-400">
+                <label className="font-semibold text-zinc-300 flex items-center gap-1.5">
+                  <Link2 className="w-3.5 h-3.5 text-orange-400" />
+                  <span>Express Customer Link</span>
+                </label>
+                {typeof window !== 'undefined' && window.location.hostname === 'localhost' && (
+                  <button
+                    type="button"
+                    onClick={() => setUseLocalOrigin(!useLocalOrigin)}
+                    className="text-[10px] text-amber-400 hover:underline cursor-pointer"
+                  >
+                    {useLocalOrigin ? 'Show Production URL' : 'Show Localhost URL'}
+                  </button>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  readOnly
+                  value={getWalkinUrl(walkinQrSalon.id, useLocalOrigin)}
+                  className="flex-1 px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-xl text-xs font-mono text-zinc-200 select-all focus:outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    const url = getWalkinUrl(walkinQrSalon.id, useLocalOrigin);
+                    navigator.clipboard.writeText(url);
+                    setCopiedLink(true);
+                    triggerNotification(`Copied express walk-in link for ${walkinQrSalon.name}`);
+                    setTimeout(() => setCopiedLink(false), 2500);
+                  }}
+                  className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                    copiedLink
+                      ? 'bg-emerald-500 text-white'
+                      : 'bg-orange-500 hover:bg-orange-600 text-white shadow-md shadow-orange-500/20'
+                  }`}
+                >
+                  {copiedLink ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                  <span>{copiedLink ? 'Copied!' : 'Copy'}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Action Buttons: Print, Download, Test */}
+            <div className="grid grid-cols-3 gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() =>
+                  handlePrintStandee(
+                    walkinQrSalon,
+                    qrDataUrl,
+                    getWalkinUrl(walkinQrSalon.id, useLocalOrigin)
+                  )
+                }
+                className="py-2.5 px-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+              >
+                <Printer className="w-3.5 h-3.5 text-orange-400" />
+                <span>Print Standee</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleDownloadQr(walkinQrSalon, qrDataUrl)}
+                className="py-2.5 px-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+              >
+                <Download className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Download QR</span>
+              </button>
+
+              <a
+                href={getWalkinUrl(
+                  walkinQrSalon.id,
+                  typeof window !== 'undefined' && window.location.hostname === 'localhost'
+                )}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="py-2.5 px-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer text-center"
+              >
+                <ExternalLink className="w-3.5 h-3.5 text-amber-400" />
+                <span>Test Popup</span>
+              </a>
             </div>
           </div>
         </div>

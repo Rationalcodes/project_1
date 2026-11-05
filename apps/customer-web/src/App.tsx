@@ -12,6 +12,7 @@ import { FavouritesScreen } from './components/customer/FavouritesScreen';
 import { ProfileScreen } from './components/customer/ProfileScreen';
 import { WriteReviewModal } from './components/customer/WriteReviewModal';
 import { LocationPermissionBanner } from './components/common/LocationPermissionBanner';
+import { ExpressWalkinScreen } from './components/customer/ExpressWalkinScreen';
 
 const CustomerMainContent: React.FC = () => {
   const {
@@ -19,6 +20,8 @@ const CustomerMainContent: React.FC = () => {
     selectedSalonForDetail,
     setSelectedSalonForDetail,
     genderFilter,
+    isExpressWalkin,
+    setIsExpressWalkin,
   } = useCustomer();
 
   const isWomen = genderFilter === 'women';
@@ -26,6 +29,17 @@ const CustomerMainContent: React.FC = () => {
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
 
   const renderContent = () => {
+    // If opened via Express Walk-in Link or QR Code (?salon=...&walkin=true)
+    if (isExpressWalkin) {
+      return (
+        <ExpressWalkinScreen
+          salon={selectedSalonForDetail}
+          onDismiss={() => setIsExpressWalkin(false)}
+          onViewSalonDetails={() => setIsExpressWalkin(false)}
+        />
+      );
+    }
+
     if (selectedSalonForDetail) {
       return (
         <SalonDetailScreen

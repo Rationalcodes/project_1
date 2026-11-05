@@ -128,6 +128,8 @@ interface CustomerContextType {
   completeLiveQueue: (salonId: string, entryId: string) => Promise<void>;
   markTicketInService: (salonId: string, entryId: string) => Promise<void>;
   reportSalonCrowd: (salonId: string, crowdLevel: 'empty' | 'medium' | 'busy') => Promise<void>;
+  isExpressWalkin: boolean;
+  setIsExpressWalkin: (active: boolean) => void;
 }
 
 const CustomerContext = createContext<CustomerContextType | undefined>(undefined);
@@ -176,16 +178,22 @@ export interface UrlTargetInfo {
   salonId: string | null;
   autoJoin: boolean;
   serviceName: string | null;
+  isExpressWalkin: boolean;
 }
 
 export function getTargetSalonFromUrl(): UrlTargetInfo {
   if (typeof window === 'undefined') {
-    return { salonId: null, autoJoin: false, serviceName: null };
+    return { salonId: null, autoJoin: false, serviceName: null, isExpressWalkin: false };
   }
   try {
     const params = new URLSearchParams(window.location.search);
     let salonId = params.get('salon') || params.get('s') || params.get('id') || params.get('queue') || null;
     const autoJoin = params.get('join') === 'true' || params.get('action') === 'queue' || params.has('queue');
+    const isExpressWalkin =
+      params.get('walkin') === 'true' ||
+      params.get('express') === 'true' ||
+      params.get('checkin') === 'true' ||
+      params.get('counter') === 'true';
     const serviceName = params.get('service') || null;
 
     if (!salonId && window.location.pathname) {
@@ -202,9 +210,9 @@ export function getTargetSalonFromUrl(): UrlTargetInfo {
       }
     }
 
-    return { salonId, autoJoin, serviceName };
+    return { salonId, autoJoin, serviceName, isExpressWalkin };
   } catch {
-    return { salonId: null, autoJoin: false, serviceName: null };
+    return { salonId: null, autoJoin: false, serviceName: null, isExpressWalkin: false };
   }
 }
 
@@ -213,6 +221,7 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [activeSalonId, setActiveSalonId] = useState<string>('salon-1');
   const [customerTab, setCustomerTab] = useState<CustomerTab>('home');
   const [selectedSalonForDetail, setSelectedSalonForDetail] = useState<Salon | null>(null);
+  const [isExpressWalkin, setIsExpressWalkin] = useState<boolean>(() => getTargetSalonFromUrl().isExpressWalkin);
 
 
   const [userProfile, setUserProfile] = useState<CustomerProfile>(loadStoredUserProfile);
@@ -278,6 +287,9 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
               url.searchParams.delete('action');
               url.searchParams.delete('join');
               url.searchParams.delete('service');
+              url.searchParams.delete('walkin');
+              url.searchParams.delete('express');
+              url.searchParams.delete('checkin');
               const cleanPath = url.pathname.startsWith('/salon/') ? '/' : url.pathname;
               window.history.pushState({}, '', cleanPath + (url.search ? url.search : ''));
             }
@@ -327,7 +339,8 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   // Listen to browser forward/back buttons for seamless navigation
   useEffect(() => {
     const onPopState = () => {
-      const { salonId } = getTargetSalonFromUrl();
+      const { salonId, isExpressWalkin: popExpress } = getTargetSalonFromUrl();
+      setIsExpressWalkin(popExpress);
       if (salonId) {
         const found = salons.find((s) => s.id === salonId);
         if (found) {
@@ -1130,6 +1143,8 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         completeLiveQueue,
         markTicketInService,
         reportSalonCrowd,
+        isExpressWalkin,
+        setIsExpressWalkin,
       }}
     >
       {children}
