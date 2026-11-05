@@ -161,7 +161,7 @@ export const Header: React.FC = () => {
                 title="SLOON Home"
               >
                 <img
-                  src={isWomen ? logoTransparent : logoWhite}
+                  src={logoTransparent}
                   alt="SLOON - Unisex Grooming Network"
                   className="h-10 xs:h-11 sm:h-12 md:h-13 w-auto max-w-[210px] sm:max-w-[260px] md:max-w-[300px] object-contain transition-transform group-hover:scale-102 drop-shadow-sm"
                   onError={(e) => {
