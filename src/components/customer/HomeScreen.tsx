@@ -223,7 +223,7 @@ export const HomeScreen: React.FC = () => {
               Shortest Queues Right Now
             </h2>
             <p className="text-[11px] text-stone-500">
-              Walk in and be seated in under 15 minutes
+              Real-time queue tracking • No waiting surprises
             </p>
           </div>
           <button
@@ -292,7 +292,7 @@ export const HomeScreen: React.FC = () => {
                     <div className="absolute bottom-1.5 left-1.5 right-1.5">
                       <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold shadow-xs ${queueInfo.pillClass}`}>
                         <span className={`w-1.5 h-1.5 rounded-full ${queueInfo.dotClass}`} />
-                        {salon.currentQueue < 10 ? `0${salon.currentQueue}` : salon.currentQueue} waiting
+                        {salon.currentQueue < 10 ? `0${salon.currentQueue}` : salon.currentQueue} in queue
                       </span>
                     </div>
                   </div>

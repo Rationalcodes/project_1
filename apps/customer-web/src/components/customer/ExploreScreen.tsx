@@ -301,7 +301,7 @@ export const ExploreScreen: React.FC = () => {
                 <div className="absolute top-3 left-3 right-3 flex items-center justify-between">
                   <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black shadow-md backdrop-blur-md ${queueInfo.badgeClass}`}>
                     <span className={`w-2 h-2 rounded-full ${queueInfo.dotClass}`} />
-                    {salon.currentQueue < 10 ? `0${salon.currentQueue}` : salon.currentQueue} People Waiting
+                    {salon.currentQueue < 10 ? `0${salon.currentQueue}` : salon.currentQueue} in queue
                   </span>
 
                   <div className="flex items-center gap-2">

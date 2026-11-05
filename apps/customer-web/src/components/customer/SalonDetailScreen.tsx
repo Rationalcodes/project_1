@@ -359,7 +359,7 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
             <div className="text-4xl sm:text-5xl font-black text-stone-900 flex items-baseline gap-3 tracking-tight">
               <span>{salon.currentQueue < 10 ? `0${salon.currentQueue}` : salon.currentQueue}</span>
               <span className="text-sm sm:text-base font-semibold text-stone-500 uppercase tracking-wider">
-                People Waiting
+                People in Queue
               </span>
             </div>
             <div className={`mt-2 inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-xl ${queueInfo.badgeClass}`}>
@@ -377,7 +377,7 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
               ~{waitTime} <span className="text-xs font-normal text-stone-500">minutes</span>
             </div>
             <p className="text-[10px] text-stone-500 mt-1 leading-snug">
-              Based on {salon.activeBarbers} active stylist{salon.activeBarbers > 1 ? 's' : ''} at chairs.
+              Direct walk-in counter synced live with salon.
             </p>
           </div>
         </div>
