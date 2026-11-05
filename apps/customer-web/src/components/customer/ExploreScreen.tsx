@@ -84,12 +84,12 @@ export const ExploreScreen: React.FC = () => {
       {/* Header title & search */}
       <div>
         <h1 className="text-xl font-black text-stone-900 tracking-tight">
-          Browse & Compare Studios
+          {isWomen ? 'Beauty Parlours & Spas' : 'Salons & Barbers'}
         </h1>
         <p className="text-xs text-stone-500 mt-0.5">
           {isWomen
-            ? 'Discover curated ladies & unisex beauty studios with live queues'
-            : 'Find the ideal salon match with real-time walk-in visibility'}
+            ? 'Check live waiting lines and compare salons across Bilaspur'
+            : 'Check live waiting lines and compare prices across Bilaspur'}
         </p>
       </div>
 

@@ -400,7 +400,7 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
           <div className="flex items-center gap-2">
             <span className={`w-3 h-3 rounded-full ${queueInfo.dotClass}`} />
             <span className="text-xs font-black uppercase tracking-wider text-[#FF6422]">
-              Live Walk-In Visibility
+              Live Queue Status
             </span>
           </div>
 
@@ -543,7 +543,7 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
         <div className="mt-4 pt-3 border-t border-[#E8E2D8] flex items-start gap-2.5 text-xs text-stone-600 bg-orange-50/50 p-3 rounded-2xl border border-orange-100">
           <Info className="w-4 h-4 text-[#FF6422] shrink-0 mt-0.5" />
           <p>
-            <strong className="text-stone-900">Direct Walk-In Transparency:</strong> Kumbhkaran Salons eliminates blind waiting. Check the live queue or take a token to walk straight in without wasting time.
+            <strong className="text-stone-900">Walk-in policy:</strong> Kumbhkaran Salons eliminates blind waiting. Check the live queue or take a token to walk straight in without wasting time.
           </p>
         </div>
       </section>
