@@ -357,9 +357,6 @@ export const ExploreScreen: React.FC = () => {
                       </span>
                     </div>
                     <div className="flex items-center gap-2 mt-1">
-                      <span className="text-xs text-stone-200 drop-shadow line-clamp-1">
-                        {salon.locality} • {salon.distanceKm} km
-                      </span>
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
@@ -373,15 +370,16 @@ export const ExploreScreen: React.FC = () => {
                             userLocation || undefined,
                           );
                         }}
-                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-white/90 hover:bg-white text-[10px] font-bold border backdrop-blur-sm transition-colors shadow-xs ${
+                        className={`inline-flex items-center gap-1 text-xs font-semibold drop-shadow-sm transition-colors ${
                           isWomen
-                            ? 'text-[#E11D48] border-rose-200'
-                            : 'text-[#FF6422] border-orange-200'
+                            ? 'text-rose-100 hover:text-white'
+                            : 'text-orange-100 hover:text-white'
                         }`}
                         title="Open directions in Google Maps"
+                        aria-label={`Navigate to ${salon.name}, ${salon.distanceKm.toFixed(2)} km away`}
                       >
-                        <Navigation className={`w-2.5 h-2.5 ${isWomen ? 'fill-[#E11D48] text-[#E11D48]' : 'fill-[#FF6422] text-[#FF6422]'}`} />
-                        <span>Directions ↗</span>
+                        <Navigation className="w-3 h-3 fill-current" />
+                        <span>{salon.distanceKm.toFixed(2)} km</span>
                       </button>
                     </div>
                   </div>
@@ -389,7 +387,6 @@ export const ExploreScreen: React.FC = () => {
                   <div className="flex items-center gap-1 bg-white/95 backdrop-blur-md px-2.5 py-1 rounded-xl text-amber-800 font-bold text-xs border border-amber-200 shadow-xs shrink-0">
                     <Star className="w-3.5 h-3.5 fill-amber-500 text-amber-500" />
                     <span>{salon.rating}</span>
-                    <span className="text-stone-400 font-normal">({salon.reviewCount})</span>
                   </div>
                 </div>
               </div>
