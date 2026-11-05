@@ -17,7 +17,7 @@ interface AdminContextType {
   adminUser: AuthUser | null;
   isAuthenticated: boolean;
   isAdmin: boolean;
-  loginWithGoogle: (credential: string) => Promise<boolean>;
+  loginWithGoogle: (credential: string, clientId?: string) => Promise<boolean>;
   logout: () => Promise<void>;
   salons: Salon[];
   adminTab: AdminTab;
@@ -123,9 +123,9 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     };
   }, []);
 
-  const loginWithGoogle = async (credential: string): Promise<boolean> => {
+  const loginWithGoogle = async (credential: string, clientId?: string): Promise<boolean> => {
     try {
-      const res = await defaultApiClient.loginWithGoogle(credential);
+      const res = await defaultApiClient.loginWithGoogle(credential, clientId);
       if (res && res.accessToken) {
         safeStorage.setItem('kumbhakaran_admin_token', res.accessToken);
         setAdminUser(res.user);

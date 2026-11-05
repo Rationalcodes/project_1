@@ -39,7 +39,7 @@ export const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
     (typeof process !== 'undefined' &&
       (process.env?.VITE_GOOGLE_CLIENT_ID ||
        process.env?.GOOGLE_CLIENT_ID)) ||
-    '871471875670-ifpho22l5oa0r59kgsvvuoe3r7t5a2l9.apps.googleusercontent.com';
+    '871471875670-5erjemuob83qh5a4nmlm20s305fk0gof.apps.googleusercontent.com';
 
   useEffect(() => {
     let isMounted = true;
