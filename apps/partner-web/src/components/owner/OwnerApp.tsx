@@ -173,9 +173,10 @@ export const OwnerApp: React.FC = () => {
     e.preventDefault();
     const cleanPoster = posterUrlInput.trim();
     const cleanVideo = loopVideoUrlInput.trim();
+    const cover = cleanPoster || activeSalon.coverImage || (activeSalon.locationImages && activeSalon.locationImages[0]) || '';
     updateSalonInfo(activeSalon.id, {
-      posterImage: cleanPoster,
-      coverImage: cleanPoster,
+      posterImage: cleanPoster || cover,
+      coverImage: cover,
       loopVideoUrl: cleanVideo
     });
     triggerNotification('Poster and loop video showcase updated!');
@@ -184,10 +185,14 @@ export const OwnerApp: React.FC = () => {
   const handleAddLocationPhoto = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newLocationUrl.trim()) return;
-    const updated = [newLocationUrl.trim(), ...locationPhotosList];
+    const cleanUrl = newLocationUrl.trim();
+    const updated = [cleanUrl, ...locationPhotosList];
+    const cover = activeSalon.coverImage || activeSalon.posterImage || cleanUrl;
     updateSalonInfo(activeSalon.id, {
       locationImages: updated,
-      images: [newLocationUrl.trim(), ...(activeSalon.images || [])]
+      coverImage: cover,
+      posterImage: activeSalon.posterImage || cover,
+      images: [cleanUrl, ...(activeSalon.images || [])]
     });
     setNewLocationUrl('');
     setNewLocationTitle('');
@@ -203,8 +208,14 @@ export const OwnerApp: React.FC = () => {
   const handleAddWorkPhoto = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newWorkUrl.trim()) return;
-    const updated = [newWorkUrl.trim(), ...workPhotosList];
-    updateSalonInfo(activeSalon.id, { workImages: updated });
+    const cleanUrl = newWorkUrl.trim();
+    const updated = [cleanUrl, ...workPhotosList];
+    const cover = activeSalon.coverImage || activeSalon.posterImage || cleanUrl;
+    updateSalonInfo(activeSalon.id, {
+      workImages: updated,
+      coverImage: cover,
+      posterImage: activeSalon.posterImage || cover,
+    });
     setNewWorkUrl('');
     setNewWorkTitle('');
     triggerNotification('Styling work added to customer portfolio!');
@@ -219,18 +230,59 @@ export const OwnerApp: React.FC = () => {
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, target: 'poster' | 'video' | 'location' | 'work') => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = reader.result as string;
-      if (target === 'poster') {
-        setPosterUrlInput(result);
-      } else if (target === 'video') {
-        setLoopVideoUrlInput(result);
-      } else if (target === 'location') {
-        setNewLocationUrl(result);
-      } else if (target === 'work') {
-        setNewWorkUrl(result);
+
+    if (target === 'video') {
+      if (file.size > 30 * 1024 * 1024) {
+        triggerNotification('Video file is large (>30MB). For fastest streaming, keep under 25MB or use MP4 link.');
       }
+      const reader = new FileReader();
+      reader.onload = () => {
+        setLoopVideoUrlInput(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+      return;
+    }
+
+    // Client-side image compression for instant uploads
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const dataUrl = event.target?.result as string;
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+        const maxDim = 1280;
+        if (width > maxDim || height > maxDim) {
+          if (width > height) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          } else {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+        }
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          const compressed = canvas.toDataURL('image/jpeg', 0.82);
+          if (target === 'poster') setPosterUrlInput(compressed);
+          else if (target === 'location') setNewLocationUrl(compressed);
+          else if (target === 'work') setNewWorkUrl(compressed);
+        } else {
+          if (target === 'poster') setPosterUrlInput(dataUrl);
+          else if (target === 'location') setNewLocationUrl(dataUrl);
+          else if (target === 'work') setNewWorkUrl(dataUrl);
+        }
+      };
+      img.onerror = () => {
+        if (target === 'poster') setPosterUrlInput(dataUrl);
+        else if (target === 'location') setNewLocationUrl(dataUrl);
+        else if (target === 'work') setNewWorkUrl(dataUrl);
+      };
+      img.src = dataUrl;
     };
     reader.readAsDataURL(file);
   };

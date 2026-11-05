@@ -85,8 +85,24 @@ export function normalizeSalon(raw: any): Salon {
       }))
     : [];
 
+  const locImages = Array.isArray(raw.locationImages) ? raw.locationImages : (Array.isArray(raw.location_images) ? raw.location_images : []);
+  const workImages = Array.isArray(raw.workImages) ? raw.workImages : (Array.isArray(raw.work_images) ? raw.work_images : []);
+  const effectiveCover = raw.coverImage || raw.cover_image || raw.posterImage || raw.poster_image || locImages[0] || workImages[0] || '';
+  const effectivePoster = raw.posterImage || raw.poster_image || effectiveCover;
+  const effectiveLoop = raw.loopVideoUrl || raw.loop_video_url || '';
+  const allImages = Array.isArray(raw.images) && raw.images.length > 0
+    ? raw.images
+    : [
+        ...(effectiveCover ? [effectiveCover] : []),
+        ...locImages,
+        ...workImages,
+      ].filter((v: string, i: number, a: string[]) => a.indexOf(v) === i);
+
   return {
     ...raw,
+    coverImage: effectiveCover,
+    posterImage: effectivePoster,
+    loopVideoUrl: effectiveLoop,
     openingHours,
     coordinates: raw.coordinates || {
       lat: Number(raw.latitude || 28.6139),
@@ -95,9 +111,9 @@ export function normalizeSalon(raw: any): Salon {
     staff,
     services: Array.isArray(raw.services) ? raw.services : [],
     reviews: Array.isArray(raw.reviews) ? raw.reviews : [],
-    images: Array.isArray(raw.images) && raw.images.length > 0 ? raw.images : (raw.coverImage ? [raw.coverImage] : []),
-    locationImages: Array.isArray(raw.locationImages) ? raw.locationImages : [],
-    workImages: Array.isArray(raw.workImages) ? raw.workImages : [],
+    images: allImages,
+    locationImages: locImages,
+    workImages: workImages,
     mediaGallery: Array.isArray(raw.mediaGallery) ? raw.mediaGallery : [],
   };
 }

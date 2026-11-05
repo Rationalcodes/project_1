@@ -498,12 +498,27 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         : null;
       const dist = calculatedDist ?? item.distanceKm;
 
+      const locImgs = Array.isArray(item.locationImages) ? item.locationImages : [];
+      const workImgs = Array.isArray(item.workImages) ? item.workImages : [];
+      const effectiveCover = item.coverImage || item.posterImage || locImgs[0] || workImgs[0] || '';
+      const allImgs = Array.isArray(item.images) && item.images.length > 0
+        ? item.images
+        : [
+            ...(effectiveCover ? [effectiveCover] : []),
+            ...locImgs,
+            ...workImgs,
+          ].filter((v: string, i: number, a: string[]) => a.indexOf(v) === i);
+
       return {
         id: item.id,
         name: item.name,
         tagline: item.tagline || 'Verified Kumbhakaran Salon Partner',
-        coverImage: item.coverImage || '',
-        images: item.coverImage ? [item.coverImage] : [],
+        coverImage: effectiveCover,
+        posterImage: item.posterImage || effectiveCover,
+        loopVideoUrl: item.loopVideoUrl || '',
+        images: allImgs,
+        locationImages: locImgs,
+        workImages: workImgs,
         rating: Number(item.rating) || 5.0,
         reviewCount: Number(item.reviewCount) || 0,
         currentQueue: item.currentQueue,

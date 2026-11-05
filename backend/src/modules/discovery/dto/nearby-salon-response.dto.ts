@@ -49,6 +49,21 @@ export class NearbySalonItemDto {
   @ApiPropertyOptional({ example: 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=1200' })
   coverImage?: string;
 
+  @ApiPropertyOptional({ example: 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=1200' })
+  posterImage?: string;
+
+  @ApiPropertyOptional({ example: 'https://assets.mixkit.co/videos/preview/mixkit-barber.mp4' })
+  loopVideoUrl?: string;
+
+  @ApiPropertyOptional({ type: [String] })
+  images?: string[];
+
+  @ApiPropertyOptional({ type: [String] })
+  locationImages?: string[];
+
+  @ApiPropertyOptional({ type: [String] })
+  workImages?: string[];
+
   @ApiProperty({ example: '2026-11-03T12:00:00Z' })
   lastQueueUpdate: string;
 

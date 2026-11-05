@@ -299,9 +299,19 @@ export const HomeScreen: React.FC = () => {
                     <div className="flex gap-3">
                       {/* Photo with Live Queue Badge Overlay */}
                       <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-xl overflow-hidden relative shrink-0">
-                        {salon.coverImage ? (
+                        {salon.loopVideoUrl ? (
+                          <video
+                            src={salon.loopVideoUrl}
+                            autoPlay
+                            loop
+                            muted
+                            playsInline
+                            poster={salon.coverImage || salon.posterImage}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                          />
+                        ) : (salon.coverImage || salon.posterImage || (salon.images && salon.images[0]) || (salon.locationImages && salon.locationImages[0]) || (salon.workImages && salon.workImages[0])) ? (
                           <img
-                            src={salon.coverImage}
+                            src={salon.coverImage || salon.posterImage || (salon.images && salon.images[0]) || (salon.locationImages && salon.locationImages[0]) || (salon.workImages && salon.workImages[0])}
                             alt={salon.name}
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                           />
@@ -311,7 +321,12 @@ export const HomeScreen: React.FC = () => {
                             <span className="text-[10px] font-black line-clamp-1">{salon.name}</span>
                           </div>
                         )}
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
+                        {salon.loopVideoUrl && (
+                          <span className="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded-full bg-black/75 backdrop-blur-xs text-[9px] font-bold text-amber-400 flex items-center gap-0.5 shadow-xs pointer-events-none">
+                            🎥 Video
+                          </span>
+                        )}
                         <div className="absolute bottom-1.5 left-1.5 right-1.5">
                           <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold shadow-xs ${queueInfo.pillClass}`}>
                             <span className={`w-1.5 h-1.5 rounded-full ${queueInfo.dotClass}`} />
@@ -437,12 +452,34 @@ export const HomeScreen: React.FC = () => {
                     <div className="flex flex-col sm:flex-row gap-4">
                       {/* Photo with overlay */}
                       <div className="sm:w-44 h-40 rounded-2xl overflow-hidden relative shrink-0">
-                        <img
-                          src={salon.coverImage}
-                          alt={salon.name}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
+                        {salon.loopVideoUrl ? (
+                          <video
+                            src={salon.loopVideoUrl}
+                            autoPlay
+                            loop
+                            muted
+                            playsInline
+                            poster={salon.coverImage || salon.posterImage}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                          />
+                        ) : (salon.coverImage || salon.posterImage || (salon.images && salon.images[0]) || (salon.locationImages && salon.locationImages[0])) ? (
+                          <img
+                            src={salon.coverImage || salon.posterImage || (salon.images && salon.images[0]) || (salon.locationImages && salon.locationImages[0])}
+                            alt={salon.name}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-gradient-to-br from-stone-800 to-stone-900 flex flex-col items-center justify-center text-white p-3 text-center">
+                            <Store className="w-8 h-8 text-[#FF6422] mb-1" />
+                            <span className="text-xs font-bold">{salon.name}</span>
+                          </div>
+                        )}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent pointer-events-none" />
+                        {salon.loopVideoUrl && (
+                          <span className="absolute top-2.5 right-2.5 px-2 py-0.5 rounded-full bg-black/75 backdrop-blur-xs text-[10px] font-bold text-amber-400 flex items-center gap-0.5 shadow-xs pointer-events-none">
+                            🎥 Video
+                          </span>
+                        )}
 
                         {/* Prominent Live Queue Badge */}
                         <div className="absolute top-2.5 left-2.5">

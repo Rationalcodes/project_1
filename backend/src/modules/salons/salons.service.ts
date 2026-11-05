@@ -430,12 +430,12 @@ export class SalonsService {
         lat: Number(salonData.latitude || 28.6139),
         lng: Number(salonData.longitude || 77.2090),
       },
-      coverImage: salonData.coverImage || salonData.cover_image || '',
+      coverImage: salonData.coverImage || salonData.cover_image || salonData.posterImage || salonData.poster_image || (Array.isArray(salonData.locationImages) && salonData.locationImages[0]) || (Array.isArray(salonData.location_images) && salonData.location_images[0]) || '',
       posterImage: salonData.posterImage || salonData.poster_image || salonData.coverImage || salonData.cover_image || '',
       loopVideoUrl: salonData.loopVideoUrl || salonData.loop_video_url || '',
       images: Array.isArray(salonData.images) && salonData.images.length > 0
         ? salonData.images
-        : (salonData.coverImage || salonData.cover_image ? [salonData.coverImage || salonData.cover_image] : []),
+        : (salonData.coverImage || salonData.cover_image || (Array.isArray(salonData.locationImages) && salonData.locationImages[0]) || (Array.isArray(salonData.location_images) && salonData.location_images[0]) ? [salonData.coverImage || salonData.cover_image || salonData.locationImages?.[0] || salonData.location_images?.[0]] : []),
       locationImages: Array.isArray(salonData.locationImages) ? salonData.locationImages : (Array.isArray(salonData.location_images) ? salonData.location_images : []),
       workImages: Array.isArray(salonData.workImages) ? salonData.workImages : (Array.isArray(salonData.work_images) ? salonData.work_images : []),
       mediaGallery: salonData.mediaGallery || salonData.media_gallery || [],
@@ -671,11 +671,22 @@ export class SalonsService {
       if (dto.isOpen !== undefined) {
         await this.prisma.$executeRawUnsafe(`UPDATE salons SET is_open = $1 WHERE id = $2;`, dto.isOpen, id);
       }
-      if (dto.coverImage !== undefined) {
-        await this.prisma.$executeRawUnsafe(`UPDATE salons SET cover_image = $1 WHERE id = $2;`, dto.coverImage || null, id);
+      let effectiveCover = dto.coverImage;
+      if (!effectiveCover && dto.posterImage) {
+        effectiveCover = dto.posterImage;
+      }
+      if (!effectiveCover && Array.isArray(dto.locationImages) && dto.locationImages.length > 0) {
+        effectiveCover = dto.locationImages[0];
+      }
+      if (!effectiveCover && Array.isArray(dto.workImages) && dto.workImages.length > 0) {
+        effectiveCover = dto.workImages[0];
+      }
+
+      if (effectiveCover) {
+        await this.prisma.$executeRawUnsafe(`UPDATE salons SET cover_image = $1 WHERE id = $2;`, effectiveCover, id);
       }
       if (dto.posterImage !== undefined) {
-        await this.prisma.$executeRawUnsafe(`UPDATE salons SET poster_image = $1 WHERE id = $2;`, dto.posterImage || null, id);
+        await this.prisma.$executeRawUnsafe(`UPDATE salons SET poster_image = $1 WHERE id = $2;`, dto.posterImage || effectiveCover || null, id);
       }
       if (dto.loopVideoUrl !== undefined) {
         await this.prisma.$executeRawUnsafe(`UPDATE salons SET loop_video_url = $1 WHERE id = $2;`, dto.loopVideoUrl || null, id);
@@ -694,8 +705,8 @@ export class SalonsService {
           id,
         );
       }
-    } catch {
-      // Handled via local update
+    } catch (err) {
+      this.logger.warn(`Failed to update salon in database: ${err}`);
     }
 
     // Local state update

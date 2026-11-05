@@ -12,6 +12,7 @@ async function bootstrap() {
     AppModule,
     new FastifyAdapter({
       logger: process.env.NODE_ENV === 'development',
+      bodyLimit: 52428800, // 50MB body limit for media and video uploads
     }),
   );
 

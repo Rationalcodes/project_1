@@ -291,9 +291,19 @@ export const ExploreScreen: React.FC = () => {
             >
               {/* Large Salon Photograph with overlays */}
               <div className="h-48 sm:h-56 w-full relative overflow-hidden">
-                {salon.coverImage ? (
+                {salon.loopVideoUrl ? (
+                  <video
+                    src={salon.loopVideoUrl}
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    poster={salon.coverImage || salon.posterImage}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                  />
+                ) : (salon.coverImage || salon.posterImage || (salon.images && salon.images[0]) || (salon.locationImages && salon.locationImages[0])) ? (
                   <img
-                    src={salon.coverImage}
+                    src={salon.coverImage || salon.posterImage || (salon.images && salon.images[0]) || (salon.locationImages && salon.locationImages[0])}
                     alt={salon.name}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                   />
@@ -304,7 +314,12 @@ export const ExploreScreen: React.FC = () => {
                     <span className="text-xs text-stone-400">{salon.locality}</span>
                   </div>
                 )}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/10" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/10 pointer-events-none" />
+                {salon.loopVideoUrl && (
+                  <span className="absolute top-3 right-20 px-2.5 py-1 rounded-full bg-black/75 backdrop-blur-xs text-[10px] font-bold text-amber-400 flex items-center gap-1 shadow-md pointer-events-none">
+                    🎥 Loop Video
+                  </span>
+                )}
 
                 {/* Top overlay badges */}
                 <div className="absolute top-3 left-3 right-3 flex items-center justify-between">
