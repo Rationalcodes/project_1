@@ -163,7 +163,7 @@ export const Header: React.FC = () => {
                 <img
                   src={isWomen ? logoTransparent : logoWhite}
                   alt="SLOON - Unisex Grooming Network"
-                  className="h-7 xs:h-8 sm:h-9 w-auto max-w-[170px] sm:max-w-[220px] object-contain transition-transform group-hover:scale-102 drop-shadow-xs"
+                  className="h-10 xs:h-11 sm:h-12 md:h-13 w-auto max-w-[210px] sm:max-w-[260px] md:max-w-[300px] object-contain transition-transform group-hover:scale-102 drop-shadow-sm"
                   onError={(e) => {
                     (e.currentTarget as HTMLImageElement).src = logoFallback;
                   }}

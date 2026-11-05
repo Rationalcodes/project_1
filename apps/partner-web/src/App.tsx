@@ -19,7 +19,7 @@ const PartnerMainContent: React.FC = () => {
             <img
               src={logoWhite}
               alt="SLOON - Unisex Grooming Network"
-              className="h-7 sm:h-8 md:h-9 w-auto max-w-[145px] sm:max-w-[185px] md:max-w-[215px] object-contain transition-transform group-hover:scale-105"
+              className="h-9 sm:h-10 md:h-12 w-auto max-w-[190px] sm:max-w-[230px] md:max-w-[270px] object-contain transition-transform group-hover:scale-105"
               onError={(e) => {
                 (e.currentTarget as HTMLImageElement).src = logoFallback;
               }}
