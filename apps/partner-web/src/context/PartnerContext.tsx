@@ -116,6 +116,12 @@ export function normalizeSalon(raw: any): Salon {
     locationImages: locImages,
     workImages: workImages,
     mediaGallery: Array.isArray(raw.mediaGallery) ? raw.mediaGallery : [],
+    currentQueue: raw.currentQueue !== undefined
+      ? Number(raw.currentQueue)
+      : (raw.current_queue !== undefined ? Number(raw.current_queue) : 0),
+    activeBarbers: Number(raw.activeBarbers || raw.active_barbers || 2),
+    avgServiceTimeMinutes: Number(raw.avgServiceTimeMinutes || raw.avg_service_time_minutes || 20),
+    lastQueueUpdate: raw.lastQueueUpdate || raw.last_queue_update || new Date().toISOString(),
   };
 }
 
@@ -184,9 +190,20 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
       const entries = await defaultApiClient.getQueueEntries(sId);
       if (Array.isArray(entries)) {
         setQueueEntries(entries);
-        // Sync activeSalon's queue count with entries length
+        // Only increase currentQueue if digital tickets exceed manual queue count
+        // Never forcibly reset or wipe out manual walk-in queue counter to 0
         setSalons((prev) =>
-          prev.map((s) => (s.id === sId ? { ...s, currentQueue: entries.length } : s))
+          prev.map((s) => {
+            if (s.id !== sId) return s;
+            const waitingCount = entries.filter((e: any) => e.status === 'waiting').length;
+            const targetCount = Math.max(s.currentQueue, waitingCount);
+            if (targetCount !== s.currentQueue) {
+              const updated = { ...s, currentQueue: targetCount };
+              safeStorage.setItem('kumbhakaran_partner_active_salon', JSON.stringify(updated));
+              return updated;
+            }
+            return s;
+          }),
         );
       }
     } catch (err) {
@@ -498,13 +515,15 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
     return newSalon;
   };
 
-  const updateQueue = (salonId: string, delta: number, manualValue?: number) => {
+  const updateQueue = async (salonId: string, delta: number, manualValue?: number) => {
+    let finalQueue = 0;
     setSalons((prev) =>
       prev.map((salon) => {
         if (salon.id !== salonId) return salon;
 
         let newQueue = manualValue !== undefined ? manualValue : salon.currentQueue + delta;
         if (newQueue < 0) newQueue = 0;
+        finalQueue = newQueue;
 
         const customersServedDelta = delta < 0 ? Math.abs(delta) : 0;
         const avgPrice = salon.services[0]?.price || 150;
@@ -525,13 +544,29 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
     const salon = salons.find((s) => s.id === salonId);
     triggerNotification(
-      `Queue updated for ${salon?.name || 'salon'}: ${manualValue !== undefined ? manualValue : Math.max(0, (salon?.currentQueue || 0) + delta)} waiting`,
+      `Queue updated for ${salon?.name || 'salon'}: ${finalQueue} waiting`,
     );
 
     // Asynchronously synchronize with NestJS backend
-    defaultApiClient.updateQueue(salonId, delta, manualValue).then(() => {
-      refreshQueueEntries(salonId);
-    }).catch(() => {});
+    try {
+      const res = await defaultApiClient.updateQueue(salonId, delta, manualValue);
+      if (res && res.currentQueue !== undefined) {
+        setSalons((prev) =>
+          prev.map((s) => {
+            if (s.id !== salonId) return s;
+            const synced = {
+              ...s,
+              currentQueue: Number(res.currentQueue),
+              lastQueueUpdate: res.lastQueueUpdate || s.lastQueueUpdate,
+            };
+            safeStorage.setItem('kumbhakaran_partner_active_salon', JSON.stringify(synced));
+            return synced;
+          }),
+        );
+      }
+    } catch (err) {
+      console.warn('Failed to sync queue update with backend:', err);
+    }
   };
 
   const updateSalonInfo = (salonId: string, updates: Partial<Salon>) => {
