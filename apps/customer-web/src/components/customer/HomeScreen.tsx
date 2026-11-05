@@ -97,6 +97,9 @@ export const HomeScreen: React.FC = () => {
 
   const genderMatchedSalons = salons.filter((s) => matchesGenderFilter(s, genderFilter));
 
+  // Featured shop for local shop advertising spotlight below map
+  const featuredShop = genderMatchedSalons.find((s) => s.isVerified) || genderMatchedSalons[0];
+
   // Shortest queues (< 3 people)
   const shortestQueueSalons = [...genderMatchedSalons]
     .filter((s) => s.isOpen)
@@ -142,112 +145,161 @@ export const HomeScreen: React.FC = () => {
   ];
 
   return (
-    <div className="space-y-8 pb-24 text-stone-900">
+    <div className="space-y-5 sm:space-y-6 pb-24 text-stone-900">
       {/* 1. HERO BRANDING & MISSION GLIMPSE */}
       <section
-        className={`relative overflow-hidden rounded-3xl p-5 sm:p-7 transition-all duration-300 ${
+        className={`relative overflow-hidden rounded-3xl p-4 sm:p-6 transition-all duration-300 ${
           isWomen
             ? 'bg-gradient-to-br from-[#FFF0EA] via-[#FFF8F5] to-[#FFEBE5] border border-[#FED7CC] shadow-[0_4px_24px_rgba(225,29,72,0.06)]'
             : 'bg-white border border-[#E8E2D8] shadow-[0_4px_24px_rgba(40,20,10,0.04)]'
         }`}
       >
         <div
-          className={`absolute top-0 right-0 -mr-16 -mt-16 w-60 h-60 rounded-full blur-3xl pointer-events-none ${
+          className={`absolute top-0 right-0 -mr-16 -mt-16 w-52 h-52 rounded-full blur-3xl pointer-events-none ${
             isWomen ? 'bg-rose-400/15' : 'bg-orange-400/15'
           }`}
         />
 
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-          <div className="max-w-xl">
+        <div className="relative z-10">
+          <div>
             <div
-              className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold mb-3 ${
+              className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold mb-2 ${
                 isWomen
                   ? 'bg-rose-100/90 border border-rose-200 text-[#E11D48]'
                   : 'bg-orange-50 border border-orange-200 text-[#FF6422]'
               }`}
             >
-              <Sparkles className={`w-3.5 h-3.5 ${isWomen ? 'text-[#E11D48]' : 'text-[#FF6422]'}`} />
+              <Sparkles className={`w-3 h-3 ${isWomen ? 'text-[#E11D48]' : 'text-[#FF6422]'}`} />
               <span>{isWomen ? 'Glow & Glamour. Without the wait.' : 'Too lazy to call. Too smart to wait.'}</span>
             </div>
 
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-stone-900 tracking-tight leading-tight">
+            <h1 className="text-xl sm:text-2xl font-black text-stone-900 tracking-tight leading-tight">
               {isWomen ? (
-                <>Skip beauty parlour crowds. <br /><span className="text-[#E11D48]">Walk in when chairs are free.</span></>
+                <>Skip parlour crowds. <span className="text-[#E11D48]">Live walk-in queues.</span></>
               ) : (
-                <>Skip the salon crowd today. <br /><span className="text-[#FF6422]">Live walk-in queues in real-time.</span></>
+                <>Skip the salon crowd today. <span className="text-[#FF6422]">Live walk-in queues.</span></>
               )}
             </h1>
 
-            <p className="text-xs sm:text-sm text-stone-600 mt-2.5 leading-relaxed">
-              Kumbhkaran connects you to verified neighborhood salons with 100% walk-in transparency.
-              See exact waiting counts, estimated chair wait times, and real studio videos before leaving home.
+            <p className="text-xs text-stone-600 mt-1 max-w-xl leading-relaxed">
+              {isWomen
+                ? 'Check live waiting counts at top salons, hair styling lounges & spas. Zero phone calls, 100% walk-in clarity.'
+                : 'Check live waiting counts at nearby grooming studios. Zero phone calls, 100% walk-in clarity.'}
             </p>
 
-            {/* Quick Action CTAs */}
-            <div className="flex flex-wrap items-center gap-3 mt-4">
+            {/* Quick Action CTAs: Neatly side-by-side */}
+            <div className="flex items-center gap-2 mt-3">
               <button
                 type="button"
                 onClick={() => setCustomerTab('explore')}
-                className={`px-4 py-2.5 rounded-full text-xs sm:text-sm font-bold flex items-center gap-2 transition-all cursor-pointer shadow-md ${
+                className={`flex-1 py-2 sm:py-2.5 px-3 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-sm ${
                   isWomen
                     ? 'bg-[#E11D48] text-white hover:bg-rose-700 shadow-rose-500/20'
                     : 'bg-[#FF6422] text-white hover:bg-orange-600 shadow-orange-500/20'
                 }`}
               >
                 <span>Browse All Studios & Services</span>
-                <ArrowRight className="w-4 h-4" />
+                <ArrowRight className="w-3.5 h-3.5" />
               </button>
 
               <button
                 type="button"
                 onClick={() => setCustomerTab('map')}
-                className="px-4 py-2.5 rounded-full text-xs sm:text-sm font-bold bg-white text-stone-700 hover:text-stone-900 border border-stone-200 hover:border-stone-300 transition-all flex items-center gap-1.5 shadow-xs cursor-pointer"
+                className="py-2 sm:py-2.5 px-3 rounded-xl text-xs sm:text-sm font-bold bg-white text-stone-700 hover:text-stone-900 border border-stone-200 hover:border-stone-300 transition-all flex items-center justify-center gap-1.5 shadow-xs cursor-pointer shrink-0"
               >
-                <Compass className="w-4 h-4 text-stone-500" />
+                <Compass className="w-3.5 h-3.5 text-stone-500" />
                 <span>Open City Map</span>
               </button>
             </div>
           </div>
 
-          {/* Key Transparency Highlights Pill Grid */}
-          <div className="grid grid-cols-2 gap-2.5 sm:gap-3 w-full md:w-auto shrink-0">
-            <div className="p-3 rounded-2xl bg-white/80 border border-stone-200/80 shadow-xs flex flex-col justify-center">
-              <div className="flex items-center gap-1.5 text-emerald-600 font-extrabold text-xs sm:text-sm">
-                <Zap className="w-4 h-4" />
-                <span>100% Real-Time</span>
+          {/* Dedicated Local Shop Advertisement Banner: Positioned directly below Open City Map as requested */}
+          {featuredShop && (
+            <div className="mt-3 pt-3 border-t border-stone-200/70">
+              <div className="flex items-center justify-between text-[11px] mb-1.5 px-0.5">
+                <span className="font-extrabold text-[#FF6422] uppercase tracking-wider flex items-center gap-1 text-[10px] sm:text-[11px]">
+                  <Sparkles className="w-3 h-3 text-[#FF6422]" /> Local Shop Advertisement • Sponsored
+                </span>
+                <a
+                  href="https://partner.kumbhkaransalons.in"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-stone-400 hover:text-[#FF6422] text-[10px] flex items-center gap-0.5 font-medium transition-colors"
+                >
+                  Advertise Here ↗
+                </a>
               </div>
-              <span className="text-[11px] text-stone-500 mt-0.5">Live queue chair counts</span>
-            </div>
 
-            <div className="p-3 rounded-2xl bg-white/80 border border-stone-200/80 shadow-xs flex flex-col justify-center">
-              <div className="flex items-center gap-1.5 text-[#FF6422] font-extrabold text-xs sm:text-sm">
-                <Coffee className="w-4 h-4" />
-                <span>Zero Blind Wait</span>
-              </div>
-              <span className="text-[11px] text-stone-500 mt-0.5">No plastic chair waiting</span>
-            </div>
+              <div
+                onClick={() => handleSalonCardClick(featuredShop)}
+                className="p-2 sm:p-2.5 rounded-2xl bg-gradient-to-r from-orange-500/10 via-amber-500/5 to-transparent border border-orange-200 hover:border-orange-400 transition-all cursor-pointer flex items-center justify-between gap-2.5 shadow-xs"
+              >
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl overflow-hidden relative shrink-0 ring-1 ring-black/10">
+                    {featuredShop.loopVideoUrl ? (
+                      <video
+                        src={featuredShop.loopVideoUrl}
+                        autoPlay
+                        loop
+                        muted
+                        playsInline
+                        poster={featuredShop.coverImage || featuredShop.posterImage}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <img
+                        src={
+                          featuredShop.coverImage ||
+                          featuredShop.posterImage ||
+                          (featuredShop.locationImages && featuredShop.locationImages[0]) ||
+                          (featuredShop.workImages && featuredShop.workImages[0]) ||
+                          (featuredShop.images && featuredShop.images[0])
+                        }
+                        alt={featuredShop.name}
+                        className="w-full h-full object-cover"
+                      />
+                    )}
+                    {featuredShop.loopVideoUrl && (
+                      <span className="absolute top-0.5 left-0.5 px-1 py-0.2 rounded bg-black/80 text-[8px] text-amber-300 font-bold">
+                        🎥
+                      </span>
+                    )}
+                  </div>
 
-            <div className="p-3 rounded-2xl bg-white/80 border border-stone-200/80 shadow-xs flex flex-col justify-center">
-              <div className="flex items-center gap-1.5 text-blue-600 font-extrabold text-xs sm:text-sm">
-                <BadgePercent className="w-4 h-4" />
-                <span>₹0 Extra Fee</span>
-              </div>
-              <span className="text-[11px] text-stone-500 mt-0.5">Exact counter prices</span>
-            </div>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs font-black text-stone-900 truncate">
+                        {featuredShop.name}
+                      </span>
+                      <span className="px-1.5 py-0.2 rounded bg-orange-100 text-[#FF6422] text-[9px] font-black uppercase">
+                        Ad
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-stone-500 truncate mt-0.5">
+                      {featuredShop.locality} • Haircut from ₹{featuredShop.startingPrice}
+                    </p>
+                    <div className="flex items-center gap-1.5 text-[10px] text-emerald-700 font-bold mt-0.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                      <span>{featuredShop.currentQueue < 10 ? `0${featuredShop.currentQueue}` : featuredShop.currentQueue} in live queue • Walk-in ready</span>
+                    </div>
+                  </div>
+                </div>
 
-            <div className="p-3 rounded-2xl bg-white/80 border border-stone-200/80 shadow-xs flex flex-col justify-center">
-              <div className="flex items-center gap-1.5 text-purple-600 font-extrabold text-xs sm:text-sm">
-                <PhoneCall className="w-4 h-4" />
-                <span>1-Tap Call</span>
+                <button
+                  type="button"
+                  className="px-2.5 py-1.5 rounded-xl bg-[#FF6422] text-white text-[11px] font-bold hover:bg-orange-600 transition-colors shrink-0 shadow-xs flex items-center gap-1 cursor-pointer"
+                >
+                  <span>View</span>
+                  <ArrowRight className="w-3 h-3" />
+                </button>
               </div>
-              <span className="text-[11px] text-stone-500 mt-0.5">Direct phone to studio</span>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Comparison Bar Trigger (if items selected) */}
         {comparisonList.length > 0 && (
-          <div className="mt-4 bg-orange-50 border border-orange-200 rounded-xl p-2.5 flex items-center justify-between text-xs">
+          <div className="mt-3 bg-orange-50 border border-orange-200 rounded-xl p-2.5 flex items-center justify-between text-xs">
             <div className="flex items-center gap-2 text-orange-900 font-semibold">
               <SlidersHorizontal className="w-3.5 h-3.5 text-[#FF723A]" />
               <span>{comparisonList.length} salons in compare list</span>
