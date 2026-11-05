@@ -169,6 +169,21 @@ export type OwnerTab = PartnerView;
 
 export type AdminTab = 'overview' | 'salons' | 'customers' | 'verification' | 'reviews' | 'subscriptions' | 'analytics' | 'settings';
 
+export interface QueueEntry {
+  id: string;
+  salonId?: string;
+  position: number;
+  ticketNumber: string;
+  customerName: string;
+  phone?: string | null;
+  serviceName?: string | null;
+  status: 'waiting' | 'in_service' | 'completed' | 'cancelled';
+  joinedAt: string;
+  servedAt?: string | null;
+  deviceId?: string | null;
+  userId?: string | null;
+}
+
 export interface CustomerProfile {
   name: string;
   phone?: string;

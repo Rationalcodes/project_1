@@ -6,6 +6,7 @@ import {
   Review,
   PartnerView,
   SalonRegistrationInput,
+  QueueEntry,
 } from '@kumbhakaran/shared-types';
 import { defaultApiClient, AuthUser, SalonMembership } from '@kumbhakaran/api-client';
 import { safeStorage } from '../utils/safeStorage';
@@ -46,6 +47,12 @@ interface PartnerContextType {
   replyToReview: (salonId: string, reviewId: string, replyComment: string) => void;
   notificationMessage: string | null;
   triggerNotification: (msg: string) => void;
+  queueEntries: QueueEntry[];
+  isLoadingQueue: boolean;
+  refreshQueueEntries: (salonId?: string) => Promise<void>;
+  addCustomerToQueue: (name: string, phone?: string, serviceName?: string) => Promise<void>;
+  updateCustomerStatus: (entryId: string, status: string) => Promise<void>;
+  clearQueue: () => Promise<void>;
 }
 
 export function normalizeSalon(raw: any): Salon {
@@ -138,6 +145,8 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const [memberships, setMemberships] = useState<SalonMembership[]>([]);
   const [notificationMessage, setNotificationMessage] = useState<string | null>(null);
+  const [queueEntries, setQueueEntries] = useState<QueueEntry[]>([]);
+  const [isLoadingQueue, setIsLoadingQueue] = useState<boolean>(false);
 
   const activeSalon = salons.find((s) => s.id === activeSalonId) || salons[0] || null;
 
@@ -146,6 +155,132 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setTimeout(() => {
       setNotificationMessage(null);
     }, 4000);
+  };
+
+  const refreshQueueEntries = useCallback(async (salonIdToFetch?: string) => {
+    const sId = salonIdToFetch || activeSalonId;
+    if (!sId) {
+      setQueueEntries([]);
+      return;
+    }
+    try {
+      const entries = await defaultApiClient.getQueueEntries(sId);
+      if (Array.isArray(entries)) {
+        setQueueEntries(entries);
+        // Sync activeSalon's queue count with entries length
+        setSalons((prev) =>
+          prev.map((s) => (s.id === sId ? { ...s, currentQueue: entries.length } : s))
+        );
+      }
+    } catch (err) {
+      console.warn('Failed to fetch live queue entries:', err);
+    }
+  }, [activeSalonId]);
+
+  // Poll live queue entries every 4 seconds when active salon is loaded
+  useEffect(() => {
+    if (!activeSalonId) return;
+    refreshQueueEntries(activeSalonId);
+    const interval = setInterval(() => {
+      refreshQueueEntries(activeSalonId);
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [activeSalonId, refreshQueueEntries]);
+
+  const addCustomerToQueue = async (name: string, phone?: string, serviceName?: string) => {
+    const sId = activeSalonId || activeSalon?.id;
+    if (!sId) return;
+    try {
+      setIsLoadingQueue(true);
+      const res = await defaultApiClient.addQueueEntry(sId, {
+        customerName: name,
+        phone,
+        serviceName,
+      });
+      if (res?.entry) {
+        setQueueEntries((prev) => [...prev, res.entry]);
+        setSalons((prev) =>
+          prev.map((s) =>
+            s.id === sId
+              ? {
+                  ...s,
+                  currentQueue: res.currentQueue ?? s.currentQueue + 1,
+                  lastQueueUpdate: new Date().toISOString(),
+                }
+              : s
+          )
+        );
+        triggerNotification(`Added #${res.entry.ticketNumber} ${name} to live queue!`);
+      }
+      await refreshQueueEntries(sId);
+    } catch (err: any) {
+      triggerNotification(err?.message || 'Failed to add customer to queue');
+    } finally {
+      setIsLoadingQueue(false);
+    }
+  };
+
+  const updateCustomerStatus = async (entryId: string, status: string) => {
+    const sId = activeSalonId || activeSalon?.id;
+    if (!sId) return;
+    try {
+      await defaultApiClient.updateQueueEntryStatus(sId, entryId, status);
+      if (status === 'completed') {
+        const avgPrice = activeSalon?.services[0]?.price || 150;
+        setSalons((prev) =>
+          prev.map((s) =>
+            s.id === sId
+              ? {
+                  ...s,
+                  currentQueue: Math.max(0, s.currentQueue - 1),
+                  todayCustomersServed: s.todayCustomersServed + 1,
+                  todayRevenue: s.todayRevenue + avgPrice,
+                  monthlyRevenue: s.monthlyRevenue + avgPrice,
+                  lastQueueUpdate: new Date().toISOString(),
+                }
+              : s
+          )
+        );
+        triggerNotification('Customer marked as completed / served');
+      } else if (status === 'cancelled') {
+        setSalons((prev) =>
+          prev.map((s) =>
+            s.id === sId
+              ? {
+                  ...s,
+                  currentQueue: Math.max(0, s.currentQueue - 1),
+                  lastQueueUpdate: new Date().toISOString(),
+                }
+              : s
+          )
+        );
+        triggerNotification('Customer removed from queue');
+      } else if (status === 'in_service') {
+        triggerNotification('Customer called to styling chair');
+      }
+      await refreshQueueEntries(sId);
+    } catch (err: any) {
+      triggerNotification(err?.message || 'Failed to update customer status');
+    }
+  };
+
+  const clearQueue = async () => {
+    const sId = activeSalonId || activeSalon?.id;
+    if (!sId) return;
+    try {
+      await defaultApiClient.clearQueueEntries(sId);
+      setQueueEntries([]);
+      setSalons((prev) =>
+        prev.map((s) =>
+          s.id === sId
+            ? { ...s, currentQueue: 0, lastQueueUpdate: new Date().toISOString() }
+            : s
+        )
+      );
+      triggerNotification('All waiting customers cleared from queue');
+    } catch (err: any) {
+      triggerNotification(err?.message || 'Failed to clear queue');
+    }
   };
 
   // Helper to load the single salon tied to this Gmail ID or user memberships
@@ -377,7 +512,9 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
     );
 
     // Asynchronously synchronize with NestJS backend
-    defaultApiClient.updateQueue(salonId, delta, manualValue);
+    defaultApiClient.updateQueue(salonId, delta, manualValue).then(() => {
+      refreshQueueEntries(salonId);
+    }).catch(() => {});
   };
 
   const updateSalonInfo = (salonId: string, updates: Partial<Salon>) => {
@@ -529,6 +666,12 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
         replyToReview,
         notificationMessage,
         triggerNotification,
+        queueEntries,
+        isLoadingQueue,
+        refreshQueueEntries,
+        addCustomerToQueue,
+        updateCustomerStatus,
+        clearQueue,
       }}
     >
       {children}

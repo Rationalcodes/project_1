@@ -3,6 +3,7 @@ import {
   Post,
   Get,
   Patch,
+  Delete,
   Body,
   Param,
   Query,
@@ -22,6 +23,7 @@ import { SalonsService } from './salons.service';
 import { RegisterSalonDto } from './dto/register-salon.dto';
 import { UpdateSalonDto } from './dto/update-salon.dto';
 import { UpdateQueueDto } from './dto/update-queue.dto';
+import { CreateQueueEntryDto } from './dto/create-queue-entry.dto';
 import { PublicSalonResponseDto, PublicReviewDto } from './dto/public-salon-response.dto';
 import { CreateReviewDto } from './dto/create-review.dto';
 import { SalonOwnerGuard } from './guards/salon-owner.guard';
@@ -172,5 +174,48 @@ export class SalonsController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     return this.salonsService.updateQueue(id, dto, user.id);
+  }
+
+  @Get(':id/queue-entries')
+  @ApiOperation({
+    summary: 'Get live walk-in waiting queue entries for a salon',
+    description:
+      'Returns list of customers waiting in queue with their ID, name, phone, ticket number, and wait time.',
+  })
+  async getQueueEntries(@Param('id') id: string) {
+    return this.salonsService.getQueueEntries(id);
+  }
+
+  @Post(':id/queue-entries')
+  @ApiOperation({
+    summary: 'Add a customer to the live walk-in queue',
+    description:
+      'Adds a customer with their name, phone, and generates their queue ID / ticket number.',
+  })
+  async addQueueEntry(
+    @Param('id') id: string,
+    @Body() dto: CreateQueueEntryDto,
+  ) {
+    return this.salonsService.addQueueEntry(id, dto);
+  }
+
+  @Patch(':id/queue-entries/:entryId')
+  @ApiOperation({
+    summary: 'Update a customer queue entry status (e.g. in_service, completed, cancelled)',
+  })
+  async updateQueueEntryStatus(
+    @Param('id') id: string,
+    @Param('entryId') entryId: string,
+    @Body('status') status: string,
+  ) {
+    return this.salonsService.updateQueueEntryStatus(id, entryId, status);
+  }
+
+  @Delete(':id/queue-entries')
+  @ApiOperation({
+    summary: 'Reset or clear all waiting customers in queue',
+  })
+  async clearQueueEntries(@Param('id') id: string) {
+    return this.salonsService.clearQueueEntries(id);
   }
 }

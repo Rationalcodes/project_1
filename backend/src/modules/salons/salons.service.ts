@@ -752,6 +752,36 @@ export class SalonsService {
 
     // Database update
     try {
+      if (dto.delta && dto.delta > 0) {
+        for (let i = 0; i < dto.delta; i++) {
+          const entryId = `q-${Date.now()}-${i}-${Math.random().toString(36).substring(2, 6)}`;
+          await this.prisma.$executeRawUnsafe(
+            `INSERT INTO salon_queue_entries (id, salon_id, position, customer_name, status, joined_at)
+             VALUES ($1, $2, (SELECT COALESCE(MAX(position), 0) + 1 FROM salon_queue_entries WHERE salon_id = $2 AND status = 'waiting'), $3, 'waiting', NOW());`,
+            entryId,
+            id,
+            `Walk-in #${currentQueue + i + 1}`,
+          );
+        }
+      } else if (dto.delta && dto.delta < 0) {
+        await this.prisma.$executeRawUnsafe(
+          `UPDATE salon_queue_entries SET status = 'completed', served_at = NOW()
+           WHERE id IN (
+             SELECT id FROM salon_queue_entries
+             WHERE salon_id = $1 AND status = 'waiting'
+             ORDER BY position ASC, joined_at ASC
+             LIMIT $2
+           );`,
+          id,
+          Math.abs(dto.delta),
+        );
+      } else if (dto.manualValue === 0) {
+        await this.prisma.$executeRawUnsafe(
+          `UPDATE salon_queue_entries SET status = 'completed', served_at = NOW() WHERE salon_id = $1 AND status = 'waiting';`,
+          id,
+        );
+      }
+
       await this.prisma.$executeRawUnsafe(
         `UPDATE salons 
          SET current_queue = $1, last_queue_update = NOW()
@@ -777,6 +807,176 @@ export class SalonsService {
       currentQueue: newQueue,
       lastQueueUpdate: now,
     };
+  }
+
+  /**
+   * Get all currently waiting customers in queue for a salon
+   */
+  async getQueueEntries(salonId: string) {
+    try {
+      const rows: any[] = await this.prisma.$queryRawUnsafe(
+        `SELECT id, position, customer_name AS "customerName", phone, service_name AS "serviceName",
+                status, joined_at AS "joinedAt", served_at AS "servedAt", device_id AS "deviceId", user_id AS "userId"
+         FROM salon_queue_entries
+         WHERE salon_id = $1 AND status IN ('waiting', 'in_service')
+         ORDER BY CASE WHEN status = 'in_service' THEN 0 ELSE 1 END, position ASC, joined_at ASC;`,
+        salonId,
+      );
+      let waitIndex = 0;
+      return rows.map((r) => {
+        if (r.status === 'in_service') {
+          return {
+            ...r,
+            ticketNumber: `#01`,
+            position: 1,
+          };
+        }
+        waitIndex += 1;
+        return {
+          ...r,
+          ticketNumber: `#0${waitIndex}`.slice(-3),
+          position: waitIndex,
+        };
+      });
+    } catch (err) {
+      this.logger.warn(`Failed to fetch queue entries for salon ${salonId}: ${err}`);
+      return [];
+    }
+  }
+
+  /**
+   * Add a customer to queue with their name, phone, and ticket ID
+   */
+  async addQueueEntry(salonId: string, dto: any) {
+    const entryId = `q-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+    const cleanName = (dto.customerName || '').trim() || 'Walk-in Customer';
+    const cleanPhone = (dto.phone || '').trim() || null;
+    const cleanService = (dto.serviceName || '').trim() || 'Haircut & Styling';
+
+    try {
+      const maxRow: any[] = await this.prisma.$queryRawUnsafe(
+        `SELECT COALESCE(MAX(position), 0) AS max_pos FROM salon_queue_entries WHERE salon_id = $1 AND status = 'waiting';`,
+        salonId,
+      );
+      const nextPos = Number(maxRow[0]?.max_pos || 0) + 1;
+
+      await this.prisma.$executeRawUnsafe(
+        `INSERT INTO salon_queue_entries (id, salon_id, position, customer_name, phone, service_name, status, joined_at, device_id, user_id)
+         VALUES ($1, $2, $3, $4, $5, $6, 'waiting', NOW(), $7, $8);`,
+        entryId,
+        salonId,
+        nextPos,
+        cleanName,
+        cleanPhone,
+        cleanService,
+        dto.deviceId || null,
+        dto.userId || null,
+      );
+
+      const countRow: any[] = await this.prisma.$queryRawUnsafe(
+        `SELECT COUNT(*) AS total FROM salon_queue_entries WHERE salon_id = $1 AND status = 'waiting';`,
+        salonId,
+      );
+      const newQueueCount = Number(countRow[0]?.total || 1);
+
+      await this.prisma.$executeRawUnsafe(
+        `UPDATE salons SET current_queue = $1, last_queue_update = NOW() WHERE id = $2;`,
+        newQueueCount,
+        salonId,
+      );
+
+      const local = this.localSalons.get(salonId);
+      if (local) {
+        local.currentQueue = newQueueCount;
+        local.lastQueueUpdate = new Date().toISOString();
+      }
+
+      return {
+        success: true,
+        entry: {
+          id: entryId,
+          position: nextPos,
+          ticketNumber: `#0${nextPos}`.slice(-3),
+          customerName: cleanName,
+          phone: cleanPhone,
+          serviceName: cleanService,
+          status: 'waiting',
+          joinedAt: new Date().toISOString(),
+        },
+        currentQueue: newQueueCount,
+      };
+    } catch (err) {
+      this.logger.error(`Error adding queue entry: ${err}`);
+      throw new BadRequestException(`Failed to add customer to queue: ${err}`);
+    }
+  }
+
+  /**
+   * Update queue entry status (e.g. in_service / completed / cancelled)
+   */
+  async updateQueueEntryStatus(salonId: string, entryId: string, status: string = 'completed') {
+    try {
+      await this.prisma.$executeRawUnsafe(
+        `UPDATE salon_queue_entries SET status = $1, served_at = NOW() WHERE id = $2 AND salon_id = $3;`,
+        status,
+        entryId,
+        salonId,
+      );
+
+      const countRow: any[] = await this.prisma.$queryRawUnsafe(
+        `SELECT COUNT(*) AS total FROM salon_queue_entries WHERE salon_id = $1 AND status = 'waiting';`,
+        salonId,
+      );
+      const newQueueCount = Number(countRow[0]?.total || 0);
+
+      if (status === 'completed') {
+        await this.prisma.$executeRawUnsafe(
+          `UPDATE salons SET current_queue = $1, today_customers_served = today_customers_served + 1, last_queue_update = NOW() WHERE id = $2;`,
+          newQueueCount,
+          salonId,
+        );
+      } else {
+        await this.prisma.$executeRawUnsafe(
+          `UPDATE salons SET current_queue = $1, last_queue_update = NOW() WHERE id = $2;`,
+          newQueueCount,
+          salonId,
+        );
+      }
+
+      const local = this.localSalons.get(salonId);
+      if (local) {
+        local.currentQueue = newQueueCount;
+        local.lastQueueUpdate = new Date().toISOString();
+      }
+
+      return { success: true, currentQueue: newQueueCount, entryId, status };
+    } catch (err) {
+      throw new BadRequestException(`Failed to update queue entry: ${err}`);
+    }
+  }
+
+  /**
+   * Clear all waiting queue entries for a salon
+   */
+  async clearQueueEntries(salonId: string) {
+    try {
+      await this.prisma.$executeRawUnsafe(
+        `UPDATE salon_queue_entries SET status = 'completed', served_at = NOW() WHERE salon_id = $1 AND status = 'waiting';`,
+        salonId,
+      );
+      await this.prisma.$executeRawUnsafe(
+        `UPDATE salons SET current_queue = 0, last_queue_update = NOW() WHERE id = $1;`,
+        salonId,
+      );
+      const local = this.localSalons.get(salonId);
+      if (local) {
+        local.currentQueue = 0;
+        local.lastQueueUpdate = new Date().toISOString();
+      }
+      return { success: true, currentQueue: 0 };
+    } catch (err) {
+      throw new BadRequestException(`Failed to clear queue: ${err}`);
+    }
   }
 
   // Internal accessor for discovery engine

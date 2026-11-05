@@ -499,6 +499,76 @@ export class KumbhakaranApiClient {
     }
   }
 
+  // ==========================================================================
+  // LIVE QUEUE ENTRIES & CALLING API
+  // ==========================================================================
+
+  /**
+   * Get waiting customer entries in the live walk-in queue
+   */
+  async getQueueEntries(salonId: string): Promise<any[]> {
+    try {
+      const res = await fetch(`${this.baseUrl}/salons/${salonId}/queue-entries`, {
+        headers: this.getHeaders(),
+      });
+      if (!res.ok) return [];
+      return await res.json();
+    } catch {
+      return [];
+    }
+  }
+
+  /**
+   * Add a customer to queue with their name, phone, and ticket ID
+   */
+  async addQueueEntry(salonId: string, entry: {
+    customerName?: string;
+    phone?: string;
+    serviceName?: string;
+    deviceId?: string;
+    userId?: string;
+  }): Promise<any> {
+    const res = await fetch(`${this.baseUrl}/salons/${salonId}/queue-entries`, {
+      method: 'POST',
+      headers: this.getHeaders({
+        'Content-Type': 'application/json',
+      }),
+      body: JSON.stringify(entry),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || 'Failed to add customer to queue');
+    }
+    return await res.json();
+  }
+
+  /**
+   * Update queue entry status (in_service / completed / cancelled)
+   */
+  async updateQueueEntryStatus(salonId: string, entryId: string, status: string): Promise<any> {
+    const res = await fetch(`${this.baseUrl}/salons/${salonId}/queue-entries/${entryId}`, {
+      method: 'PATCH',
+      headers: this.getHeaders({
+        'Content-Type': 'application/json',
+      }),
+      body: JSON.stringify({ status }),
+    });
+    if (!res.ok) return null;
+    return await res.json();
+  }
+
+  /**
+   * Reset / clear all waiting queue entries
+   */
+  async clearQueueEntries(salonId: string): Promise<any> {
+    const res = await fetch(`${this.baseUrl}/salons/${salonId}/queue-entries`, {
+      method: 'DELETE',
+      headers: this.getHeaders(),
+    });
+    if (!res.ok) return null;
+    return await res.json();
+  }
+
   /**
    * Permanently delete a salon and all associated records (requires ADMIN role and exact confirmation)
    */

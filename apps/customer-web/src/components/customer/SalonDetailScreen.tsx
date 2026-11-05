@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   ArrowLeft,
   Star,
@@ -28,7 +28,11 @@ import {
   Maximize2,
   X,
   ChevronLeft,
-  Store
+  Store,
+  Ticket,
+  PhoneCall,
+  Check,
+  RefreshCw
 } from 'lucide-react';
 import { useSalon, getEstimatedWaitMinutes, getQueueDisplay, getQueueFreshness } from '../../context/CustomerContext';
 import { Service, Staff } from '@kumbhakaran/shared-types';
@@ -52,8 +56,63 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
     toggleCompareSalon,
     comparisonList,
     triggerNotification,
-    userLocation
+    userLocation,
+    queueEntries = [],
+    activeTicket,
+    fetchSalonQueue,
+    joinLiveQueue,
+    leaveLiveQueue,
+    updateCustomerName
   } = useSalon();
+
+  // Join Live Queue & Token states
+  const [showJoinQueueModal, setShowJoinQueueModal] = useState(false);
+  const [joinName, setJoinName] = useState(userProfile.name || '');
+  const [joinPhone, setJoinPhone] = useState(userProfile.phone || '');
+  const [joinService, setJoinService] = useState('Haircut & Styling');
+  const [isJoining, setIsJoining] = useState(false);
+
+  useEffect(() => {
+    if (userProfile.name && !joinName) {
+      setJoinName(userProfile.name);
+    }
+    if (userProfile.phone && !joinPhone) {
+      setJoinPhone(userProfile.phone);
+    }
+  }, [userProfile.name, userProfile.phone]);
+
+  useEffect(() => {
+    if (selectedSalonForDetail?.id) {
+      fetchSalonQueue(selectedSalonForDetail.id);
+      const interval = setInterval(() => {
+        fetchSalonQueue(selectedSalonForDetail.id);
+      }, 4000);
+      return () => clearInterval(interval);
+    }
+  }, [selectedSalonForDetail?.id]);
+
+  const handleJoinQueueSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedSalonForDetail) return;
+    const cleanName = joinName.trim() || 'Walk-in Guest';
+    if (!userProfile.name && cleanName !== 'Walk-in Guest') {
+      updateCustomerName(cleanName);
+    }
+    try {
+      setIsJoining(true);
+      await joinLiveQueue(
+        selectedSalonForDetail.id,
+        cleanName,
+        joinPhone.trim() || undefined,
+        joinService
+      );
+      setShowJoinQueueModal(false);
+    } catch (err: any) {
+      triggerNotification(err?.message || 'Failed to join queue');
+    } finally {
+      setIsJoining(false);
+    }
+  };
 
   const [activeTab, setActiveTab] = useState<'services' | 'staff' | 'reviews' | 'gallery'>('services');
   const [selectedServiceCategory, setSelectedServiceCategory] = useState<string>('All');
@@ -382,11 +441,109 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
           </div>
         </div>
 
+        {/* CUSTOMER'S ACTIVE TICKET (IF CURRENTLY IN QUEUE) */}
+        {activeTicket && (activeTicket.salonId === salon.id || !activeTicket.salonId) ? (
+          <div className="mt-4 pt-4 border-t border-orange-200 bg-gradient-to-br from-amber-500/10 via-orange-500/5 to-amber-500/10 rounded-2xl p-4 border border-amber-300">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="text-xs font-black uppercase tracking-wider text-amber-900">
+                  Your Live Walk-In Token
+                </span>
+              </div>
+              <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
+                {activeTicket.status === 'in_service' ? 'At Chair • In Service' : 'Waiting in Queue'}
+              </span>
+            </div>
+
+            <div className="mt-3 flex items-center justify-between">
+              <div>
+                <div className="text-3xl font-black text-stone-900 tracking-tight flex items-baseline gap-1">
+                  <span className="text-[#FF6422]">#</span>
+                  <span>{activeTicket.ticketNumber || activeTicket.position}</span>
+                </div>
+                <p className="text-xs text-stone-700 font-semibold mt-0.5">
+                  {activeTicket.customerName} • {activeTicket.serviceName || 'Haircut & Styling'}
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  if (window.confirm('Leave the queue and give up your ticket?')) {
+                    leaveLiveQueue(salon.id, activeTicket.id);
+                  }
+                }}
+                className="text-xs text-rose-600 hover:text-rose-700 font-bold px-3 py-1.5 rounded-xl border border-rose-200 hover:bg-rose-50 transition-colors cursor-pointer"
+              >
+                Leave Queue
+              </button>
+            </div>
+
+            <p className="text-[11px] text-stone-600 mt-2.5 bg-white/80 p-2.5 rounded-xl border border-orange-200/50">
+              📞 The salon staff can call your phone or announce ticket <strong>#{activeTicket.ticketNumber || activeTicket.position}</strong> when a stylist chair opens up.
+            </p>
+          </div>
+        ) : salon.isOpen ? (
+          /* JOIN LIVE QUEUE CTA */
+          <div className="mt-4 pt-4 border-t border-orange-200 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div className="text-xs text-stone-600">
+              <strong className="text-stone-900">Heading to the studio?</strong> Join the live queue to get your token so the salon can call you when your turn arrives.
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowJoinQueueModal(true)}
+              className="w-full sm:w-auto px-5 py-2.5 rounded-2xl bg-[#FF6422] hover:bg-orange-600 active:scale-95 text-white font-extrabold text-xs shadow-lg shadow-orange-500/25 transition-all flex items-center justify-center gap-2 cursor-pointer shrink-0"
+            >
+              <Ticket className="w-4 h-4" />
+              <span>Join Live Queue & Get Token</span>
+            </button>
+          </div>
+        ) : null}
+
+        {/* LIVE WAITING CUSTOMER LIST (PUBLIC TICKETS & NAMES) */}
+        {queueEntries.length > 0 && (
+          <div className="mt-4 pt-3 border-t border-[#E8E2D8]">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-bold text-stone-800 flex items-center gap-1.5">
+                <Users className="w-3.5 h-3.5 text-[#FF6422]" />
+                Waiting in Studio ({queueEntries.length})
+              </span>
+              <span className="text-[11px] text-stone-500 font-medium">Synced live</span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {queueEntries.map((entry, idx) => {
+                const isServing = entry.status === 'in_service';
+                const isMyEntry = activeTicket?.id === entry.id;
+                return (
+                  <div
+                    key={entry.id || idx}
+                    className={`text-xs px-2.5 py-1 rounded-xl border flex items-center gap-1.5 ${
+                      isMyEntry
+                        ? 'bg-[#FF6422] text-white border-orange-600 font-bold shadow-xs'
+                        : isServing
+                        ? 'bg-emerald-50 text-emerald-800 border-emerald-200 font-semibold'
+                        : 'bg-[#FAF7F2] text-stone-700 border-[#E8E2D8]'
+                    }`}
+                  >
+                    <span className="font-black">
+                      {entry.ticketNumber || `#0${idx + 1}`.slice(-3)}
+                    </span>
+                    <span>{entry.customerName}</span>
+                    {isServing && <span className="text-[10px] text-emerald-600 font-bold">(In Chair)</span>}
+                    {isMyEntry && <span className="text-[10px] bg-white/25 px-1 rounded font-bold">(You)</span>}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {/* Important Business Rule Banner */}
         <div className="mt-4 pt-3 border-t border-[#E8E2D8] flex items-start gap-2.5 text-xs text-stone-600 bg-orange-50/50 p-3 rounded-2xl border border-orange-100">
           <Info className="w-4 h-4 text-[#FF6422] shrink-0 mt-0.5" />
           <p>
-            <strong className="text-stone-900">No appointments or tokens needed:</strong> Kumbhkaran Salons eliminates blind walk-ins by giving you live visibility. Just check the queue, decide if it suits you, and walk right in.
+            <strong className="text-stone-900">Direct Walk-In Transparency:</strong> Kumbhkaran Salons eliminates blind waiting. Check the live queue or take a token to walk straight in without wasting time.
           </p>
         </div>
       </section>
@@ -838,6 +995,116 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
                 )}
               </button>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* JOIN LIVE QUEUE MODAL FOR CUSTOMERS */}
+      {showJoinQueueModal && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-6 sm:p-7 max-w-md w-full shadow-2xl border border-stone-200 animate-in fade-in zoom-in-95">
+            <div className="flex items-center justify-between pb-4 border-b border-[#E8E2D8]">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-2xl bg-orange-100 text-[#FF6422] flex items-center justify-center">
+                  <Ticket className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-stone-900">Join Live Walk-In Queue</h3>
+                  <p className="text-xs text-stone-500">{salon.name}</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowJoinQueueModal(false)}
+                className="text-stone-400 hover:text-stone-600 p-1.5 rounded-full hover:bg-stone-100 transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleJoinQueueSubmit} className="space-y-4 mt-4">
+              <div>
+                <label className="block text-xs font-bold text-stone-700 mb-1">
+                  Your Full Name <span className="text-[#FF6422]">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Rahul Sharma"
+                  value={joinName}
+                  onChange={(e) => setJoinName(e.target.value)}
+                  className="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-300 rounded-xl text-sm text-stone-900 placeholder-stone-400 focus:outline-none focus:border-[#FF6422] focus:bg-white transition-all"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-stone-700 mb-1">
+                  Mobile Number <span className="text-stone-500">(So studio can call your turn)</span>
+                </label>
+                <input
+                  type="tel"
+                  placeholder="e.g. 9876543210"
+                  value={joinPhone}
+                  onChange={(e) => setJoinPhone(e.target.value)}
+                  className="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-300 rounded-xl text-sm text-stone-900 placeholder-stone-400 focus:outline-none focus:border-[#FF6422] focus:bg-white transition-all"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-stone-700 mb-1">
+                  Service Interested In
+                </label>
+                <select
+                  value={joinService}
+                  onChange={(e) => setJoinService(e.target.value)}
+                  className="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-300 rounded-xl text-sm text-stone-900 focus:outline-none focus:border-[#FF6422] focus:bg-white transition-all"
+                >
+                  {salon.services.length > 0 ? (
+                    salon.services.map((svc) => (
+                      <option key={svc.id} value={svc.name}>
+                        {svc.name} — ₹{svc.price} ({svc.durationMinutes}m)
+                      </option>
+                    ))
+                  ) : (
+                    <option value="Haircut & Styling">Haircut & Styling</option>
+                  )}
+                </select>
+              </div>
+
+              <div className="bg-orange-50/70 border border-orange-200 rounded-2xl p-3 text-xs text-stone-600 flex items-start gap-2">
+                <Info className="w-4 h-4 text-[#FF6422] shrink-0 mt-0.5" />
+                <p>
+                  Your ticket position will be assigned instantly. The salon will receive your name and number on their dashboard to call you when ready.
+                </p>
+              </div>
+
+              <div className="pt-2 flex items-center justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowJoinQueueModal(false)}
+                  className="px-4 py-2.5 rounded-xl text-xs font-bold text-stone-600 hover:text-stone-800 cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isJoining}
+                  className="px-5 py-2.5 rounded-xl bg-[#FF6422] hover:bg-orange-600 text-white font-extrabold text-xs shadow-lg shadow-orange-500/25 active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                >
+                  {isJoining ? (
+                    <>
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                      <span>Joining...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Ticket className="w-4 h-4" />
+                      <span>Take Token & Join Queue</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

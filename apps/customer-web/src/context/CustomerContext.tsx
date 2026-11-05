@@ -6,6 +6,7 @@ import {
   LazyFilter,
   CustomerProfile,
   LocationOption,
+  QueueEntry,
 } from '@kumbhakaran/shared-types';
 import { defaultApiClient, AuthUser } from '@kumbhakaran/api-client';
 import { safeStorage } from '../utils/safeStorage';
@@ -119,6 +120,11 @@ interface CustomerContextType {
   triggerNotification: (msg: string) => void;
   genderFilter: GenderFilter;
   setGenderFilter: (filter: GenderFilter) => void;
+  queueEntries: QueueEntry[];
+  activeTicket: QueueEntry | null;
+  fetchSalonQueue: (salonId: string) => Promise<QueueEntry[]>;
+  joinLiveQueue: (salonId: string, name: string, phone?: string, serviceName?: string) => Promise<QueueEntry>;
+  leaveLiveQueue: (salonId: string, entryId: string) => Promise<void>;
 }
 
 const CustomerContext = createContext<CustomerContextType | undefined>(undefined);
@@ -280,6 +286,84 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setTimeout(() => {
       setNotificationMessage(null);
     }, 4000);
+  };
+
+  const [queueEntries, setQueueEntries] = useState<QueueEntry[]>([]);
+  const [activeTicket, setActiveTicket] = useState<QueueEntry | null>(() => {
+    try {
+      const saved = safeStorage.getItem('kumbhakaran_customer_ticket');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return null;
+  });
+
+  const fetchSalonQueue = async (salonId: string): Promise<QueueEntry[]> => {
+    try {
+      const entries = await defaultApiClient.getQueueEntries(salonId);
+      if (Array.isArray(entries)) {
+        setQueueEntries(entries);
+        // Verify user's active ticket
+        if (activeTicket && (activeTicket.salonId === salonId || !activeTicket.salonId)) {
+          const match = entries.find((e: QueueEntry) => e.id === activeTicket.id);
+          if (match) {
+            const updatedTicket = { ...match, salonId };
+            setActiveTicket(updatedTicket);
+            safeStorage.setItem('kumbhakaran_customer_ticket', JSON.stringify(updatedTicket));
+          } else if (activeTicket.salonId === salonId) {
+            // Ticket was completed, served, or cancelled by salon
+            setActiveTicket(null);
+            safeStorage.removeItem('kumbhakaran_customer_ticket');
+          }
+        }
+        return entries;
+      }
+    } catch (err) {
+      console.warn('Failed to fetch salon queue:', err);
+    }
+    return [];
+  };
+
+  const joinLiveQueue = async (
+    salonId: string,
+    name: string,
+    phone?: string,
+    serviceName?: string
+  ): Promise<QueueEntry> => {
+    const deviceId = getOrCreateDeviceId();
+    const res = await defaultApiClient.addQueueEntry(salonId, {
+      customerName: name,
+      phone,
+      serviceName,
+      deviceId,
+    });
+    if (res?.entry) {
+      const entryWithSalon: QueueEntry = { ...res.entry, salonId };
+      setActiveTicket(entryWithSalon);
+      safeStorage.setItem('kumbhakaran_customer_ticket', JSON.stringify(entryWithSalon));
+      setQueueEntries((prev) => [...prev, entryWithSalon]);
+      // Update local salon currentQueue
+      setSalons((prev) =>
+        prev.map((s) => (s.id === salonId ? { ...s, currentQueue: res.currentQueue ?? s.currentQueue + 1 } : s))
+      );
+      triggerNotification(`🎉 You joined the queue! Ticket #${entryWithSalon.ticketNumber || entryWithSalon.position}`);
+      return entryWithSalon;
+    }
+    throw new Error('Failed to join queue');
+  };
+
+  const leaveLiveQueue = async (salonId: string, entryId: string) => {
+    try {
+      await defaultApiClient.updateQueueEntryStatus(salonId, entryId, 'cancelled');
+      setActiveTicket(null);
+      safeStorage.removeItem('kumbhakaran_customer_ticket');
+      setSalons((prev) =>
+        prev.map((s) => (s.id === salonId ? { ...s, currentQueue: Math.max(0, s.currentQueue - 1) } : s))
+      );
+      triggerNotification('You have left the queue.');
+      await fetchSalonQueue(salonId);
+    } catch (err: any) {
+      triggerNotification(err?.message || 'Failed to leave queue');
+    }
   };
 
   const persistProfile = (updater: (prev: CustomerProfile) => CustomerProfile) => {
@@ -808,6 +892,11 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         triggerNotification,
         genderFilter,
         setGenderFilter,
+        queueEntries,
+        activeTicket,
+        fetchSalonQueue,
+        joinLiveQueue,
+        leaveLiveQueue,
       }}
     >
       {children}

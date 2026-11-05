@@ -34,8 +34,12 @@ import {
   Play,
   Eye,
   Store,
+  PhoneCall,
+  UserPlus,
+  RefreshCw,
+  XCircle,
 } from 'lucide-react';
-import { OwnerTab, Service, Staff } from '@kumbhakaran/shared-types';
+import { OwnerTab, Service, Staff, QueueEntry } from '@kumbhakaran/shared-types';
 import { openGoogleMapsLocation } from '@kumbhakaran/ui';
 
 export const OwnerApp: React.FC = () => {
@@ -52,12 +56,25 @@ export const OwnerApp: React.FC = () => {
     updateStaff,
     deleteStaff,
     replyToReview,
-    triggerNotification
+    triggerNotification,
+    queueEntries = [],
+    isLoadingQueue,
+    refreshQueueEntries,
+    addCustomerToQueue,
+    updateCustomerStatus,
+    clearQueue,
   } = useSalon();
 
   // Local state for queue manual input
   const [manualQueueInput, setManualQueueInput] = useState<string>('');
   const [isEditingManual, setIsEditingManual] = useState(false);
+
+  // Local state for adding customer with Name & Phone
+  const [showAddCustomerModal, setShowAddCustomerModal] = useState(false);
+  const [customerNameInput, setCustomerNameInput] = useState('');
+  const [customerPhoneInput, setCustomerPhoneInput] = useState('');
+  const [customerServiceInput, setCustomerServiceInput] = useState('Haircut & Styling');
+  const [isSubmittingCustomer, setIsSubmittingCustomer] = useState(false);
 
   // Local state for adding/editing services
   const [newServiceName, setNewServiceName] = useState('');
@@ -225,6 +242,29 @@ export const OwnerApp: React.FC = () => {
       updateQueue(activeSalon.id, 0, val);
       setIsEditingManual(false);
       setManualQueueInput('');
+    }
+  };
+
+  const handleAddCustomerSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!customerNameInput.trim()) {
+      triggerNotification('Please enter customer name');
+      return;
+    }
+    try {
+      setIsSubmittingCustomer(true);
+      await addCustomerToQueue(
+        customerNameInput.trim(),
+        customerPhoneInput.trim() || undefined,
+        customerServiceInput.trim() || 'Haircut & Styling'
+      );
+      setCustomerNameInput('');
+      setCustomerPhoneInput('');
+      setShowAddCustomerModal(false);
+    } catch (err: any) {
+      triggerNotification(err?.message || 'Failed to add customer');
+    } finally {
+      setIsSubmittingCustomer(false);
     }
   };
 
@@ -493,6 +533,203 @@ export const OwnerApp: React.FC = () => {
                 <span>Completed today: <strong className="text-white">{activeSalon.todayCustomersServed} customers</strong></span>
               </div>
             </div>
+          </div>
+
+          {/* Live Customer Calling & Queue Roster */}
+          <div className="bg-[#14141d] border border-zinc-800 rounded-3xl p-5 sm:p-7 shadow-2xl">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-zinc-800/80">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                  <h2 className="text-lg sm:text-xl font-black text-white tracking-tight flex items-center gap-2">
+                    Live Waiting Customer List
+                    <span className="text-xs px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30 font-bold">
+                      {queueEntries.length} In Line
+                    </span>
+                  </h2>
+                </div>
+                <p className="text-xs text-zinc-400 mt-1">
+                  Customer names, ticket IDs & direct 1-tap phone dialer for salon staff.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2 flex-wrap">
+                <button
+                  type="button"
+                  onClick={() => setShowAddCustomerModal(true)}
+                  className="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-extrabold text-xs flex items-center gap-1.5 shadow-lg shadow-amber-500/20 active:scale-95 transition-all cursor-pointer"
+                >
+                  <UserPlus className="w-4 h-4 stroke-[2.5]" />
+                  <span>+ Add Customer with Phone</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => refreshQueueEntries(activeSalon.id)}
+                  disabled={isLoadingQueue}
+                  className="p-2 rounded-xl bg-zinc-900 border border-zinc-800 hover:border-zinc-700 text-zinc-300 hover:text-white transition-all cursor-pointer"
+                  title="Refresh Queue"
+                >
+                  <RefreshCw className={`w-4 h-4 ${isLoadingQueue ? 'animate-spin text-amber-400' : ''}`} />
+                </button>
+
+                {queueEntries.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (window.confirm('Clear all waiting customers from queue?')) {
+                        clearQueue();
+                      }
+                    }}
+                    className="px-3 py-2 rounded-xl bg-zinc-900 border border-zinc-800 hover:border-rose-900 text-zinc-400 hover:text-rose-400 text-xs font-semibold transition-all cursor-pointer"
+                  >
+                    Clear All
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Customer List or Empty State */}
+            {queueEntries.length === 0 ? (
+              <div className="py-12 px-4 text-center">
+                <div className="w-14 h-14 rounded-2xl bg-zinc-900/90 border border-zinc-800 flex items-center justify-center mx-auto mb-3 text-zinc-500">
+                  <Users className="w-7 h-7" />
+                </div>
+                <h3 className="text-sm font-bold text-zinc-300">No Customers Currently Waiting</h3>
+                <p className="text-xs text-zinc-500 mt-1 max-w-sm mx-auto">
+                  When walk-ins arrive, use <strong className="text-amber-400">+ ADD CUSTOMER</strong> above or log their name & phone number so you can call them when their turn arrives.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setShowAddCustomerModal(true)}
+                  className="mt-4 px-4 py-2 rounded-xl bg-zinc-900 border border-zinc-700 hover:border-amber-500/50 text-xs font-bold text-amber-400 inline-flex items-center gap-1.5 transition-all cursor-pointer"
+                >
+                  <UserPlus className="w-3.5 h-3.5" />
+                  <span>Log First Customer</span>
+                </button>
+              </div>
+            ) : (
+              <div className="mt-5 grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                {queueEntries.map((entry, index) => {
+                  const isServing = entry.status === 'in_service';
+                  const joinedDate = entry.joinedAt ? new Date(entry.joinedAt) : null;
+                  const minsAgo = joinedDate ? Math.max(0, Math.floor((Date.now() - joinedDate.getTime()) / 60000)) : null;
+
+                  return (
+                    <div
+                      key={entry.id || index}
+                      className={`rounded-2xl border p-4 transition-all ${
+                        isServing
+                          ? 'bg-emerald-950/20 border-emerald-500/40 shadow-lg shadow-emerald-950/20'
+                          : 'bg-[#181824] border-zinc-800 hover:border-zinc-700 shadow-md'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-start gap-3">
+                          {/* Ticket Token Badge */}
+                          <div className={`w-12 h-12 rounded-xl flex flex-col items-center justify-center font-black shrink-0 ${
+                            isServing
+                              ? 'bg-emerald-500 text-black shadow-md shadow-emerald-500/30'
+                              : 'bg-amber-500/15 border border-amber-500/30 text-amber-400'
+                          }`}>
+                            <span className="text-[10px] uppercase font-bold tracking-wider leading-none">Token</span>
+                            <span className="text-base font-black leading-tight">
+                              {entry.ticketNumber || `#0${entry.position || index + 1}`.slice(-3)}
+                            </span>
+                          </div>
+
+                          <div>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <h4 className="text-sm font-black text-white">
+                                {entry.customerName || `Customer #${index + 1}`}
+                              </h4>
+                              {isServing ? (
+                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 animate-pulse">
+                                  At Chair • In Service
+                                </span>
+                              ) : (
+                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                                  Position #{index + 1}
+                                </span>
+                              )}
+                            </div>
+
+                            <p className="text-xs text-zinc-400 mt-0.5 flex items-center gap-2">
+                              <span>{entry.serviceName || 'Haircut & Styling'}</span>
+                              {minsAgo !== null && (
+                                <span className="text-zinc-500 text-[11px] flex items-center gap-1">
+                                  <Clock className="w-3 h-3 text-zinc-500" />
+                                  {minsAgo === 0 ? 'Just joined' : `${minsAgo}m waiting`}
+                                </span>
+                              )}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Direct Calling Action */}
+                        {entry.phone ? (
+                          <a
+                            href={`tel:${entry.phone}`}
+                            className="px-3 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 active:scale-95 text-black font-black text-xs flex items-center gap-1.5 shadow-md shadow-emerald-500/25 transition-all shrink-0 cursor-pointer"
+                            title={`Call ${entry.customerName} on ${entry.phone}`}
+                          >
+                            <PhoneCall className="w-3.5 h-3.5" />
+                            <span>Call</span>
+                          </a>
+                        ) : (
+                          <span className="text-[10px] text-zinc-500 px-2 py-1 rounded-lg bg-zinc-900 border border-zinc-800 shrink-0">
+                            Walk-in
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Phone number display if available */}
+                      {entry.phone && (
+                        <div className="mt-2.5 pt-2 border-t border-zinc-800/60 flex items-center justify-between text-xs text-zinc-400">
+                          <span className="flex items-center gap-1.5 text-zinc-300 font-medium">
+                            <Phone className="w-3 h-3 text-emerald-400" />
+                            {entry.phone}
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Status Action Buttons */}
+                      <div className="mt-3 pt-2.5 border-t border-zinc-800/80 flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-1.5">
+                          {!isServing && (
+                            <button
+                              type="button"
+                              onClick={() => updateCustomerStatus(entry.id, 'in_service')}
+                              className="px-2.5 py-1.5 rounded-lg bg-zinc-900 border border-zinc-700 hover:border-emerald-500/50 hover:bg-emerald-950/30 text-emerald-400 text-xs font-bold transition-all flex items-center gap-1 cursor-pointer"
+                            >
+                              <Scissors className="w-3 h-3" />
+                              <span>Take to Chair</span>
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => updateCustomerStatus(entry.id, 'completed')}
+                            className="px-2.5 py-1.5 rounded-lg bg-emerald-500/15 border border-emerald-500/30 hover:bg-emerald-500 text-emerald-400 hover:text-black text-xs font-bold transition-all flex items-center gap-1 cursor-pointer"
+                          >
+                            <Check className="w-3 h-3 stroke-[3]" />
+                            <span>Done / Served</span>
+                          </button>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => updateCustomerStatus(entry.id, 'cancelled')}
+                          className="p-1.5 text-zinc-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors cursor-pointer"
+                          title="Remove customer from queue"
+                        >
+                          <XCircle className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -1516,6 +1753,98 @@ export const OwnerApp: React.FC = () => {
           </div>
         </div>
       </nav>
+
+      {/* Modal: Add Customer with Details (Name & Phone for Calling) */}
+      {showAddCustomerModal && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-[#14141d] border border-zinc-800 rounded-3xl p-6 sm:p-7 max-w-md w-full shadow-2xl animate-in fade-in zoom-in-95">
+            <div className="flex items-center justify-between pb-4 border-b border-zinc-800">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center">
+                  <UserPlus className="w-4 h-4" />
+                </div>
+                <h3 className="text-base font-black text-white">Add Customer to Live Queue</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowAddCustomerModal(false)}
+                className="text-zinc-400 hover:text-white p-1 rounded-lg"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleAddCustomerSubmit} className="space-y-4 mt-4">
+              <div>
+                <label className="block text-xs font-bold text-zinc-300 mb-1">
+                  Customer Name <span className="text-amber-400">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Rahul Sharma"
+                  value={customerNameInput}
+                  onChange={(e) => setCustomerNameInput(e.target.value)}
+                  className="w-full px-3.5 py-2.5 bg-zinc-900 border border-zinc-700 rounded-xl text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-amber-400"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-zinc-300 mb-1">
+                  Mobile / Phone Number <span className="text-zinc-500">(For 1-tap calling)</span>
+                </label>
+                <input
+                  type="tel"
+                  placeholder="e.g. 9876543210"
+                  value={customerPhoneInput}
+                  onChange={(e) => setCustomerPhoneInput(e.target.value)}
+                  className="w-full px-3.5 py-2.5 bg-zinc-900 border border-zinc-700 rounded-xl text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-amber-400"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-zinc-300 mb-1">
+                  Service Requested
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Haircut & Beard Grooming"
+                  value={customerServiceInput}
+                  onChange={(e) => setCustomerServiceInput(e.target.value)}
+                  className="w-full px-3.5 py-2.5 bg-zinc-900 border border-zinc-700 rounded-xl text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-amber-400"
+                />
+              </div>
+
+              <div className="pt-2 flex items-center justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowAddCustomerModal(false)}
+                  className="px-4 py-2 rounded-xl text-xs font-bold text-zinc-400 hover:text-white"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmittingCustomer}
+                  className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-extrabold text-xs shadow-lg shadow-amber-500/25 active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                >
+                  {isSubmittingCustomer ? (
+                    <>
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                      <span>Adding...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="w-4 h-4 stroke-[2.5]" />
+                      <span>Generate Ticket & Add</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
