@@ -16,6 +16,7 @@ import {
 import { useCustomer, POPULAR_LOCATIONS } from '../../context/CustomerContext';
 import logoWhite from '../../assets/logo-white.png';
 import logoTransparent from '../../assets/logo-transparent.png';
+import logoMen from '../../assets/logo-men.png';
 import logoFallback from '../../assets/logo.png';
 
 export const Header: React.FC = () => {
@@ -161,7 +162,7 @@ export const Header: React.FC = () => {
                 title="SLOON Home"
               >
                 <img
-                  src={isWomen ? logoTransparent : logoWhite}
+                  src={isWomen ? logoTransparent : logoMen}
                   alt="SLOON - Unisex Grooming Network"
                   className="h-10 xs:h-11 sm:h-12 md:h-13 w-auto max-w-[210px] sm:max-w-[260px] md:max-w-[300px] object-contain transition-transform group-hover:scale-102 drop-shadow-sm"
                   onError={(e) => {

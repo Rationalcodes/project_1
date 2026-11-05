@@ -152,7 +152,7 @@ export const Header: React.FC = () => {
                 title="Kumbhkaran Salons Home"
               >
                 <img
-                  src={isWomen ? '/logo-transparent.png' : '/logo-white.png'}
+                  src={isWomen ? '/logo-transparent.png' : '/logo-men.png'}
                   alt="Kumbhkaran Salons"
                   className="h-7 xs:h-8 sm:h-9 w-auto max-w-[170px] sm:max-w-[220px] object-contain transition-transform group-hover:scale-102 drop-shadow-xs"
                   onError={(e) => {
