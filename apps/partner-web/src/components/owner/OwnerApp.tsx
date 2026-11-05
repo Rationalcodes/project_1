@@ -748,6 +748,17 @@ export const OwnerApp: React.FC = () => {
 
           {/* Live Customer Calling & Queue Roster */}
           <div className="bg-[#14141d] border border-zinc-800 rounded-3xl p-5 sm:p-7 shadow-2xl">
+            {/* Small Barber Auto-Pilot Explainer Banner */}
+            <div className="mb-5 p-3.5 bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent border border-amber-500/25 rounded-2xl flex items-start gap-3 text-xs">
+              <span className="text-base shrink-0">🤖</span>
+              <div className="flex-1">
+                <span className="font-extrabold text-amber-300">Customer Self-Service Auto-Pilot Active:</span>
+                <span className="text-zinc-300 ml-1">
+                  Small barbers do not need to manually tally on the phone while cutting hair! Customers scan your counter QR standee to join, pick services, and tap "Done" when finished. Old tickets auto-expire after service time.
+                </span>
+              </div>
+            </div>
+
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-zinc-800/80">
               <div>
                 <div className="flex items-center gap-2">
@@ -760,7 +771,7 @@ export const OwnerApp: React.FC = () => {
                   </h2>
                 </div>
                 <p className="text-xs text-zinc-400 mt-1">
-                  Customer names, ticket IDs & direct 1-tap phone dialer for salon staff.
+                  Live tickets from customers who scanned your counter QR standee or joined online.
                 </p>
               </div>
 

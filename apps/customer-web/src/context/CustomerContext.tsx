@@ -125,6 +125,9 @@ interface CustomerContextType {
   fetchSalonQueue: (salonId: string) => Promise<QueueEntry[]>;
   joinLiveQueue: (salonId: string, name: string, phone?: string, serviceName?: string) => Promise<QueueEntry>;
   leaveLiveQueue: (salonId: string, entryId: string) => Promise<void>;
+  completeLiveQueue: (salonId: string, entryId: string) => Promise<void>;
+  markTicketInService: (salonId: string, entryId: string) => Promise<void>;
+  reportSalonCrowd: (salonId: string, crowdLevel: 'empty' | 'medium' | 'busy') => Promise<void>;
 }
 
 const CustomerContext = createContext<CustomerContextType | undefined>(undefined);
@@ -493,6 +496,45 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     } catch (err: any) {
       triggerNotification(err?.message || 'Failed to leave queue');
     }
+  };
+
+  const completeLiveQueue = async (salonId: string, entryId: string) => {
+    try {
+      await defaultApiClient.updateQueueEntryStatus(salonId, entryId, 'completed');
+      setActiveTicket(null);
+      safeStorage.removeItem('kumbhakaran_customer_ticket');
+      setSalons((prev) =>
+        prev.map((s) => (s.id === salonId ? { ...s, currentQueue: Math.max(0, s.currentQueue - 1) } : s))
+      );
+      triggerNotification('Service completed! Hope you loved your new haircut ✂️');
+      await fetchSalonQueue(salonId);
+    } catch (err: any) {
+      triggerNotification(err?.message || 'Failed to complete queue ticket');
+    }
+  };
+
+  const markTicketInService = async (salonId: string, entryId: string) => {
+    try {
+      await defaultApiClient.updateQueueEntryStatus(salonId, entryId, 'in_service');
+      setActiveTicket((prev) => (prev ? { ...prev, status: 'in_service' } : null));
+      triggerNotification("You're in the styling chair! Enjoy your service 💈");
+      await fetchSalonQueue(salonId);
+    } catch (err: any) {
+      triggerNotification(err?.message || 'Failed to update chair status');
+    }
+  };
+
+  const reportSalonCrowd = async (salonId: string, crowdLevel: 'empty' | 'medium' | 'busy') => {
+    const queueVal = crowdLevel === 'empty' ? 0 : crowdLevel === 'medium' ? 2 : 4;
+    setSalons((prev) =>
+      prev.map((s) => (s.id === salonId ? { ...s, currentQueue: queueVal, lastQueueUpdate: new Date().toISOString() } : s))
+    );
+    triggerNotification(
+      `Thank you! Live crowd status reported as ${crowdLevel === 'empty' ? 'No Wait (0 waiting)' : crowdLevel === 'medium' ? '1-2 Waiting' : '3+ Waiting'}.`
+    );
+    try {
+      await defaultApiClient.updateQueue(salonId, undefined, queueVal);
+    } catch {}
   };
 
   const persistProfile = (updater: (prev: CustomerProfile) => CustomerProfile) => {
@@ -1085,6 +1127,9 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         fetchSalonQueue,
         joinLiveQueue,
         leaveLiveQueue,
+        completeLiveQueue,
+        markTicketInService,
+        reportSalonCrowd,
       }}
     >
       {children}

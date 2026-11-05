@@ -799,18 +799,8 @@ export class SalonsService {
 
     // Database update
     try {
-      if (dto.delta && dto.delta > 0) {
-        for (let i = 0; i < dto.delta; i++) {
-          const entryId = `q-${Date.now()}-${i}-${Math.random().toString(36).substring(2, 6)}`;
-          await this.prisma.$executeRawUnsafe(
-            `INSERT INTO salon_queue_entries (id, salon_id, position, customer_name, status, joined_at)
-             VALUES ($1, $2, (SELECT COALESCE(MAX(position), 0) + 1 FROM salon_queue_entries WHERE salon_id = $2 AND status = 'waiting'), $3, 'waiting', NOW());`,
-            entryId,
-            id,
-            `Walk-in #${currentQueue + i + 1}`,
-          );
-        }
-      } else if (dto.delta && dto.delta < 0) {
+      // If decrementing or clearing, mark oldest waiting customer as served
+      if (dto.delta && dto.delta < 0) {
         await this.prisma.$executeRawUnsafe(
           `UPDATE salon_queue_entries SET status = 'completed', served_at = NOW()
            WHERE id IN (
@@ -861,6 +851,16 @@ export class SalonsService {
    */
   async getQueueEntries(salonId: string) {
     try {
+      // Auto-complete stale tickets older than 60 minutes so queue self-heals without barber intervention
+      await this.prisma.$executeRawUnsafe(
+        `UPDATE salon_queue_entries 
+         SET status = 'completed', served_at = NOW() 
+         WHERE salon_id = $1 
+           AND status IN ('waiting', 'in_service') 
+           AND joined_at < NOW() - INTERVAL '60 minutes';`,
+        salonId,
+      ).catch(() => {});
+
       const rows: any[] = await this.prisma.$queryRawUnsafe(
         `SELECT id, position, customer_name AS "customerName", phone, service_name AS "serviceName",
                 status, joined_at AS "joinedAt", served_at AS "servedAt", device_id AS "deviceId", user_id AS "userId"

@@ -69,6 +69,9 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
     fetchSalonQueue,
     joinLiveQueue,
     leaveLiveQueue,
+    completeLiveQueue,
+    markTicketInService,
+    reportSalonCrowd,
     updateCustomerName
   } = useSalon();
 
@@ -492,7 +495,7 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
               </span>
             </div>
 
-            <div className="mt-3 flex items-center justify-between">
+            <div className="mt-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <div className="text-3xl font-black text-stone-900 tracking-tight flex items-baseline gap-1">
                   <span className="text-[#FF6422]">#</span>
@@ -503,21 +506,47 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
                 </p>
               </div>
 
-              <button
-                type="button"
-                onClick={() => {
-                  if (window.confirm('Leave the queue and give up your ticket?')) {
-                    leaveLiveQueue(salon.id, activeTicket.id);
-                  }
-                }}
-                className="text-xs text-rose-600 hover:text-rose-700 font-bold px-3 py-1.5 rounded-xl border border-rose-200 hover:bg-rose-50 transition-colors cursor-pointer"
-              >
-                Leave Queue
-              </button>
+              {/* Customer Self-Service Actions */}
+              <div className="flex items-center gap-2 flex-wrap">
+                {activeTicket.status !== 'in_service' && (
+                  <button
+                    type="button"
+                    onClick={() => markTicketInService(salon.id, activeTicket.id)}
+                    className="text-xs font-bold px-3 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-stone-950 flex items-center gap-1.5 shadow-xs transition-all cursor-pointer"
+                  >
+                    <Scissors className="w-3.5 h-3.5" />
+                    <span>I'm on Chair</span>
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    completeLiveQueue(salon.id, activeTicket.id);
+                    onOpenReviewModal();
+                  }}
+                  className="text-xs font-extrabold px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white flex items-center gap-1.5 shadow-xs transition-all cursor-pointer"
+                >
+                  <Check className="w-3.5 h-3.5 stroke-[3]" />
+                  <span>Done / Service Finished</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (window.confirm('Leave the queue and give up your ticket?')) {
+                      leaveLiveQueue(salon.id, activeTicket.id);
+                    }
+                  }}
+                  className="text-xs text-stone-500 hover:text-rose-600 font-bold px-2.5 py-2 rounded-xl hover:bg-stone-100 transition-colors cursor-pointer"
+                >
+                  Leave
+                </button>
+              </div>
             </div>
 
             <p className="text-[11px] text-stone-600 mt-2.5 bg-white/80 p-2.5 rounded-xl border border-orange-200/50">
-              📞 The salon staff can call your phone or announce ticket <strong>#{activeTicket.ticketNumber || activeTicket.position}</strong> when a stylist chair opens up.
+              💡 <strong>Customer Self-Service:</strong> When you take your seat or finish your haircut, tap above so the barber doesn't have to touch their phone while working!
             </p>
           </div>
         ) : salon.isOpen ? (
@@ -536,6 +565,36 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
             </button>
           </div>
         ) : null}
+
+        {/* COMMUNITY CROWD CONFIRMATION (CUSTOMER-DRIVEN) */}
+        <div className="mt-4 pt-3.5 border-t border-[#E8E2D8] flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 bg-stone-50/60 -mx-5 -mb-5 px-5 py-3 rounded-b-3xl">
+          <div className="text-[11px] text-stone-600">
+            <span className="font-bold text-stone-900">At {salon.name} right now?</span> Help nearby customers with live status:
+          </div>
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <button
+              type="button"
+              onClick={() => reportSalonCrowd(salon.id, 'empty')}
+              className="text-[11px] font-bold px-2.5 py-1 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100 transition-colors cursor-pointer"
+            >
+              🟢 0 Wait (Clear)
+            </button>
+            <button
+              type="button"
+              onClick={() => reportSalonCrowd(salon.id, 'medium')}
+              className="text-[11px] font-bold px-2.5 py-1 rounded-xl bg-amber-50 text-amber-800 border border-amber-200 hover:bg-amber-100 transition-colors cursor-pointer"
+            >
+              🟡 1-2 Waiting
+            </button>
+            <button
+              type="button"
+              onClick={() => reportSalonCrowd(salon.id, 'busy')}
+              className="text-[11px] font-bold px-2.5 py-1 rounded-xl bg-rose-50 text-rose-800 border border-rose-200 hover:bg-rose-100 transition-colors cursor-pointer"
+            >
+              🔴 3+ Busy
+            </button>
+          </div>
+        </div>
 
         {/* LIVE WAITING CUSTOMER LIST (PUBLIC TICKETS & NAMES) */}
         {queueEntries.length > 0 && (
