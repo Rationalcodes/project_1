@@ -379,7 +379,7 @@ export class SalonsService {
           `SELECT id, customer_name, customer_avatar, rating, comment, verified_visit, created_at, owner_reply
            FROM salon_reviews
            WHERE salon_id = $1 AND flagged = false
-           ORDER BY created_at DESC LIMIT 10;`,
+           ORDER BY created_at DESC LIMIT 50;`,
           id,
         );
         salonData.reviews = reviews;
@@ -638,6 +638,42 @@ export class SalonsService {
 
     const localSalon = this.localSalons.get(salonId);
     return localSalon?.reviews || [];
+  }
+
+  async replyToReview(salonId: string, reviewId: string, comment: string): Promise<any> {
+    const trimmed = (comment || '').trim();
+    if (!trimmed) {
+      throw new BadRequestException('Reply comment cannot be empty');
+    }
+
+    const now = new Date();
+    try {
+      await this.prisma.salonReview.update({
+        where: { id: reviewId },
+        data: {
+          ownerReply: trimmed,
+          ownerReplyDate: now,
+        },
+      });
+      this.logger.log(`Owner replied to review ${reviewId} for salon ${salonId}`);
+    } catch (err) {
+      this.logger.warn(`Could not update review in DB (${(err as Error).message}). Updating memory cache.`);
+    }
+
+    // Also update local memory cache
+    const localSalon = this.localSalons.get(salonId);
+    if (localSalon && Array.isArray(localSalon.reviews)) {
+      localSalon.reviews = localSalon.reviews.map((r: any) =>
+        r.id === reviewId ? { ...r, ownerReply: trimmed } : r,
+      );
+    }
+
+    return {
+      success: true,
+      reviewId,
+      ownerReply: trimmed,
+      date: now.toISOString(),
+    };
   }
 
   async updateSalon(id: string, dto: UpdateSalonDto, requesterOwnerId?: string): Promise<any> {

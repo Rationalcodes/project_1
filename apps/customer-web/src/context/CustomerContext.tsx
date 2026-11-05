@@ -817,28 +817,65 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       }
     }
 
-    // 3. Update local React state with content deduplication
+    // 3. Immediately update selectedSalonForDetail if currently viewing this exact salon
+    setSelectedSalonForDetail((prev) => {
+      if (!prev || prev.id !== salonId) return prev;
+      const existingReviews = (prev.reviews || []).filter(
+        (r) => `${(r.customerName || '').trim().toLowerCase()}|${(r.comment || '').trim().toLowerCase()}` !== contentKey && r.id !== createdReviewId
+      );
+      const nextReviews = [newReview, ...existingReviews];
+      const newCount = nextReviews.length;
+      const newRating = Number(
+        (nextReviews.reduce((acc, r) => acc + (r.rating || 5), 0) / newCount).toFixed(1)
+      );
+      return {
+        ...prev,
+        reviews: nextReviews,
+        reviewCount: newCount,
+        rating: newRating,
+      };
+    });
+
+    // 4. Update local React state for this specific salon only
     setSalons((prev) =>
       prev.map((s) => {
         if (s.id !== salonId) return s;
         const existingReviews = (s.reviews || []).filter(
-          (r) => `${(r.customerName || '').trim().toLowerCase()}|${(r.comment || '').trim().toLowerCase()}` !== contentKey && r.id !== newReview.id
+          (r) => `${(r.customerName || '').trim().toLowerCase()}|${(r.comment || '').trim().toLowerCase()}` !== contentKey && r.id !== createdReviewId
         );
         const nextReviews = [newReview, ...existingReviews];
         const newCount = nextReviews.length;
         const newRating = Number(
           (nextReviews.reduce((acc, r) => acc + (r.rating || 5), 0) / newCount).toFixed(1)
         );
-        const updated = {
+        return {
           ...s,
           reviews: nextReviews,
           reviewCount: newCount,
           rating: newRating,
         };
-        if (selectedSalonForDetail?.id === salonId) setSelectedSalonForDetail(updated);
-        return updated;
       })
     );
+
+    // 5. In background, re-fetch public salon data to sync server-side computed aggregates
+    defaultApiClient.getPublicSalonById(salonId).then((freshPublic) => {
+      if (freshPublic && Array.isArray(freshPublic.reviews)) {
+        const dbReviews: Review[] = freshPublic.reviews.map((r: any) => ({
+          id: r.id,
+          customerName: r.customerName || r.customer_name,
+          customerAvatar: r.customerAvatar || r.customer_avatar,
+          rating: Number(r.rating),
+          comment: r.comment,
+          date: r.createdAt ? new Date(r.createdAt).toLocaleDateString() : 'Recent',
+          verifiedVisit: Boolean(r.verifiedVisit !== undefined ? r.verifiedVisit : r.verified_visit),
+          criteria: r.criteria,
+          ownerReply: r.ownerReply || r.owner_reply,
+        }));
+        safeStorage.setItem(`kumbhakaran_reviews_${salonId}`, JSON.stringify(dbReviews));
+        setSelectedSalonForDetail((prev) => (prev && prev.id === salonId ? { ...prev, reviews: dbReviews, rating: Number(freshPublic.rating) || prev.rating, reviewCount: Number(freshPublic.reviewCount) || dbReviews.length } : prev));
+        setSalons((prev) => prev.map((s) => (s.id === salonId ? { ...s, reviews: dbReviews, rating: Number(freshPublic.rating) || s.rating, reviewCount: Number(freshPublic.reviewCount) || dbReviews.length } : s)));
+      }
+    }).catch(() => {});
 
     triggerNotification('Thank you! Your verified review has been published.');
   };

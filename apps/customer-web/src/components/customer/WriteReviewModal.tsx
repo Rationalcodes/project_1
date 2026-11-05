@@ -1,14 +1,18 @@
 import React, { useState } from 'react';
 import { useSalon } from '../../context/CustomerContext';
-import { Star, X, CheckCircle2, User, ExternalLink, Copy, Check, Share2 } from 'lucide-react';
+import { Star, X, CheckCircle2, User, ExternalLink, Copy, Check, Share2, Store } from 'lucide-react';
+import { Salon } from '@kumbhakaran/shared-types';
 
 interface WriteReviewModalProps {
   isOpen: boolean;
   onClose: () => void;
+  salon?: Salon | null;
 }
 
-export const WriteReviewModal: React.FC<WriteReviewModalProps> = ({ isOpen, onClose }) => {
+export const WriteReviewModal: React.FC<WriteReviewModalProps> = ({ isOpen, onClose, salon }) => {
   const { selectedSalonForDetail, addReview, userProfile, updateCustomerName } = useSalon();
+
+  const targetSalon = salon || selectedSalonForDetail;
 
   const [customerName, setCustomerName] = useState(userProfile.name || '');
   const [comment, setComment] = useState('');
@@ -32,7 +36,7 @@ export const WriteReviewModal: React.FC<WriteReviewModalProps> = ({ isOpen, onCl
   const [lastSubmittedScore, setLastSubmittedScore] = useState(5);
   const [lastSubmittedComment, setLastSubmittedComment] = useState('');
 
-  if (!isOpen || !selectedSalonForDetail) return null;
+  if (!isOpen || !targetSalon) return null;
 
   const handleClose = () => {
     setIsSubmitting(false);
@@ -57,7 +61,7 @@ export const WriteReviewModal: React.FC<WriteReviewModalProps> = ({ isOpen, onCl
         ((haircutQuality + staffBehaviour + cleanliness + pricing + overallExperience) / 5).toFixed(1)
       );
 
-      await addReview(selectedSalonForDetail.id, {
+      await addReview(targetSalon.id, {
         customerName: finalName,
         customerAvatar: userProfile.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80',
         rating: Math.round(avgScore),
@@ -84,7 +88,7 @@ export const WriteReviewModal: React.FC<WriteReviewModalProps> = ({ isOpen, onCl
   };
 
   const handlePostToGoogle = () => {
-    if (!selectedSalonForDetail) return;
+    if (!targetSalon) return;
 
     if (navigator.clipboard) {
       navigator.clipboard.writeText(lastSubmittedComment).then(() => {
@@ -92,10 +96,10 @@ export const WriteReviewModal: React.FC<WriteReviewModalProps> = ({ isOpen, onCl
       }).catch(() => {});
     }
 
-    const salon = selectedSalonForDetail as any;
-    const url = salon.googlePlaceId
-      ? `https://search.google.com/local/writereview?placeid=${salon.googlePlaceId}`
-      : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(salon.name + ' ' + salon.locality)}`;
+    const s = targetSalon as any;
+    const url = s.googlePlaceId
+      ? `https://search.google.com/local/writereview?placeid=${s.googlePlaceId}`
+      : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(s.name + ' ' + s.locality)}`;
 
     window.open(url, '_blank', 'noopener,noreferrer');
   };
@@ -127,7 +131,7 @@ export const WriteReviewModal: React.FC<WriteReviewModalProps> = ({ isOpen, onCl
                 Review Published Successfully!
               </h3>
               <p className="text-xs text-stone-500 mt-1">
-                Your feedback is now visible to customers in {selectedSalonForDetail.locality}.
+                Your feedback is now visible to customers in {targetSalon.locality}.
               </p>
             </div>
 
@@ -183,7 +187,7 @@ export const WriteReviewModal: React.FC<WriteReviewModalProps> = ({ isOpen, onCl
             <div className="flex items-center justify-between pb-3 border-b border-[#E8E2D8]">
               <div>
                 <h3 className="text-base font-bold text-stone-900">
-                  Rate {selectedSalonForDetail.name}
+                  Rate {targetSalon.name}
                 </h3>
                 <p className="text-xs text-stone-500">
                   Only your name is required — zero phone numbers or signups needed

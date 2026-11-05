@@ -75,6 +75,7 @@ const CustomerMainContent: React.FC = () => {
       <CompareModal />
       <WriteReviewModal
         isOpen={isReviewModalOpen}
+        salon={selectedSalonForDetail}
         onClose={() => setIsReviewModalOpen(false)}
       />
     </div>

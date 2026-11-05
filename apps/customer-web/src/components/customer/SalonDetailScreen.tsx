@@ -799,9 +799,9 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
                   {rev.ownerReply && (
                     <div className="mt-2 bg-orange-50/50 border-l-2 border-[#FF6422] p-2.5 rounded-r-xl text-xs border border-orange-100">
                       <div className="text-[11px] font-bold text-[#FF6422] mb-0.5">
-                        Salon Owner Response • {rev.ownerReply.date}
+                        Salon Owner Response • {typeof rev.ownerReply === 'string' ? 'Verified Response' : rev.ownerReply.date || 'Recent'}
                       </div>
-                      <p className="text-stone-700">{rev.ownerReply.comment}</p>
+                      <p className="text-stone-700">{typeof rev.ownerReply === 'string' ? rev.ownerReply : rev.ownerReply.comment}</p>
                     </div>
                   )}
                 </div>

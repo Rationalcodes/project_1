@@ -45,6 +45,7 @@ interface PartnerContextType {
   updateStaff: (salonId: string, staffId: string, updates: Partial<Staff>) => void;
   deleteStaff: (salonId: string, staffId: string) => void;
   replyToReview: (salonId: string, reviewId: string, replyComment: string) => void;
+  fetchSalonReviews: (salonId?: string) => Promise<void>;
   notificationMessage: string | null;
   triggerNotification: (msg: string) => void;
   queueEntries: QueueEntry[];
@@ -635,7 +636,52 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
     triggerNotification('Staff member removed');
   };
 
-  const replyToReview = (salonId: string, reviewId: string, replyComment: string) => {
+  const fetchSalonReviews = useCallback(async (targetSalonId?: string) => {
+    const sId = targetSalonId || activeSalonId || activeSalon?.id;
+    if (!sId) return;
+    try {
+      const res = await defaultApiClient.getSalonReviews(sId);
+      if (Array.isArray(res)) {
+        const formattedReviews: Review[] = res.map((r: any) => ({
+          id: r.id || `rev-${Date.now()}`,
+          customerName: r.customerName || r.customer_name || 'Anonymous Customer',
+          customerAvatar: r.customerAvatar || r.customer_avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80',
+          rating: Number(r.rating) || 5,
+          comment: r.comment || '',
+          date: r.createdAt || r.created_at ? new Date(r.createdAt || r.created_at).toLocaleDateString() : 'Recent',
+          verifiedVisit: Boolean(r.verifiedVisit !== undefined ? r.verifiedVisit : r.verified_visit),
+          criteria: r.criteria,
+          ownerReply: r.ownerReply || r.owner_reply,
+        }));
+
+        setSalons((prev) =>
+          prev.map((s) => {
+            if (s.id !== sId) return s;
+            const updated = {
+              ...s,
+              reviews: formattedReviews,
+              reviewsCount: formattedReviews.length,
+            };
+            safeStorage.setItem('kumbhakaran_partner_active_salon', JSON.stringify(updated));
+            return updated;
+          }),
+        );
+      }
+    } catch (err) {
+      console.warn('Failed to fetch salon reviews:', err);
+    }
+  }, [activeSalonId, activeSalon?.id]);
+
+  useEffect(() => {
+    if (activeSalonId && partnerView === 'reviews') {
+      fetchSalonReviews(activeSalonId);
+    }
+  }, [activeSalonId, partnerView, fetchSalonReviews]);
+
+  const replyToReview = async (salonId: string, reviewId: string, replyComment: string) => {
+    const trimmed = (replyComment || '').trim();
+    if (!trimmed) return;
+
     setSalons((prev) =>
       prev.map((s) => {
         if (s.id !== salonId) return s;
@@ -643,7 +689,7 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
           ...s,
           reviews: (s.reviews || []).map((r) =>
             r.id === reviewId
-              ? { ...r, ownerReply: { comment: replyComment, date: 'Just now' } }
+              ? { ...r, ownerReply: { comment: trimmed, date: 'Just now' } }
               : r,
           ),
         };
@@ -651,7 +697,14 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
         return updated;
       }),
     );
-    triggerNotification('Reply sent to customer review');
+
+    try {
+      await defaultApiClient.replyToSalonReview(salonId, reviewId, trimmed);
+      triggerNotification('Owner response published to customer app!');
+      await fetchSalonReviews(salonId);
+    } catch {
+      triggerNotification('Response saved locally');
+    }
   };
 
   return (
@@ -680,6 +733,7 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
         updateStaff,
         deleteStaff,
         replyToReview,
+        fetchSalonReviews,
         notificationMessage,
         triggerNotification,
         queueEntries,

@@ -55,6 +55,7 @@ export const OwnerApp: React.FC = () => {
     updateStaff,
     deleteStaff,
     replyToReview,
+    fetchSalonReviews,
     triggerNotification,
     queueEntries = [],
     isLoadingQueue,
@@ -1191,17 +1192,36 @@ export const OwnerApp: React.FC = () => {
       {/* TAB 5: CUSTOMER REVIEWS & RESPONSES */}
       {ownerTab === 'reviews' && (
         <div className="space-y-4">
-          <div>
-            <h2 className="text-sm font-bold text-white">
-              Customer Feedback & Owner Replies
-            </h2>
-            <p className="text-xs text-zinc-400">
-              Responding to reviews boosts salon trust and visibility score
-            </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-sm font-bold text-white">
+                Customer Feedback & Owner Replies
+              </h2>
+              <p className="text-xs text-zinc-400">
+                Responding to reviews boosts salon trust and visibility score
+              </p>
+            </div>
+            <button
+              onClick={() => fetchSalonReviews(activeSalon.id)}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-xl text-xs font-semibold transition-colors"
+              title="Refresh reviews"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>Refresh</span>
+            </button>
           </div>
 
           <div className="space-y-3">
-            {(activeSalon.reviews || []).map((rev) => (
+            {(activeSalon.reviews || []).length === 0 ? (
+              <div className="bg-[#14141c] border border-zinc-800 rounded-2xl p-8 text-center text-xs space-y-2">
+                <MessageSquare className="w-8 h-8 text-zinc-600 mx-auto" />
+                <p className="text-zinc-300 font-semibold">No reviews received yet</p>
+                <p className="text-zinc-500 max-w-sm mx-auto">
+                  When customers submit verified reviews for {activeSalon.name}, they will appear here instantly for you to read and reply.
+                </p>
+              </div>
+            ) : (
+              (activeSalon.reviews || []).map((rev) => (
               <div key={rev.id} className="bg-[#14141c] border border-zinc-800 rounded-2xl p-4 text-xs space-y-2">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -1226,7 +1246,7 @@ export const OwnerApp: React.FC = () => {
                 {rev.ownerReply ? (
                   <div className="mt-2 bg-zinc-900/90 border-l-2 border-amber-400 p-2.5 rounded-r-xl">
                     <div className="text-[11px] font-bold text-amber-400">Your Response:</div>
-                    <p className="text-zinc-300">{rev.ownerReply.comment}</p>
+                    <p className="text-zinc-300">{typeof rev.ownerReply === "string" ? rev.ownerReply : rev.ownerReply.comment}</p>
                   </div>
                 ) : (
                   /* Reply Input */
@@ -1253,7 +1273,8 @@ export const OwnerApp: React.FC = () => {
                   </div>
                 )}
               </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
       )}

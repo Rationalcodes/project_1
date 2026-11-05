@@ -316,6 +316,25 @@ export class KumbhakaranApiClient {
     }
   }
 
+  /**
+   * Reply to a salon review (Owner only)
+   */
+  async replyToSalonReview(salonId: string, reviewId: string, comment: string): Promise<any> {
+    try {
+      const res = await fetch(`${this.baseUrl}/salons/${salonId}/reviews/${reviewId}/reply`, {
+        method: 'POST',
+        headers: this.getHeaders({
+          'Content-Type': 'application/json',
+        }),
+        body: JSON.stringify({ comment }),
+      });
+      if (!res.ok) return null;
+      return await res.json();
+    } catch {
+      return null;
+    }
+  }
+
   // ==========================================================================
   // PARTNER MANAGEMENT APIs
   // ==========================================================================

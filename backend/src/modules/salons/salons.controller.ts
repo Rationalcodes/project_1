@@ -138,6 +138,20 @@ export class SalonsController {
     return this.salonsService.getReviews(salonId);
   }
 
+  @Post(':id/reviews/:reviewId/reply')
+  @UseGuards(JwtAuthGuard, SalonOwnerGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Reply to a customer review (Salon Owner Only)' })
+  @ApiParam({ name: 'id', example: 'salon-1', description: 'Salon identifier' })
+  @ApiParam({ name: 'reviewId', example: 'rev-123', description: 'Review identifier' })
+  async replyToReview(
+    @Param('id') salonId: string,
+    @Param('reviewId') reviewId: string,
+    @Body('comment') comment: string,
+  ) {
+    return this.salonsService.replyToReview(salonId, reviewId, comment);
+  }
+
   @Patch(':id')
   @UseGuards(JwtAuthGuard, SalonOwnerGuard)
   @ApiBearerAuth()
