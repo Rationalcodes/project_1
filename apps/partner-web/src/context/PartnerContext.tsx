@@ -25,7 +25,7 @@ interface PartnerContextType {
   partnerUser: AuthUser | null;
   memberships: SalonMembership[];
   isAuthenticated: boolean;
-  loginWithGoogle: (credential: string) => Promise<boolean>;
+  loginWithGoogle: (credential: string, clientId?: string) => Promise<boolean>;
   logout: () => Promise<void>;
   salons: Salon[];
   activeSalonId: string;
@@ -392,9 +392,9 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
     };
   }, [loadUserSalon]);
 
-  const loginWithGoogle = async (credential: string): Promise<boolean> => {
+  const loginWithGoogle = async (credential: string, clientId?: string): Promise<boolean> => {
     try {
-      const res = await defaultApiClient.loginWithGoogle(credential);
+      const res = await defaultApiClient.loginWithGoogle(credential, clientId);
       if (res && res.accessToken) {
         safeStorage.setItem('kumbhakaran_partner_token', res.accessToken);
         safeStorage.setItem('kumbhakaran_partner_user', JSON.stringify(res.user));

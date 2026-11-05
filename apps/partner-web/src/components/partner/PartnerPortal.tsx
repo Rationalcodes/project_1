@@ -66,7 +66,7 @@ export const PartnerPortal: React.FC = () => {
 
         <div className="pt-2 flex flex-col items-center justify-center max-w-full">
           <GoogleSignInButton
-            onSuccess={(cred) => loginWithGoogle(cred)}
+            onSuccess={(cred, clientId) => loginWithGoogle(cred, clientId)}
             text="signin_with"
             theme="outline"
             width={280}

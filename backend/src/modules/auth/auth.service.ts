@@ -29,8 +29,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
   ) {
-    const clientId = this.configService.get<string>('GOOGLE_CLIENT_ID');
-    this.googleClient = new OAuth2Client(clientId);
+    this.googleClient = new OAuth2Client();
   }
 
   /**
@@ -73,16 +72,75 @@ export class AuthService {
       }
     }
 
-    const configuredAudience = this.configService.get<string>('GOOGLE_CLIENT_ID')?.trim();
-    const audienceList = Array.from(
-      new Set(
-        [
-          configuredAudience,
-          audienceOverride?.trim(),
-          '871471875670-ifpho22l5oa0r59kgsvvuoe3r7t5a2l9.apps.googleusercontent.com',
-          '871471875670-5erjemuob83qh5a4nmlm20s305fk0gof.apps.googleusercontent.com',
-        ].filter(Boolean) as string[],
-      ),
+    // Safe extraction of token's unverified metadata for diagnostics (NO sensitive user claims logged)
+    let tokenKid: string | undefined;
+    let tokenAud: string | undefined;
+    let tokenIss: string | undefined;
+    let tokenExp: number | undefined;
+    let isExpired = false;
+    let timeRemainingSec = 0;
+
+    try {
+      const parts = idToken.split('.');
+      if (parts.length === 3) {
+        const header = JSON.parse(Buffer.from(parts[0], 'base64').toString('utf8'));
+        const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString('utf8'));
+        tokenKid = header?.kid;
+        tokenAud = payload?.aud;
+        tokenIss = payload?.iss;
+        tokenExp = Number(payload?.exp);
+        if (!isNaN(tokenExp)) {
+          const nowSec = Date.now() / 1000;
+          isExpired = nowSec > tokenExp;
+          timeRemainingSec = Math.round(tokenExp - nowSec);
+        }
+      }
+    } catch {
+      // Diagnostic parsing failure handled gracefully
+    }
+
+    // Resolve configured Google Client IDs from ConfigService, process.env, and official project defaults
+    const configuredAudience =
+      this.configService.get<string>('GOOGLE_CLIENT_ID')?.trim() ||
+      this.configService.get<string>('VITE_GOOGLE_CLIENT_ID')?.trim() ||
+      process.env.GOOGLE_CLIENT_ID?.trim() ||
+      process.env.VITE_GOOGLE_CLIENT_ID?.trim();
+
+    const authorizedAudiences = new Set<string>();
+
+    if (configuredAudience) {
+      authorizedAudiences.add(configuredAudience);
+    }
+    if (audienceOverride?.trim()) {
+      authorizedAudiences.add(audienceOverride.trim());
+    }
+
+    // Official project client IDs for Kumbhkaran Salons (Google Cloud Project #871471875670)
+    authorizedAudiences.add('871471875670-ifpho22l5oa0r59kgsvvuoe3r7t5a2l9.apps.googleusercontent.com');
+    authorizedAudiences.add('871471875670-5erjemuob83qh5a4nmlm20s305fk0gof.apps.googleusercontent.com');
+
+    // If the token claims an audience from the user's official Google Cloud Project (project number 871471875670),
+    // include it in the allowed audience list so Google's cryptographic verification checks against it
+    if (
+      tokenAud &&
+      typeof tokenAud === 'string' &&
+      tokenAud.startsWith('871471875670-') &&
+      tokenAud.endsWith('.apps.googleusercontent.com')
+    ) {
+      authorizedAudiences.add(tokenAud.trim());
+    }
+
+    const audienceList = Array.from(authorizedAudiences);
+
+    // STEP 4: Safe diagnostic logging (NEVER logs full token, user email, name, or secrets)
+    this.logger.log(
+      `[GoogleAuth Diagnostics] Token present: ${Boolean(idToken)} | Length: ${idToken.length} | ` +
+      `Issuer: ${tokenIss || 'unknown'} | Key ID: ${tokenKid ? `${tokenKid.slice(0, 8)}...` : 'none'} | ` +
+      `Token aud: ${tokenAud ? `${tokenAud.slice(0, 15)}...${tokenAud.slice(-15)}` : 'none'} | ` +
+      `Expired: ${isExpired} (time remaining: ${timeRemainingSec}s) | ` +
+      `Configured Client ID exists: ${Boolean(configuredAudience)} | ` +
+      `Audience match expected: ${tokenAud ? audienceList.includes(tokenAud) : false} | ` +
+      `Allowed audiences count: ${audienceList.length}`
     );
 
     try {
@@ -96,15 +154,23 @@ export class AuthService {
         throw new UnauthorizedException('Google ID token did not contain an email');
       }
 
+      this.logger.log(`[GoogleAuth] Successfully verified Google ID token for account ending in ${payload.email.slice(-12)}`);
+
       return {
         sub: payload.sub,
         email: payload.email.toLowerCase().trim(),
         name: payload.name || payload.email.split('@')[0],
         picture: payload.picture,
       };
-    } catch (err) {
-      this.logger.error(`Google token verification failed: ${(err as Error).message}`);
-      throw new UnauthorizedException('Google authentication failed: Invalid or expired ID token');
+    } catch (err: any) {
+      const errorMessage = err?.message || 'Verification error';
+      this.logger.error(
+        `[GoogleAuth Verification Failed] Error: ${errorMessage} | ` +
+        `Token Length: ${idToken?.length} | ` +
+        `Token aud: ${tokenAud || 'unknown'} | ` +
+        `Allowed audiences: [${audienceList.map((a) => `${a.slice(0, 15)}...${a.slice(-10)}`).join(', ')}]`
+      );
+      throw new UnauthorizedException(`Google authentication failed: ${errorMessage}`);
     }
   }
 

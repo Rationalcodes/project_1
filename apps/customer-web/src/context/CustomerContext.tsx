@@ -93,7 +93,7 @@ interface CustomerContextType {
   userProfile: CustomerProfile;
   authUser: AuthUser | null;
   isAuthenticated: boolean;
-  loginWithGoogle: (credential: string) => Promise<boolean>;
+  loginWithGoogle: (credential: string, clientId?: string) => Promise<boolean>;
   logout: () => Promise<void>;
   updateCustomerName: (name: string) => void;
   toggleFavorite: (salonId: string) => void;
@@ -639,9 +639,9 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     };
   }, []);
 
-  const loginWithGoogle = async (credential: string): Promise<boolean> => {
+  const loginWithGoogle = async (credential: string, clientId?: string): Promise<boolean> => {
     try {
-      const res = await defaultApiClient.loginWithGoogle(credential);
+      const res = await defaultApiClient.loginWithGoogle(credential, clientId);
       if (res && res.accessToken) {
         safeStorage.setItem('kumbhakaran_customer_token', res.accessToken);
         setAuthUser(res.user);

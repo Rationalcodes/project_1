@@ -83,7 +83,7 @@ export const ProfileScreen: React.FC = () => {
 
             <div className="shrink-0 flex items-center justify-center">
               <GoogleSignInButton
-                onSuccess={(credential) => loginWithGoogle(credential)}
+                onSuccess={(credential, clientId) => loginWithGoogle(credential, clientId)}
                 text="signin_with"
                 theme="outline"
               />

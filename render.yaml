@@ -15,7 +15,7 @@ services:
       - key: DATABASE_URL
         sync: false
       - key: GOOGLE_CLIENT_ID
-        value: 871471875670-ifpho22l5oa0r59kgsvvuoe3r7t5a2l9.apps.googleusercontent.com
+        sync: false
       - key: JWT_SECRET
         generateValue: true
       - key: JWT_EXPIRES_IN

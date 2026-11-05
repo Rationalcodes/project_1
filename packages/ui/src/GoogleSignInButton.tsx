@@ -3,7 +3,7 @@ import './types/google.d';
 
 export interface GoogleSignInButtonProps {
   clientId?: string;
-  onSuccess: (credential: string) => void | Promise<any>;
+  onSuccess: (credential: string, clientId?: string) => void | Promise<any>;
   onError?: (error: string) => void;
   text?: 'signin_with' | 'signup_with' | 'continue_with' | 'signin';
   theme?: 'outline' | 'filled_blue' | 'filled_black';
@@ -30,11 +30,15 @@ export const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
   const [isGisReady, setIsGisReady] = useState(false);
   const [initError, setInitError] = useState<string | null>(null);
 
-  // Read client ID from prop or Vite environment
+  // Read client ID from prop, Vite environment, or standard process.env
   const effectiveClientId =
     propClientId ||
     (typeof import.meta !== 'undefined' &&
-      (import.meta as any).env?.VITE_GOOGLE_CLIENT_ID) ||
+      ((import.meta as any).env?.VITE_GOOGLE_CLIENT_ID ||
+       (import.meta as any).env?.GOOGLE_CLIENT_ID)) ||
+    (typeof process !== 'undefined' &&
+      (process.env?.VITE_GOOGLE_CLIENT_ID ||
+       process.env?.GOOGLE_CLIENT_ID)) ||
     '871471875670-ifpho22l5oa0r59kgsvvuoe3r7t5a2l9.apps.googleusercontent.com';
 
   useEffect(() => {
@@ -91,7 +95,7 @@ export const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
         client_id: effectiveClientId,
         callback: (response) => {
           if (response?.credential) {
-            onSuccess(response.credential);
+            onSuccess(response.credential, effectiveClientId);
           } else {
             const err = 'Google response did not contain credential';
             setInitError(err);
