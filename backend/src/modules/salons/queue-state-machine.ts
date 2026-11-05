@@ -18,10 +18,10 @@ export const VALID_TRANSITIONS: Record<QueueStatus, QueueStatus[]> = {
   waiting: ['called', 'in_service', 'skipped', 'cancelled', 'completed'],
   called: ['in_service', 'skipped', 'cancelled', 'no_show', 'waiting'],
   in_service: ['completed', 'cancelled'],
-  skipped: ['waiting', 'called', 'cancelled'],
+  skipped: ['waiting', 'called', 'cancelled', 'in_service'],
   completed: [], // Terminal state
   cancelled: [], // Terminal state
-  no_show: ['waiting', 'cancelled'], // Can be restored if customer arrives
+  no_show: ['waiting', 'cancelled', 'in_service'], // Can be restored if customer arrives
 };
 
 export function validateQueueTransition(currentStatus: string, nextStatus: string): void {

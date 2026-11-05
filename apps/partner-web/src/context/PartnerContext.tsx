@@ -211,10 +211,9 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
         setSalons((prev) =>
           prev.map((s) => {
             if (s.id !== sId) return s;
-            const waitingCount = entries.filter((e: any) => e.status === 'waiting').length;
-            const targetCount = Math.max(s.currentQueue, waitingCount);
-            if (targetCount !== s.currentQueue) {
-              const updated = { ...s, currentQueue: targetCount };
+            const waitingCount = entries.filter((e: any) => e.status === 'waiting' || e.status === 'called').length;
+            if (waitingCount !== s.currentQueue) {
+              const updated = { ...s, currentQueue: waitingCount, lastQueueUpdate: new Date().toISOString() };
               safeStorage.setItem('kumbhakaran_partner_active_salon', JSON.stringify(updated));
               return updated;
             }

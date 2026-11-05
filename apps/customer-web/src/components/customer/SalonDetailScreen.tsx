@@ -513,7 +513,7 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
               <div>
                 <div className="text-3xl font-black text-stone-900 tracking-tight flex items-baseline gap-1">
                   <span className="text-[#FF6422]">#</span>
-                  <span>{activeTicket.ticketNumber || activeTicket.position}</span>
+                  <span>{(activeTicket.ticketNumber || String(activeTicket.position || '')).replace(/^#+/, '')}</span>
                 </div>
                 <p className="text-xs text-stone-700 font-semibold mt-0.5">
                   {activeTicket.customerName} • {activeTicket.serviceName || 'Haircut & Styling'}

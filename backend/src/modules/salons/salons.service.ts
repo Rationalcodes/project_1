@@ -918,10 +918,23 @@ export class SalonsService {
   }
 
   /**
+   * Helper to sync in-memory local salon queue count with recalculation result
+   */
+  private syncLocalQueueCache(salonId: string, count: number) {
+    const local = this.localSalons.get(salonId);
+    if (local) {
+      local.currentQueue = count;
+      local.lastQueueUpdate = new Date().toISOString();
+    }
+  }
+
+  /**
    * 1. Get live queue overview with staff states & statistics
    */
   async getQueueOverview(salonId: string) {
-    return this.queueEngine.recalculateSalonQueue(salonId);
+    const res = await this.queueEngine.recalculateSalonQueue(salonId);
+    this.syncLocalQueueCache(salonId, res.overview.totalWaiting);
+    return res;
   }
 
   /**
@@ -930,11 +943,50 @@ export class SalonsService {
   async getQueueEntries(salonId: string) {
     try {
       const res = await this.queueEngine.recalculateSalonQueue(salonId);
+      this.syncLocalQueueCache(salonId, res.overview.totalWaiting);
       return res.activeEntries;
     } catch (err) {
       this.logger.warn(`Failed to fetch intelligent queue entries for salon ${salonId}: ${err}`);
       return [];
     }
+  }
+
+  /**
+   * 2b. Get single queue entry status by ID (including completed/cancelled tickets)
+   */
+  async getQueueEntryById(salonId: string, entryId: string) {
+    const entry = await this.prisma.salonQueueEntry.findFirst({
+      where: { id: entryId, salonId },
+      include: {
+        assignedStaff: { select: { id: true, name: true } },
+      },
+    });
+    if (!entry) {
+      throw new NotFoundException(`Queue ticket '${entryId}' not found.`);
+    }
+    return {
+      id: entry.id,
+      salonId: entry.salonId,
+      position: entry.position,
+      ticketNumber: entry.ticketNumber,
+      customerName: entry.customerName,
+      phone: entry.phone,
+      serviceName: entry.serviceName,
+      serviceDuration: entry.serviceDuration,
+      servicePrice: Number(entry.servicePrice),
+      assignedStaffId: entry.assignedStaffId,
+      assignedStaffName: entry.assignedStaff?.name || null,
+      status: entry.status,
+      joinedAt: entry.joinedAt.toISOString(),
+      calledAt: entry.calledAt?.toISOString() || null,
+      startedAt: entry.startedAt?.toISOString() || null,
+      servedAt: entry.servedAt?.toISOString() || null,
+      cancelledAt: entry.cancelledAt?.toISOString() || null,
+      estimatedWaitMinutes: entry.estimatedWaitMinutes,
+      estimatedStartTime: entry.estimatedStartTime?.toISOString() || null,
+      estimatedCompletionTime: entry.estimatedCompletionTime?.toISOString() || null,
+      cancellationReason: entry.cancellationReason || null,
+    };
   }
 
   /**
@@ -1050,6 +1102,7 @@ export class SalonsService {
 
     // Recalculate whole queue with intelligent engine
     const queueData = await this.queueEngine.recalculateSalonQueue(salonId);
+    this.syncLocalQueueCache(salonId, queueData.overview.totalWaiting);
     const createdItem = queueData.activeEntries.find((e) => e.id === entryId);
 
     // Broadcast real-time WebSockets
@@ -1132,6 +1185,7 @@ export class SalonsService {
     });
 
     const queueData = await this.queueEngine.recalculateSalonQueue(salonId);
+    this.syncLocalQueueCache(salonId, queueData.overview.totalWaiting);
 
     this.queueGateway.broadcastToSalon(salonId, 'queue.service.started', {
       entryId,
@@ -1223,6 +1277,7 @@ export class SalonsService {
     });
 
     const queueData = await this.queueEngine.recalculateSalonQueue(salonId);
+    this.syncLocalQueueCache(salonId, queueData.overview.totalWaiting);
 
     this.queueGateway.broadcastToSalon(salonId, 'queue.service.completed', {
       entryId,
@@ -1261,6 +1316,7 @@ export class SalonsService {
     await this.logQueueEvent(salonId, entryId, actorId || 'staff', 'staff', 'queue.entry.called', entry.status, 'called');
 
     const queueData = await this.queueEngine.recalculateSalonQueue(salonId);
+    this.syncLocalQueueCache(salonId, queueData.overview.totalWaiting);
 
     this.queueGateway.broadcastToSalon(salonId, 'queue.entry.called', {
       entryId,
@@ -1291,6 +1347,7 @@ export class SalonsService {
     await this.logQueueEvent(salonId, entryId, actorId || 'staff', 'staff', 'queue.entry.skipped', entry.status, 'skipped');
 
     const queueData = await this.queueEngine.recalculateSalonQueue(salonId);
+    this.syncLocalQueueCache(salonId, queueData.overview.totalWaiting);
 
     this.queueGateway.broadcastToSalon(salonId, 'queue.entry.updated', {
       entryId,
@@ -1321,6 +1378,7 @@ export class SalonsService {
     await this.logQueueEvent(salonId, entryId, actorId || 'staff', 'staff', 'queue.entry.recalled', entry.status, 'waiting');
 
     const queueData = await this.queueEngine.recalculateSalonQueue(salonId);
+    this.syncLocalQueueCache(salonId, queueData.overview.totalWaiting);
 
     this.queueGateway.broadcastToSalon(salonId, 'queue.entry.updated', {
       entryId,
@@ -1369,6 +1427,7 @@ export class SalonsService {
     });
 
     const queueData = await this.queueEngine.recalculateSalonQueue(salonId);
+    this.syncLocalQueueCache(salonId, queueData.overview.totalWaiting);
 
     this.queueGateway.broadcastToSalon(salonId, 'queue.entry.updated', {
       entryId,
@@ -1537,6 +1596,8 @@ export class SalonsService {
         },
       });
     });
+
+    this.syncLocalQueueCache(salonId, 0);
 
     await this.logQueueEvent(salonId, null, actorId || 'owner', 'owner', 'queue.cleared', null, 'cleared', {
       clearOption: dto?.clearOption || 'cancelled',

@@ -98,26 +98,61 @@ export class QueueEngineService {
       orderBy: { createdAt: 'asc' },
     });
 
-    // If no explicit staff records exist, dynamically create default staff slots
+    // If no explicit staff records exist, dynamically create & persist default staff slots so foreign keys never fail
     if (staffList.length === 0) {
-      staffList = Array.from({ length: activeBarbersCount }).map((_, i) => ({
-        id: `staff-${salonId}-slot-${i + 1}`,
-        salonId,
-        name: `Stylist #${i + 1}`,
-        role: 'Stylist',
-        experience: 'Professional',
-        specialties: ['Haircut', 'Beard Trim'],
-        photo: null,
-        status: 'active',
-        availability: 'AVAILABLE',
-        currentQueueEntryId: null,
-        breakStartedAt: null,
-        workingHoursStart: '09:00 AM',
-        workingHoursEnd: '09:00 PM',
-        assignedServices: [],
-        rating: 5.0 as any,
-        createdAt: now,
-      }));
+      try {
+        const defaultSlots = Array.from({ length: activeBarbersCount }).map((_, i) => ({
+          id: `staff-${salonId}-slot-${i + 1}`,
+          salonId,
+          name: `Stylist #${i + 1}`,
+          role: 'Stylist',
+          experience: 'Professional',
+          specialties: ['Haircut', 'Beard Trim'],
+          photo: null,
+          status: 'active',
+          availability: 'AVAILABLE',
+          currentQueueEntryId: null,
+          breakStartedAt: null,
+          workingHoursStart: '09:00 AM',
+          workingHoursEnd: '09:00 PM',
+          assignedServices: ['Haircut', 'Beard Trim'],
+          rating: 5.0 as any,
+          createdAt: now,
+        }));
+
+        await this.prisma.salonStaff.createMany({
+          data: defaultSlots,
+          skipDuplicates: true,
+        });
+
+        staffList = await this.prisma.salonStaff.findMany({
+          where: { salonId, status: 'active' },
+          orderBy: { createdAt: 'asc' },
+        });
+      } catch (err) {
+        this.logger.warn(`Could not seed default staff records: ${(err as Error).message}`);
+      }
+
+      if (staffList.length === 0) {
+        staffList = Array.from({ length: activeBarbersCount }).map((_, i) => ({
+          id: `staff-${salonId}-slot-${i + 1}`,
+          salonId,
+          name: `Stylist #${i + 1}`,
+          role: 'Stylist',
+          experience: 'Professional',
+          specialties: ['Haircut', 'Beard Trim'],
+          photo: null,
+          status: 'active',
+          availability: 'AVAILABLE',
+          currentQueueEntryId: null,
+          breakStartedAt: null,
+          workingHoursStart: '09:00 AM',
+          workingHoursEnd: '09:00 PM',
+          assignedServices: [],
+          rating: 5.0 as any,
+          createdAt: now,
+        }));
+      }
     }
 
     // 3. Fetch all active and recent queue entries for today

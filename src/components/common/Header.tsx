@@ -149,11 +149,11 @@ export const Header: React.FC = () => {
                   setCustomerTab('home');
                 }}
                 className="flex items-center cursor-pointer select-none group focus:outline-none -ml-0.5"
-                title="Kumbhkaran Salons Home"
+                title="SLOON Home"
               >
                 <img
                   src={isWomen ? '/logo-transparent.png' : '/logo-men.png'}
-                  alt="Kumbhkaran Salons"
+                  alt="SLOON - Unisex Grooming Network"
                   className="h-7 xs:h-8 sm:h-9 w-auto max-w-[170px] sm:max-w-[220px] object-contain transition-transform group-hover:scale-102 drop-shadow-xs"
                   onError={(e) => {
                     (e.currentTarget as HTMLImageElement).src = '/logo.png';

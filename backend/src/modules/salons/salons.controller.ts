@@ -220,6 +220,19 @@ export class SalonsController {
     return this.salonsService.getQueueEntries(id);
   }
 
+  @Get(':id/queue-entries/:entryId')
+  @ApiOperation({
+    summary: 'Get single queue ticket details and status by ID',
+    description:
+      'Returns complete queue entry details even if ticket is completed, in-service, or cancelled.',
+  })
+  async getQueueEntryById(
+    @Param('id') id: string,
+    @Param('entryId') entryId: string,
+  ) {
+    return this.salonsService.getQueueEntryById(id, entryId);
+  }
+
   @Post(':id/queue-entries')
   @UseGuards(OptionalJwtAuthGuard)
   @ApiOperation({

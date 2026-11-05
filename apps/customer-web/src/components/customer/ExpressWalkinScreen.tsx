@@ -233,7 +233,7 @@ export const ExpressWalkinScreen: React.FC<ExpressWalkinScreenProps> = ({
             <div className="mt-3">
               <div className="text-xs font-bold text-stone-400 uppercase tracking-widest">Your Live Token</div>
               <div className="text-5xl sm:text-6xl font-black text-[#FF6422] font-mono tracking-tight mt-1">
-                #{currentTicket.ticketNumber || (currentTicket.position < 10 ? `0${currentTicket.position}` : currentTicket.position)}
+                #{(currentTicket.ticketNumber || String(currentTicket.position || '')).replace(/^#+/, '')}
               </div>
             </div>
 

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import {
   Salon,
   Service,
@@ -480,22 +480,49 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return null;
   });
 
+  const activeTicketRef = useRef<QueueEntry | null>(activeTicket);
+  useEffect(() => {
+    activeTicketRef.current = activeTicket;
+  }, [activeTicket]);
+
+  const selectedSalonRef = useRef<Salon | null>(selectedSalonForDetail);
+  useEffect(() => {
+    selectedSalonRef.current = selectedSalonForDetail;
+  }, [selectedSalonForDetail]);
+
   const fetchSalonQueue = async (salonId: string): Promise<QueueEntry[]> => {
     try {
       const entries = await defaultApiClient.getQueueEntries(salonId);
       if (Array.isArray(entries)) {
         setQueueEntries(entries);
         // Verify user's active ticket
-        if (activeTicket && (activeTicket.salonId === salonId || !activeTicket.salonId)) {
-          const match = entries.find((e: QueueEntry) => e.id === activeTicket.id);
+        const curTicket = activeTicketRef.current;
+        if (curTicket && (curTicket.salonId === salonId || !curTicket.salonId)) {
+          const match = entries.find((e: QueueEntry) => e.id === curTicket.id);
           if (match) {
             const updatedTicket = { ...match, salonId };
             setActiveTicket(updatedTicket);
             safeStorage.setItem('kumbhakaran_customer_ticket', JSON.stringify(updatedTicket));
-          } else if (activeTicket.salonId === salonId) {
-            // Ticket was completed, served, or cancelled by salon
-            setActiveTicket(null);
-            safeStorage.removeItem('kumbhakaran_customer_ticket');
+          } else if (curTicket.salonId === salonId) {
+            // Verify specific ticket status before clearing out
+            try {
+              const ticketStatus = await defaultApiClient.getQueueEntry(salonId, curTicket.id);
+              if (ticketStatus && ticketStatus.status === 'completed') {
+                triggerNotification('🎉 Service completed! Thank you for visiting.');
+                setActiveTicket(null);
+                safeStorage.removeItem('kumbhakaran_customer_ticket');
+              } else if (ticketStatus && ticketStatus.status === 'cancelled') {
+                triggerNotification('Your queue ticket was cancelled.');
+                setActiveTicket(null);
+                safeStorage.removeItem('kumbhakaran_customer_ticket');
+              } else if (ticketStatus && ticketStatus.status) {
+                const updatedTicket = { ...ticketStatus, salonId };
+                setActiveTicket(updatedTicket);
+                safeStorage.setItem('kumbhakaran_customer_ticket', JSON.stringify(updatedTicket));
+              }
+            } catch {
+              // Network blip: keep current ticket!
+            }
           }
         }
         return entries;
@@ -914,6 +941,12 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     // Live telemetry interval: Poll every 2.5 seconds for instant real-time queue updates from partners
     const intervalId = setInterval(() => {
       fetchSalons(false);
+      // Auto-poll active queue ticket in real-time
+      if (activeTicketRef.current?.salonId) {
+        fetchSalonQueue(activeTicketRef.current.salonId);
+      } else if (selectedSalonRef.current?.id) {
+        fetchSalonQueue(selectedSalonRef.current.id);
+      }
     }, 2500);
 
     // Immediate sync on tab focus or screen unlock
