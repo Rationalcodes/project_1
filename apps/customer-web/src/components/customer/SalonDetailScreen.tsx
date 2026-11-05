@@ -122,11 +122,25 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
 
   useEffect(() => {
     if (selectedSalonForDetail?.id) {
-      fetchSalonQueue(selectedSalonForDetail.id);
+      const sId = selectedSalonForDetail.id;
+      fetchSalonQueue(sId);
+      // High-frequency 1.5s live polling while viewing active salon details
       const interval = setInterval(() => {
-        fetchSalonQueue(selectedSalonForDetail.id);
-      }, 4000);
-      return () => clearInterval(interval);
+        fetchSalonQueue(sId);
+      }, 1500);
+
+      const onFocus = () => fetchSalonQueue(sId);
+      const onVisibility = () => {
+        if (document.visibilityState === 'visible') fetchSalonQueue(sId);
+      };
+      window.addEventListener('focus', onFocus);
+      document.addEventListener('visibilitychange', onVisibility);
+
+      return () => {
+        clearInterval(interval);
+        window.removeEventListener('focus', onFocus);
+        document.removeEventListener('visibilitychange', onVisibility);
+      };
     }
   }, [selectedSalonForDetail?.id]);
 

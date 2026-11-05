@@ -477,6 +477,14 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return [];
   };
 
+  const broadcastTelemetryUpdate = (salonId: string, currentQueue?: number) => {
+    try {
+      const bc = new BroadcastChannel('kumbhakaran_telemetry');
+      bc.postMessage({ type: 'QUEUE_UPDATE', salonId, currentQueue, timestamp: Date.now() });
+      bc.close();
+    } catch {}
+  };
+
   const joinLiveQueue = async (
     salonId: string,
     name: string,
@@ -495,10 +503,18 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       setActiveTicket(entryWithSalon);
       safeStorage.setItem('kumbhakaran_customer_ticket', JSON.stringify(entryWithSalon));
       setQueueEntries((prev) => [...prev, entryWithSalon]);
-      // Update local salon currentQueue
+      const newCount = res.currentQueue ?? 1;
+      // Update local salon currentQueue & selectedSalonForDetail instantly
       setSalons((prev) =>
-        prev.map((s) => (s.id === salonId ? { ...s, currentQueue: res.currentQueue ?? s.currentQueue + 1 } : s))
+        prev.map((s) => (s.id === salonId ? { ...s, currentQueue: newCount, lastQueueUpdate: new Date().toISOString() } : s))
       );
+      setSelectedSalonForDetail((prev) =>
+        prev && prev.id === salonId
+          ? { ...prev, currentQueue: newCount, lastQueueUpdate: new Date().toISOString() }
+          : prev
+      );
+      broadcastTelemetryUpdate(salonId, newCount);
+      fetchSalonQueue(salonId);
       triggerNotification(`🎉 You joined the queue! Ticket #${entryWithSalon.ticketNumber || entryWithSalon.position}`);
       return entryWithSalon;
     }
@@ -511,8 +527,14 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       setActiveTicket(null);
       safeStorage.removeItem('kumbhakaran_customer_ticket');
       setSalons((prev) =>
-        prev.map((s) => (s.id === salonId ? { ...s, currentQueue: Math.max(0, s.currentQueue - 1) } : s))
+        prev.map((s) => (s.id === salonId ? { ...s, currentQueue: Math.max(0, s.currentQueue - 1), lastQueueUpdate: new Date().toISOString() } : s))
       );
+      setSelectedSalonForDetail((prev) =>
+        prev && prev.id === salonId
+          ? { ...prev, currentQueue: Math.max(0, prev.currentQueue - 1), lastQueueUpdate: new Date().toISOString() }
+          : prev
+      );
+      broadcastTelemetryUpdate(salonId);
       triggerNotification('You have left the queue.');
       await fetchSalonQueue(salonId);
     } catch (err: any) {
@@ -526,8 +548,14 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       setActiveTicket(null);
       safeStorage.removeItem('kumbhakaran_customer_ticket');
       setSalons((prev) =>
-        prev.map((s) => (s.id === salonId ? { ...s, currentQueue: Math.max(0, s.currentQueue - 1) } : s))
+        prev.map((s) => (s.id === salonId ? { ...s, currentQueue: Math.max(0, s.currentQueue - 1), lastQueueUpdate: new Date().toISOString() } : s))
       );
+      setSelectedSalonForDetail((prev) =>
+        prev && prev.id === salonId
+          ? { ...prev, currentQueue: Math.max(0, prev.currentQueue - 1), lastQueueUpdate: new Date().toISOString() }
+          : prev
+      );
+      broadcastTelemetryUpdate(salonId);
       triggerNotification('Service completed! Hope you loved your new haircut ✂️');
       await fetchSalonQueue(salonId);
     } catch (err: any) {
@@ -539,6 +567,7 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     try {
       await defaultApiClient.updateQueueEntryStatus(salonId, entryId, 'in_service');
       setActiveTicket((prev) => (prev ? { ...prev, status: 'in_service' } : null));
+      broadcastTelemetryUpdate(salonId);
       triggerNotification("You're in the styling chair! Enjoy your service 💈");
       await fetchSalonQueue(salonId);
     } catch (err: any) {
@@ -551,6 +580,10 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setSalons((prev) =>
       prev.map((s) => (s.id === salonId ? { ...s, currentQueue: queueVal, lastQueueUpdate: new Date().toISOString() } : s))
     );
+    setSelectedSalonForDetail((prev) =>
+      prev && prev.id === salonId ? { ...prev, currentQueue: queueVal, lastQueueUpdate: new Date().toISOString() } : prev
+    );
+    broadcastTelemetryUpdate(salonId, queueVal);
     triggerNotification(
       `Thank you! Live crowd status reported as ${crowdLevel === 'empty' ? 'No Wait (0 waiting)' : crowdLevel === 'medium' ? '1-2 Waiting' : '3+ Waiting'}.`
     );
@@ -835,14 +868,43 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     // Initial fetch
     fetchSalons(true);
 
-    // Live telemetry interval: Poll every 8 seconds for real-time queue updates from partners
+    // Live telemetry interval: Poll every 2.5 seconds for instant real-time queue updates from partners
     const intervalId = setInterval(() => {
       fetchSalons(false);
-    }, 8000);
+    }, 2500);
+
+    // Immediate sync on tab focus or screen unlock
+    const onFocus = () => fetchSalons(false);
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') fetchSalons(false);
+    };
+    window.addEventListener('focus', onFocus);
+    document.addEventListener('visibilitychange', onVisibility);
+
+    // 0ms instant cross-tab telemetry sync
+    let bc: BroadcastChannel | null = null;
+    try {
+      bc = new BroadcastChannel('kumbhakaran_telemetry');
+      bc.onmessage = (ev) => {
+        if (ev?.data?.type === 'QUEUE_UPDATE') {
+          fetchSalons(false);
+          if (ev.data.salonId) {
+            fetchSalonQueue(ev.data.salonId);
+          }
+        }
+      };
+    } catch {}
 
     return () => {
       isMounted = false;
       clearInterval(intervalId);
+      window.removeEventListener('focus', onFocus);
+      document.removeEventListener('visibilitychange', onVisibility);
+      if (bc) {
+        try {
+          bc.close();
+        } catch {}
+      }
     };
   }, [userLocation, lazyFilter]);
 

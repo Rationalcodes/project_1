@@ -79,11 +79,24 @@ export const ExpressWalkinScreen: React.FC<ExpressWalkinScreenProps> = ({
   // Polling queue for this salon while on express screen
   useEffect(() => {
     if (salon?.id) {
-      fetchSalonQueue(salon.id);
+      const sId = salon.id;
+      fetchSalonQueue(sId);
       const interval = setInterval(() => {
-        fetchSalonQueue(salon.id);
-      }, 3500);
-      return () => clearInterval(interval);
+        fetchSalonQueue(sId);
+      }, 1500);
+
+      const onFocus = () => fetchSalonQueue(sId);
+      const onVisibility = () => {
+        if (document.visibilityState === 'visible') fetchSalonQueue(sId);
+      };
+      window.addEventListener('focus', onFocus);
+      document.addEventListener('visibilitychange', onVisibility);
+
+      return () => {
+        clearInterval(interval);
+        window.removeEventListener('focus', onFocus);
+        document.removeEventListener('visibilitychange', onVisibility);
+      };
     }
   }, [salon?.id]);
 

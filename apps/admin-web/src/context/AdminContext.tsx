@@ -112,7 +112,7 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   };
 
-  // Restore authenticated session from localStorage & populate salons
+  // Restore authenticated session from localStorage & populate salons with live telemetry sync
   useEffect(() => {
     let isMounted = true;
     refreshSalons();
@@ -129,8 +129,39 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         }
       });
     }
+
+    // Live telemetry interval: Poll every 2.5 seconds so admin sees all salon queues update instantly
+    const interval = setInterval(() => {
+      refreshSalons();
+    }, 2500);
+
+    const onFocus = () => refreshSalons();
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') refreshSalons();
+    };
+    window.addEventListener('focus', onFocus);
+    document.addEventListener('visibilitychange', onVisibility);
+
+    let bc: BroadcastChannel | null = null;
+    try {
+      bc = new BroadcastChannel('kumbhakaran_telemetry');
+      bc.onmessage = (ev) => {
+        if (ev?.data?.type === 'QUEUE_UPDATE') {
+          refreshSalons();
+        }
+      };
+    } catch {}
+
     return () => {
       isMounted = false;
+      clearInterval(interval);
+      window.removeEventListener('focus', onFocus);
+      document.removeEventListener('visibilitychange', onVisibility);
+      if (bc) {
+        try {
+          bc.close();
+        } catch {}
+      }
     };
   }, []);
 

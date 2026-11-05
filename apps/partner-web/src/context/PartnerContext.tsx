@@ -211,15 +211,50 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   }, [activeSalonId]);
 
-  // Poll live queue entries every 4 seconds when active salon is loaded
+  // Poll live queue entries every 1.5 seconds when active salon is loaded + immediate sync on focus & broadcast
   useEffect(() => {
     if (!activeSalonId) return;
     refreshQueueEntries(activeSalonId);
     const interval = setInterval(() => {
       refreshQueueEntries(activeSalonId);
-    }, 4000);
-    return () => clearInterval(interval);
+    }, 1500);
+
+    const onFocus = () => refreshQueueEntries(activeSalonId);
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') refreshQueueEntries(activeSalonId);
+    };
+    window.addEventListener('focus', onFocus);
+    document.addEventListener('visibilitychange', onVisibility);
+
+    let bc: BroadcastChannel | null = null;
+    try {
+      bc = new BroadcastChannel('kumbhakaran_telemetry');
+      bc.onmessage = (ev) => {
+        if (ev?.data?.type === 'QUEUE_UPDATE' && (!ev.data.salonId || ev.data.salonId === activeSalonId)) {
+          refreshQueueEntries(activeSalonId);
+        }
+      };
+    } catch {}
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', onFocus);
+      document.removeEventListener('visibilitychange', onVisibility);
+      if (bc) {
+        try {
+          bc.close();
+        } catch {}
+      }
+    };
   }, [activeSalonId, refreshQueueEntries]);
+
+  const broadcastTelemetryUpdate = (salonId: string, currentQueue?: number) => {
+    try {
+      const bc = new BroadcastChannel('kumbhakaran_telemetry');
+      bc.postMessage({ type: 'QUEUE_UPDATE', salonId, currentQueue, timestamp: Date.now() });
+      bc.close();
+    } catch {}
+  };
 
   const addCustomerToQueue = async (name: string, phone?: string, serviceName?: string) => {
     const sId = activeSalonId || activeSalon?.id;
@@ -244,6 +279,7 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
               : s
           )
         );
+        broadcastTelemetryUpdate(sId, res.currentQueue);
         triggerNotification(`Added #${res.entry.ticketNumber} ${name} to live queue!`);
       }
       await refreshQueueEntries(sId);
@@ -259,6 +295,7 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
     if (!sId) return;
     try {
       await defaultApiClient.updateQueueEntryStatus(sId, entryId, status);
+      broadcastTelemetryUpdate(sId);
       if (status === 'completed') {
         const avgPrice = activeSalon?.services[0]?.price || 150;
         setSalons((prev) =>
@@ -311,6 +348,7 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
             : s
         )
       );
+      broadcastTelemetryUpdate(sId, 0);
       triggerNotification('All waiting customers cleared from queue');
     } catch (err: any) {
       triggerNotification(err?.message || 'Failed to clear queue');
@@ -555,6 +593,8 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
     triggerNotification(
       `Queue updated for ${salon?.name || 'salon'}: ${finalQueue} waiting`,
     );
+    broadcastTelemetryUpdate(salonId, finalQueue);
+    refreshQueueEntries(salonId);
 
     // Asynchronously synchronize with NestJS backend
     try {
