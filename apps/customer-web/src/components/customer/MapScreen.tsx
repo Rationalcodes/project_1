@@ -68,10 +68,13 @@ export const MapScreen: React.FC = () => {
   const googleMapRef = useRef<any>(null);
   const googleMarkersRef = useRef<any[]>([]);
   const googleUserMarkerRef = useRef<any>(null);
+  const googlePolylineRef = useRef<any>(null);
+  const googleMidpointMarkerRef = useRef<any>(null);
 
   // Leaflet references
   const leafletMapRef = useRef<any>(null);
   const leafletMarkersLayerRef = useRef<any>(null);
+  const hasInitialFittedRef = useRef<boolean>(false);
 
   // Dynamic distance computation with independent Haversine formula
   const visibleSalons = salons
@@ -100,6 +103,20 @@ export const MapScreen: React.FC = () => {
       return true;
     })
     .sort((a, b) => a.computedDistance - b.computedDistance);
+
+  // Auto-detect location on map mount & select nearest studio
+  useEffect(() => {
+    if (!userLocation) {
+      requestDeviceLocation();
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!selectedMarkerSalon && visibleSalons.length > 0) {
+      setSelectedMarkerSalon(visibleSalons[0]);
+    }
+  }, [visibleSalons, selectedMarkerSalon]);
+
 
   // 1. Initialize Google Maps with Leaflet fallback
   useEffect(() => {
@@ -218,14 +235,72 @@ export const MapScreen: React.FC = () => {
 
       marker.addListener('click', () => {
         setSelectedMarkerSalon(salon);
-        googleMapRef.current.panTo({
-          lat: salon.coordinates.lat,
-          lng: salon.coordinates.lng,
-        });
+        if (userLocation && googleMapRef.current) {
+          const bounds = new gmaps.LatLngBounds();
+          bounds.extend({ lat: userLocation.lat, lng: userLocation.lng });
+          bounds.extend({ lat: salon.coordinates.lat, lng: salon.coordinates.lng });
+          googleMapRef.current.fitBounds(bounds, 50);
+        } else {
+          googleMapRef.current.panTo({
+            lat: salon.coordinates.lat,
+            lng: salon.coordinates.lng,
+          });
+        }
       });
 
       googleMarkersRef.current.push(marker);
     });
+
+    // Distance route line from Customer Location -> Selected Shop Location
+    if (googlePolylineRef.current) {
+      googlePolylineRef.current.setMap(null);
+      googlePolylineRef.current = null;
+    }
+    if (googleMidpointMarkerRef.current) {
+      googleMidpointMarkerRef.current.setMap(null);
+      googleMidpointMarkerRef.current = null;
+    }
+
+    if (userLocation && selectedMarkerSalon) {
+      googlePolylineRef.current = new gmaps.Polyline({
+        path: [
+          { lat: userLocation.lat, lng: userLocation.lng },
+          { lat: selectedMarkerSalon.coordinates.lat, lng: selectedMarkerSalon.coordinates.lng },
+        ],
+        geodesic: true,
+        strokeColor: primaryHex,
+        strokeOpacity: 0.9,
+        strokeWeight: 4,
+        map: googleMapRef.current,
+      });
+
+      const distKm = calculateHaversineDistance(
+        userLocation.lat,
+        userLocation.lng,
+        selectedMarkerSalon.coordinates.lat,
+        selectedMarkerSalon.coordinates.lng,
+      );
+      const distFormatted = distKm < 1 ? `${Math.round(distKm * 1000)} m` : `${distKm.toFixed(1)} km`;
+      const midLat = (userLocation.lat + selectedMarkerSalon.coordinates.lat) / 2;
+      const midLng = (userLocation.lng + selectedMarkerSalon.coordinates.lng) / 2;
+
+      googleMidpointMarkerRef.current = new gmaps.Marker({
+        position: { lat: midLat, lng: midLng },
+        map: googleMapRef.current,
+        label: {
+          text: `● ${distFormatted}`,
+          color: '#1F1F1F',
+          fontSize: '11px',
+          fontWeight: '800',
+          className: 'google-maps-label',
+        },
+        icon: {
+          path: gmaps.SymbolPath.CIRCLE,
+          scale: 0,
+        },
+        zIndex: 500,
+      });
+    }
   }, [mapEngine, visibleSalons, selectedMarkerSalon, userLocation, genderFilter]);
 
   // 3A. Mount Leaflet fallback when Google Maps SDK key is not configured
@@ -276,7 +351,7 @@ export const MapScreen: React.FC = () => {
     };
   }, [mapEngine, isLeafletLoaded, currentCoords.lat, currentCoords.lng]);
 
-  // 3B. Synchronize Leaflet Markers
+  // 3B. Synchronize Leaflet Markers, Distance Line & Midpoint Badges
   useEffect(() => {
     if (mapEngine !== 'leaflet' || !leafletMapRef.current || !leafletMarkersLayerRef.current) return;
     const L = (window as any).L;
@@ -285,24 +360,117 @@ export const MapScreen: React.FC = () => {
     const layer = leafletMarkersLayerRef.current;
     layer.clearLayers();
 
-    // User Beacon (only if location is set)
+    // 1. User Beacon (only if location is set)
     if (userLocation) {
       const userBeaconHtml = `
-        <div style="position: relative; width: 24px; height: 24px;">
-          <div style="position: absolute; inset: -4px; background: ${isWomen ? 'rgba(225, 29, 72, 0.3)' : 'rgba(255, 100, 34, 0.3)'}; border-radius: 9999px; animation: ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;"></div>
-          <div style="position: absolute; inset: 2px; background: ${primaryHex}; border: 2.5px solid #ffffff; border-radius: 9999px; box-shadow: 0 0 12px ${isWomen ? 'rgba(225, 29, 72, 0.6)' : 'rgba(255,100,34,0.6)'};"></div>
+        <div style="position: relative; width: 26px; height: 26px;">
+          <div style="position: absolute; inset: -5px; background: ${isWomen ? 'rgba(225, 29, 72, 0.28)' : 'rgba(255, 100, 34, 0.28)'}; border-radius: 9999px; animation: ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;"></div>
+          <div style="position: absolute; inset: 2px; background: ${primaryHex}; border: 2.5px solid #ffffff; border-radius: 9999px; box-shadow: 0 2px 10px ${isWomen ? 'rgba(225, 29, 72, 0.6)' : 'rgba(255,100,34,0.6)'};"></div>
+          <div style="position: absolute; top: -18px; left: 50%; transform: translateX(-50%); background: #1F1F1F; color: #FFFFFF; font-size: 9px; font-weight: 800; padding: 1px 6px; border-radius: 6px; border: 1px solid #FFF; white-space: nowrap; pointer-events: none; box-shadow: 0 2px 5px rgba(0,0,0,0.25);">You</div>
         </div>
       `;
       const userIcon = L.divIcon({
         className: 'user-beacon-marker',
         html: userBeaconHtml,
-        iconSize: [24, 24],
-        iconAnchor: [12, 12],
+        iconSize: [26, 26],
+        iconAnchor: [13, 13],
       });
-      L.marker([userLocation.lat, userLocation.lng], { icon: userIcon, title: 'Your Location' }).addTo(layer);
+      L.marker([userLocation.lat, userLocation.lng], { icon: userIcon, title: 'Your Location', zIndexOffset: 900 }).addTo(layer);
     }
 
-    // Salon Markers - Authentic Google Maps Location Pin & Place Label
+    // 2. Draw Distance Line connecting Customer Location -> Selected Shop Location
+    if (userLocation && selectedMarkerSalon) {
+      const startPoint: [number, number] = [userLocation.lat, userLocation.lng];
+      const endPoint: [number, number] = [
+        selectedMarkerSalon.coordinates.lat,
+        selectedMarkerSalon.coordinates.lng,
+      ];
+
+      // White outline casing for crisp contrast on any map background
+      L.polyline([startPoint, endPoint], {
+        color: '#FFFFFF',
+        weight: 6,
+        opacity: 0.9,
+        lineCap: 'round',
+        lineJoin: 'round',
+      }).addTo(layer);
+
+      // Main dashed animated polyline in primary brand color
+      L.polyline([startPoint, endPoint], {
+        color: primaryHex,
+        weight: 3.5,
+        opacity: 0.95,
+        dashArray: '8, 8',
+        lineCap: 'round',
+        lineJoin: 'round',
+        className: 'animated-route-line',
+      }).addTo(layer);
+
+      // Midpoint distance pill badge
+      const distKm = calculateHaversineDistance(
+        userLocation.lat,
+        userLocation.lng,
+        selectedMarkerSalon.coordinates.lat,
+        selectedMarkerSalon.coordinates.lng,
+      );
+      const distFormatted = distKm < 1 ? `${Math.round(distKm * 1000)} m` : `${distKm.toFixed(1)} km`;
+      const estMins = Math.max(1, Math.round(distKm * 3));
+      const midLat = (userLocation.lat + selectedMarkerSalon.coordinates.lat) / 2;
+      const midLng = (userLocation.lng + selectedMarkerSalon.coordinates.lng) / 2;
+
+      const midpointHtml = `
+        <div style="
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          background: #18181B;
+          color: #FFFFFF;
+          padding: 3px 9px;
+          border-radius: 9999px;
+          border: 1.5px solid #FFFFFF;
+          box-shadow: 0 4px 14px rgba(0,0,0,0.35);
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+          font-size: 11px;
+          font-weight: 800;
+          white-space: nowrap;
+          pointer-events: none;
+          transform: translate(-50%, -50%);
+        ">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="${primaryHex}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+            <polyline points="12 5 19 12 12 19"></polyline>
+          </svg>
+          <span>${distFormatted}</span>
+          <span style="color: #A1A1AA; font-size: 9px; font-weight: 600;">(~${estMins}m)</span>
+        </div>
+      `;
+
+      const midpointIcon = L.divIcon({
+        className: 'route-midpoint-badge',
+        html: midpointHtml,
+        iconSize: [0, 0],
+        iconAnchor: [0, 0],
+      });
+
+      L.marker([midLat, midLng], {
+        icon: midpointIcon,
+        zIndexOffset: 700,
+        interactive: false,
+      }).addTo(layer);
+
+      // Frame map view to fit both user and destination studio on initial load
+      if (!hasInitialFittedRef.current && leafletMapRef.current) {
+        hasInitialFittedRef.current = true;
+        try {
+          leafletMapRef.current.fitBounds([startPoint, endPoint], {
+            padding: [60, 60],
+            maxZoom: 16,
+          });
+        } catch {}
+      }
+    }
+
+    // 3. Salon Markers - Authentic Google Maps Location Pin & Place Label
     visibleSalons.forEach((salon) => {
       const isSelected = selectedMarkerSalon?.id === salon.id;
       const pinColor = isSelected
@@ -344,7 +512,15 @@ export const MapScreen: React.FC = () => {
       });
       marker.on('click', () => {
         setSelectedMarkerSalon(salon);
-        if (leafletMapRef.current) {
+        if (userLocation && leafletMapRef.current) {
+          leafletMapRef.current.fitBounds(
+            [
+              [userLocation.lat, userLocation.lng],
+              [salon.coordinates.lat, salon.coordinates.lng],
+            ],
+            { padding: [60, 60], maxZoom: 16 }
+          );
+        } else if (leafletMapRef.current) {
           leafletMapRef.current.panTo([salon.coordinates.lat, salon.coordinates.lng]);
         }
       });
@@ -388,14 +564,34 @@ export const MapScreen: React.FC = () => {
   const handleSelectSalonClick = (salon: Salon) => {
     setSelectedMarkerSalon(salon);
     if (mapEngine === 'google' && googleMapRef.current) {
+      if (userLocation) {
+        const gmaps = (window as any).google?.maps;
+        if (gmaps) {
+          const bounds = new gmaps.LatLngBounds();
+          bounds.extend({ lat: userLocation.lat, lng: userLocation.lng });
+          bounds.extend({ lat: salon.coordinates.lat, lng: salon.coordinates.lng });
+          googleMapRef.current.fitBounds(bounds, 50);
+          return;
+        }
+      }
       googleMapRef.current.panTo({
         lat: salon.coordinates.lat,
         lng: salon.coordinates.lng,
       });
       googleMapRef.current.setZoom(15);
     } else if (mapEngine === 'leaflet' && leafletMapRef.current) {
-      leafletMapRef.current.panTo([salon.coordinates.lat, salon.coordinates.lng]);
-      leafletMapRef.current.setZoom(15);
+      if (userLocation) {
+        leafletMapRef.current.fitBounds(
+          [
+            [userLocation.lat, userLocation.lng],
+            [salon.coordinates.lat, salon.coordinates.lng],
+          ],
+          { padding: [60, 60], maxZoom: 16 }
+        );
+      } else {
+        leafletMapRef.current.panTo([salon.coordinates.lat, salon.coordinates.lng]);
+        leafletMapRef.current.setZoom(15);
+      }
     }
   };
 
@@ -550,6 +746,34 @@ export const MapScreen: React.FC = () => {
           `}</style>
           <div ref={mapContainerRef} className="w-full h-full" style={{ zIndex: 1 }} />
 
+          {/* Real-time Distance Status Indicator & GPS Prompt */}
+          {userLocation && selectedMarkerSalon ? (
+            <div className="absolute top-4 left-4 z-20 hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/95 backdrop-blur-md border border-[#E8E2D8] text-[11px] font-bold text-stone-800 shadow-md animate-in fade-in">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span>
+                Distance to <strong className="text-stone-900">{selectedMarkerSalon.name}</strong>:{' '}
+                <span className={isWomen ? 'text-[#E11D48]' : 'text-[#FF6422]'}>
+                  {calculateHaversineDistance(
+                    userLocation.lat,
+                    userLocation.lng,
+                    selectedMarkerSalon.coordinates.lat,
+                    selectedMarkerSalon.coordinates.lng,
+                  ).toFixed(1)}{' '}
+                  km
+                </span>
+              </span>
+            </div>
+          ) : !userLocation ? (
+            <button
+              onClick={requestDeviceLocation}
+              className="absolute top-4 left-4 z-20 px-3 py-1.5 rounded-xl bg-white/95 backdrop-blur-md border border-orange-200 text-[11px] font-bold text-orange-900 shadow-md flex items-center gap-1.5 hover:bg-orange-50 transition-colors animate-in fade-in"
+              title="Click to detect your location and show distance line"
+            >
+              <Crosshair className="w-3.5 h-3.5 text-[#FF6422]" />
+              <span>Enable GPS to draw route</span>
+            </button>
+          ) : null}
+
           {/* Floating "Search This Area" Pill */}
           {hasMapMoved && (
             <button
@@ -639,7 +863,16 @@ export const MapScreen: React.FC = () => {
                       {selectedMarkerSalon.rating} ★
                     </span>
                     <span className="text-stone-300">•</span>
-                    <span className="text-stone-600">{selectedMarkerSalon.distanceKm} km</span>
+                    <span className="text-stone-600 font-semibold">
+                      {userLocation
+                        ? `${calculateHaversineDistance(
+                            userLocation.lat,
+                            userLocation.lng,
+                            selectedMarkerSalon.coordinates.lat,
+                            selectedMarkerSalon.coordinates.lng,
+                          ).toFixed(1)} km away`
+                        : `${selectedMarkerSalon.distanceKm} km`}
+                    </span>
                   </div>
                   <h4 className="text-xs font-bold text-stone-900 truncate">{selectedMarkerSalon.name}</h4>
                   <p className="text-[11px] text-stone-500 truncate">{selectedMarkerSalon.locality}</p>

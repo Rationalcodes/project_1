@@ -101,7 +101,23 @@
 
 .leaflet-div-icon,
 .salon-radar-marker,
-.google-maps-radar-marker {
+.google-maps-radar-marker,
+.route-midpoint-badge {
   background: transparent !important;
   border: none !important;
+}
+
+/* Animated dashed distance line */
+.animated-route-line {
+  stroke-dasharray: 8 8;
+  animation: routeDash 1.2s linear infinite;
+}
+
+@keyframes routeDash {
+  from {
+    stroke-dashoffset: 16;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
 }
