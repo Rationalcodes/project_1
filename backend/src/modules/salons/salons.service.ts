@@ -503,7 +503,7 @@ export class SalonsService {
                 current_queue, avg_service_time_minutes, active_barbers,
                 rating, review_count, starting_price, is_open, is_verified,
                 queue_status, opening_hours_open, opening_hours_close,
-                status, last_queue_update
+                status, last_queue_update, today_customers_served, today_revenue, monthly_revenue
          FROM salons
          WHERE id = $1 LIMIT 1;`,
         id,

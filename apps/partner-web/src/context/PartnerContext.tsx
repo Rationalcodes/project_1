@@ -229,8 +229,15 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
           prev.map((s) => {
             if (s.id !== sId) return s;
             const waitingCount = entries.filter((e: any) => e.status === 'waiting' || e.status === 'called').length;
-            if (waitingCount !== s.currentQueue) {
-              const updated = { ...s, currentQueue: waitingCount, lastQueueUpdate: new Date().toISOString() };
+            const completedCount = entries.filter((e: any) => e.status === 'completed').length;
+            const effectiveCompleted = Math.max(s.todayCustomersServed, completedCount);
+            if (waitingCount !== s.currentQueue || effectiveCompleted !== s.todayCustomersServed) {
+              const updated = {
+                ...s,
+                currentQueue: waitingCount,
+                todayCustomersServed: effectiveCompleted,
+                lastQueueUpdate: new Date().toISOString(),
+              };
               safeStorage.setItem('kumbhakaran_partner_active_salon', JSON.stringify(updated));
               return updated;
             }
