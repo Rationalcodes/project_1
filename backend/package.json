@@ -11,6 +11,8 @@
     "prisma:db:pull": "prisma db pull",
     "test:db": "ts-node src/scripts/test-db.ts",
     "test:phase2": "ts-node src/scripts/test-phase2.ts",
+    "test:queue-entry": "ts-node src/scripts/test-queue-entry-create.ts",
+    "test:queue-entry:postgres": "ts-node src/scripts/test-queue-entry-postgres.ts",
     "test:auth": "ts-node src/scripts/test-auth-security.ts"
   },
   "dependencies": {

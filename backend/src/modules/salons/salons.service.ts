@@ -83,6 +83,61 @@ export class SalonsService {
     );
   }
 
+  private async queueEntryRetryResponse(entry: Prisma.SalonQueueEntryGetPayload<{}>) {
+    const currentQueue = await this.prisma.salonQueueEntry.count({
+      where: { salonId: entry.salonId, status: { in: ['waiting', 'called'] } },
+    });
+    return {
+      success: true,
+      entry: {
+        id: entry.id,
+        salonId: entry.salonId,
+        position: entry.position,
+        ticketNumber: entry.ticketNumber,
+        customerName: entry.customerName,
+        phone: entry.phone,
+        serviceName: entry.serviceName,
+        serviceId: entry.serviceId,
+        serviceDuration: entry.serviceDuration,
+        servicePrice: Number(entry.servicePrice),
+        assignedStaffId: entry.assignedStaffId,
+        status: entry.status,
+        joinedAt: entry.joinedAt.toISOString(),
+        partySize: entry.partySize,
+        estimatedWaitMinutes: entry.estimatedWaitMinutes,
+        estimatedStartTime: entry.estimatedStartTime?.toISOString() || null,
+        estimatedCompletionTime: entry.estimatedCompletionTime?.toISOString() || null,
+      },
+      queueAccessToken: this.queueEntryAccessToken(entry),
+      smartQueue: {
+        checkInMethod: entry.checkInMethod,
+        partySize: entry.partySize,
+        arrivalConfirmedAt: entry.arrivalConfirmedAt?.toISOString() || null,
+        locationConsent: entry.locationConsent,
+      },
+      currentQueue,
+    };
+  }
+
+  private ensureQueueRequestMatches(
+    entry: Prisma.SalonQueueEntryGetPayload<{}>,
+    dto: CreateQueueEntryDto,
+    actorId?: string,
+  ) {
+    const matches =
+      entry.customerName === ((dto.customerName || '').trim() || 'Walk-in Customer') &&
+      entry.phone === ((dto.phone || '').trim() || null) &&
+      entry.serviceName === ((dto.serviceName || '').trim() || 'Haircut & Styling') &&
+      entry.deviceId === ((dto.deviceId || '').trim() || null) &&
+      entry.userId === (actorId || null) &&
+      entry.assignedStaffId === (dto.preferredStaffId || null) &&
+      entry.partySize === (dto.partySize || 1) &&
+      (!dto.serviceId || entry.serviceId === dto.serviceId);
+    if (!matches) {
+      throw new ConflictException('This request ID was already used for a different queue join.');
+    }
+  }
+
   private requireQueueEntryAccess(
     entry: { id: string; salonId: string; joinedAt: Date },
     accessToken?: string,
@@ -1555,6 +1610,7 @@ export class SalonsService {
    * 3. Add customer to queue (With service duration & price snapshotting!)
    */
   async addQueueEntry(salonId: string, dto: CreateQueueEntryDto, actorId?: string) {
+    const requestId = dto.requestId.toLowerCase();
     const entryId = `q-${randomUUID()}`;
     const cleanName = (dto.customerName || '').trim() || 'Walk-in Customer';
     const cleanPhone = (dto.phone || '').trim() || null;
@@ -1562,7 +1618,20 @@ export class SalonsService {
     const cleanService = (dto.serviceName || '').trim() || 'Haircut & Styling';
     const checkInMethod = dto.checkInToken ? 'qr' : 'online';
 
+    const replayQueueRequest = async () => {
+      const priorRequest = await this.prisma.salonQueueEntry.findUnique({
+        where: { salonId_clientRequestId: { salonId, clientRequestId: requestId } },
+      });
+      if (!priorRequest) return null;
+      this.ensureQueueRequestMatches(priorRequest, dto, actorId);
+      return this.queueEntryRetryResponse(priorRequest);
+    };
+    const initialReplay = await replayQueueRequest();
+    if (initialReplay) return initialReplay;
+
     if (dto.checkInToken && !this.isValidSalonCheckInToken(salonId, dto.checkInToken)) {
+      const replay = await replayQueueRequest();
+      if (replay) return replay;
       throw new ForbiddenException('This salon check-in QR code is invalid.');
     }
 
@@ -1581,6 +1650,8 @@ export class SalonsService {
       },
     });
     if (!salon) {
+      const replay = await replayQueueRequest();
+      if (replay) return replay;
       throw new NotFoundException(`Salon with ID '${salonId}' not found`);
     }
     if (
@@ -1588,9 +1659,13 @@ export class SalonsService {
       salon.queueStatus === 'closed' ||
       isSalonPastClosingTime(salon.openingHoursClose, salon.openingHoursOpen)
     ) {
+      const replay = await replayQueueRequest();
+      if (replay) return replay;
       throw new BadRequestException('This salon queue is currently closed.');
     }
     if (salon.queueStatus === 'paused') {
+      const replay = await replayQueueRequest();
+      if (replay) return replay;
       throw new BadRequestException('This salon is temporarily not accepting new queue customers. Please try again shortly.');
     }
 
@@ -1598,37 +1673,49 @@ export class SalonsService {
     let snapshotDuration = salon.avgServiceTimeMinutes || 20;
     let snapshotPrice = Number(salon.startingPrice || 150);
     let matchedServiceId = dto.serviceId || null;
+    const matchedStaffId = dto.preferredStaffId || null;
 
-    try {
-      let matchedService: any = null;
-      if (dto.serviceId) {
-        matchedService = await this.prisma.salonService.findFirst({
-          where: { id: dto.serviceId, salonId },
-        });
+    let matchedService: any = null;
+    if (dto.serviceId) {
+      matchedService = await this.prisma.salonService.findFirst({
+        where: { id: dto.serviceId, salonId, isAvailable: true },
+      });
+      if (!matchedService) {
+        const replay = await replayQueueRequest();
+        if (replay) return replay;
+        throw new BadRequestException('The selected service is unavailable for this salon.');
       }
-      if (!matchedService && cleanService) {
-        matchedService = await this.prisma.salonService.findFirst({
-          where: {
-            salonId,
-            name: { equals: cleanService, mode: 'insensitive' },
-          },
-        });
-      }
-      if (matchedService) {
-        snapshotDuration = matchedService.durationMinutes || snapshotDuration;
-        snapshotPrice = Number(matchedService.price) || snapshotPrice;
-        matchedServiceId = matchedService.id;
-      }
-    } catch {}
+    } else if (cleanService) {
+      matchedService = await this.prisma.salonService.findFirst({
+        where: {
+          salonId,
+          name: { equals: cleanService, mode: 'insensitive' },
+          isAvailable: true,
+        },
+      });
+    }
+    if (matchedService) {
+      snapshotDuration = matchedService.durationMinutes || snapshotDuration;
+      snapshotPrice = Number(matchedService.price) || snapshotPrice;
+      matchedServiceId = matchedService.id;
+    }
 
     // Validate token configuration before creating a durable queue entry.
     const joinedAt = new Date();
     const queueAccessToken = this.queueEntryAccessToken({ id: entryId, salonId, joinedAt });
     const startOfToday = getStartOfTodayIST();
-    const { entry, nextPos, ticketNumber } = await this.prisma.runTransaction(
+    const transactionResult = await this.prisma.runTransaction(
       'queue.entry.create',
       async (tx) => {
         await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${salonId}), hashtext('queue-position'))`;
+        const priorRequest = await tx.salonQueueEntry.findUnique({
+          where: { salonId_clientRequestId: { salonId, clientRequestId: requestId } },
+        });
+        if (priorRequest) {
+          this.ensureQueueRequestMatches(priorRequest, dto, actorId);
+          return { entry: priorRequest, isRetry: true as const };
+        }
+
         const [lockedSalon] = await tx.$queryRaw<Array<{
           is_open: boolean;
           queue_status: string;
@@ -1654,9 +1741,24 @@ export class SalonsService {
           throw new BadRequestException('This salon is temporarily not accepting new queue customers. Please try again shortly.');
         }
 
-        const [maxRow] = await tx.$queryRaw<Array<{ max_pos: number; max_ticket: number }>>`
+        if (matchedStaffId) {
+          const staff = await tx.salonStaff.findFirst({
+            where: { id: matchedStaffId, salonId, status: 'active' },
+            select: { id: true },
+          });
+          if (!staff) {
+            throw new BadRequestException('The selected staff member is unavailable for this salon.');
+          }
+        }
+
+        const [maxRow] = await tx.$queryRaw<Array<{
+          max_pos: number;
+          max_ticket: number;
+          waiting_count: number;
+        }>>`
           SELECT
             COALESCE(MAX(position) FILTER (WHERE status IN ('waiting', 'called', 'in_service', 'skipped')), 0)::int AS max_pos,
+            COUNT(*) FILTER (WHERE status IN ('waiting', 'called'))::int AS waiting_count,
             COALESCE(
               MAX(NULLIF(regexp_replace(ticket_number, '[^0-9]', '', 'g'), '')::int),
               0
@@ -1698,6 +1800,7 @@ export class SalonsService {
           data: {
             id: entryId,
             salonId,
+            clientRequestId: requestId,
             position: nextPos,
             ticketNumber,
             customerName: cleanName,
@@ -1717,9 +1820,19 @@ export class SalonsService {
             arrivalConfirmedAt: checkInMethod === 'qr' ? joinedAt : null,
           },
         });
-        return { entry, nextPos, ticketNumber };
+        return {
+          entry,
+          nextPos,
+          ticketNumber,
+          waitingCount: Number(maxRow?.waiting_count || 0) + 1,
+          isRetry: false as const,
+        };
       },
     );
+    if (transactionResult.isRetry) {
+      return this.queueEntryRetryResponse(transactionResult.entry);
+    }
+    const { entry, nextPos, ticketNumber, waitingCount } = transactionResult;
 
     // Audit Event
     await this.logQueueEvent(
@@ -1739,34 +1852,51 @@ export class SalonsService {
     );
 
     // Recalculate whole queue with intelligent engine
-    const queueData = await this.queueEngine.recalculateSalonQueue(salonId, { force: true, persist: true });
-    this.syncLocalQueueCache(salonId, queueData.overview.totalWaiting);
-    const createdItem = queueData.activeEntries.find((e) => e.id === entryId);
+    let queueData: Awaited<ReturnType<QueueEngineService['recalculateSalonQueue']>> | null = null;
+    try {
+      queueData = await this.queueEngine.recalculateSalonQueue(salonId, { force: true, persist: true });
+      this.syncLocalQueueCache(salonId, queueData.overview.totalWaiting);
+    } catch (error) {
+      this.logger.error(JSON.stringify({
+        event: 'queue.entry.recalculation.failed_after_commit',
+        salonId,
+        entryId,
+        errorType: error instanceof Error ? error.name : 'UnknownError',
+      }));
+    }
+    const createdItem = queueData?.activeEntries.find((e) => e.id === entryId);
+    const responseEntry = createdItem || {
+      id: entry.id,
+      salonId,
+      position: nextPos,
+      ticketNumber,
+      customerName: cleanName,
+      phone: cleanPhone,
+      serviceName: cleanService,
+      serviceId: matchedServiceId,
+      serviceDuration: snapshotDuration,
+      servicePrice: Number(entry.servicePrice),
+      assignedStaffId: entry.assignedStaffId,
+      status: entry.status,
+      joinedAt: entry.joinedAt.toISOString(),
+      partySize: entry.partySize,
+    };
 
     // Broadcast real-time WebSockets
     this.queueGateway.broadcastToSalon(salonId, 'queue.entry.created', {
-      entry: createdItem,
-      overview: queueData.overview,
+      entry: responseEntry,
+      ...(queueData ? { overview: queueData.overview } : {}),
     });
-    this.queueGateway.broadcastToSalon(salonId, 'queue.eta.updated', {
-      overview: queueData.overview,
-      entries: queueData.activeEntries,
-    });
+    if (queueData) {
+      this.queueGateway.broadcastToSalon(salonId, 'queue.eta.updated', {
+        overview: queueData.overview,
+        entries: queueData.activeEntries,
+      });
+    }
 
     return {
       success: true,
-      entry: createdItem || {
-        id: entryId,
-        position: nextPos,
-        ticketNumber,
-        customerName: cleanName,
-        phone: cleanPhone,
-        serviceName: cleanService,
-        serviceDuration: snapshotDuration,
-        servicePrice: snapshotPrice,
-        status: 'waiting',
-        joinedAt: new Date().toISOString(),
-      },
+      entry: responseEntry,
       queueAccessToken,
       smartQueue: {
         checkInMethod: entry.checkInMethod,
@@ -1774,8 +1904,8 @@ export class SalonsService {
         arrivalConfirmedAt: entry.arrivalConfirmedAt?.toISOString() || null,
         locationConsent: entry.locationConsent,
       },
-      currentQueue: queueData.overview.totalWaiting,
-      overview: queueData.overview,
+      currentQueue: queueData?.overview.totalWaiting ?? waitingCount,
+      ...(queueData ? { overview: queueData.overview } : {}),
     };
   }
 

@@ -1,8 +1,8 @@
 import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/common';
 import { Prisma, PrismaClient } from '@prisma/client';
 
-const DEFAULT_CONNECTION_LIMIT = 8;
-const MAX_CONNECTION_LIMIT = 12;
+const DEFAULT_CONNECTION_LIMIT = 5;
+const MAX_CONNECTION_LIMIT = 5;
 
 function getPrismaConnectionOptions(connectionLimit: number) {
   const options = {

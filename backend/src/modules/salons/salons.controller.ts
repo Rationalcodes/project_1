@@ -12,7 +12,14 @@ import {
   HttpStatus,
   Headers,
   Req,
+  HttpException,
+  ConflictException,
+  NotFoundException,
+  BadRequestException,
+  ServiceUnavailableException,
+  Logger,
 } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import {
   ApiTags,
   ApiOperation,
@@ -58,6 +65,8 @@ import {
 @ApiTags('Salons')
 @Controller('salons')
 export class SalonsController {
+  private readonly logger = new Logger(SalonsController.name);
+
   constructor(
     private readonly salonsService: SalonsService,
     private readonly discoveryService: DiscoveryService,
@@ -361,7 +370,53 @@ export class SalonsController {
     @Body() dto: CreateQueueEntryDto,
     @CurrentUser() user?: AuthenticatedUser,
   ) {
-    return this.salonsService.addQueueEntry(id, dto, user?.role === 'CUSTOMER' ? user.id : undefined);
+    try {
+      return await this.salonsService.addQueueEntry(
+        id,
+        dto,
+        user?.role === 'CUSTOMER' ? user.id : undefined,
+      );
+    } catch (error) {
+      if (error instanceof HttpException) throw error;
+
+      const prismaCode =
+        error instanceof Prisma.PrismaClientKnownRequestError ? error.code : this.getDatabaseErrorCode(error);
+      this.logger.error(JSON.stringify({
+        event: 'queue.entry.request.failed',
+        salonId: id,
+        errorType: error instanceof Error ? error.name : 'UnknownError',
+        ...(prismaCode ? { databaseCode: prismaCode } : {}),
+      }));
+
+      if (prismaCode === 'P2002') {
+        throw new ConflictException('A matching queue ticket already exists.');
+      }
+      if (prismaCode === 'P2003') {
+        throw new BadRequestException('The selected service or staff member is invalid for this salon.');
+      }
+      if (prismaCode === 'P2025') {
+        throw new NotFoundException('The salon or selected queue resource could not be found.');
+      }
+      if (
+        ['P1001', 'P1002', 'P1008', 'P1017', 'P2024', 'P2037'].includes(prismaCode || '') ||
+        this.isDatabaseConnectionFailure(error)
+      ) {
+        throw new ServiceUnavailableException('The queue is temporarily unavailable. Please try again shortly.');
+      }
+      throw error;
+    }
+  }
+
+  private getDatabaseErrorCode(error: unknown): string | null {
+    if (typeof error !== 'object' || error === null) return null;
+    const candidate = 'code' in error ? error.code : 'errorCode' in error ? error.errorCode : null;
+    return typeof candidate === 'string' && /^[A-Z0-9_]+$/.test(candidate) ? candidate : null;
+  }
+
+  private isDatabaseConnectionFailure(error: unknown): boolean {
+    if (!(error instanceof Error)) return false;
+    return /EMAXCONNSESSION|max clients reached|too many connections|connection pool.*(?:timeout|closed)|timed out fetching a new connection|can't reach database server|server has closed the connection/i
+      .test(error.message);
   }
 
   @Post(':id/queue-entries/:entryId/start')

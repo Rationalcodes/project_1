@@ -15,6 +15,7 @@
     "build:backend": "pnpm --filter @kumbhakaran/backend build",
     "backend:test:db": "pnpm --filter @kumbhakaran/backend run test:db",
     "backend:test:phase2": "pnpm --filter @kumbhakaran/backend run test:phase2",
+    "backend:test:queue-entry:postgres": "pnpm --filter @kumbhakaran/backend run test:queue-entry:postgres",
     "backend:test:auth": "pnpm --filter @kumbhakaran/backend exec ts-node src/scripts/test-auth-security.ts",
     "start": "node backend/dist/main.js",
     "start:dev": "pnpm --filter @kumbhakaran/backend start:dev",

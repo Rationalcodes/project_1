@@ -199,6 +199,7 @@ model AdminAuditLog {
 model SalonQueueEntry {
   id                      String          @id @db.VarChar(64)
   salonId                 String          @map("salon_id") @db.VarChar(64)
+  clientRequestId         String?         @map("client_request_id") @db.VarChar(36)
   position                Int             @default(1)
   ticketNumber            String?         @map("ticket_number") @db.VarChar(32)
   customerName            String          @map("customer_name") @db.VarChar(100)
@@ -243,6 +244,7 @@ model SalonQueueEntry {
 
   @@index([salonId, status], map: "idx_queue_salon_status")
   @@index([salonId, joinedAt], map: "idx_queue_joined")
+  @@unique([salonId, clientRequestId], map: "uq_queue_salon_request")
   @@map("salon_queue_entries")
 }
 

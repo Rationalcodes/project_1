@@ -8,7 +8,13 @@ import {
   SalonRegistrationInput,
   QueueEntry,
 } from '@kumbhakaran/shared-types';
-import { defaultApiClient, AuthUser, SalonMembership } from '@kumbhakaran/api-client';
+import {
+  createQueueRequestFingerprint,
+  createQueueRequestId,
+  defaultApiClient,
+  AuthUser,
+  SalonMembership,
+} from '@kumbhakaran/api-client';
 import { safeStorage } from '../utils/safeStorage';
 import { INITIAL_SALONS } from '../data/mockSalons';
 
@@ -334,12 +340,23 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
     if (!sId) return;
     try {
       setIsLoadingQueue(true);
+      const requestFingerprint = await createQueueRequestFingerprint([
+        partnerUser?.id || '',
+        name.trim(),
+        phone?.trim() || '',
+        serviceName?.trim() || '',
+      ]);
+      const requestIdKey = `kumbhakaran_pending_queue_request:${sId}:${requestFingerprint}`;
+      const requestId = safeStorage.getItem(requestIdKey) || createQueueRequestId();
+      safeStorage.setItem(requestIdKey, requestId);
       const res = await defaultApiClient.addQueueEntry(sId, {
+        requestId,
         customerName: name,
         phone,
         serviceName,
       });
       if (res?.entry) {
+        safeStorage.removeItem(requestIdKey);
         setQueueEntries((prev) => [...prev, res.entry]);
         setSalons((prev) =>
           prev.map((s) =>

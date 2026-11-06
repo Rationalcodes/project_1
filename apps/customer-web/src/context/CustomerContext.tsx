@@ -8,7 +8,12 @@ import {
   LocationOption,
   QueueEntry,
 } from '@kumbhakaran/shared-types';
-import { defaultApiClient, AuthUser } from '@kumbhakaran/api-client';
+import {
+  createQueueRequestFingerprint,
+  createQueueRequestId,
+  defaultApiClient,
+  AuthUser,
+} from '@kumbhakaran/api-client';
 import { safeStorage } from '../utils/safeStorage';
 import { calculateHaversineDistance } from '@kumbhakaran/ui';
 import { INITIAL_SALONS, INITIAL_USER } from '../data/mockSalons';
@@ -578,7 +583,19 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     options?: { partySize?: number; checkInToken?: string | null },
   ): Promise<QueueEntry> => {
     const deviceId = getOrCreateDeviceId();
+    const requestFingerprint = await createQueueRequestFingerprint([
+      authUser?.id || deviceId,
+      deviceId,
+      name.trim(),
+      phone?.trim() || '',
+      serviceName?.trim() || '',
+      options?.partySize || 1,
+    ]);
+    const requestIdKey = `kumbhakaran_pending_queue_request:${salonId}:${requestFingerprint}`;
+    const requestId = safeStorage.getItem(requestIdKey) || createQueueRequestId();
+    safeStorage.setItem(requestIdKey, requestId);
     const res = await defaultApiClient.addQueueEntry(salonId, {
+      requestId,
       customerName: name,
       phone,
       serviceName,
@@ -587,6 +604,7 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       checkInToken: options?.checkInToken || undefined,
     });
     if (res?.entry) {
+      safeStorage.removeItem(requestIdKey);
       const entryWithSalon: QueueEntry = {
         ...res.entry,
         salonId,

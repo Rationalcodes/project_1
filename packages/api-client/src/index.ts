@@ -50,6 +50,22 @@ export interface AuthResponse {
   memberships: SalonMembership[];
 }
 
+export function createQueueRequestId(): string {
+  if (!globalThis.crypto?.randomUUID) {
+    throw new Error('Secure request ID generation is unavailable in this browser.');
+  }
+  return globalThis.crypto.randomUUID();
+}
+
+export async function createQueueRequestFingerprint(fields: Array<string | number | null | undefined>): Promise<string> {
+  if (!globalThis.crypto?.subtle) {
+    throw new Error('Secure request fingerprinting is unavailable in this browser.');
+  }
+  const input = new TextEncoder().encode(JSON.stringify(fields));
+  const digest = await globalThis.crypto.subtle.digest('SHA-256', input);
+  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('');
+}
+
 export function getDefaultApiBaseUrl(): string {
   // 1. Explicit window-level override
   if (typeof window !== 'undefined' && (window as any).__API_BASE_URL__) {
@@ -590,6 +606,7 @@ export class KumbhakaranApiClient {
    * Add a customer to queue with their name, phone, and ticket ID
    */
   async addQueueEntry(salonId: string, entry: {
+    requestId: string;
     customerName?: string;
     phone?: string;
     serviceName?: string;
