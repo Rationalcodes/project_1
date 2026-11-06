@@ -43,6 +43,9 @@ export class NearbySalonItemDto {
   @ApiProperty({ example: true })
   isOpen: boolean;
 
+  @ApiPropertyOptional({ enum: ['open', 'paused', 'closed'], example: 'open' })
+  queueStatus?: 'open' | 'paused' | 'closed';
+
   @ApiProperty({ example: true })
   isVerified: boolean;
 

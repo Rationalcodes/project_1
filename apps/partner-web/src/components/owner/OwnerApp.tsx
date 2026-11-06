@@ -52,6 +52,8 @@ export const OwnerApp: React.FC = () => {
   const {
     activeSalon,
     updateQueue,
+    updateQueueStatus,
+    isUpdatingQueueStatus,
     ownerTab,
     setOwnerTab,
     updateSalonInfo,
@@ -490,7 +492,8 @@ export const OwnerApp: React.FC = () => {
     );
   }
 
-  const queueInfo = getQueueDisplay(activeSalon.currentQueue, activeSalon.isOpen);
+  const queueInfo = getQueueDisplay(activeSalon.currentQueue, activeSalon.isOpen, activeSalon.queueStatus);
+  const isQueuePaused = activeSalon.queueStatus === 'paused';
   const freshness = getQueueFreshness(activeSalon.lastQueueUpdate);
   const waitTime = getEstimatedWaitMinutes(activeSalon.currentQueue, activeSalon.avgServiceTimeMinutes, activeSalon.activeBarbers);
 
@@ -738,10 +741,23 @@ export const OwnerApp: React.FC = () => {
         <div className="flex items-center gap-3">
           <div className="text-right hidden sm:block">
             <div className="text-[10px] text-zinc-400 uppercase font-semibold">Walk-in Status</div>
-            <div className="text-xs font-bold text-emerald-400">
-              {activeSalon.isOpen ? 'Accepting Customers' : 'Currently Closed'}
+            <div className={`text-xs font-bold ${isQueuePaused ? 'text-amber-300' : activeSalon.isOpen ? 'text-emerald-400' : 'text-rose-400'}`}>
+              {isQueuePaused ? 'Temporarily Paused' : activeSalon.isOpen ? 'Accepting Customers' : 'Currently Closed'}
             </div>
           </div>
+
+          <button
+            type="button"
+            disabled={!activeSalon.isOpen || isUpdatingQueueStatus}
+            onClick={() => updateQueueStatus(activeSalon.id, isQueuePaused ? 'open' : 'paused')}
+            className={`px-4 py-2 rounded-2xl text-xs font-bold transition-all border disabled:opacity-50 disabled:cursor-not-allowed ${
+              isQueuePaused
+                ? 'bg-amber-500/20 border-amber-500/50 text-amber-200 hover:bg-amber-500/30'
+                : 'bg-zinc-800 border-zinc-600 text-zinc-200 hover:bg-zinc-700'
+            }`}
+          >
+            {isUpdatingQueueStatus ? 'Updating...' : isQueuePaused ? '▶ Resume Queue' : 'Ⅱ Pause New Customers'}
+          </button>
 
           <button
             onClick={() => {

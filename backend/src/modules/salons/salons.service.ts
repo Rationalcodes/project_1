@@ -500,15 +500,18 @@ export class SalonsService {
     const barbers = Math.max(1, salonData.activeBarbers || salonData.active_barbers || 2);
     const avgTime = salonData.avgServiceTimeMinutes || salonData.avg_service_time_minutes || 20;
     const currentQueue = salonData.currentQueue !== undefined ? salonData.currentQueue : salonData.current_queue || 0;
-    const isQueueOpen =
-      Boolean(salonData.isOpen !== undefined ? salonData.isOpen : salonData.is_open) &&
-      salonData.queueStatus !== 'closed' &&
-      salonData.queue_status !== 'closed' &&
-      !isSalonPastClosingTime(
-        salonData.openingHoursClose || salonData.opening_hours_close,
-        salonData.openingHoursOpen || salonData.opening_hours_open,
-      );
-    const displayedQueue = isQueueOpen ? Number(currentQueue) : 0;
+    const salonIsOpen = Boolean(salonData.isOpen !== undefined ? salonData.isOpen : salonData.is_open);
+    const isPastClosing = isSalonPastClosingTime(
+      salonData.openingHoursClose || salonData.opening_hours_close,
+      salonData.openingHoursOpen || salonData.opening_hours_open,
+    );
+    const queueStatus: 'open' | 'paused' | 'closed' =
+      !salonIsOpen || salonData.queueStatus === 'closed' || salonData.queue_status === 'closed' || isPastClosing
+        ? 'closed'
+        : salonData.queueStatus === 'paused' || salonData.queue_status === 'paused'
+          ? 'paused'
+          : 'open';
+    const displayedQueue = queueStatus === 'closed' ? 0 : Number(currentQueue);
     const estimatedWaitMinutes = displayedQueue > 0 ? Math.ceil((displayedQueue * avgTime) / barbers) : 0;
 
     return {
@@ -548,7 +551,8 @@ export class SalonsService {
       rating: Number(salonData.rating || 5.0),
       reviewCount: Number(salonData.reviewCount || salonData.review_count || 0),
       startingPrice: Number(salonData.startingPrice || salonData.starting_price || 150.0),
-      isOpen: isQueueOpen,
+      isOpen: queueStatus !== 'closed',
+      queueStatus,
       isVerified: Boolean(salonData.isVerified !== undefined ? salonData.isVerified : salonData.is_verified),
       lastQueueUpdate: salonData.lastQueueUpdate || salonData.last_queue_update || new Date().toISOString(),
       services: (salonData.services || []).map((s: any) => ({
@@ -775,6 +779,7 @@ export class SalonsService {
   async updateSalon(id: string, dto: UpdateSalonDto, requesterOwnerId?: string): Promise<any> {
     const salon = this.localSalons.get(id);
     let effectiveIsOpen = dto.isOpen;
+    let effectiveQueueStatus: 'open' | 'paused' | 'closed' | undefined;
 
     if (dto.latitude !== undefined && (dto.latitude < -90 || dto.latitude > 90)) {
       throw new BadRequestException('Latitude must be between -90 and 90');
@@ -879,10 +884,12 @@ export class SalonsService {
 
     if (dto.isOpen === false) {
       await this.clearQueue(id, { clearOption: 'cancelled', reason: 'Shop closed by owner' }, requesterOwnerId);
+      effectiveQueueStatus = 'closed';
     } else if (dto.isOpen === true) {
       const queueData = await this.queueEngine.recalculateSalonQueue(id, { force: true, persist: true });
       this.syncLocalQueueCache(id, queueData.overview.totalWaiting);
       effectiveIsOpen = queueData.overview.queueStatus !== 'closed';
+      effectiveQueueStatus = queueData.overview.queueStatus;
     }
 
     return {
@@ -890,6 +897,7 @@ export class SalonsService {
       message: 'Salon updated successfully',
       salonId: id,
       ...(effectiveIsOpen !== undefined ? { isOpen: effectiveIsOpen } : {}),
+      ...(effectiveQueueStatus ? { queueStatus: effectiveQueueStatus } : {}),
     };
   }
 
@@ -1582,6 +1590,9 @@ export class SalonsService {
     ) {
       throw new BadRequestException('This salon queue is currently closed.');
     }
+    if (salon.queueStatus === 'paused') {
+      throw new BadRequestException('This salon is temporarily not accepting new queue customers. Please try again shortly.');
+    }
 
     // SNAPSHOT: Look up service configuration to lock duration & price for this ticket
     let snapshotDuration = salon.avgServiceTimeMinutes || 20;
@@ -1618,6 +1629,31 @@ export class SalonsService {
       'queue.entry.create',
       async (tx) => {
         await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${salonId}), hashtext('queue-position'))`;
+        const [lockedSalon] = await tx.$queryRaw<Array<{
+          is_open: boolean;
+          queue_status: string;
+          opening_hours_open: string | null;
+          opening_hours_close: string | null;
+        }>>`
+          SELECT is_open, queue_status, opening_hours_open, opening_hours_close
+          FROM public.salons
+          WHERE id = ${salonId}
+          FOR UPDATE
+        `;
+        if (!lockedSalon) {
+          throw new NotFoundException(`Salon with ID '${salonId}' not found`);
+        }
+        if (
+          !lockedSalon.is_open ||
+          lockedSalon.queue_status === 'closed' ||
+          isSalonPastClosingTime(lockedSalon.opening_hours_close, lockedSalon.opening_hours_open)
+        ) {
+          throw new BadRequestException('This salon queue is currently closed.');
+        }
+        if (lockedSalon.queue_status === 'paused') {
+          throw new BadRequestException('This salon is temporarily not accepting new queue customers. Please try again shortly.');
+        }
+
         const [maxRow] = await tx.$queryRaw<Array<{ max_pos: number; max_ticket: number }>>`
           SELECT
             COALESCE(MAX(position) FILTER (WHERE status IN ('waiting', 'called', 'in_service', 'skipped')), 0)::int AS max_pos,

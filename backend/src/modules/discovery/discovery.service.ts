@@ -67,7 +67,7 @@ export class DiscoveryService {
             id, name, tagline, locality, city, latitude, longitude,
             ROUND((ST_Distance(location, ST_SetSRID(ST_MakePoint($2, $1), 4326)::geography) / 1000)::numeric, 2) AS distance_km,
             rating, review_count, current_queue, avg_service_time_minutes, active_barbers,
-            starting_price, is_open, is_verified, cover_image, poster_image, loop_video_url,
+            starting_price, is_open, queue_status, is_verified, cover_image, poster_image, loop_video_url,
             location_images, work_images, last_queue_update, status
           FROM salons
           WHERE status = 'active'
@@ -88,7 +88,7 @@ export class DiscoveryService {
             id, name, tagline, locality, city, latitude, longitude,
             0.0 AS distance_km,
             rating, review_count, current_queue, avg_service_time_minutes, active_barbers,
-            starting_price, is_open, is_verified, cover_image, poster_image, loop_video_url,
+            starting_price, is_open, queue_status, is_verified, cover_image, poster_image, loop_video_url,
             location_images, work_images, last_queue_update, status
           FROM salons
           WHERE status = 'active'
@@ -130,6 +130,7 @@ export class DiscoveryService {
             estimatedWaitMinutes: waitMins,
             startingPrice: Number(row.starting_price),
             isOpen: Boolean(row.is_open),
+            queueStatus: row.is_open ? (row.queue_status || 'open') : 'closed',
             isVerified: Boolean(row.is_verified),
             coverImage: effectiveCover,
             posterImage: (row.poster_image && row.poster_image !== effectiveCover) ? row.poster_image : '',
@@ -193,6 +194,7 @@ export class DiscoveryService {
             estimatedWaitMinutes: waitMins,
             startingPrice: Number(s.startingPrice || 150),
             isOpen: Boolean(s.isOpen),
+            queueStatus: s.isOpen ? (s.queueStatus || 'open') : 'closed',
             isVerified: Boolean(s.isVerified),
             coverImage: effectiveCover,
             posterImage: s.posterImage || effectiveCover,

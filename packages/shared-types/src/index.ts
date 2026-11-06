@@ -87,6 +87,7 @@ export interface Salon {
   distanceKm: number;
   startingPrice: number;
   isOpen: boolean;
+  queueStatus?: 'open' | 'paused' | 'closed';
   openingHours: {
     open: string;
     close: string;

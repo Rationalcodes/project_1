@@ -20,6 +20,7 @@ export interface NearbySalonsApiResponse {
     estimatedWaitMinutes: number;
     startingPrice: number;
     isOpen: boolean;
+    queueStatus?: 'open' | 'paused' | 'closed';
     isVerified: boolean;
     coverImage?: string;
     lastQueueUpdate: string;
@@ -421,6 +422,23 @@ export class KumbhakaranApiClient {
     } catch {
       return null;
     }
+  }
+
+  async updateQueueStatus(
+    salonId: string,
+    status: 'open' | 'paused' | 'closed',
+    reason?: string,
+  ): Promise<any> {
+    const res = await fetch(`${this.baseUrl}/salons/${salonId}/queue-status`, {
+      method: 'PATCH',
+      headers: this.getHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({ status, reason }),
+    });
+    if (!res.ok) {
+      const error = await res.json().catch(() => ({}));
+      throw new Error(error.message || 'Could not update queue status');
+    }
+    return res.json();
   }
 
   // ==========================================================================

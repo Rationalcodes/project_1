@@ -362,7 +362,9 @@ export class QueueEngineService implements OnModuleInit, OnModuleDestroy {
     const activeBarbersCount = Math.max(1, salon?.activeBarbers || 2);
     const queueStatus: 'open' | 'paused' | 'closed' = isClosed
       ? 'closed'
-      : (salon?.queueStatus as any) || 'open';
+      : salon?.queueStatus === 'paused'
+        ? 'paused'
+        : 'open';
 
     const [staffRecords, rows, dailyMetrics] = await Promise.all([
       this.prisma.salonStaff.findMany({

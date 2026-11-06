@@ -999,6 +999,7 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         distanceKm: dist,
         startingPrice: Number(item.startingPrice) || 150,
         isOpen: item.isOpen,
+        queueStatus: item.queueStatus || (item.isOpen ? 'open' : 'closed'),
         openingHours: {
           open: '09:00 AM',
           close: '09:30 PM',
@@ -1098,6 +1099,7 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                 currentQueue: match.currentQueue,
                 lastQueueUpdate: match.lastQueueUpdate,
                 isOpen: match.isOpen,
+                queueStatus: match.queueStatus,
               };
             });
           }
@@ -1216,6 +1218,7 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           reviews: combinedReviews,
           currentQueue: publicData.currentQueue !== undefined ? publicData.currentQueue : prev.currentQueue,
           isOpen: publicData.isOpen !== undefined ? publicData.isOpen : prev.isOpen,
+          queueStatus: publicData.queueStatus || prev.queueStatus,
           coverImage: (publicData as any).coverImage || prev.coverImage,
           posterImage: (publicData as any).posterImage || (publicData as any).coverImage || prev.posterImage,
           loopVideoUrl: (publicData as any).loopVideoUrl || prev.loopVideoUrl,
@@ -1236,6 +1239,7 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             reviews: combinedReviews,
             currentQueue: publicData.currentQueue !== undefined ? publicData.currentQueue : s.currentQueue,
             isOpen: publicData.isOpen !== undefined ? publicData.isOpen : s.isOpen,
+            queueStatus: publicData.queueStatus || s.queueStatus,
             coverImage: (publicData as any).coverImage || s.coverImage,
             posterImage: (publicData as any).posterImage || (publicData as any).coverImage || s.posterImage,
             loopVideoUrl: (publicData as any).loopVideoUrl || s.loopVideoUrl,
@@ -1503,7 +1507,11 @@ export const getEstimatedWaitMinutes = (currentQueue: number, avgServiceTime: nu
   return Math.max(5, Math.ceil((currentQueue * time) / barbers));
 };
 
-export const getQueueDisplay = (currentQueue: number, isOpen: boolean) => {
+export const getQueueDisplay = (
+  currentQueue: number,
+  isOpen: boolean,
+  queueStatus?: 'open' | 'paused' | 'closed',
+) => {
   if (!isOpen) {
     return {
       label: 'Closed',
@@ -1513,6 +1521,17 @@ export const getQueueDisplay = (currentQueue: number, isOpen: boolean) => {
       pillClass: 'bg-stone-100 text-stone-600 border-stone-200',
       dotClass: 'bg-stone-400',
       textClass: 'text-stone-500',
+    };
+  }
+  if (queueStatus === 'paused') {
+    return {
+      label: 'Queue Temporarily Paused',
+      shortLabel: 'Temporarily Paused',
+      color: 'amber',
+      badgeClass: 'bg-amber-50 text-amber-800 border border-amber-200',
+      pillClass: 'bg-amber-50 text-amber-700 border-amber-200',
+      dotClass: 'bg-amber-500',
+      textClass: 'text-amber-700',
     };
   }
   if (currentQueue === 0) {

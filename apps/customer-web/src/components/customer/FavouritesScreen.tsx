@@ -95,7 +95,7 @@ export const FavouritesScreen: React.FC = () => {
       ) : (
         <div className="space-y-3.5">
           {savedSalons.map((salon) => {
-            const queueInfo = getQueueDisplay(salon.currentQueue, salon.isOpen);
+            const queueInfo = getQueueDisplay(salon.currentQueue, salon.isOpen, salon.queueStatus);
             const waitTime = getEstimatedWaitMinutes(salon.currentQueue, salon.avgServiceTimeMinutes, salon.activeBarbers);
             const freshness = getQueueFreshness(salon.lastQueueUpdate);
 

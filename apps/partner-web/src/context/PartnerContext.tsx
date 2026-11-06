@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import {
   Salon,
   Service,
@@ -37,6 +37,8 @@ interface PartnerContextType {
   setOwnerTab: (view: PartnerView) => void;
   registerSalon: (data: SalonRegistrationInput) => Promise<Salon>;
   updateQueue: (salonId: string, delta: number, manualValue?: number) => void;
+  updateQueueStatus: (salonId: string, status: 'open' | 'paused' | 'closed') => Promise<void>;
+  isUpdatingQueueStatus: boolean;
   updateSalonInfo: (salonId: string, updates: Partial<Salon>) => void;
   addService: (salonId: string, service: Omit<Service, 'id'>) => void;
   updateService: (salonId: string, serviceId: string, updates: Partial<Service>) => void;
@@ -126,6 +128,7 @@ export function normalizeSalon(raw: any): Salon {
     activeBarbers: Number(raw.activeBarbers || raw.active_barbers || 2),
     avgServiceTimeMinutes: Number(raw.avgServiceTimeMinutes || raw.avg_service_time_minutes || 20),
     lastQueueUpdate: raw.lastQueueUpdate || raw.last_queue_update || new Date().toISOString(),
+    queueStatus: raw.queueStatus || raw.queue_status || (raw.isOpen === false ? 'closed' : 'open'),
   };
 }
 
@@ -190,6 +193,8 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [notificationMessage, setNotificationMessage] = useState<string | null>(null);
   const [queueEntries, setQueueEntries] = useState<QueueEntry[]>([]);
   const [isLoadingQueue, setIsLoadingQueue] = useState<boolean>(false);
+  const [isUpdatingQueueStatus, setIsUpdatingQueueStatus] = useState<boolean>(false);
+  const queueStatusUpdateLock = useRef(false);
   const [latestCrowdReport, setLatestCrowdReport] = useState<any | null>(null);
 
   const activeSalon = salons.find((s) => s.id === activeSalonId) || salons[0] || null;
@@ -240,6 +245,44 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
       }
     } catch {}
   }, [activeSalonId]);
+
+  const updateQueueStatus = async (salonId: string, status: 'open' | 'paused' | 'closed') => {
+    if (queueStatusUpdateLock.current) return;
+    queueStatusUpdateLock.current = true;
+    setIsUpdatingQueueStatus(true);
+    try {
+      const result = await defaultApiClient.updateQueueStatus(salonId, status);
+      setSalons((prev) =>
+        prev.map((salon) => {
+          if (salon.id !== salonId) return salon;
+          const updated = normalizeSalon({
+            ...salon,
+            queueStatus: result.queueStatus,
+            isOpen: result.isOpen,
+            currentQueue: status === 'closed' ? 0 : salon.currentQueue,
+            lastQueueUpdate: new Date().toISOString(),
+          });
+          safeStorage.setItem('kumbhakaran_partner_active_salon', JSON.stringify(updated));
+          return updated;
+        }),
+      );
+      if (status === 'closed') setQueueEntries([]);
+      else await refreshQueueEntries(salonId);
+      broadcastTelemetryUpdate(salonId);
+      triggerNotification(
+        status === 'paused'
+          ? 'New queue entries paused. Current customers remain in line.'
+          : status === 'open'
+            ? 'New queue entries are open.'
+            : 'Queue closed.',
+      );
+    } catch (error) {
+      triggerNotification(error instanceof Error ? error.message : 'Could not update queue status.');
+    } finally {
+      queueStatusUpdateLock.current = false;
+      setIsUpdatingQueueStatus(false);
+    }
+  };
 
   // Socket updates are immediate; poll periodically as a resilient fallback.
   useEffect(() => {
@@ -689,6 +732,8 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
         }
         const effectiveIsOpen =
           typeof result.isOpen === 'boolean' ? result.isOpen : updates.isOpen;
+        const effectiveQueueStatus =
+          result.queueStatus || (effectiveIsOpen ? 'open' : 'closed');
         setSalons((prev) =>
           prev.map((s) => {
             if (s.id !== salonId) return s;
@@ -696,6 +741,7 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
               ...s,
               ...updates,
               isOpen: effectiveIsOpen,
+              queueStatus: effectiveQueueStatus,
               ...(effectiveIsOpen === false ? { currentQueue: 0 } : {}),
             });
             safeStorage.setItem('kumbhakaran_partner_active_salon', JSON.stringify(updated));
@@ -919,6 +965,8 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
         setOwnerTab: setPartnerView,
         registerSalon,
         updateQueue,
+        updateQueueStatus,
+        isUpdatingQueueStatus,
         updateSalonInfo,
         addService,
         updateService,
@@ -965,7 +1013,7 @@ export const getEstimatedWaitMinutes = (currentQueue: number, avgServiceTime: nu
   return Math.max(5, Math.ceil((currentQueue * time) / barbers));
 };
 
-export const getQueueDisplay = (currentQueue: number, isOpen: boolean) => {
+export const getQueueDisplay = (currentQueue: number, isOpen: boolean, queueStatus?: Salon['queueStatus']) => {
   if (!isOpen) {
     return {
       label: 'Closed',
@@ -975,6 +1023,17 @@ export const getQueueDisplay = (currentQueue: number, isOpen: boolean) => {
       pillClass: 'bg-zinc-800 text-zinc-400 border-zinc-700',
       dotClass: 'bg-zinc-500',
       textClass: 'text-zinc-400',
+    };
+  }
+  if (queueStatus === 'paused') {
+    return {
+      label: 'Queue Temporarily Paused',
+      shortLabel: 'Temporarily Paused',
+      color: 'amber',
+      badgeClass: 'bg-amber-950/70 text-amber-300 border border-amber-500/30',
+      pillClass: 'bg-amber-500/20 text-amber-300 border-amber-500/30',
+      dotClass: 'bg-amber-400',
+      textClass: 'text-amber-300',
     };
   }
   if (currentQueue === 0) {

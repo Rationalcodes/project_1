@@ -237,7 +237,7 @@ export const ExploreScreen: React.FC = () => {
       ) : (
         <div className="space-y-4">
           {processedSalons.map((salon) => {
-            const queueInfo = getQueueDisplay(salon.currentQueue, salon.isOpen);
+            const queueInfo = getQueueDisplay(salon.currentQueue, salon.isOpen, salon.queueStatus);
             const waitTime = getEstimatedWaitMinutes(
               salon.currentQueue,
               salon.avgServiceTimeMinutes,

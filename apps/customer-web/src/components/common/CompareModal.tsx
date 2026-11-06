@@ -49,7 +49,7 @@ export const CompareModal: React.FC = () => {
         {/* Comparison Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mt-4">
           {compareSalons.map((salon) => {
-            const queueInfo = getQueueDisplay(salon.currentQueue, salon.isOpen);
+            const queueInfo = getQueueDisplay(salon.currentQueue, salon.isOpen, salon.queueStatus);
             const waitTime = getEstimatedWaitMinutes(salon.currentQueue, salon.avgServiceTimeMinutes, salon.activeBarbers);
             const freshness = getQueueFreshness(salon.lastQueueUpdate);
 

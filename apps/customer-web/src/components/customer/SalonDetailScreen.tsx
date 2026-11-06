@@ -191,10 +191,15 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
     if (serviceName) {
       setJoinService(serviceName);
     }
-    if (autoJoin && !activeTicket && selectedSalonForDetail?.isOpen) {
+    if (
+      autoJoin &&
+      !activeTicket &&
+      selectedSalonForDetail?.isOpen &&
+      selectedSalonForDetail?.queueStatus !== 'paused'
+    ) {
       setShowJoinQueueModal(true);
     }
-  }, [selectedSalonForDetail?.id, activeTicket, selectedSalonForDetail?.isOpen]);
+  }, [selectedSalonForDetail?.id, activeTicket, selectedSalonForDetail?.isOpen, selectedSalonForDetail?.queueStatus]);
 
   useEffect(() => {
     if (userProfile.name && !joinName) {
@@ -264,7 +269,7 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
 
   const salon = selectedSalonForDetail;
   const isSaved = userProfile.savedSalons.includes(salon.id);
-  const queueInfo = getQueueDisplay(salon.currentQueue, salon.isOpen);
+  const queueInfo = getQueueDisplay(salon.currentQueue, salon.isOpen, salon.queueStatus);
   const waitTime = getEstimatedWaitMinutes(salon.currentQueue, salon.avgServiceTimeMinutes, salon.activeBarbers);
   const freshness = getQueueFreshness(salon.lastQueueUpdate);
 
@@ -626,6 +631,11 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
             <p className="text-[11px] text-stone-600 mt-2.5 bg-white/80 p-2.5 rounded-xl border border-orange-200/50">
               Salon staff will update your ticket when service starts and finishes. Your location never changes service status automatically.
             </p>
+          </div>
+        ) : salon.isOpen && salon.queueStatus === 'paused' ? (
+          <div className="mt-4 pt-4 border-t border-amber-200 bg-amber-50 rounded-2xl p-4 text-sm text-amber-900">
+            <strong>New queue entries are temporarily paused.</strong>
+            <span className="block mt-1 text-xs">The current queue is being served. Please check back shortly.</span>
           </div>
         ) : salon.isOpen ? (
           /* JOIN LIVE QUEUE CTA */
