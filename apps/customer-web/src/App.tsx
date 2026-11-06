@@ -10,6 +10,7 @@ import { MapScreen } from './components/customer/MapScreen';
 import { SalonDetailScreen } from './components/customer/SalonDetailScreen';
 import { FavouritesScreen } from './components/customer/FavouritesScreen';
 import { ProfileScreen } from './components/customer/ProfileScreen';
+import { OffersScreen } from './components/customer/OffersScreen';
 import { WriteReviewModal } from './components/customer/WriteReviewModal';
 import { LocationPermissionBanner } from './components/common/LocationPermissionBanner';
 import { ExpressWalkinScreen } from './components/customer/ExpressWalkinScreen';
@@ -59,6 +60,8 @@ const CustomerMainContent: React.FC = () => {
         return <MapScreen />;
       case 'favourites':
         return <FavouritesScreen />;
+      case 'offers':
+        return <OffersScreen />;
       case 'profile':
         return <ProfileScreen />;
       default:

@@ -215,6 +215,14 @@ export const ProfileScreen: React.FC = () => {
         }`}>
           <div
             onClick={() => setCustomerTab('favourites')}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                setCustomerTab('favourites');
+              }
+            }}
             className={`cursor-pointer p-2 rounded-xl transition-colors ${
               isWomen ? 'hover:bg-rose-50/50' : 'hover:bg-orange-50/50'
             }`}
@@ -222,7 +230,7 @@ export const ProfileScreen: React.FC = () => {
             <div className={`text-lg font-black ${isWomen ? 'text-[#E11D48]' : 'text-[#FF6422]'}`}>
               {userProfile.savedSalons.length}
             </div>
-            <div className="text-[10px] text-stone-500 uppercase font-semibold">Favourites</div>
+            <div className="text-[10px] text-stone-500 uppercase font-semibold">Saved salons</div>
           </div>
 
           <div className="p-2">

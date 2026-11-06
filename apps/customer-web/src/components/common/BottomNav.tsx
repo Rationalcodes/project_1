@@ -1,17 +1,17 @@
 import React from 'react';
-import { Home, Compass, MapPin, Heart, User } from 'lucide-react';
+import { Home, Compass, Tag, User } from 'lucide-react';
 import { useCustomer } from '../../context/CustomerContext';
 import { CustomerTab } from '@kumbhakaran/shared-types';
 
 export const BottomNav: React.FC = () => {
-  const { customerTab, setCustomerTab, setSelectedSalonForDetail, userProfile, genderFilter } = useCustomer();
+  const { customerTab, setCustomerTab, setSelectedSalonForDetail, genderFilter } = useCustomer();
 
   const isWomen = genderFilter === 'women';
 
   const navItems: { id: CustomerTab; label: string; icon: React.FC<{ className?: string }>; badgeCount?: number }[] = [
     { id: 'home', label: 'Home', icon: Home },
     { id: 'explore', label: 'Explore', icon: Compass },
-    { id: 'favourites', label: 'Saved', icon: Heart, badgeCount: userProfile.savedSalons.length },
+    { id: 'offers', label: 'Offers', icon: Tag },
     { id: 'profile', label: 'Profile', icon: User },
   ];
 

@@ -22,7 +22,7 @@ const configuredApiBaseUrl =
 
 defaultApiClient.setBaseUrl(configuredApiBaseUrl);
 
-export type CustomerTab = 'home' | 'explore' | 'map' | 'favourites' | 'profile';
+export type CustomerTab = 'home' | 'explore' | 'map' | 'favourites' | 'offers' | 'profile';
 export type SalonType = 'unisex' | 'men' | 'women';
 export type GenderFilter = 'men' | 'women';
 

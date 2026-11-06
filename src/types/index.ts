@@ -150,7 +150,7 @@ export type LazyFilter = 'all' | '0-5' | '5-15' | '15-30' | '30+';
 export type AppPortal = 'customer' | 'partner' | 'admin';
 export type AppMode = AppPortal;
 
-export type CustomerTab = 'home' | 'explore' | 'map' | 'favourites' | 'profile';
+export type CustomerTab = 'home' | 'explore' | 'map' | 'favourites' | 'offers' | 'profile';
 
 export type PartnerView = 'dashboard' | 'register' | 'live-queue' | 'services' | 'staff' | 'reviews' | 'analytics' | 'settings' | 'gallery';
 export type OwnerTab = PartnerView;

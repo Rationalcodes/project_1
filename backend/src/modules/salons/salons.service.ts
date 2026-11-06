@@ -2012,11 +2012,11 @@ export class SalonsService {
         Math.cos((lat2 * Math.PI) / 180.0) *
         Math.sin(dLon / 2.0) ** 2;
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return Math.round(R * c);
+    return R * c;
   }
 
   /**
-   * Customers can only contribute if their current GPS coordinates are within 200m of the salon.
+   * Customers can only contribute if their current GPS coordinates are within 3m of the salon.
    */
   async submitCrowdReport(salonId: string, dto: SubmitCrowdReportDto, actorId?: string) {
     // 1. Fetch salon coordinates
@@ -2067,12 +2067,12 @@ export class SalonsService {
       targetSalon.longitude,
     );
 
-    const MAX_ALLOWED_DISTANCE_METERS = 200;
+    const MAX_ALLOWED_DISTANCE_METERS = 3;
     if (distanceMeters > MAX_ALLOWED_DISTANCE_METERS) {
       const formattedDistance =
         distanceMeters >= 1000
           ? `${(distanceMeters / 1000).toFixed(1)} km`
-          : `${distanceMeters} meters`;
+          : `${Math.round(distanceMeters)} meters`;
       throw new ForbiddenException(
         `Live status contribution is only allowed when you are physically at ${targetSalon.name}. You are currently ${formattedDistance} away (location limit is ${MAX_ALLOWED_DISTANCE_METERS}m).`,
       );

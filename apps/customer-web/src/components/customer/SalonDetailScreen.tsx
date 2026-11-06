@@ -109,7 +109,7 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
         Math.cos((salonLat * Math.PI) / 180.0) *
         Math.sin(dLon / 2.0) ** 2;
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return Math.round(R * c);
+    return R * c;
   };
 
   useEffect(() => {
@@ -150,7 +150,7 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
 
   const handleCrowdSubmit = async () => {
     if (!selectedSalonForDetail) return;
-    if (currentDistanceMeters === null || currentDistanceMeters > 200) {
+    if (currentDistanceMeters === null || currentDistanceMeters > 3) {
       setShowLocationRequiredPopup(true);
       return;
     }
@@ -702,14 +702,14 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
                   <span>At {salon.name} right now?</span>
                 </div>
                 <p className="text-[11px] text-stone-600 mt-0.5">
-                  {currentDistanceMeters !== null && currentDistanceMeters <= 200 ? (
+                  {currentDistanceMeters !== null && currentDistanceMeters <= 3 ? (
                     <span className="text-emerald-700 font-semibold flex items-center gap-1">
                       <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
                       You’re nearby. Share a quick update to help others know what to expect.
                     </span>
                   ) : currentDistanceMeters !== null ? (
                     <span className="text-stone-500">
-                      You’re about {currentDistanceMeters >= 1000 ? `${(currentDistanceMeters / 1000).toFixed(1)} km` : `${currentDistanceMeters} m`} away. You can share an update when you’re within 200 m.
+                      You’re about {currentDistanceMeters >= 1000 ? `${(currentDistanceMeters / 1000).toFixed(1)} km` : `${Math.round(currentDistanceMeters)} m`} away. You can share an update when you’re within 3 m.
                     </span>
                   ) : (
                     <span>We’ll check that you’re near the salon before you share an update.</span>
@@ -1372,7 +1372,7 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
                     Checking your location...
                   </span>
                 </div>
-              ) : currentDistanceMeters !== null && currentDistanceMeters <= 200 ? (
+              ) : currentDistanceMeters !== null && currentDistanceMeters <= 3 ? (
                 <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-300 flex items-center gap-3">
                   <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-sm shrink-0">
                     ✓
@@ -1392,10 +1392,10 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
                     <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
                     <div>
                       <div className="text-xs font-bold text-amber-900">
-                        You’re about {currentDistanceMeters >= 1000 ? `${(currentDistanceMeters / 1000).toFixed(1)} km` : `${currentDistanceMeters} m`} away
+                        You’re about {currentDistanceMeters >= 1000 ? `${(currentDistanceMeters / 1000).toFixed(1)} km` : `${Math.round(currentDistanceMeters)} m`} away
                       </div>
                       <div className="text-[11px] text-amber-800 mt-0.5">
-                        To share an update, you’ll need to be within 200 m of the salon.
+                        To share an update, you’ll need to be within 3 m of the salon.
                       </div>
                     </div>
                   </div>

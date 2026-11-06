@@ -401,7 +401,7 @@ export class SalonsController {
   @UseGuards(OptionalJwtAuthGuard)
   @ApiOperation({
     summary: 'Submit live crowdsourced salon status with GPS location verification (Where-Is-My-Train style)',
-    description: 'Requires customer GPS coordinates to match the salon (<= 200m). Updates estimated wait time and people count.',
+    description: 'Requires customer GPS coordinates to be within 3m of the salon. Updates estimated wait time and people count.',
   })
   @ApiResponse({ status: 201, description: 'Live crowd report verified and recorded' })
   @ApiResponse({ status: 403, description: 'Customer is not physically at the salon location' })
