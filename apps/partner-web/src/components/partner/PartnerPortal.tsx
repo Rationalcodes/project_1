@@ -154,19 +154,6 @@ export const PartnerPortal: React.FC = () => {
             )}
           </div>
           )}
-
-          {/* Register New Salon Button */}
-          <button
-            onClick={() => setPartnerView('register')}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all shadow-md ${
-              partnerView === 'register'
-                ? 'bg-amber-500 text-black shadow-amber-500/20'
-                : 'bg-zinc-900 border border-zinc-700 hover:border-amber-400 text-zinc-200'
-            }`}
-          >
-            <PlusCircle className="w-3.5 h-3.5" />
-            <span>Add Studio</span>
-          </button>
         </div>
       </div>
 

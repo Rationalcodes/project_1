@@ -442,6 +442,20 @@ export class SalonsService {
           orderBy: { createdAt: 'desc' },
         });
 
+        // 2b. Direct SQL query fallback in case email in salons has whitespace or casing differences
+        if (!salon && emailNorm) {
+          const directRows = await this.prisma.$queryRawUnsafe<any[]>(
+            `SELECT id FROM salons 
+             WHERE LOWER(TRIM(email)) = $1 
+                OR owner_id IN (SELECT id FROM users WHERE LOWER(TRIM(email)) = $1)
+             ORDER BY created_at DESC LIMIT 1;`,
+            emailNorm,
+          ).catch(() => [] as any[]);
+          if (Array.isArray(directRows) && directRows.length > 0) {
+            salon = await this.prisma.salon.findUnique({ where: { id: directRows[0].id } });
+          }
+        }
+
         // 3. Check salon_members table if not found by direct email/ownerId
         if (!salon && userId) {
           const mem = await this.prisma.salonMember.findFirst({

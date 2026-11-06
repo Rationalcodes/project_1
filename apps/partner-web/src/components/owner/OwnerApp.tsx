@@ -76,6 +76,7 @@ export const OwnerApp: React.FC = () => {
     updateSmartQueueRadius,
     clearQueue,
     latestCrowdReport,
+    setPartnerView,
   } = useSalon();
 
   // Walk-in Counter QR Standee state & URL generator
@@ -2240,7 +2241,15 @@ export const OwnerApp: React.FC = () => {
             </div>
           )}
 
-          <div className="pt-3 border-t border-zinc-800 flex justify-end">
+          <div className="pt-3 border-t border-zinc-800 flex items-center justify-between">
+            <button
+              type="button"
+              onClick={() => setPartnerView('register')}
+              className="px-4 py-2.5 bg-zinc-900 border border-zinc-700 hover:border-amber-400 text-zinc-200 font-bold rounded-xl text-xs flex items-center gap-2 transition-all hover:text-white"
+            >
+              <Store className="w-4 h-4 text-amber-400" />
+              <span>Add Another Branch / Studio</span>
+            </button>
             <button
               type="submit"
               className="px-5 py-2.5 bg-amber-500 text-black font-bold rounded-xl text-xs hover:bg-amber-400 flex items-center gap-1.5 shadow-lg shadow-amber-500/20"
