@@ -60,6 +60,8 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
 }) => {
   const {
     selectedSalonForDetail,
+    setSelectedSalonForDetail,
+    setCustomerTab,
     toggleFavorite,
     userProfile,
     toggleCompareSalon,
@@ -991,74 +993,104 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
         </div>
       )}
 
-      {/* IN-APP MAP MODAL (PINNED ON OUR WEBSITE ONLY) */}
+      {/* IN-APP PINNED MAP SCREEN */}
       {showInAppMap && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex flex-col justify-end sm:justify-center sm:items-center sm:p-6 animate-in fade-in duration-200">
-          <div className="bg-white w-full sm:max-w-3xl sm:rounded-3xl rounded-t-3xl overflow-hidden shadow-2xl flex flex-col h-[85vh] sm:h-[650px] border border-stone-200 animate-in slide-in-from-bottom duration-300">
-            {/* Modal Header */}
-            <div className="flex items-center justify-between p-4 px-5 border-b border-[#E8E2D8] bg-[#FAF7F2]">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-2xl bg-orange-100 border border-orange-200 flex items-center justify-center text-[#FF6422]">
-                  <MapPin className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="font-extrabold text-sm sm:text-base text-stone-900 leading-tight">
-                    {salon.name}
-                  </h3>
-                  <p className="text-xs text-stone-500 truncate max-w-[220px] sm:max-w-md">
-                    {salon.address} · {salon.locality}
-                  </p>
-                </div>
+        <div className="fixed inset-0 z-50 bg-[#FAF7F2] flex flex-col animate-in fade-in duration-200">
+          {/* Top Header */}
+          <header className="bg-white border-b border-[#E8E2D8] p-3 px-4 flex items-center justify-between gap-3 shadow-xs shrink-0">
+            <button
+              type="button"
+              onClick={() => setShowInAppMap(false)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-stone-50 border border-[#E2DDD5] text-xs font-bold text-stone-800 hover:border-[#FF6422] hover:text-[#FF6422] transition-colors shadow-2xs cursor-pointer"
+            >
+              <ArrowLeft className="w-4 h-4 text-[#FF6422]" />
+              <span>Back to Studio</span>
+            </button>
+
+            <div className="text-center min-w-0 flex-1 px-2">
+              <div className="flex items-center justify-center gap-1.5 text-stone-900 font-extrabold text-xs sm:text-sm truncate">
+                <MapPin className="w-4 h-4 text-[#FF6422] shrink-0" />
+                <span className="truncate">{salon.name}</span>
               </div>
+              <p className="text-[11px] text-stone-500 truncate mt-0.5">
+                {salon.address} · {salon.locality} ({salon.distanceKm} km away)
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowInAppMap(false);
+                  setSelectedSalonForDetail(null);
+                  setCustomerTab('map');
+                }}
+                className="hidden sm:flex items-center gap-1 px-3 py-1.5 rounded-xl bg-orange-50 border border-orange-200 text-[#FF6422] hover:bg-orange-100 text-xs font-bold transition-colors cursor-pointer"
+                title="Open in Explore Map"
+              >
+                <MapIcon className="w-3.5 h-3.5" />
+                <span>Explore Map</span>
+              </button>
+
               <button
                 type="button"
                 onClick={() => setShowInAppMap(false)}
-                className="p-2 rounded-full bg-white border border-[#E2DDD5] text-stone-600 hover:text-stone-900 hover:bg-stone-100 transition-colors cursor-pointer"
-                aria-label="Close Map"
+                className="p-1.5 rounded-full bg-stone-100 hover:bg-stone-200 text-stone-600 transition-colors cursor-pointer"
+                aria-label="Close"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
+          </header>
 
-            {/* Embedded In-App Mapbox Map */}
-            <div className="flex-1 relative overflow-hidden bg-stone-100 p-2">
-              <SalonMapboxView
-                salon={salon}
-                userLocation={userLocation}
-                height="100%"
-              />
+          {/* Full Screen Interactive Map Area */}
+          <main className="flex-1 w-full relative overflow-hidden bg-stone-100 flex flex-col p-2 sm:p-4">
+            <SalonMapboxView
+              salon={salon}
+              userLocation={userLocation}
+              height="100%"
+              className="w-full flex-1 min-h-[350px] rounded-2xl shadow-md border border-[#E2DDD5]"
+            />
+          </main>
+
+          {/* Bottom Action Footer */}
+          <footer className="bg-white border-t border-[#E8E2D8] p-3 px-4 flex flex-wrap items-center justify-between gap-2.5 shrink-0">
+            <div className="flex items-center gap-2 text-xs">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+              <span className="font-bold text-stone-800">{salon.name} Pinned</span>
+              <span className="text-stone-400">·</span>
+              <span className="text-stone-500">{salon.locality}</span>
             </div>
 
-            {/* Modal Footer */}
-            <div className="p-3.5 px-5 bg-white border-t border-[#E8E2D8] flex items-center justify-between gap-3">
-              <div className="text-xs text-stone-600">
-                <span className="font-bold text-stone-900">{salon.distanceKm} km away</span>
-                <span className="hidden sm:inline text-stone-400"> · Live Queue: {salon.currentQueue} waiting</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => redirectToGoogleMaps({
-                    lat: salon.coordinates.lat,
-                    lng: salon.coordinates.lng,
-                    name: salon.name,
-                    address: salon.address
-                  }, userLocation || undefined)}
-                  className="px-3 py-1.5 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 font-bold text-xs flex items-center gap-1.5 transition-colors"
-                >
-                  <Navigation className="w-3.5 h-3.5" />
-                  <span>Google Maps</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowInAppMap(false)}
-                  className="px-4 py-1.5 rounded-xl bg-[#FF6422] text-white font-extrabold text-xs hover:bg-orange-600 transition-colors cursor-pointer"
-                >
-                  Close Map
-                </button>
-              </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowInAppMap(false);
+                  setSelectedSalonForDetail(null);
+                  setCustomerTab('map');
+                }}
+                className="px-3 py-1.5 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-bold transition-colors cursor-pointer flex items-center gap-1"
+              >
+                <MapIcon className="w-3.5 h-3.5 text-[#FF6422]" />
+                <span>All Salons Map</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => redirectToGoogleMaps({
+                  lat: salon.coordinates?.lat || 12.9716,
+                  lng: salon.coordinates?.lng || 77.5946,
+                  name: salon.name,
+                  address: salon.address
+                }, userLocation || undefined)}
+                className="px-3.5 py-1.5 rounded-xl bg-[#FF6422] text-white font-extrabold text-xs shadow-md shadow-orange-500/20 hover:bg-orange-600 transition-colors cursor-pointer flex items-center gap-1.5"
+              >
+                <Navigation className="w-3.5 h-3.5 fill-white" />
+                <span>Navigate ↗</span>
+              </button>
             </div>
-          </div>
+          </footer>
         </div>
       )}
 

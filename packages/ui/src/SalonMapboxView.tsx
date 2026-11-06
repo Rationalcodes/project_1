@@ -39,7 +39,10 @@ export const SalonMapboxView: React.FC<SalonMapboxViewProps> = ({
   const mapboxMarkerRef = useRef<any>(null);
   const leafletInstanceRef = useRef<any>(null);
 
-  const { lat, lng } = salon.coordinates;
+  const rawLat = salon?.coordinates?.lat ?? (salon as any)?.latitude;
+  const rawLng = salon?.coordinates?.lng ?? (salon as any)?.longitude;
+  const lat = Number.isFinite(Number(rawLat)) ? Number(rawLat) : 12.9716;
+  const lng = Number.isFinite(Number(rawLng)) ? Number(rawLng) : 77.5946;
 
   useEffect(() => {
     let isMounted = true;
@@ -183,6 +186,13 @@ export const SalonMapboxView: React.FC<SalonMapboxViewProps> = ({
       }
 
       leafletInstanceRef.current = map;
+
+      setTimeout(() => {
+        try { map.invalidateSize(); } catch (_) {}
+      }, 100);
+      setTimeout(() => {
+        try { map.invalidateSize(); } catch (_) {}
+      }, 350);
     } else {
       leafletInstanceRef.current.setView([lat, lng], 15);
     }
@@ -220,17 +230,22 @@ export const SalonMapboxView: React.FC<SalonMapboxViewProps> = ({
   };
 
   return (
-    <div className={`relative rounded-3xl overflow-hidden border border-[#E8E2D8] bg-[#FAF7F2] shadow-sm ${className}`}>
+    <div
+      className={`relative rounded-3xl overflow-hidden border border-[#E8E2D8] bg-[#FAF7F2] shadow-sm flex flex-col ${className}`}
+      style={{ width: '100%', height: height || '100%', minHeight: '300px' }}
+    >
       <style>{`
         .osm-dark-tiles {
           filter: none !important;
         }
         .leaflet-container {
           background-color: #FAF7F2 !important;
+          width: 100% !important;
+          height: 100% !important;
         }
       `}</style>
       {/* Map Canvas */}
-      <div ref={mapContainerRef} style={{ width: '100%', height }} />
+      <div ref={mapContainerRef} className="w-full flex-1 min-h-[300px]" style={{ width: '100%', height: '100%', minHeight: '300px' }} />
 
       {/* Top Header Badge */}
       <div className="absolute top-3 left-3 z-10 flex items-center gap-2">
