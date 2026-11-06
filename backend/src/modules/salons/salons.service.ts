@@ -3,9 +3,11 @@ import {
   NotFoundException,
   ForbiddenException,
   BadRequestException,
+  ConflictException,
   InternalServerErrorException,
   Logger,
 } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { createHmac, randomUUID, timingSafeEqual } from 'crypto';
 import { PrismaService } from '../../prisma/prisma.service';
 import { RegisterSalonDto } from './dto/register-salon.dto';
@@ -14,7 +16,7 @@ import { UpdateQueueDto } from './dto/update-queue.dto';
 import { PublicSalonResponseDto, PublicReviewDto } from './dto/public-salon-response.dto';
 import { CreateReviewDto } from './dto/create-review.dto';
 import { AuthenticatedUser } from '../auth/interfaces/jwt-payload.interface';
-import { QueueEngineService, getStartOfTodayIST } from './queue-engine.service';
+import { QueueEngineService, getStartOfTodayIST, isSalonPastClosingTime } from './queue-engine.service';
 import { QueueGateway } from './queue.gateway';
 import { validateQueueTransition } from './queue-state-machine';
 import {
@@ -440,6 +442,7 @@ export class SalonsService {
                 location_images, work_images, opening_hours_formatted,
                 current_queue, avg_service_time_minutes, active_barbers,
                 rating, review_count, starting_price, is_open, is_verified,
+                queue_status, opening_hours_open, opening_hours_close,
                 status, last_queue_update
          FROM salons
          WHERE id = $1 LIMIT 1;`,
@@ -497,7 +500,16 @@ export class SalonsService {
     const barbers = Math.max(1, salonData.activeBarbers || salonData.active_barbers || 2);
     const avgTime = salonData.avgServiceTimeMinutes || salonData.avg_service_time_minutes || 20;
     const currentQueue = salonData.currentQueue !== undefined ? salonData.currentQueue : salonData.current_queue || 0;
-    const estimatedWaitMinutes = currentQueue > 0 ? Math.ceil((currentQueue * avgTime) / barbers) : 0;
+    const isQueueOpen =
+      Boolean(salonData.isOpen !== undefined ? salonData.isOpen : salonData.is_open) &&
+      salonData.queueStatus !== 'closed' &&
+      salonData.queue_status !== 'closed' &&
+      !isSalonPastClosingTime(
+        salonData.openingHoursClose || salonData.opening_hours_close,
+        salonData.openingHoursOpen || salonData.opening_hours_open,
+      );
+    const displayedQueue = isQueueOpen ? Number(currentQueue) : 0;
+    const estimatedWaitMinutes = displayedQueue > 0 ? Math.ceil((displayedQueue * avgTime) / barbers) : 0;
 
     return {
       id: salonData.id,
@@ -529,14 +541,14 @@ export class SalonsService {
         close: salonData.openingHoursClose || salonData.opening_hours_close || '09:30 PM',
         formatted: salonData.openingHoursFormatted || salonData.opening_hours_formatted || '09:00 AM – 09:30 PM (All Days)',
       },
-      currentQueue: Number(currentQueue),
+      currentQueue: displayedQueue,
       estimatedWaitMinutes,
       activeBarbers: barbers,
       avgServiceTimeMinutes: avgTime,
       rating: Number(salonData.rating || 5.0),
       reviewCount: Number(salonData.reviewCount || salonData.review_count || 0),
       startingPrice: Number(salonData.startingPrice || salonData.starting_price || 150.0),
-      isOpen: Boolean(salonData.isOpen !== undefined ? salonData.isOpen : salonData.is_open),
+      isOpen: isQueueOpen,
       isVerified: Boolean(salonData.isVerified !== undefined ? salonData.isVerified : salonData.is_verified),
       lastQueueUpdate: salonData.lastQueueUpdate || salonData.last_queue_update || new Date().toISOString(),
       services: (salonData.services || []).map((s: any) => ({
@@ -762,12 +774,30 @@ export class SalonsService {
 
   async updateSalon(id: string, dto: UpdateSalonDto, requesterOwnerId?: string): Promise<any> {
     const salon = this.localSalons.get(id);
+    let effectiveIsOpen = dto.isOpen;
 
     if (dto.latitude !== undefined && (dto.latitude < -90 || dto.latitude > 90)) {
       throw new BadRequestException('Latitude must be between -90 and 90');
     }
     if (dto.longitude !== undefined && (dto.longitude < -180 || dto.longitude > 180)) {
       throw new BadRequestException('Longitude must be between -180 and 180');
+    }
+
+    if (dto.isOpen !== undefined) {
+      const updatedCount = await this.prisma.$executeRaw`
+        UPDATE public.salons
+        SET is_open = ${dto.isOpen},
+            queue_status = CASE
+              WHEN ${dto.isOpen} = false THEN 'closed'
+              WHEN queue_status = 'closed' THEN 'open'
+              ELSE queue_status
+            END,
+            last_queue_update = NOW()
+        WHERE id = ${id}
+      `;
+      if (updatedCount === 0 && !salon) {
+        throw new NotFoundException(`Salon with ID '${id}' not found`);
+      }
     }
 
     // Try PostGIS database update
@@ -787,9 +817,6 @@ export class SalonsService {
       }
       if (dto.status) {
         await this.prisma.$executeRawUnsafe(`UPDATE salons SET status = $1 WHERE id = $2;`, dto.status, id);
-      }
-      if (dto.isOpen !== undefined) {
-        await this.prisma.$executeRawUnsafe(`UPDATE salons SET is_open = $1 WHERE id = $2;`, dto.isOpen, id);
       }
       let effectiveCover = dto.coverImage;
       if (!effectiveCover && dto.posterImage) {
@@ -851,15 +878,18 @@ export class SalonsService {
     }
 
     if (dto.isOpen === false) {
-      this.clearQueue(id, { clearOption: 'cancelled', reason: 'Shop closed by owner' }, requesterOwnerId).catch((err) => {
-        this.logger.warn(`Could not auto-clear queue on closing salon ${id}: ${err.message}`);
-      });
+      await this.clearQueue(id, { clearOption: 'cancelled', reason: 'Shop closed by owner' }, requesterOwnerId);
+    } else if (dto.isOpen === true) {
+      const queueData = await this.queueEngine.recalculateSalonQueue(id, { force: true, persist: true });
+      this.syncLocalQueueCache(id, queueData.overview.totalWaiting);
+      effectiveIsOpen = queueData.overview.queueStatus !== 'closed';
     }
 
     return {
       success: true,
       message: 'Salon updated successfully',
       salonId: id,
+      ...(effectiveIsOpen !== undefined ? { isOpen: effectiveIsOpen } : {}),
     };
   }
 
@@ -1520,6 +1550,7 @@ export class SalonsService {
     const entryId = `q-${randomUUID()}`;
     const cleanName = (dto.customerName || '').trim() || 'Walk-in Customer';
     const cleanPhone = (dto.phone || '').trim() || null;
+    const cleanDeviceId = (dto.deviceId || '').trim() || null;
     const cleanService = (dto.serviceName || '').trim() || 'Haircut & Styling';
     const checkInMethod = dto.checkInToken ? 'qr' : 'online';
 
@@ -1530,12 +1561,25 @@ export class SalonsService {
     // Verify salon exists & queue is not closed
     const salon = await this.prisma.salon.findUnique({
       where: { id: salonId },
-      select: { id: true, name: true, isOpen: true, queueStatus: true, avgServiceTimeMinutes: true, startingPrice: true },
+      select: {
+        id: true,
+        name: true,
+        isOpen: true,
+        queueStatus: true,
+        openingHoursOpen: true,
+        openingHoursClose: true,
+        avgServiceTimeMinutes: true,
+        startingPrice: true,
+      },
     });
     if (!salon) {
       throw new NotFoundException(`Salon with ID '${salonId}' not found`);
     }
-    if (salon.isOpen === false || salon.queueStatus === 'closed') {
+    if (
+      salon.isOpen === false ||
+      salon.queueStatus === 'closed' ||
+      isSalonPastClosingTime(salon.openingHoursClose, salon.openingHoursOpen)
+    ) {
       throw new BadRequestException('This salon queue is currently closed.');
     }
 
@@ -1574,13 +1618,46 @@ export class SalonsService {
       'queue.entry.create',
       async (tx) => {
         await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${salonId}), hashtext('queue-position'))`;
-        const [maxRow] = await tx.$queryRaw<Array<{ max_pos: number }>>`
-          SELECT COALESCE(MAX(position), 0)::int AS max_pos
+        const [maxRow] = await tx.$queryRaw<Array<{ max_pos: number; max_ticket: number }>>`
+          SELECT
+            COALESCE(MAX(position) FILTER (WHERE status IN ('waiting', 'called', 'in_service', 'skipped')), 0)::int AS max_pos,
+            COALESCE(
+              MAX(NULLIF(regexp_replace(ticket_number, '[^0-9]', '', 'g'), '')::int),
+              0
+            )::int AS max_ticket
           FROM public.salon_queue_entries
           WHERE salon_id = ${salonId} AND joined_at >= ${startOfToday}
         `;
         const nextPos = Number(maxRow?.max_pos || 0) + 1;
-        const ticketNumber = `#${String(nextPos).padStart(2, '0')}`;
+        const ticketNumber = `#${String(Number(maxRow?.max_ticket || 0) + 1).padStart(2, '0')}`;
+        const phoneIdentity = cleanPhone?.replace(/\D/g, '') || null;
+        const identityConditions = [
+          ...(actorId ? [Prisma.sql`user_id = ${actorId}`] : []),
+          ...(cleanDeviceId ? [Prisma.sql`device_id = ${cleanDeviceId}`] : []),
+          ...(phoneIdentity
+            ? [Prisma.sql`regexp_replace(COALESCE(phone, ''), '[^0-9]', '', 'g') = ${phoneIdentity}`]
+            : []),
+        ];
+        if (identityConditions.length > 0) {
+          const [existingEntry] = await tx.$queryRaw<Array<{ ticket_number: string | null; position: number }>>(
+            Prisma.sql`
+              SELECT ticket_number, position
+              FROM public.salon_queue_entries
+              WHERE salon_id = ${salonId}
+                AND status IN ('waiting', 'called', 'in_service', 'skipped', 'no_show')
+                AND (${Prisma.join(identityConditions, ' OR ')})
+              ORDER BY joined_at DESC
+              LIMIT 1
+            `,
+          );
+          if (existingEntry) {
+            const existingTicket =
+              existingEntry.ticket_number || `#${String(existingEntry.position).padStart(2, '0')}`;
+            throw new ConflictException(
+              `You already have an active queue ticket (${existingTicket}). Leave that queue before joining again.`,
+            );
+          }
+        }
         const entry = await tx.salonQueueEntry.create({
           data: {
             id: entryId,
@@ -1596,7 +1673,7 @@ export class SalonsService {
             assignedStaffId: dto.preferredStaffId || null,
             status: 'waiting',
             joinedAt,
-            deviceId: dto.deviceId || null,
+            deviceId: cleanDeviceId,
             userId: actorId || null,
             notes: dto.notes || null,
             checkInMethod,

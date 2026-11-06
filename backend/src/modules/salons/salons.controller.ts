@@ -361,7 +361,7 @@ export class SalonsController {
     @Body() dto: CreateQueueEntryDto,
     @CurrentUser() user?: AuthenticatedUser,
   ) {
-    return this.salonsService.addQueueEntry(id, dto, user?.id);
+    return this.salonsService.addQueueEntry(id, dto, user?.role === 'CUSTOMER' ? user.id : undefined);
   }
 
   @Post(':id/queue-entries/:entryId/start')

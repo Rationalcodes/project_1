@@ -746,7 +746,6 @@ export const OwnerApp: React.FC = () => {
           <button
             onClick={() => {
               updateSalonInfo(activeSalon.id, { isOpen: !activeSalon.isOpen });
-              triggerNotification(activeSalon.isOpen ? "Salon marked as CLOSED" : "Salon marked as OPEN & Accepting Walk-ins");
             }}
             className={`px-4 py-2 rounded-2xl text-xs font-bold transition-all border ${
               activeSalon.isOpen
@@ -858,7 +857,7 @@ export const OwnerApp: React.FC = () => {
             {/* The Main Big Touch Buttons */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-xl mx-auto my-6">
               <button
-                onClick={() => updateQueue(activeSalon.id, 1)}
+                onClick={() => setShowAddCustomerModal(true)}
                 className="py-5 px-6 rounded-2xl bg-amber-500 hover:bg-amber-400 text-black font-black text-lg sm:text-xl shadow-xl shadow-amber-500/25 active:scale-95 transition-all flex items-center justify-center gap-3 cursor-pointer"
               >
                 <Plus className="w-7 h-7 stroke-[3]" />

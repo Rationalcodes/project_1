@@ -313,8 +313,6 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
         triggerNotification(`Added #${res.entry.ticketNumber} ${name} to live queue!`);
       }
       await refreshQueueEntries(sId);
-    } catch (err: any) {
-      triggerNotification(err?.message || 'Failed to add customer to queue');
     } finally {
       setIsLoadingQueue(false);
     }
@@ -684,6 +682,39 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
   };
 
   const updateSalonInfo = (salonId: string, updates: Partial<Salon>) => {
+    if (updates.isOpen !== undefined) {
+      void defaultApiClient.updateSalon(salonId, updates).then((result) => {
+        if (!result?.success) {
+          throw new Error('Could not update the salon queue status. Please retry.');
+        }
+        const effectiveIsOpen =
+          typeof result.isOpen === 'boolean' ? result.isOpen : updates.isOpen;
+        setSalons((prev) =>
+          prev.map((s) => {
+            if (s.id !== salonId) return s;
+            const updated = normalizeSalon({
+              ...s,
+              ...updates,
+              isOpen: effectiveIsOpen,
+              ...(effectiveIsOpen === false ? { currentQueue: 0 } : {}),
+            });
+            safeStorage.setItem('kumbhakaran_partner_active_salon', JSON.stringify(updated));
+            return updated;
+          }),
+        );
+        if (effectiveIsOpen === false) {
+          setQueueEntries([]);
+          broadcastTelemetryUpdate(salonId, 0);
+        } else {
+          void refreshQueueEntries(salonId);
+        }
+        triggerNotification(effectiveIsOpen ? 'Salon is open for walk-ins.' : 'Salon is closed.');
+      }).catch((error: unknown) => {
+        triggerNotification(error instanceof Error ? error.message : 'Could not update the salon queue status.');
+      });
+      return;
+    }
+
     setSalons((prev) =>
       prev.map((s) => {
         if (s.id !== salonId) return s;
