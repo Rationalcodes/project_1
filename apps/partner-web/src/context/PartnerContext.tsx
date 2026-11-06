@@ -849,47 +849,83 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
     triggerNotification('Service removed');
   };
 
-  const addStaff = (salonId: string, staffData: Omit<Staff, 'id'>) => {
-    const newMember: Staff = {
-      ...staffData,
-      id: `st-${Date.now()}`,
-    };
-    setSalons((prev) =>
-      prev.map((s) => {
-        if (s.id !== salonId) return s;
-        const updated = { ...s, staff: [...(s.staff || []), newMember] };
-        safeStorage.setItem('kumbhakaran_partner_active_salon', JSON.stringify(updated));
-        return updated;
-      }),
-    );
-    triggerNotification(`Stylist ${newMember.name} added to roster`);
+  const addStaff = async (salonId: string, staffData: Omit<Staff, 'id'>) => {
+    try {
+      const created = await defaultApiClient.addSalonStaff(salonId, {
+        name: staffData.name,
+        role: staffData.role,
+        experience: staffData.experience,
+        specialties: staffData.specialties,
+        photo: staffData.photo,
+      });
+      const newMember: Staff = {
+        ...staffData,
+        id: created?.id || `st-${Date.now()}`,
+      };
+      setSalons((prev) =>
+        prev.map((s) => {
+          if (s.id !== salonId) return s;
+          const updated = {
+            ...s,
+            activeBarbers: (s.staff || []).length + 1,
+            staff: [...(s.staff || []), newMember],
+          };
+          safeStorage.setItem('kumbhakaran_partner_active_salon', JSON.stringify(updated));
+          return updated;
+        }),
+      );
+      triggerNotification(`Stylist ${newMember.name} added to roster`);
+    } catch (err: any) {
+      triggerNotification(err?.message || 'Failed to add stylist');
+    }
   };
 
-  const updateStaff = (salonId: string, staffId: string, updates: Partial<Staff>) => {
-    setSalons((prev) =>
-      prev.map((s) => {
-        if (s.id !== salonId) return s;
-        const updated = {
-          ...s,
-          staff: (s.staff || []).map((st) => (st.id === staffId ? { ...st, ...updates } : st)),
-        };
-        safeStorage.setItem('kumbhakaran_partner_active_salon', JSON.stringify(updated));
-        return updated;
-      }),
-    );
-    triggerNotification('Staff details updated');
+  const updateStaff = async (salonId: string, staffId: string, updates: Partial<Staff>) => {
+    try {
+      if (updates.status) {
+        await defaultApiClient.updateStaffStatus(
+          salonId,
+          staffId,
+          updates.status === 'break' ? 'ON_BREAK' : updates.status === 'off' ? 'OFFLINE' : 'AVAILABLE',
+        );
+      }
+      setSalons((prev) =>
+        prev.map((s) => {
+          if (s.id !== salonId) return s;
+          const updated = {
+            ...s,
+            staff: (s.staff || []).map((st) => (st.id === staffId ? { ...st, ...updates } : st)),
+          };
+          safeStorage.setItem('kumbhakaran_partner_active_salon', JSON.stringify(updated));
+          return updated;
+        }),
+      );
+      triggerNotification('Staff details updated');
+    } catch (err: any) {
+      triggerNotification(err?.message || 'Failed to update staff');
+    }
   };
 
-  const deleteStaff = (salonId: string, staffId: string) => {
-    setSalons((prev) =>
-      prev.map((s) => {
-        if (s.id !== salonId) return s;
-        const updated = { ...s, staff: (s.staff || []).filter((st) => st.id !== staffId) };
-        safeStorage.setItem('kumbhakaran_partner_active_salon', JSON.stringify(updated));
-        return updated;
-      }),
-    );
-    triggerNotification('Staff member removed');
+  const deleteStaff = async (salonId: string, staffId: string) => {
+    try {
+      await defaultApiClient.deleteSalonStaff(salonId, staffId);
+      setSalons((prev) =>
+        prev.map((s) => {
+          if (s.id !== salonId) return s;
+          const remainingStaff = (s.staff || []).filter((st) => st.id !== staffId);
+          const updated = {
+            ...s,
+            activeBarbers: Math.max(1, remainingStaff.length),
+            staff: remainingStaff,
+          };
+          safeStorage.setItem('kumbhakaran_partner_active_salon', JSON.stringify(updated));
+          return updated;
+        }),
+      );
+      triggerNotification('Staff member removed');
+    } catch (err: any) {
+      triggerNotification(err?.message || 'Failed to delete staff member');
+    }
   };
 
   const fetchSalonReviews = useCallback(async (targetSalonId?: string) => {

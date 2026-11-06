@@ -33,6 +33,7 @@ import {
   UpdateQueueStatusDto,
   ClearQueueDto,
   UpdateStaffStatusDto,
+  UpsertStaffDto,
   UpsertServiceDto,
   SubmitCrowdReportDto,
 } from './dto/queue-action.dto';
@@ -2535,6 +2536,64 @@ export class SalonsService {
     });
 
     return updated;
+  }
+
+  async upsertSalonStaff(salonId: string, dto: UpsertStaffDto, staffId?: string) {
+    if (staffId) {
+      return this.prisma.salonStaff.update({
+        where: { id: staffId },
+        data: {
+          name: dto.name,
+          role: dto.role,
+          experience: dto.experience,
+          specialties: dto.specialties,
+          photo: dto.photo,
+        },
+      });
+    }
+
+    const newId = `st-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+    const created = await this.prisma.salonStaff.create({
+      data: {
+        id: newId,
+        salonId,
+        name: dto.name,
+        role: dto.role || 'Barber',
+        experience: dto.experience || 'Professional',
+        specialties: dto.specialties || ['Haircut', 'Beard Styling'],
+        photo: dto.photo || null,
+        status: 'active',
+        availability: 'AVAILABLE',
+      },
+    });
+
+    // Update salon activeBarbers count
+    await this.prisma.$executeRaw`
+      UPDATE public.salons
+      SET active_barbers = (SELECT COUNT(*)::int FROM public.salon_staff WHERE salon_id = ${salonId} AND status = 'active')
+      WHERE id = ${salonId}
+    `;
+
+    return created;
+  }
+
+  async deleteSalonStaff(salonId: string, staffId: string) {
+    const deleted = await this.prisma.salonStaff.update({
+      where: { id: staffId },
+      data: { status: 'inactive', availability: 'OFFLINE' },
+    });
+
+    // Recalculate activeBarbers on salon
+    await this.prisma.$executeRaw`
+      UPDATE public.salons
+      SET active_barbers = (SELECT COUNT(*)::int FROM public.salon_staff WHERE salon_id = ${salonId} AND status = 'active')
+      WHERE id = ${salonId}
+    `;
+
+    // Recalculate queue ETAs since a barber was removed
+    await this.queueEngine.recalculateSalonQueue(salonId, { force: true, persist: true });
+
+    return deleted;
   }
 
   // ==========================================================================

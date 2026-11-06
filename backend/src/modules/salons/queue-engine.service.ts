@@ -420,8 +420,13 @@ export class QueueEngineService implements OnModuleInit, OnModuleDestroy {
 
     let staffList = staffRecords;
 
-    // If no explicit staff records exist, dynamically create & persist default staff slots so foreign keys never fail
-    if (staffList.length === 0) {
+    // Check if salon has any staff records (active or inactive)
+    const existingStaffCount = await this.prisma.salonStaff.count({
+      where: { salonId },
+    });
+
+    // Only create initial default staff slots if salon is newly registered and has never had any staff configured
+    if (staffList.length === 0 && existingStaffCount === 0) {
       const defaultSlots = Array.from({ length: activeBarbersCount }).map((_, i) => ({
         id: `staff-${salonId}-slot-${i + 1}`,
         salonId,

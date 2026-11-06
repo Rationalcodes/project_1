@@ -41,6 +41,7 @@ import {
   UpdateQueueStatusDto,
   ClearQueueDto,
   UpdateStaffStatusDto,
+  UpsertStaffDto,
   UpsertServiceDto,
   SubmitCrowdReportDto,
 } from './dto/queue-action.dto';
@@ -617,6 +618,40 @@ export class SalonsController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     return this.salonsService.updateStaffStatus(id, staffId, dto, user.id);
+  }
+
+  @Post(':id/staff')
+  @UseGuards(JwtAuthGuard, SalonOwnerGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Add a new staff member to salon' })
+  async createSalonStaff(
+    @Param('id') id: string,
+    @Body() dto: UpsertStaffDto,
+  ) {
+    return this.salonsService.upsertSalonStaff(id, dto);
+  }
+
+  @Patch(':id/staff/:staffId')
+  @UseGuards(JwtAuthGuard, SalonOwnerGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Update staff member profile' })
+  async updateSalonStaff(
+    @Param('id') id: string,
+    @Param('staffId') staffId: string,
+    @Body() dto: Partial<UpsertStaffDto>,
+  ) {
+    return this.salonsService.upsertSalonStaff(id, dto as any, staffId);
+  }
+
+  @Delete(':id/staff/:staffId')
+  @UseGuards(JwtAuthGuard, SalonOwnerGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Delete or remove staff member from salon' })
+  async deleteSalonStaff(
+    @Param('id') id: string,
+    @Param('staffId') staffId: string,
+  ) {
+    return this.salonsService.deleteSalonStaff(id, staffId);
   }
 
   @Get(':id/services')

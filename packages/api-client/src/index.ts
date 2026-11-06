@@ -845,6 +845,66 @@ export class KumbhakaranApiClient {
   }
 
   /**
+   * Staff and Barber Management
+   */
+  async addSalonStaff(salonId: string, staffData: {
+    name: string;
+    role?: string;
+    experience?: string;
+    specialties?: string[];
+    photo?: string;
+  }): Promise<any> {
+    const res = await fetch(`${this.baseUrl}/salons/${salonId}/staff`, {
+      method: 'POST',
+      headers: this.getHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify(staffData),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || 'Failed to add staff member');
+    }
+    return res.json();
+  }
+
+  async updateSalonStaff(salonId: string, staffId: string, updates: any): Promise<any> {
+    const res = await fetch(`${this.baseUrl}/salons/${salonId}/staff/${staffId}`, {
+      method: 'PATCH',
+      headers: this.getHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify(updates),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || 'Failed to update staff member');
+    }
+    return res.json();
+  }
+
+  async deleteSalonStaff(salonId: string, staffId: string): Promise<any> {
+    const res = await fetch(`${this.baseUrl}/salons/${salonId}/staff/${staffId}`, {
+      method: 'DELETE',
+      headers: this.getHeaders(),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || 'Failed to delete staff member');
+    }
+    return res.json();
+  }
+
+  async updateStaffStatus(salonId: string, staffId: string, availability: 'AVAILABLE' | 'ON_BREAK' | 'OFFLINE', note?: string): Promise<any> {
+    const res = await fetch(`${this.baseUrl}/salons/${salonId}/staff/${staffId}/status`, {
+      method: 'PATCH',
+      headers: this.getHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({ availability, note }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || 'Failed to update staff status');
+    }
+    return res.json();
+  }
+
+  /**
    * Submit live crowdsourced salon status with GPS location verification (Where-Is-My-Train style)
    */
   async submitCrowdReport(salonId: string, payload: {

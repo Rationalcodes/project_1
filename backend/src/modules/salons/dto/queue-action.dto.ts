@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsString, IsNumber, IsIn, Min, Max } from 'class-validator';
+import { IsOptional, IsString, IsNumber, IsIn, Min, Max, IsArray } from 'class-validator';
 
 export class StartServiceDto {
   @ApiPropertyOptional({ description: 'ID of staff member taking this customer' })
@@ -87,6 +87,32 @@ export class UpdateStaffStatusDto {
   @IsOptional()
   @IsString()
   note?: string;
+}
+
+export class UpsertStaffDto {
+  @ApiProperty({ example: 'Rahul Sharma' })
+  @IsString()
+  name: string;
+
+  @ApiPropertyOptional({ example: 'Master Barber' })
+  @IsOptional()
+  @IsString()
+  role?: string;
+
+  @ApiPropertyOptional({ example: '5 Years' })
+  @IsOptional()
+  @IsString()
+  experience?: string;
+
+  @ApiPropertyOptional({ example: ['Haircut', 'Beard Styling'] })
+  @IsOptional()
+  @IsArray()
+  specialties?: string[];
+
+  @ApiPropertyOptional({ example: 'https://example.com/avatar.jpg' })
+  @IsOptional()
+  @IsString()
+  photo?: string;
 }
 
 export class UpsertServiceDto {
