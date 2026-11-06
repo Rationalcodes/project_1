@@ -1114,7 +1114,7 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     // Initial fetch
     fetchSalons(true);
 
-    // Live telemetry interval: Poll every 2.5 seconds for instant real-time queue updates from partners
+    // Socket updates are immediate; five-second polling is a resilient fallback.
     const intervalId = setInterval(() => {
       fetchSalons(false);
       // Auto-poll active queue ticket in real-time
@@ -1123,7 +1123,7 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       } else if (selectedSalonRef.current?.id) {
         fetchSalonQueue(selectedSalonRef.current.id);
       }
-    }, 2500);
+    }, 5000);
 
     // Immediate sync on tab focus or screen unlock
     const onFocus = () => fetchSalons(false);

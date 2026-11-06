@@ -209,10 +209,10 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
     if (selectedSalonForDetail?.id) {
       const sId = selectedSalonForDetail.id;
       fetchSalonQueue(sId);
-      // High-frequency 1.5s live polling while viewing active salon details
+      // Socket updates are immediate; poll periodically as a resilient fallback.
       const interval = setInterval(() => {
         fetchSalonQueue(sId);
-      }, 1500);
+      }, 5000);
 
       const onFocus = () => fetchSalonQueue(sId);
       const onVisibility = () => {

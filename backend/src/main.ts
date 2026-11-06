@@ -18,6 +18,7 @@ async function bootstrap() {
 
   // 2. Configure Global API Prefix (API Versioning v1)
   app.setGlobalPrefix('api/v1');
+  app.enableShutdownHooks();
 
   // 3. Configure Production & Preview CORS
   const allowedOriginsEnv = process.env.ALLOWED_ORIGINS;

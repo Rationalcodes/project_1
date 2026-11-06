@@ -12,6 +12,8 @@ services:
         value: production
       - key: PORT
         value: 10000
+      - key: PRISMA_CONNECTION_LIMIT
+        value: "8"
       - key: DATABASE_URL
         sync: false
       - key: GOOGLE_CLIENT_ID

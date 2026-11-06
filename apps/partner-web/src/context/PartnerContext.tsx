@@ -241,13 +241,13 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
     } catch {}
   }, [activeSalonId]);
 
-  // Poll live queue entries every 1.5 seconds when active salon is loaded + immediate sync on focus & broadcast
+  // Socket updates are immediate; poll periodically as a resilient fallback.
   useEffect(() => {
     if (!activeSalonId) return;
     refreshQueueEntries(activeSalonId);
     const interval = setInterval(() => {
       refreshQueueEntries(activeSalonId);
-    }, 1500);
+    }, 5000);
 
     const onFocus = () => refreshQueueEntries(activeSalonId);
     const onVisibility = () => {

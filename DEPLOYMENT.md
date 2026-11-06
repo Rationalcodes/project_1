@@ -13,7 +13,7 @@ This document contains the complete, step-by-step instructions to deploy Kumbhak
 | :--- | :---: | :--- |
 | **All Frontend Builds** | ✅ VERIFIED | All 3 apps build with 0 TypeScript errors in < 1.3 seconds. |
 | **Backend Build** | ✅ VERIFIED | `nest build` generates optimized Fastify bundles in `dist/`. |
-| **Prisma 6.4 Client** | ✅ VERIFIED | Auto-generated during backend build. |
+| **Prisma 6.19 Client** | ✅ VERIFIED | Auto-generated during backend build. |
 | **PostGIS Discovery** | ✅ VERIFIED | 10/10 automated tests passing (`test-phase2.ts`). |
 | **Auth & Security** | ✅ VERIFIED | 6/6 automated security tests passing (`test-auth-security.ts`). |
 | **SPA Route Rewrites** | ✅ VERIFIED | `vercel.json` configured in all 3 frontend apps to eliminate 404s on page refresh. |
@@ -183,11 +183,41 @@ Deploy the backend first; the current production API URL is `https://kumbhakaran
   * `NODE_ENV`: `production`
   * `PORT`: `10000`
   * `DATABASE_URL`: `postgresql://postgres.mgblemlqjnmkhhcfibpb:[YOUR_NEW_SUPABASE_PASSWORD]@aws-0-eu-west-1.pooler.supabase.com:5432/postgres`
+  * `PRISMA_CONNECTION_LIMIT`: `8`
   * `GOOGLE_CLIENT_ID`: `871471875670-ifpho22l5oa0r59kgsvvuoe3r7t5a2l9.apps.googleusercontent.com`
   * `JWT_SECRET`: `kumbhakaran-production-jwt-secret-key-32chars`
   * `JWT_EXPIRES_IN`: `24h`
 
 Once deployed, use the backend URL: `https://kumbhakaran-salons.onrender.com`
+
+### Supabase session-pool budget
+
+The production error reports a Supabase session pool of 15 connections. Keep the
+backend on the existing Supabase session-pool endpoint and set
+`PRISMA_CONNECTION_LIMIT=8` in the Render service. Prisma applies this limit to
+the `DATABASE_URL` at runtime; do not add a second `PrismaClient` or put a
+connection limit above 12 in the URL.
+
+The budget reserves 3 of the 15 connections for Supabase/administrative
+headroom, leaving at most 12 for all backend processes. For `N` maximum
+overlapping backend processes, use `floor(12 / N)` as the per-process ceiling.
+For the confirmed maximum of one process, the configured value of 8 leaves 7
+connections unused by the application. If Render is scaled or deploys overlap,
+recalculate this value before increasing the process count (for example, use 6
+per process for two overlapping processes). The backend rejects values outside
+1–12 instead of silently exceeding the budget.
+
+Queue reads are coalesced per salon and cached briefly. Queue recalculation no
+longer writes every waiting ticket on every poll; queue mutations trigger a
+fresh calculation and persist the derived positions/ETAs together. Customer
+and partner screens poll every five seconds as a fallback; realtime socket
+events remain the immediate update path. Check Render logs for structured
+`db.connection.*`, `db.query.slow`, `db.transaction.failed`, and
+`queue.recalculation.*` events. These records omit SQL, connection strings,
+tokens, and customer data.
+
+This connection-pool change requires no database migration or one-off production
+data edit. Do not apply migration `005` as part of this rollout.
 
 ---
 

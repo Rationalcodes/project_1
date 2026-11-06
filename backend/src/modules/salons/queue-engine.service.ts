@@ -1,4 +1,5 @@
-import { Injectable, Logger, OnModuleInit, Optional } from '@nestjs/common';
+import { Injectable, Logger, OnModuleDestroy, OnModuleInit, Optional } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { QueueGateway } from './queue.gateway';
 
@@ -118,8 +119,15 @@ export interface RecalculationResult {
 }
 
 @Injectable()
-export class QueueEngineService implements OnModuleInit {
+export class QueueEngineService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(QueueEngineService.name);
+  private readonly recalculationCacheMs = 2000;
+  private readonly recalculationCache = new Map<string, { result: RecalculationResult; expiresAt: number }>();
+  private readonly recalculations = new Map<string, {
+    promise: Promise<RecalculationResult>;
+    rerunRequested: boolean;
+    persistRequested: boolean;
+  }>();
   private sweepTimer?: NodeJS.Timeout;
 
   constructor(
@@ -142,6 +150,10 @@ export class QueueEngineService implements OnModuleInit {
     }, 3 * 60 * 1000);
   }
 
+  onModuleDestroy() {
+    if (this.sweepTimer) clearInterval(this.sweepTimer);
+  }
+
   /**
    * Resets active queue entries when a salon closes or at start of a new business day.
    * Preserves all completed service sessions, completed queue entries, and revenue history.
@@ -150,30 +162,19 @@ export class QueueEngineService implements OnModuleInit {
     const now = new Date();
     let cancelledCount = 0;
 
-    await this.prisma.$transaction(async (tx) => {
-      const activeEntries = await tx.salonQueueEntry.findMany({
+    await this.prisma.runTransaction('queue.closing_reset', async (tx) => {
+      const cancelledEntries = await tx.salonQueueEntry.updateMany({
         where: {
           salonId,
           status: { in: ['waiting', 'called', 'in_service', 'skipped'] },
         },
-        select: { id: true },
+        data: {
+          status: 'cancelled',
+          cancelledAt: now,
+          cancellationReason: reason,
+        },
       });
-
-      cancelledCount = activeEntries.length;
-
-      if (cancelledCount > 0) {
-        await tx.salonQueueEntry.updateMany({
-          where: {
-            salonId,
-            status: { in: ['waiting', 'called', 'in_service', 'skipped'] },
-          },
-          data: {
-            status: 'cancelled',
-            cancelledAt: now,
-            cancellationReason: reason,
-          },
-        });
-      }
+      cancelledCount = cancelledEntries.count;
 
       // Free all staff back to AVAILABLE
       await tx.salonStaff.updateMany({
@@ -245,26 +246,21 @@ export class QueueEngineService implements OnModuleInit {
           }
         } else {
           // Shop is open, but cancel any leftover tickets from yesterday
-          const staleTickets = await this.prisma.salonQueueEntry.findMany({
+          const staleTickets = await this.prisma.salonQueueEntry.updateMany({
             where: {
               salonId: salon.id,
               status: { in: ['waiting', 'called', 'in_service', 'skipped'] },
               joinedAt: { lt: startOfToday },
             },
-            select: { id: true },
+            data: {
+              status: 'cancelled',
+              cancelledAt: new Date(),
+              cancellationReason: 'Daily reset: Ticket expired at end of business day',
+            },
           });
 
-          if (staleTickets.length > 0) {
-            const staleIds = staleTickets.map((t) => t.id);
-            await this.prisma.salonQueueEntry.updateMany({
-              where: { id: { in: staleIds } },
-              data: {
-                status: 'cancelled',
-                cancelledAt: new Date(),
-                cancellationReason: 'Daily reset: Ticket expired at end of business day',
-              },
-            });
-            this.logger.log(`[sweepAllSalonsClosingAndDailyReset] Cancelled ${staleTickets.length} leftover tickets from yesterday for salon ${salon.id}`);
+          if (staleTickets.count > 0) {
+            this.logger.log(`[sweepAllSalonsClosingAndDailyReset] Cancelled ${staleTickets.count} leftover tickets from yesterday for salon ${salon.id}`);
           }
         }
       }
@@ -275,9 +271,72 @@ export class QueueEngineService implements OnModuleInit {
 
   /**
    * Recalculate intelligent ETAs and staff assignments for all active customers in a salon.
-   * Deterministic, multi-server safe, single source of truth.
+   * Coalesces concurrent reads and persists derived fields only after queue mutations.
    */
-  async recalculateSalonQueue(salonId: string): Promise<RecalculationResult> {
+  async recalculateSalonQueue(
+    salonId: string,
+    options: { force?: boolean; persist?: boolean } = {},
+  ): Promise<RecalculationResult> {
+    const force = options.force === true;
+    const persist = options.persist === true;
+    const cached = this.recalculationCache.get(salonId);
+    if (!force && cached && cached.expiresAt > Date.now()) {
+      return cached.result;
+    }
+
+    const activeRecalculation = this.recalculations.get(salonId);
+    if (activeRecalculation) {
+      if (force) {
+        activeRecalculation.rerunRequested = true;
+        activeRecalculation.persistRequested ||= persist;
+      }
+      return activeRecalculation.promise;
+    }
+
+    const recalculation = {
+      promise: Promise.resolve(null as unknown as RecalculationResult),
+      rerunRequested: false,
+      persistRequested: persist,
+    };
+    const startedAt = Date.now();
+    let didPersist = false;
+    recalculation.promise = (async () => {
+      let result: RecalculationResult;
+      do {
+        recalculation.rerunRequested = false;
+        const shouldPersist = recalculation.persistRequested;
+        recalculation.persistRequested = false;
+        didPersist ||= shouldPersist;
+        result = await this.calculateSalonQueue(salonId, shouldPersist);
+        this.recalculationCache.set(salonId, {
+          result,
+          expiresAt: Date.now() + this.recalculationCacheMs,
+        });
+      } while (recalculation.rerunRequested);
+      this.logger.log(JSON.stringify({
+        event: 'queue.recalculation.completed',
+        salonId,
+        durationMs: Date.now() - startedAt,
+        entryCount: result.activeEntries.length,
+        persisted: didPersist,
+      }));
+      return result;
+    })().catch((error: unknown) => {
+      this.logger.error(JSON.stringify({
+        event: 'queue.recalculation.failed',
+        salonId,
+        durationMs: Date.now() - startedAt,
+        errorType: error instanceof Error ? error.name : 'UnknownError',
+      }));
+      throw error;
+    }).finally(() => {
+      this.recalculations.delete(salonId);
+    });
+    this.recalculations.set(salonId, recalculation);
+    return recalculation.promise;
+  }
+
+  private async calculateSalonQueue(salonId: string, persist: boolean): Promise<RecalculationResult> {
     const now = new Date();
     const nowMs = now.getTime();
     const startOfToday = getStartOfTodayIST();
@@ -300,75 +359,80 @@ export class QueueEngineService implements OnModuleInit {
     const isPastClosing = isSalonPastClosingTime(salon?.openingHoursClose, salon?.openingHoursOpen);
     const isClosed = salon?.isOpen === false || salon?.queueStatus === 'closed' || isPastClosing;
 
-    if (isClosed) {
-      // Ensure any lingering active tickets are reset
-      await this.performSalonClosingQueueReset(
-        salonId,
-        isPastClosing
-          ? `Daily reset: Operating hours ended (${salon?.openingHoursClose || '09:30 PM'})`
-          : 'Shop closed',
-      );
-    } else {
-      // If open, ensure any leftover active tickets from yesterday are cancelled
-      await this.prisma.salonQueueEntry.updateMany({
-        where: {
-          salonId,
-          status: { in: ['waiting', 'called', 'in_service', 'skipped'] },
-          joinedAt: { lt: startOfToday },
-        },
-        data: {
-          status: 'cancelled',
-          cancelledAt: now,
-          cancellationReason: 'Daily reset: Ticket expired at end of previous business day',
-        },
-      });
-    }
-
     const activeBarbersCount = Math.max(1, salon?.activeBarbers || 2);
     const queueStatus: 'open' | 'paused' | 'closed' = isClosed
       ? 'closed'
       : (salon?.queueStatus as any) || 'open';
 
-    // 2. Fetch staff members
-    let staffList = await this.prisma.salonStaff.findMany({
-      where: { salonId, status: 'active' },
-      orderBy: { createdAt: 'asc' },
-    });
+    const [staffRecords, rows, dailyMetrics] = await Promise.all([
+      this.prisma.salonStaff.findMany({
+        where: { salonId, status: 'active' },
+        orderBy: { createdAt: 'asc' },
+      }),
+      isClosed
+        ? Promise.resolve([])
+        : this.prisma.salonQueueEntry.findMany({
+            where: {
+              salonId,
+              status: { in: ['waiting', 'called', 'in_service', 'skipped'] },
+              joinedAt: { gte: startOfToday },
+            },
+            orderBy: { joinedAt: 'asc' },
+            include: { assignedStaff: { select: { id: true, name: true } } },
+          }),
+      this.prisma.$queryRaw<Array<{
+        completed_count: number;
+        cancelled_count: number;
+        today_revenue: string | number;
+      }>>`
+        SELECT
+          (SELECT COUNT(*)::int
+           FROM public.salon_queue_entries
+           WHERE salon_id = ${salonId} AND status = 'completed' AND served_at >= ${startOfToday}) AS completed_count,
+          (SELECT COUNT(*)::int
+           FROM public.salon_queue_entries
+           WHERE salon_id = ${salonId} AND status = 'cancelled' AND cancelled_at >= ${startOfToday}) AS cancelled_count,
+          COALESCE(
+            (SELECT SUM(price)
+             FROM public.service_sessions
+             WHERE salon_id = ${salonId} AND completed_at >= ${startOfToday}),
+            0
+          )::numeric AS today_revenue
+      `,
+    ]);
+
+    let staffList = staffRecords;
 
     // If no explicit staff records exist, dynamically create & persist default staff slots so foreign keys never fail
     if (staffList.length === 0) {
-      try {
-        const defaultSlots = Array.from({ length: activeBarbersCount }).map((_, i) => ({
-          id: `staff-${salonId}-slot-${i + 1}`,
-          salonId,
-          name: `Stylist #${i + 1}`,
-          role: 'Stylist',
-          experience: 'Professional',
-          specialties: ['Haircut', 'Beard Trim'],
-          photo: null,
-          status: 'active',
-          availability: 'AVAILABLE',
-          currentQueueEntryId: null,
-          breakStartedAt: null,
-          workingHoursStart: '09:00 AM',
-          workingHoursEnd: '09:00 PM',
-          assignedServices: ['Haircut', 'Beard Trim'],
-          rating: 5.0 as any,
-          createdAt: now,
-        }));
+      const defaultSlots = Array.from({ length: activeBarbersCount }).map((_, i) => ({
+        id: `staff-${salonId}-slot-${i + 1}`,
+        salonId,
+        name: `Stylist #${i + 1}`,
+        role: 'Stylist',
+        experience: 'Professional',
+        specialties: ['Haircut', 'Beard Trim'],
+        photo: null,
+        status: 'active',
+        availability: 'AVAILABLE',
+        currentQueueEntryId: null,
+        breakStartedAt: null,
+        workingHoursStart: '09:00 AM',
+        workingHoursEnd: '09:00 PM',
+        assignedServices: ['Haircut', 'Beard Trim'],
+        rating: 5.0 as any,
+        createdAt: now,
+      }));
 
-        await this.prisma.salonStaff.createMany({
-          data: defaultSlots,
-          skipDuplicates: true,
-        });
+      await this.prisma.salonStaff.createMany({
+        data: defaultSlots,
+        skipDuplicates: true,
+      });
 
-        staffList = await this.prisma.salonStaff.findMany({
-          where: { salonId, status: 'active' },
-          orderBy: { createdAt: 'asc' },
-        });
-      } catch (err) {
-        this.logger.warn(`Could not seed default staff records: ${(err as Error).message}`);
-      }
+      staffList = await this.prisma.salonStaff.findMany({
+        where: { salonId, status: 'active' },
+        orderBy: { createdAt: 'asc' },
+      });
 
       if (staffList.length === 0) {
         staffList = Array.from({ length: activeBarbersCount }).map((_, i) => ({
@@ -392,49 +456,10 @@ export class QueueEngineService implements OnModuleInit {
       }
     }
 
-    // 3. Fetch all active and recent queue entries for today
-    const rows = isClosed
-      ? []
-      : await this.prisma.salonQueueEntry.findMany({
-          where: {
-            salonId,
-            status: { in: ['waiting', 'called', 'in_service', 'skipped'] },
-            joinedAt: { gte: startOfToday },
-          },
-          orderBy: [
-            { joinedAt: 'asc' },
-          ],
-          include: {
-            assignedStaff: { select: { id: true, name: true } },
-          },
-        });
-
-    // Count today's completed, cancelled entries and revenue
-    const [completedCount, cancelledCount, todayCompletedSessions] = await Promise.all([
-      this.prisma.salonQueueEntry.count({
-        where: {
-          salonId,
-          status: 'completed',
-          servedAt: { gte: startOfToday },
-        },
-      }),
-      this.prisma.salonQueueEntry.count({
-        where: {
-          salonId,
-          status: 'cancelled',
-          cancelledAt: { gte: startOfToday },
-        },
-      }),
-      this.prisma.serviceSession.findMany({
-        where: {
-          salonId,
-          completedAt: { gte: startOfToday },
-        },
-        select: { price: true },
-      }),
-    ]);
-
-    const todayRevenue = todayCompletedSessions.reduce((acc, cur) => acc + Number(cur.price || 0), 0);
+    const metrics = dailyMetrics[0];
+    const completedCount = Number(metrics?.completed_count || 0);
+    const cancelledCount = Number(metrics?.cancelled_count || 0);
+    const todayRevenue = Number(metrics?.today_revenue || 0);
 
     // 4. Map in_service entries and assign to staff
     const inServiceEntries = rows.filter((r) => r.status === 'in_service');
@@ -619,19 +644,6 @@ export class QueueEngineService implements OnModuleInit {
         extendedMinutes: 0,
       });
 
-      // Persist calculated ETAs in database asynchronously
-      this.prisma.salonQueueEntry
-        .update({
-          where: { id: item.id },
-          data: {
-            position: waitPos,
-            estimatedWaitMinutes: estimatedWaitMins,
-            estimatedStartTime: estimatedStartDate,
-            estimatedCompletionTime: estimatedCompletionDate,
-            assignedStaffId: item.assignedStaffId || earliestStaff.id,
-          },
-        })
-        .catch(() => {});
     }
 
     // Process SKIPPED items
@@ -696,19 +708,43 @@ export class QueueEngineService implements OnModuleInit {
       lastQueueUpdate: now.toISOString(),
     };
 
-    // Update salons table aggregate current_queue & queue_status
-    await this.prisma.salon
-      .update({
-        where: { id: salonId },
-        data: {
-          currentQueue: isClosed ? 0 : waitingItems.length,
-          lastQueueUpdate: now,
-          queueStatus,
-          todayCustomersServed: completedCount,
-          todayRevenue: todayRevenue,
-        },
-      })
-      .catch(() => {});
+    if (persist) {
+      await this.prisma.runTransaction('queue.recalculation.persist', async (tx) => {
+        for (let offset = 0; offset < waitingItems.length; offset += 500) {
+          const etaValues = waitingItems.slice(offset, offset + 500).map((item) => Prisma.sql`(
+            ${item.id},
+            ${item.position},
+            ${item.estimatedWaitMinutes},
+            ${new Date(item.estimatedStartTime || now.toISOString())},
+            ${new Date(item.estimatedCompletionTime || now.toISOString())},
+            ${item.assignedStaffId || null}
+          )`);
+          await tx.$executeRaw(Prisma.sql`
+            UPDATE public.salon_queue_entries AS entry
+            SET position = eta.position,
+                estimated_wait_minutes = eta.estimated_wait_minutes,
+                estimated_start_time = eta.estimated_start_time,
+                estimated_completion_time = eta.estimated_completion_time,
+                assigned_staff_id = eta.assigned_staff_id
+            FROM (VALUES ${Prisma.join(etaValues)}) AS eta(
+              id, position, estimated_wait_minutes, estimated_start_time,
+              estimated_completion_time, assigned_staff_id
+            )
+            WHERE entry.id = eta.id AND entry.salon_id = ${salonId}
+          `);
+        }
+        await tx.salon.update({
+          where: { id: salonId },
+          data: {
+            currentQueue: isClosed ? 0 : waitingItems.length,
+            lastQueueUpdate: now,
+            queueStatus,
+            todayCustomersServed: completedCount,
+            todayRevenue,
+          },
+        });
+      });
+    }
 
     // Prepare staff states
     const staffStates = staffList.map((s) => {

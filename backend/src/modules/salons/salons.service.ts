@@ -1194,10 +1194,24 @@ export class SalonsService {
       return this.getCustomerQueueEntry(salonId, entryId, accessToken);
     }
     const now = new Date();
-    await this.prisma.salonQueueEntry.update({
-      where: { id: entryId },
+    const confirmed = await this.prisma.salonQueueEntry.updateMany({
+      where: {
+        id: entryId,
+        salonId,
+        status: { in: ['waiting', 'called', 'skipped'] },
+        arrivalConfirmedAt: null,
+      },
       data: { arrivalConfirmedAt: now, checkInMethod: 'qr' },
     });
+    if (confirmed.count === 0) {
+      const current = await this.prisma.salonQueueEntry.findFirst({
+        where: { id: entryId, salonId },
+      });
+      if (current?.arrivalConfirmedAt) {
+        return this.getCustomerQueueEntry(salonId, entryId, accessToken);
+      }
+      throw new BadRequestException('This queue ticket changed before check-in was saved.');
+    }
     await this.logQueueEvent(salonId, entryId, entry.userId || 'customer', 'customer', 'queue.arrival.qr_confirmed', entry.status, entry.status);
     this.queueGateway.broadcastToSalon(salonId, 'queue.entry.arrival_confirmed', {
       entryId,
@@ -1402,7 +1416,7 @@ export class SalonsService {
         throw new BadRequestException('This queue ticket changed before the departure response was saved.');
       }
       await this.logQueueEvent(salonId, entryId, entry.userId || 'customer', 'customer', 'queue.departure.customer_confirmed', entry.status, 'cancelled');
-      const queueData = await this.queueEngine.recalculateSalonQueue(salonId);
+      const queueData = await this.queueEngine.recalculateSalonQueue(salonId, { force: true, persist: true });
       this.syncLocalQueueCache(salonId, queueData.overview.totalWaiting);
       this.queueGateway.broadcastToSalon(salonId, 'queue.entry.updated', {
         entryId,
@@ -1453,7 +1467,7 @@ export class SalonsService {
       throw new BadRequestException('This queue ticket is no longer waiting for service.');
     }
     await this.logQueueEvent(salonId, entryId, actorId || 'staff', 'staff', 'queue.departure.staff_confirmed', entry.status, 'no_show');
-    const queueData = await this.queueEngine.recalculateSalonQueue(salonId);
+    const queueData = await this.queueEngine.recalculateSalonQueue(salonId, { force: true, persist: true });
     this.syncLocalQueueCache(salonId, queueData.overview.totalWaiting);
     this.queueGateway.broadcastToSalon(salonId, 'queue.entry.updated', {
       entryId,
@@ -1488,7 +1502,7 @@ export class SalonsService {
       throw new BadRequestException('This queue ticket is no longer waiting for service.');
     }
     await this.logQueueEvent(salonId, entryId, entry.userId || 'customer', 'customer', 'queue.entry.customer_cancelled', entry.status, 'cancelled');
-    const queueData = await this.queueEngine.recalculateSalonQueue(salonId);
+    const queueData = await this.queueEngine.recalculateSalonQueue(salonId, { force: true, persist: true });
     this.syncLocalQueueCache(salonId, queueData.overview.totalWaiting);
     this.queueGateway.broadcastToSalon(salonId, 'queue.entry.updated', {
       entryId,
@@ -1552,55 +1566,47 @@ export class SalonsService {
       }
     } catch {}
 
-    // Monotonic daily ticket numbering
-    const startOfToday = getStartOfTodayIST();
-
-    const maxRow: any[] = await this.prisma.$queryRawUnsafe(
-      `SELECT COALESCE(MAX(position), 0) AS max_pos 
-       FROM salon_queue_entries 
-       WHERE salon_id = $1 
-         AND joined_at >= $2;`,
-      salonId,
-      startOfToday,
-    );
-    let nextPos = Number(maxRow[0]?.max_pos || 0) + 1;
-    const activeMax: any[] = await this.prisma.$queryRawUnsafe(
-      `SELECT COALESCE(MAX(position), 0) AS max_pos FROM salon_queue_entries WHERE salon_id = $1 AND status IN ('waiting', 'in_service', 'called') AND joined_at >= $2;`,
-      salonId,
-      startOfToday,
-    );
-    const activeNext = Number(activeMax[0]?.max_pos || 0) + 1;
-    if (activeNext > nextPos) {
-      nextPos = activeNext;
-    }
-
-    const ticketNumber = `#${String(nextPos).padStart(2, '0')}`;
-
-    // Insert queue entry with immutable snapshot
+    // Validate token configuration before creating a durable queue entry.
     const joinedAt = new Date();
-    const entry = await this.prisma.salonQueueEntry.create({
-      data: {
-        id: entryId,
-        salonId,
-        position: nextPos,
-        ticketNumber,
-        customerName: cleanName,
-        phone: cleanPhone,
-        serviceName: cleanService,
-        serviceId: matchedServiceId,
-        serviceDuration: snapshotDuration,
-        servicePrice: snapshotPrice,
-        assignedStaffId: dto.preferredStaffId || null,
-        status: 'waiting',
-        joinedAt,
-        deviceId: dto.deviceId || null,
-        userId: actorId || null,
-        notes: dto.notes || null,
-        checkInMethod,
-        partySize: dto.partySize || 1,
-        arrivalConfirmedAt: checkInMethod === 'qr' ? joinedAt : null,
+    const queueAccessToken = this.queueEntryAccessToken({ id: entryId, salonId, joinedAt });
+    const startOfToday = getStartOfTodayIST();
+    const { entry, nextPos, ticketNumber } = await this.prisma.runTransaction(
+      'queue.entry.create',
+      async (tx) => {
+        await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${salonId}), hashtext('queue-position'))`;
+        const [maxRow] = await tx.$queryRaw<Array<{ max_pos: number }>>`
+          SELECT COALESCE(MAX(position), 0)::int AS max_pos
+          FROM public.salon_queue_entries
+          WHERE salon_id = ${salonId} AND joined_at >= ${startOfToday}
+        `;
+        const nextPos = Number(maxRow?.max_pos || 0) + 1;
+        const ticketNumber = `#${String(nextPos).padStart(2, '0')}`;
+        const entry = await tx.salonQueueEntry.create({
+          data: {
+            id: entryId,
+            salonId,
+            position: nextPos,
+            ticketNumber,
+            customerName: cleanName,
+            phone: cleanPhone,
+            serviceName: cleanService,
+            serviceId: matchedServiceId,
+            serviceDuration: snapshotDuration,
+            servicePrice: snapshotPrice,
+            assignedStaffId: dto.preferredStaffId || null,
+            status: 'waiting',
+            joinedAt,
+            deviceId: dto.deviceId || null,
+            userId: actorId || null,
+            notes: dto.notes || null,
+            checkInMethod,
+            partySize: dto.partySize || 1,
+            arrivalConfirmedAt: checkInMethod === 'qr' ? joinedAt : null,
+          },
+        });
+        return { entry, nextPos, ticketNumber };
       },
-    });
+    );
 
     // Audit Event
     await this.logQueueEvent(
@@ -1620,7 +1626,7 @@ export class SalonsService {
     );
 
     // Recalculate whole queue with intelligent engine
-    const queueData = await this.queueEngine.recalculateSalonQueue(salonId);
+    const queueData = await this.queueEngine.recalculateSalonQueue(salonId, { force: true, persist: true });
     this.syncLocalQueueCache(salonId, queueData.overview.totalWaiting);
     const createdItem = queueData.activeEntries.find((e) => e.id === entryId);
 
@@ -1648,7 +1654,7 @@ export class SalonsService {
         status: 'waiting',
         joinedAt: new Date().toISOString(),
       },
-      queueAccessToken: this.queueEntryAccessToken(entry),
+      queueAccessToken,
       smartQueue: {
         checkInMethod: entry.checkInMethod,
         partySize: entry.partySize,
@@ -1671,21 +1677,54 @@ export class SalonsService {
 
     validateQueueTransition(entry.status, 'in_service');
 
-    let targetStaffId = dto.staffId || entry.assignedStaffId;
-    if (!targetStaffId) {
-      const availableStaff = await this.prisma.salonStaff.findFirst({
-        where: { salonId, status: 'active', availability: 'AVAILABLE' },
-      });
-      if (availableStaff) {
-        targetStaffId = availableStaff.id;
-      }
-    }
-
+    let targetStaffId: string | null = dto.staffId || entry.assignedStaffId || null;
     const now = new Date();
 
-    await this.prisma.$transaction(async (tx) => {
-      await tx.salonQueueEntry.update({
-        where: { id: entryId },
+    await this.prisma.runTransaction('queue.service.start', async (tx) => {
+      if (dto.staffId) {
+        const reserved = await tx.salonStaff.updateMany({
+          where: {
+            id: dto.staffId,
+            salonId,
+            status: 'active',
+            availability: 'AVAILABLE',
+            currentQueueEntryId: null,
+          },
+          data: { availability: 'BUSY', currentQueueEntryId: entryId },
+        });
+        if (reserved.count === 0) {
+          throw new BadRequestException('The selected staff member is not available.');
+        }
+      } else {
+        const staffCandidates = await tx.salonStaff.findMany({
+          where: { salonId, status: 'active', availability: 'AVAILABLE', currentQueueEntryId: null },
+          select: { id: true },
+          orderBy: { createdAt: 'asc' },
+        });
+        const orderedCandidates = targetStaffId
+          ? [...staffCandidates].sort((a, b) => Number(b.id === targetStaffId) - Number(a.id === targetStaffId))
+          : staffCandidates;
+        targetStaffId = null;
+        for (const candidate of orderedCandidates) {
+          const reserved = await tx.salonStaff.updateMany({
+            where: {
+              id: candidate.id,
+              salonId,
+              status: 'active',
+              availability: 'AVAILABLE',
+              currentQueueEntryId: null,
+            },
+            data: { availability: 'BUSY', currentQueueEntryId: entryId },
+          });
+          if (reserved.count > 0) {
+            targetStaffId = candidate.id;
+            break;
+          }
+        }
+      }
+
+      const updated = await tx.salonQueueEntry.updateMany({
+        where: { id: entryId, salonId, status: entry.status },
         data: {
           status: 'in_service',
           startedAt: now,
@@ -1693,15 +1732,8 @@ export class SalonsService {
           notes: dto.notes ? (entry.notes ? `${entry.notes} | ${dto.notes}` : dto.notes) : entry.notes,
         },
       });
-
-      if (targetStaffId) {
-        await tx.salonStaff.update({
-          where: { id: targetStaffId },
-          data: {
-            availability: 'BUSY',
-            currentQueueEntryId: entryId,
-          },
-        }).catch(() => {});
+      if (updated.count === 0) {
+        throw new BadRequestException('This queue ticket changed before service could start.');
       }
     });
 
@@ -1710,7 +1742,7 @@ export class SalonsService {
       startedAt: now.toISOString(),
     });
 
-    const queueData = await this.queueEngine.recalculateSalonQueue(salonId);
+    const queueData = await this.queueEngine.recalculateSalonQueue(salonId, { force: true, persist: true });
     this.syncLocalQueueCache(salonId, queueData.overview.totalWaiting);
 
     this.queueGateway.broadcastToSalon(salonId, 'queue.service.started', {
@@ -1747,15 +1779,18 @@ export class SalonsService {
     const actualDuration = Math.max(1, Math.round((now.getTime() - startedMs) / 60000));
     const finalPrice = dto.actualPrice !== undefined ? dto.actualPrice : Number(entry.servicePrice || 150);
 
-    await this.prisma.$transaction(async (tx) => {
+    await this.prisma.runTransaction('queue.service.complete', async (tx) => {
       // 1. Update queue entry
-      await tx.salonQueueEntry.update({
-        where: { id: entryId },
+      const updatedEntry = await tx.salonQueueEntry.updateMany({
+        where: { id: entryId, salonId, status: entry.status },
         data: {
           status: 'completed',
           servedAt: now,
         },
       });
+      if (updatedEntry.count === 0) {
+        throw new BadRequestException('This queue ticket changed before the service could be completed.');
+      }
 
       // 2. Insert historical service session
       await tx.serviceSession.create({
@@ -1783,7 +1818,7 @@ export class SalonsService {
             availability: 'AVAILABLE',
             currentQueueEntryId: null,
           },
-        }).catch(() => {});
+        });
       }
 
       // 4. Update salon revenue and customers served
@@ -1802,7 +1837,7 @@ export class SalonsService {
       price: finalPrice,
     });
 
-    const queueData = await this.queueEngine.recalculateSalonQueue(salonId);
+    const queueData = await this.queueEngine.recalculateSalonQueue(salonId, { force: true, persist: true });
     this.syncLocalQueueCache(salonId, queueData.overview.totalWaiting);
 
     this.queueGateway.broadcastToSalon(salonId, 'queue.service.completed', {
@@ -1841,7 +1876,7 @@ export class SalonsService {
 
     await this.logQueueEvent(salonId, entryId, actorId || 'staff', 'staff', 'queue.entry.called', entry.status, 'called');
 
-    const queueData = await this.queueEngine.recalculateSalonQueue(salonId);
+    const queueData = await this.queueEngine.recalculateSalonQueue(salonId, { force: true, persist: true });
     this.syncLocalQueueCache(salonId, queueData.overview.totalWaiting);
 
     this.queueGateway.broadcastToSalon(salonId, 'queue.entry.called', {
@@ -1872,7 +1907,7 @@ export class SalonsService {
 
     await this.logQueueEvent(salonId, entryId, actorId || 'staff', 'staff', 'queue.entry.skipped', entry.status, 'skipped');
 
-    const queueData = await this.queueEngine.recalculateSalonQueue(salonId);
+    const queueData = await this.queueEngine.recalculateSalonQueue(salonId, { force: true, persist: true });
     this.syncLocalQueueCache(salonId, queueData.overview.totalWaiting);
 
     this.queueGateway.broadcastToSalon(salonId, 'queue.entry.updated', {
@@ -1921,7 +1956,7 @@ export class SalonsService {
 
     await this.logQueueEvent(salonId, entryId, actorId || 'staff', 'staff', 'queue.entry.recalled', entry.status, 'waiting');
 
-    const queueData = await this.queueEngine.recalculateSalonQueue(salonId);
+    const queueData = await this.queueEngine.recalculateSalonQueue(salonId, { force: true, persist: true });
     this.syncLocalQueueCache(salonId, queueData.overview.totalWaiting);
 
     this.queueGateway.broadcastToSalon(salonId, 'queue.entry.updated', {
@@ -1947,15 +1982,18 @@ export class SalonsService {
 
     const now = new Date();
 
-    await this.prisma.$transaction(async (tx) => {
-      await tx.salonQueueEntry.update({
-        where: { id: entryId },
+    await this.prisma.runTransaction('queue.entry.cancel', async (tx) => {
+      const updated = await tx.salonQueueEntry.updateMany({
+        where: { id: entryId, salonId, status: entry.status },
         data: {
           status: 'cancelled',
           cancelledAt: now,
           cancellationReason: dto?.reason || 'Cancelled by staff or customer',
         },
       });
+      if (updated.count === 0) {
+        throw new BadRequestException('This queue ticket changed before it could be cancelled.');
+      }
 
       // If customer was in service, release staff
       if (entry.status === 'in_service' && entry.assignedStaffId) {
@@ -1970,7 +2008,7 @@ export class SalonsService {
       reason: dto?.reason,
     });
 
-    const queueData = await this.queueEngine.recalculateSalonQueue(salonId);
+    const queueData = await this.queueEngine.recalculateSalonQueue(salonId, { force: true, persist: true });
     this.syncLocalQueueCache(salonId, queueData.overview.totalWaiting);
 
     this.queueGateway.broadcastToSalon(salonId, 'queue.entry.updated', {
@@ -2009,7 +2047,7 @@ export class SalonsService {
       reason: dto.reason,
     });
 
-    const queueData = await this.queueEngine.recalculateSalonQueue(salonId);
+    const queueData = await this.queueEngine.recalculateSalonQueue(salonId, { force: true, persist: true });
 
     this.queueGateway.broadcastToSalon(salonId, 'queue.eta.updated', {
       overview: queueData.overview,
@@ -2033,7 +2071,7 @@ export class SalonsService {
     });
     if (!newStaff) throw new NotFoundException(`Staff member '${dto.staffId}' not found.`);
 
-    await this.prisma.$transaction(async (tx) => {
+    await this.prisma.runTransaction('queue.entry.reassign_staff', async (tx) => {
       // If was in_service, release old staff
       if (entry.status === 'in_service' && entry.assignedStaffId && entry.assignedStaffId !== dto.staffId) {
         await tx.salonStaff.update({
@@ -2059,7 +2097,7 @@ export class SalonsService {
       reason: dto.reason,
     });
 
-    const queueData = await this.queueEngine.recalculateSalonQueue(salonId);
+    const queueData = await this.queueEngine.recalculateSalonQueue(salonId, { force: true, persist: true });
 
     this.queueGateway.broadcastToSalon(salonId, 'queue.entry.updated', {
       entryId,
@@ -2089,6 +2127,8 @@ export class SalonsService {
 
     if (status === 'closed' || !isOpen) {
       await this.clearQueue(salonId, { clearOption: 'cancelled', reason: dto.reason || 'Shop closed for the day' }, actorId);
+    } else {
+      await this.queueEngine.recalculateSalonQueue(salonId, { force: true, persist: true });
     }
 
     await this.logQueueEvent(salonId, null, actorId || 'owner', 'owner', 'queue.status.updated', null, status, {
@@ -2112,7 +2152,7 @@ export class SalonsService {
     const reason = dto?.reason || 'Queue cleared at end of day by salon partner';
 
     // Never delete completed service sessions! Only update remaining active tickets.
-    await this.prisma.$transaction(async (tx) => {
+    await this.prisma.runTransaction('queue.clear', async (tx) => {
       await tx.salonQueueEntry.updateMany({
         where: {
           salonId,
@@ -2146,6 +2186,7 @@ export class SalonsService {
     });
 
     this.syncLocalQueueCache(salonId, 0);
+    await this.queueEngine.recalculateSalonQueue(salonId, { force: true, persist: true });
 
     await this.logQueueEvent(salonId, null, actorId || 'owner', 'owner', 'queue.cleared', null, 'cleared', {
       clearOption: dto?.clearOption || 'cancelled',
@@ -2235,7 +2276,7 @@ export class SalonsService {
       note: dto.note,
     });
 
-    const queueData = await this.queueEngine.recalculateSalonQueue(salonId);
+    const queueData = await this.queueEngine.recalculateSalonQueue(salonId, { force: true, persist: true });
 
     this.queueGateway.broadcastToSalon(salonId, 'staff.availability.updated', {
       staffId,
@@ -2496,7 +2537,7 @@ export class SalonsService {
     };
 
     // Execute atomic deletion transaction
-    return await this.prisma.$transaction(async (tx) => {
+    return await this.prisma.runTransaction('salon.delete', async (tx) => {
       // 1. Delete the salon record (PostgreSQL and Prisma CASCADE deletes services, staff, reviews, members)
       await tx.salon.delete({
         where: { id: salonId },
