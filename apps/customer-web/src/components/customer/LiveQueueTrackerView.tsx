@@ -13,6 +13,7 @@ import {
   Store,
   MapPin,
   Sparkles,
+  Search,
 } from 'lucide-react';
 import {
   useCustomer,
@@ -51,10 +52,9 @@ export const LiveQueueTrackerView: React.FC<LiveQueueTrackerViewProps> = ({
   } = useCustomer();
 
   const isWomen = genderFilter === 'women';
-  const primaryHex = isWomen ? '#E11D48' : '#FF6422';
+  const primaryThemeColor = isWomen ? '#E11D48' : '#FF6422';
 
-  // 1. Determine currently selected salon for Live Queue view
-  // If active ticket exists, prioritize that salon
+  // 1. Determine currently active/selected salon
   const ticketSalon = activeTicket?.salonId
     ? salons.find((s) => s.id === activeTicket.salonId)
     : null;
@@ -230,21 +230,21 @@ export const LiveQueueTrackerView: React.FC<LiveQueueTrackerViewProps> = ({
   };
 
   return (
-    <div className="space-y-4">
-      {/* Salon Selector Carousel / Dropdown */}
+    <div className="space-y-4 max-w-2xl mx-auto">
+      {/* 1. Pro Studio Quick Switcher Bar */}
       <div className="bg-white border border-[#E8E2D8] rounded-2xl p-3 shadow-xs">
-        <div className="flex items-center justify-between gap-2 mb-2">
+        <div className="flex items-center justify-between mb-2">
           <label className="text-[11px] font-black uppercase tracking-wider text-stone-500 flex items-center gap-1.5">
             <Store className={`w-3.5 h-3.5 ${isWomen ? 'text-[#E11D48]' : 'text-[#FF6422]'}`} />
-            <span>Select Salon to Track Queue</span>
+            <span>Select Studio</span>
           </label>
           {onSwitchToMap && (
             <button
               onClick={onSwitchToMap}
-              className="text-[11px] font-bold text-stone-600 hover:text-stone-900 flex items-center gap-1"
+              className="text-[11px] font-bold text-stone-600 hover:text-stone-900 flex items-center gap-1 cursor-pointer"
             >
               <MapPin className="w-3 h-3 text-[#FF6422]" />
-              <span>Map View</span>
+              <span>Locate on Map</span>
             </button>
           )}
         </div>
@@ -257,7 +257,7 @@ export const LiveQueueTrackerView: React.FC<LiveQueueTrackerViewProps> = ({
               <button
                 key={s.id}
                 onClick={() => setSelectedSalonId(s.id)}
-                className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all border shrink-0 ${
+                className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all border shrink-0 cursor-pointer ${
                   isSelected
                     ? isWomen
                       ? 'bg-rose-50 border-[#E11D48] text-rose-950 shadow-xs ring-1 ring-rose-500/20'
@@ -268,7 +268,7 @@ export const LiveQueueTrackerView: React.FC<LiveQueueTrackerViewProps> = ({
                 <span className={`w-2 h-2 rounded-full ${s.isOpen ? 'bg-emerald-500' : 'bg-stone-400'}`} />
                 <span className="truncate max-w-[130px]">{s.name}</span>
                 {hasMyTicket && (
-                  <span className="bg-amber-500 text-stone-950 text-[10px] font-black px-1.5 py-0.2 rounded-full">
+                  <span className="bg-amber-500 text-stone-950 text-[10px] font-black px-1.5 py-0.5 rounded-full">
                     Token #{activeTicket?.ticketNumber || activeTicket?.position}
                   </span>
                 )}
@@ -281,7 +281,7 @@ export const LiveQueueTrackerView: React.FC<LiveQueueTrackerViewProps> = ({
         </div>
       </div>
 
-      {/* Selected Salon Header Bar */}
+      {/* 2. Focused Studio Header Card */}
       <div className="bg-white border border-[#E8E2D8] rounded-2xl p-3.5 flex items-center justify-between gap-3 shadow-xs">
         <div className="min-w-0">
           <div className="flex items-center gap-1.5">
@@ -301,15 +301,15 @@ export const LiveQueueTrackerView: React.FC<LiveQueueTrackerViewProps> = ({
         {onOpenSalonDetails && (
           <button
             onClick={() => onOpenSalonDetails(salon)}
-            className="px-3 py-1.5 rounded-xl border border-stone-200 hover:border-stone-400 text-xs font-bold text-stone-700 hover:text-stone-900 flex items-center gap-1 shrink-0 transition-colors"
+            className="px-3 py-1.5 rounded-xl border border-stone-200 hover:border-stone-400 text-xs font-bold text-stone-700 hover:text-stone-900 flex items-center gap-1 shrink-0 transition-colors cursor-pointer"
           >
-            <span>View Full Studio</span>
+            <span>View Studio</span>
             <ChevronRight className="w-3.5 h-3.5" />
           </button>
         )}
       </div>
 
-      {/* PROMINENT LIVE QUEUE CARD (MATCHING USER SCREENSHOT EXACTLY) */}
+      {/* 3. PROMINENT LIVE QUEUE CARD (MATCHING USER SCREENSHOT EXACTLY) */}
       <section className="bg-white border-2 border-orange-200 rounded-3xl p-5 shadow-[0_4px_20px_rgba(255,100,34,0.06)] relative overflow-hidden">
         <div className="absolute top-0 right-0 -mr-10 -mt-10 w-44 h-44 rounded-full bg-orange-400/10 blur-3xl pointer-events-none" />
 
@@ -536,7 +536,7 @@ export const LiveQueueTrackerView: React.FC<LiveQueueTrackerViewProps> = ({
           </div>
         )}
 
-        {/* Important Business Rule Banner (Matches Screenshot) */}
+        {/* Important Business Rule Banner */}
         <div className="mt-4 pt-3 border-t border-[#E8E2D8] flex items-start gap-2.5 text-xs text-stone-600 bg-orange-50/50 p-3 rounded-2xl border border-orange-100">
           <Info className={`w-4 h-4 ${isWomen ? 'text-[#E11D48]' : 'text-[#FF6422]'} shrink-0 mt-0.5`} />
           <p>
