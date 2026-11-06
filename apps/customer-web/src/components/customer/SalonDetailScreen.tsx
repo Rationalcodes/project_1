@@ -97,6 +97,7 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
   const [isSubmittingCrowd, setIsSubmittingCrowd] = useState(false);
   const [isCheckingLocation, setIsCheckingLocation] = useState(false);
   const [currentDistanceMeters, setCurrentDistanceMeters] = useState<number | null>(null);
+  const [showLocationRequiredPopup, setShowLocationRequiredPopup] = useState(false);
 
   const getSalonDistanceMeters = (userLat: number, userLng: number, salonLat: number, salonLng: number): number => {
     const R = 6371000;
@@ -149,6 +150,11 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
 
   const handleCrowdSubmit = async () => {
     if (!selectedSalonForDetail) return;
+    if (currentDistanceMeters === null || currentDistanceMeters > 200) {
+      setShowLocationRequiredPopup(true);
+      return;
+    }
+
     setIsSubmittingCrowd(true);
     try {
       await submitLocationCrowdReport(selectedSalonForDetail.id, {
@@ -1528,9 +1534,7 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
                 onClick={handleCrowdSubmit}
                 disabled={
                   isSubmittingCrowd ||
-                  isCheckingLocation ||
-                  currentDistanceMeters === null ||
-                  currentDistanceMeters > 200
+                  isCheckingLocation
                 }
                 className="px-5 py-2.5 rounded-xl bg-[#FF6422] hover:bg-orange-600 text-white font-extrabold text-xs shadow-lg shadow-orange-500/25 active:scale-95 transition-all flex items-center gap-2 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
               >
@@ -1547,6 +1551,35 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
                 )}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {showLocationRequiredPopup && (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs"
+          role="alertdialog"
+          aria-modal="true"
+          aria-labelledby="location-required-title"
+          aria-describedby="location-required-message"
+        >
+          <div className="w-full max-w-sm rounded-2xl border border-stone-200 bg-white p-5 text-center shadow-2xl">
+            <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-full bg-orange-100 text-xl">
+              📍
+            </div>
+            <h3 id="location-required-title" className="text-base font-bold text-stone-900">
+              You need to be at the salon
+            </h3>
+            <p id="location-required-message" className="mt-2 text-sm text-stone-600">
+              You can only contribute or update when you are at the salon.
+            </p>
+            <button
+              type="button"
+              onClick={() => setShowLocationRequiredPopup(false)}
+              className="mt-5 w-full rounded-xl bg-[#FF6422] px-4 py-2.5 text-sm font-bold text-white transition-colors hover:bg-orange-600"
+            >
+              Got it
+            </button>
           </div>
         </div>
       )}
