@@ -676,35 +676,6 @@ export const MapScreen: React.FC = () => {
             )}
           </button>
 
-          {/* Toggle Map / List view on mobile */}
-          <div className="sm:hidden flex items-center bg-[#F3ECE4] border border-[#E2DDD5] rounded-xl p-0.5 text-xs">
-            <button
-              onClick={() => setViewMode('map')}
-              className={`p-1.5 rounded-lg ${
-                viewMode === 'map'
-                  ? isWomen
-                    ? 'bg-[#E11D48] text-white shadow-sm'
-                    : 'bg-[#FF6422] text-white shadow-sm'
-                  : 'text-stone-600'
-              }`}
-              title="Map view"
-            >
-              <MapIcon className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => setViewMode('list')}
-              className={`p-1.5 rounded-lg ${
-                viewMode === 'list'
-                  ? isWomen
-                    ? 'bg-[#E11D48] text-white shadow-sm'
-                    : 'bg-[#FF6422] text-white shadow-sm'
-                  : 'text-stone-600'
-              }`}
-              title="List view"
-            >
-              <List className="w-4 h-4" />
-            </button>
-          </div>
         </div>
       </div>
 
@@ -822,317 +793,191 @@ export const MapScreen: React.FC = () => {
         )}
       </div>
 
-      {/* Main Split Layout: Desktop Side-by-Side / Mobile Stack */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
-        {/* MAP CONTAINER (Left or Top) */}
-        <div
-          className={`lg:col-span-7 xl:col-span-8 relative rounded-3xl overflow-hidden border shadow-md min-h-[460px] h-[60vh] lg:h-[650px] ${
-            isWomen ? 'border-[#FED7CC] bg-[#FFF8F5]' : 'border-[#E8E2D8] bg-[#FAF7F2]'
-          } ${viewMode === 'list' ? 'hidden sm:block' : 'block'}`}
-        >
-          {/* Interactive Google Map / Leaflet Container */}
-          <style>{`
-            .osm-tiles {
-              filter: none !important;
-            }
-            .leaflet-container {
-              background-color: ${isWomen ? '#FFF8F5' : '#FAF7F2'} !important;
-            }
-          `}</style>
-          <div ref={mapContainerRef} className="w-full h-full" style={{ zIndex: 1 }} />
+      {/* Pure Full-Width Map Layout (No Sidebar Listing) */}
+      <div className="relative rounded-3xl overflow-hidden border shadow-md min-h-[520px] h-[72vh] lg:h-[700px] border-[#E8E2D8] bg-[#FAF7F2]">
+        {/* Interactive Google Map / Leaflet Container */}
+        <style>{`
+          .osm-tiles {
+            filter: none !important;
+          }
+          .leaflet-container {
+            background-color: ${isWomen ? '#FFF8F5' : '#FAF7F2'} !important;
+          }
+        `}</style>
+        <div ref={mapContainerRef} className="w-full h-full" style={{ zIndex: 1 }} />
 
-          {/* Real-time Distance Status Indicator & GPS Prompt */}
-          {userLocation && selectedMarkerSalon ? (
-            <div className="absolute top-4 left-4 z-20 hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/95 backdrop-blur-md border border-[#E8E2D8] text-[11px] font-bold text-stone-800 shadow-md animate-in fade-in">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span>
-                Distance to <strong className="text-stone-900">{selectedMarkerSalon.name}</strong>:{' '}
-                <span className={isWomen ? 'text-[#E11D48]' : 'text-[#FF6422]'}>
-                  {calculateHaversineDistance(
-                    userLocation.lat,
-                    userLocation.lng,
-                    selectedMarkerSalon.coordinates.lat,
-                    selectedMarkerSalon.coordinates.lng,
-                  ).toFixed(1)}{' '}
-                  km
-                </span>
+        {/* Real-time Distance Status Indicator & GPS Prompt */}
+        {userLocation && selectedMarkerSalon ? (
+          <div className="absolute top-4 left-4 z-20 hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/95 backdrop-blur-md border border-[#E8E2D8] text-[11px] font-bold text-stone-800 shadow-md animate-in fade-in">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span>
+              Distance to <strong className="text-stone-900">{selectedMarkerSalon.name}</strong>:{' '}
+              <span className={isWomen ? 'text-[#E11D48]' : 'text-[#FF6422]'}>
+                {calculateHaversineDistance(
+                  userLocation.lat,
+                  userLocation.lng,
+                  selectedMarkerSalon.coordinates.lat,
+                  selectedMarkerSalon.coordinates.lng,
+                ).toFixed(1)}{' '}
+                km
               </span>
-            </div>
-          ) : !userLocation ? (
-            <button
-              onClick={requestDeviceLocation}
-              className="absolute top-4 left-4 z-20 px-3 py-1.5 rounded-xl bg-white/95 backdrop-blur-md border border-orange-200 text-[11px] font-bold text-orange-900 shadow-md flex items-center gap-1.5 hover:bg-orange-50 transition-colors animate-in fade-in"
-              title="Click to detect your location and show distance line"
-            >
-              <Crosshair className="w-3.5 h-3.5 text-[#FF6422]" />
-              <span>Enable GPS to draw route</span>
-            </button>
-          ) : null}
+            </span>
+          </div>
+        ) : !userLocation ? (
+          <button
+            onClick={requestDeviceLocation}
+            className="absolute top-4 left-4 z-20 px-3 py-1.5 rounded-xl bg-white/95 backdrop-blur-md border border-orange-200 text-[11px] font-bold text-orange-900 shadow-md flex items-center gap-1.5 hover:bg-orange-50 transition-colors animate-in fade-in cursor-pointer"
+            title="Click to detect your location and show distance line"
+          >
+            <Crosshair className="w-3.5 h-3.5 text-[#FF6422]" />
+            <span>Enable GPS to draw route</span>
+          </button>
+        ) : null}
 
-          {/* Floating "Search This Area" Pill */}
-          {hasMapMoved && (
+        {/* Floating "Search This Area" Pill */}
+        {hasMapMoved && (
+          <button
+            onClick={handleSearchThisArea}
+            className={`absolute top-4 left-1/2 -translate-x-1/2 z-20 px-4 py-2 rounded-2xl text-white text-xs font-black shadow-lg flex items-center gap-2 transition-transform active:scale-95 animate-in fade-in cursor-pointer ${
+              isWomen
+                ? 'bg-[#E11D48] shadow-rose-500/25 hover:bg-[#BE123C]'
+                : 'bg-[#FF6422] shadow-orange-500/25 hover:bg-[#E55215]'
+            }`}
+          >
+            <RefreshCw className="w-3.5 h-3.5" />
+            <span>Search This Area</span>
+          </button>
+        )}
+
+        {/* Google Maps Official Open in App shortcut badge */}
+        <div className="absolute top-4 right-4 z-20 hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/90 backdrop-blur-md border border-[#E8E2D8] text-[11px] font-bold text-stone-700 shadow-sm">
+          <span className={isWomen ? 'text-[#E11D48]' : 'text-[#FF6422]'}>Google Maps</span>
+          <button
+            onClick={() => openGoogleMapsLocation(currentCoords.lat, currentCoords.lng)}
+            className="text-stone-500 hover:text-stone-900 flex items-center gap-1 cursor-pointer"
+            title="Launch in Google Maps"
+          >
+            <ExternalLink className="w-3 h-3" />
+          </button>
+        </div>
+
+        {/* Map Controls (Zoom in/out + My Location) */}
+        <div className="absolute bottom-6 right-4 z-20 flex flex-col gap-2">
+          <button
+            onClick={handlePanToUser}
+            className={`w-10 h-10 rounded-2xl bg-white/95 border flex items-center justify-center shadow-md backdrop-blur-md transition-all active:scale-90 cursor-pointer ${
+              isWomen
+                ? 'border-[#FED7CC] text-[#E11D48] hover:bg-rose-50'
+                : 'border-[#E8E2D8] text-[#FF6422] hover:bg-orange-50'
+            }`}
+            title="Center on my location"
+          >
+            <Crosshair className="w-5 h-5" />
+          </button>
+          <div className="bg-white/95 border border-[#E8E2D8] rounded-2xl flex flex-col shadow-md backdrop-blur-md overflow-hidden">
             <button
-              onClick={handleSearchThisArea}
-              className={`absolute top-4 left-1/2 -translate-x-1/2 z-20 px-4 py-2 rounded-2xl text-white text-xs font-black shadow-lg flex items-center gap-2 transition-transform active:scale-95 animate-in fade-in ${
-                isWomen
-                  ? 'bg-[#E11D48] shadow-rose-500/25 hover:bg-[#BE123C]'
-                  : 'bg-[#FF6422] shadow-orange-500/25 hover:bg-[#E55215]'
+              onClick={() => handleZoom(1)}
+              className={`w-10 h-10 flex items-center justify-center text-stone-700 hover:bg-stone-50 transition-colors cursor-pointer ${
+                isWomen ? 'hover:text-[#E11D48]' : 'hover:text-[#FF6422]'
               }`}
+              title="Zoom in"
             >
-              <RefreshCw className="w-3.5 h-3.5" />
-              <span>Search This Area</span>
+              <Plus className="w-4 h-4" />
             </button>
-          )}
-
-          {/* Google Maps Official Open in App shortcut badge */}
-          <div className="absolute top-4 right-4 z-20 hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/90 backdrop-blur-md border border-[#E8E2D8] text-[11px] font-bold text-stone-700 shadow-sm">
-            <span className={isWomen ? 'text-[#E11D48]' : 'text-[#FF6422]'}>Google Maps</span>
+            <div className="w-full h-px bg-stone-200" />
             <button
-              onClick={() => openGoogleMapsLocation(currentCoords.lat, currentCoords.lng)}
-              className="text-stone-500 hover:text-stone-900 flex items-center gap-1"
-              title="Launch in Google Maps"
+              onClick={() => handleZoom(-1)}
+              className={`w-10 h-10 flex items-center justify-center text-stone-700 hover:bg-stone-50 transition-colors cursor-pointer ${
+                isWomen ? 'hover:text-[#E11D48]' : 'hover:text-[#FF6422]'
+              }`}
+              title="Zoom out"
             >
-              <ExternalLink className="w-3 h-3" />
+              <Minus className="w-4 h-4" />
             </button>
           </div>
+        </div>
 
-          {/* Map Controls (Zoom in/out + My Location) */}
-          <div className="absolute bottom-6 right-4 z-20 flex flex-col gap-2">
-            <button
-              onClick={handlePanToUser}
-              className={`w-10 h-10 rounded-2xl bg-white/95 border flex items-center justify-center shadow-md backdrop-blur-md transition-all active:scale-90 ${
-                isWomen
-                  ? 'border-[#FED7CC] text-[#E11D48] hover:bg-rose-50'
-                  : 'border-[#E8E2D8] text-[#FF6422] hover:bg-orange-50'
-              }`}
-              title="Center on my location"
-            >
-              <Crosshair className="w-5 h-5" />
-            </button>
-            <div className="bg-white/95 border border-[#E8E2D8] rounded-2xl flex flex-col shadow-md backdrop-blur-md overflow-hidden">
-              <button
-                onClick={() => handleZoom(1)}
-                className={`w-10 h-10 flex items-center justify-center text-stone-700 hover:bg-stone-50 transition-colors ${
-                  isWomen ? 'hover:text-[#E11D48]' : 'hover:text-[#FF6422]'
-                }`}
-                title="Zoom in"
-              >
-                <Plus className="w-4 h-4" />
-              </button>
-              <div className="w-full h-px bg-stone-200" />
-              <button
-                onClick={() => handleZoom(-1)}
-                className={`w-10 h-10 flex items-center justify-center text-stone-700 hover:bg-stone-50 transition-colors ${
-                  isWomen ? 'hover:text-[#E11D48]' : 'hover:text-[#FF6422]'
-                }`}
-                title="Zoom out"
-              >
-                <Minus className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
+        {/* Selected Salon Floating Card (Overlay at bottom of map) */}
+        {selectedMarkerSalon && (
+          <div className="absolute bottom-4 left-3 right-16 sm:right-auto sm:max-w-md z-20 animate-in slide-in-from-bottom-3 duration-200">
+            <div className={`bg-white/95 backdrop-blur-md border rounded-2xl p-3 shadow-xl flex items-center gap-3 ${
+              isWomen ? 'border-rose-200' : 'border-orange-200'
+            }`}>
+              {selectedMarkerSalon.coverImage || selectedMarkerSalon.posterImage || (selectedMarkerSalon.locationImages && selectedMarkerSalon.locationImages[0]) || (selectedMarkerSalon.images && selectedMarkerSalon.images[0]) ? (
+                <img
+                  src={selectedMarkerSalon.coverImage || selectedMarkerSalon.posterImage || (selectedMarkerSalon.locationImages && selectedMarkerSalon.locationImages[0]) || (selectedMarkerSalon.images && selectedMarkerSalon.images[0])}
+                  alt={selectedMarkerSalon.name}
+                  className="w-16 h-16 rounded-xl object-cover shrink-0 border border-stone-200"
+                  onError={(e) => {
+                    (e.currentTarget as HTMLImageElement).style.display = 'none';
+                  }}
+                />
+              ) : (
+                <div className="w-16 h-16 rounded-xl bg-orange-50 border border-orange-200 flex flex-col items-center justify-center shrink-0 text-[#FF6422]">
+                  <Store className="w-6 h-6" />
+                </div>
+              )}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1.5 text-[10px]">
+                  <span className={`font-bold ${isWomen ? 'text-[#E11D48]' : 'text-[#FF6422]'}`}>
+                    {selectedMarkerSalon.rating} ★
+                  </span>
+                  <span className="text-stone-300">•</span>
+                  <span className="text-stone-600 font-semibold">
+                    {userLocation
+                      ? `${calculateHaversineDistance(
+                          userLocation.lat,
+                          userLocation.lng,
+                          selectedMarkerSalon.coordinates.lat,
+                          selectedMarkerSalon.coordinates.lng,
+                        ).toFixed(1)} km away`
+                      : `${selectedMarkerSalon.distanceKm} km`}
+                  </span>
+                </div>
+                <h4 className="text-xs font-bold text-stone-900 truncate">{selectedMarkerSalon.name}</h4>
+                <p className="text-[11px] text-stone-500 truncate">{selectedMarkerSalon.locality}</p>
+                
+                <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                  {/* Google Maps Directions Redirection Button */}
+                  <button
+                    onClick={() =>
+                      redirectToGoogleMaps(
+                        {
+                          lat: selectedMarkerSalon.coordinates.lat,
+                          lng: selectedMarkerSalon.coordinates.lng,
+                          name: selectedMarkerSalon.name,
+                          address: selectedMarkerSalon.address,
+                        },
+                        userLocation || undefined,
+                      )
+                    }
+                    className={`px-2.5 py-1 rounded-lg text-white font-extrabold text-[10px] flex items-center gap-1 transition-colors shadow-sm cursor-pointer ${
+                      isWomen
+                        ? 'bg-[#E11D48] hover:bg-[#BE123C]'
+                        : 'bg-[#FF6422] hover:bg-[#E55215]'
+                    }`}
+                    title="Navigate turn-by-turn in Google Maps"
+                  >
+                    <Navigation className="w-3 h-3 fill-white" />
+                    <span>Navigate ↗</span>
+                  </button>
 
-          {/* Selected Salon Floating Card (Mobile/Overlay) */}
-          {selectedMarkerSalon && (
-            <div className="absolute bottom-4 left-3 right-16 z-20 animate-in slide-in-from-bottom-3 duration-200">
-              <div className={`bg-white/95 backdrop-blur-md border rounded-2xl p-3 shadow-xl flex items-center gap-3 ${
-                isWomen ? 'border-rose-200' : 'border-orange-200'
-              }`}>
-                {selectedMarkerSalon.coverImage || selectedMarkerSalon.posterImage || (selectedMarkerSalon.locationImages && selectedMarkerSalon.locationImages[0]) || (selectedMarkerSalon.images && selectedMarkerSalon.images[0]) ? (
-                  <img
-                    src={selectedMarkerSalon.coverImage || selectedMarkerSalon.posterImage || (selectedMarkerSalon.locationImages && selectedMarkerSalon.locationImages[0]) || (selectedMarkerSalon.images && selectedMarkerSalon.images[0])}
-                    alt={selectedMarkerSalon.name}
-                    className="w-16 h-16 rounded-xl object-cover shrink-0 border border-stone-200"
-                    onError={(e) => {
-                      (e.currentTarget as HTMLImageElement).style.display = 'none';
-                    }}
-                  />
-                ) : (
-                  <div className="w-16 h-16 rounded-xl bg-orange-50 border border-orange-200 flex flex-col items-center justify-center shrink-0 text-[#FF6422]">
-                    <Store className="w-6 h-6" />
-                  </div>
-                )}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1.5 text-[10px]">
-                    <span className={`font-bold ${isWomen ? 'text-[#E11D48]' : 'text-[#FF6422]'}`}>
-                      {selectedMarkerSalon.rating} ★
-                    </span>
-                    <span className="text-stone-300">•</span>
-                    <span className="text-stone-600 font-semibold">
-                      {userLocation
-                        ? `${calculateHaversineDistance(
-                            userLocation.lat,
-                            userLocation.lng,
-                            selectedMarkerSalon.coordinates.lat,
-                            selectedMarkerSalon.coordinates.lng,
-                          ).toFixed(1)} km away`
-                        : `${selectedMarkerSalon.distanceKm} km`}
-                    </span>
-                  </div>
-                  <h4 className="text-xs font-bold text-stone-900 truncate">{selectedMarkerSalon.name}</h4>
-                  <p className="text-[11px] text-stone-500 truncate">{selectedMarkerSalon.locality}</p>
-                  
-                  <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                    {/* Google Maps Directions Redirection Button */}
-                    <button
-                      onClick={() =>
-                        redirectToGoogleMaps(
-                          {
-                            lat: selectedMarkerSalon.coordinates.lat,
-                            lng: selectedMarkerSalon.coordinates.lng,
-                            name: selectedMarkerSalon.name,
-                            address: selectedMarkerSalon.address,
-                          },
-                          userLocation || undefined,
-                        )
-                      }
-                      className={`px-2.5 py-1 rounded-lg text-white font-extrabold text-[10px] flex items-center gap-1 transition-colors shadow-sm ${
-                        isWomen
-                          ? 'bg-[#E11D48] hover:bg-[#BE123C]'
-                          : 'bg-[#FF6422] hover:bg-[#E55215]'
-                      }`}
-                      title="Navigate turn-by-turn in Google Maps"
-                    >
-                      <Navigation className="w-3 h-3 fill-white" />
-                      <span>Google Maps Directions ↗</span>
-                    </button>
-
-                    {/* View Details button */}
-                    <button
-                      onClick={() => setSelectedSalonForDetail(selectedMarkerSalon)}
-                      className={`text-[10px] font-bold underline flex items-center gap-0.5 ${
-                        isWomen
-                          ? 'text-[#E11D48] hover:text-rose-700'
-                          : 'text-[#FF6422] hover:text-orange-700'
-                      }`}
-                    >
-                      Studio Info →
-                    </button>
-                  </div>
+                  {/* View Details button */}
+                  <button
+                    onClick={() => setSelectedSalonForDetail(selectedMarkerSalon)}
+                    className={`text-[10px] font-bold underline flex items-center gap-0.5 cursor-pointer ${
+                      isWomen
+                        ? 'text-[#E11D48] hover:text-rose-700'
+                        : 'text-[#FF6422] hover:text-orange-700'
+                    }`}
+                  >
+                    Studio Details →
+                  </button>
                 </div>
               </div>
             </div>
-          )}
-        </div>
-
-        {/* SALON LIST SIDEBAR (Right side on desktop, full list on mobile) */}
-        <div
-          className={`lg:col-span-5 xl:col-span-4 space-y-3 ${
-            viewMode === 'map' ? 'hidden sm:block' : 'block'
-          }`}
-        >
-          <div className="flex items-center justify-between pb-1">
-            <h3 className="text-sm font-bold text-stone-900">
-              Studio Listings ({visibleSalons.length})
-            </h3>
-            <span className="text-[11px] text-stone-500">Sorted by distance</span>
           </div>
-
-          <div className="space-y-3 max-h-[650px] overflow-y-auto pr-1">
-            {visibleSalons.length === 0 ? (
-              <div className={`p-8 text-center bg-white rounded-3xl border shadow-sm ${
-                isWomen ? 'border-[#FED7CC]' : 'border-[#E8E2D8]'
-              }`}>
-                <MapPin className="w-8 h-8 text-stone-400 mx-auto mb-2" />
-                <p className="text-xs font-semibold text-stone-800">No studios found in this range</p>
-                <p className="text-[11px] text-stone-500 mt-1">Try expanding search radius to 10km or 20km.</p>
-                <button
-                  onClick={() => setRadiusKm(20)}
-                  className={`mt-3 px-3 py-1.5 rounded-xl text-white text-xs font-bold shadow-sm ${
-                    isWomen ? 'bg-[#E11D48] hover:bg-[#BE123C]' : 'bg-[#FF6422] hover:bg-[#E55215]'
-                  }`}
-                >
-                  Expand to 20 km
-                </button>
-              </div>
-            ) : (
-              visibleSalons.map((salon) => {
-                const isSelected = selectedMarkerSalon?.id === salon.id;
-                const waitTime = getEstimatedWaitMinutes(
-                  salon.currentQueue,
-                  salon.avgServiceTimeMinutes,
-                  salon.activeBarbers,
-                );
-
-                return (
-                  <div
-                    key={salon.id}
-                    onClick={() => handleSelectSalonClick(salon)}
-                    className={`cursor-pointer rounded-2xl p-3.5 transition-all border ${
-                      isSelected
-                        ? isWomen
-                          ? 'bg-rose-50/80 border-rose-300 shadow-md ring-1 ring-rose-200'
-                          : 'bg-orange-50/80 border-orange-300 shadow-md ring-1 ring-orange-200'
-                        : isWomen
-                          ? 'bg-white border-[#FED7CC] hover:border-rose-300 hover:bg-[#FFFDFB] shadow-sm'
-                          : 'bg-white border-[#E8E2D8] hover:border-orange-200 hover:bg-[#FFFDF9] shadow-sm'
-                    }`}
-                  >
-                    <div className="flex gap-3">
-                      <img
-                        src={salon.coverImage}
-                        alt={salon.name}
-                        className="w-16 h-16 rounded-xl object-cover shrink-0 border border-stone-100"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between">
-                          <h4 className="text-xs font-bold text-stone-900 truncate">{salon.name}</h4>
-                          <span className={`text-[10px] font-bold shrink-0 ${isWomen ? 'text-[#E11D48]' : 'text-[#FF6422]'}`}>
-                            {salon.rating} ★
-                          </span>
-                        </div>
-                        <p className="text-[11px] text-stone-500 truncate mt-0.5">{salon.locality}</p>
-
-                        <div className="flex items-center gap-3 text-[10px] text-stone-600 mt-1">
-                          <span className="font-semibold text-stone-700">{salon.distanceKm} km away</span>
-                          <span>•</span>
-                          <span className={`${salon.isOpen ? 'text-emerald-700 font-semibold' : 'text-stone-400'}`}>
-                            {salon.isOpen ? `${salon.currentQueue} in queue (${waitTime}m)` : 'Closed'}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-stone-100">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          redirectToGoogleMaps(
-                            {
-                              lat: salon.coordinates.lat,
-                              lng: salon.coordinates.lng,
-                              name: salon.name,
-                              address: salon.address,
-                            },
-                            userLocation || undefined,
-                          );
-                        }}
-                        className={`text-[10px] font-bold flex items-center gap-1 ${
-                          isWomen ? 'text-[#E11D48] hover:text-rose-700' : 'text-[#FF6422] hover:text-orange-700'
-                        }`}
-                        title="Open in Google Maps"
-                      >
-                        <Navigation className={`w-3 h-3 ${isWomen ? 'fill-[#E11D48] text-[#E11D48]' : 'fill-[#FF6422] text-[#FF6422]'}`} />
-                        <span>Google Maps Directions ↗</span>
-                      </button>
-
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedSalonForDetail(salon);
-                        }}
-                        className="text-[10px] font-semibold text-stone-500 hover:text-stone-900 flex items-center gap-1"
-                      >
-                        <span>Details</span>
-                        <ArrowRight className="w-3 h-3" />
-                      </button>
-                    </div>
-                  </div>
-                );
-              })
-            )}
-          </div>
-        </div>
+        )}
       </div>
     </div>
   );
