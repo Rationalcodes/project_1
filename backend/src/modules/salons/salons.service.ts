@@ -1610,7 +1610,7 @@ export class SalonsService {
    * 3. Add customer to queue (With service duration & price snapshotting!)
    */
   async addQueueEntry(salonId: string, dto: CreateQueueEntryDto, actorId?: string) {
-    const requestId = dto.requestId.toLowerCase();
+    const requestId = (dto.requestId && typeof dto.requestId === 'string' ? dto.requestId.trim().toLowerCase() : randomUUID());
     const entryId = `q-${randomUUID()}`;
     const cleanName = (dto.customerName || '').trim() || 'Walk-in Customer';
     const cleanPhone = (dto.phone || '').trim() || null;

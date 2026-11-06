@@ -2,9 +2,10 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsInt, IsOptional, IsString, IsUUID, Max, MaxLength, Min } from 'class-validator';
 
 export class CreateQueueEntryDto {
-  @ApiProperty({ example: 'b6fca35f-2acf-4c64-8f66-477e0a4b4cd4', description: 'Client-generated ID reused when retrying the same queue join' })
-  @IsUUID()
-  requestId!: string;
+  @ApiPropertyOptional({ example: 'b6fca35f-2acf-4c64-8f66-477e0a4b4cd4', description: 'Client-generated ID reused when retrying the same queue join' })
+  @IsOptional()
+  @IsString()
+  requestId?: string;
 
   @ApiPropertyOptional({ example: 'Rahul Sharma', description: 'Customer full name or walk-in nickname' })
   @IsOptional()

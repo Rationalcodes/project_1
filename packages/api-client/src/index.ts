@@ -51,19 +51,34 @@ export interface AuthResponse {
 }
 
 export function createQueueRequestId(): string {
-  if (!globalThis.crypto?.randomUUID) {
-    throw new Error('Secure request ID generation is unavailable in this browser.');
+  if (typeof globalThis !== 'undefined' && globalThis.crypto?.randomUUID) {
+    return globalThis.crypto.randomUUID();
   }
-  return globalThis.crypto.randomUUID();
+  // RFC4122 version 4 UUID fallback
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === 'x' ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
 }
 
 export async function createQueueRequestFingerprint(fields: Array<string | number | null | undefined>): Promise<string> {
-  if (!globalThis.crypto?.subtle) {
-    throw new Error('Secure request fingerprinting is unavailable in this browser.');
+  const serialized = JSON.stringify(fields);
+  if (typeof globalThis !== 'undefined' && globalThis.crypto?.subtle) {
+    try {
+      const input = new TextEncoder().encode(serialized);
+      const digest = await globalThis.crypto.subtle.digest('SHA-256', input);
+      return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('');
+    } catch {}
   }
-  const input = new TextEncoder().encode(JSON.stringify(fields));
-  const digest = await globalThis.crypto.subtle.digest('SHA-256', input);
-  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('');
+  // Simple fallback hash
+  let hash = 0;
+  for (let i = 0; i < serialized.length; i++) {
+    const char = serialized.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash |= 0;
+  }
+  return Math.abs(hash).toString(16);
 }
 
 export function getDefaultApiBaseUrl(): string {
@@ -606,7 +621,7 @@ export class KumbhakaranApiClient {
    * Add a customer to queue with their name, phone, and ticket ID
    */
   async addQueueEntry(salonId: string, entry: {
-    requestId: string;
+    requestId?: string;
     customerName?: string;
     phone?: string;
     serviceName?: string;
@@ -615,12 +630,16 @@ export class KumbhakaranApiClient {
     partySize?: number;
     checkInToken?: string;
   }): Promise<any> {
+    const payload = {
+      ...entry,
+      requestId: entry.requestId || createQueueRequestId(),
+    };
     const res = await fetch(`${this.baseUrl}/salons/${salonId}/queue-entries`, {
       method: 'POST',
       headers: this.getHeaders({
         'Content-Type': 'application/json',
       }),
-      body: JSON.stringify(entry),
+      body: JSON.stringify(payload),
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
