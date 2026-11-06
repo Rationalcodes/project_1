@@ -88,7 +88,7 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
   const [qrDataUrl, setQrDataUrl] = useState<string>('');
   const [copiedLink, setCopiedLink] = useState(false);
 
-  // Where Is My Train-style crowd contribution states
+  // Customer-submitted queue update state
   const [showCrowdModal, setShowCrowdModal] = useState(false);
   const [crowdPeopleCount, setCrowdPeopleCount] = useState(2);
   const [crowdWaitMinutes, setCrowdWaitMinutes] = useState(15);
@@ -677,13 +677,10 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
               </span>
               <div>
                 <div className="text-xs font-black text-emerald-950 flex items-center gap-1.5 flex-wrap">
-                  <span>📍 Verified On-Site Live Status</span>
-                  <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100/90 border border-emerald-300 px-1.5 py-0.2 rounded-full">
-                    Where Is My Train style
-                  </span>
+                  <span>📍 Update from a customer at the salon</span>
                 </div>
                 <div className="text-[11px] text-emerald-800 font-medium mt-0.5">
-                  Customer at studio reported: <strong>{latestCrowdReport.peopleCount} waiting</strong> • ~<strong>{latestCrowdReport.estimatedWaitMinutes} min wait</strong>
+                  A customer nearby shared: <strong>{latestCrowdReport.peopleCount} waiting</strong> • about <strong>{latestCrowdReport.estimatedWaitMinutes} min wait</strong>
                   {latestCrowdReport.notes && <span className="italic text-emerald-700"> • "{latestCrowdReport.notes}"</span>}
                 </div>
               </div>
@@ -694,7 +691,7 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
           </div>
         )}
 
-        {/* WHERE IS MY TRAIN STYLE CROWD REPORTING */}
+        {/* Customer queue updates */}
         <div className="mt-4 pt-3.5 border-t border-[#E8E2D8] bg-stone-50/80 -mx-5 -mb-5 px-5 py-3.5 rounded-b-3xl">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-start gap-2.5">
@@ -704,22 +701,19 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
               <div>
                 <div className="text-xs font-black text-stone-900 flex items-center gap-1.5">
                   <span>At {salon.name} right now?</span>
-                  <span className="text-[10px] font-bold text-orange-700 bg-orange-100/80 border border-orange-200 px-1.5 py-0.2 rounded-md">
-                    Where Is My Train Mode
-                  </span>
                 </div>
                 <p className="text-[11px] text-stone-600 mt-0.5">
                   {currentDistanceMeters !== null && currentDistanceMeters <= 200 ? (
                     <span className="text-emerald-700 font-semibold flex items-center gap-1">
                       <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                      You are at this studio ({currentDistanceMeters}m away). Verified to contribute live wait & crowd!
+                      You’re nearby. Share a quick update to help others know what to expect.
                     </span>
                   ) : currentDistanceMeters !== null ? (
                     <span className="text-stone-500">
-                      Location verification active. You are ~{currentDistanceMeters >= 1000 ? `${(currentDistanceMeters / 1000).toFixed(1)} km` : `${currentDistanceMeters}m`} away (must be within 200m).
+                      You’re about {currentDistanceMeters >= 1000 ? `${(currentDistanceMeters / 1000).toFixed(1)} km` : `${currentDistanceMeters} m`} away. You can share an update when you’re within 200 m.
                     </span>
                   ) : (
-                    <span>Matches your GPS location so only customers currently at the salon can update wait time and people count.</span>
+                    <span>We’ll check that you’re near the salon before you share an update.</span>
                   )}
                 </p>
               </div>
@@ -731,7 +725,7 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
               className="px-3.5 py-2 rounded-xl bg-[#1F1F1F] hover:bg-stone-800 text-white font-extrabold text-xs shadow-xs transition-all flex items-center justify-center gap-1.5 shrink-0 cursor-pointer"
             >
               <Navigation className="w-3.5 h-3.5 text-[#FF6422]" />
-              <span>Contribute Live Status</span>
+              <span>Share a quick update</span>
             </button>
           </div>
         </div>
@@ -1344,7 +1338,7 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
         </div>
       )}
 
-      {/* WHERE IS MY TRAIN STYLE CROWD REPORTING MODAL */}
+      {/* Queue update form */}
       {showCrowdModal && (
         <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl p-6 sm:p-7 max-w-lg w-full shadow-2xl border border-stone-200 animate-in fade-in zoom-in-95 max-h-[90vh] overflow-y-auto">
@@ -1355,9 +1349,9 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
                   📍
                 </div>
                 <div>
-                  <h3 className="text-base font-black text-stone-900">Contribute Live Status</h3>
+                  <h3 className="text-base font-black text-stone-900">Share a queue update</h3>
                   <p className="text-xs text-stone-500">
-                    {salon.name} • Where Is My Train Mode
+                    {salon.name}
                   </p>
                 </div>
               </div>
@@ -1376,7 +1370,7 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
                 <div className="p-3.5 rounded-2xl bg-stone-100 border border-stone-200 flex items-center gap-3">
                   <RefreshCw className="w-4 h-4 text-[#FF6422] animate-spin" />
                   <span className="text-xs font-semibold text-stone-700">
-                    Checking your live GPS location...
+                    Checking your location...
                   </span>
                 </div>
               ) : currentDistanceMeters !== null && currentDistanceMeters <= 200 ? (
@@ -1386,10 +1380,10 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
                   </div>
                   <div>
                     <div className="text-xs font-bold text-emerald-900">
-                      Verified at {salon.name}
+                      You’re near {salon.name}
                     </div>
                     <div className="text-[11px] text-emerald-700">
-                      You are physically within {currentDistanceMeters}m of the salon. Your report will be marked as verified!
+                      Thanks for helping others plan their visit. Your update will be marked as verified.
                     </div>
                   </div>
                 </div>
@@ -1399,10 +1393,10 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
                     <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
                     <div>
                       <div className="text-xs font-bold text-amber-900">
-                        Location Check: {currentDistanceMeters >= 1000 ? `${(currentDistanceMeters / 1000).toFixed(1)} km` : `${currentDistanceMeters}m`} away
+                        You’re about {currentDistanceMeters >= 1000 ? `${(currentDistanceMeters / 1000).toFixed(1)} km` : `${currentDistanceMeters} m`} away
                       </div>
                       <div className="text-[11px] text-amber-800 mt-0.5">
-                        Just like in <strong>Where Is My Train</strong>, live queue status can only be contributed by customers currently inside or outside the studio (within 200m).
+                        To share an update, you’ll need to be within 200 m of the salon.
                       </div>
                     </div>
                   </div>
@@ -1411,18 +1405,18 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
                     onClick={handleOpenCrowdModal}
                     className="self-start text-[11px] font-bold text-amber-900 underline hover:text-amber-950 cursor-pointer"
                   >
-                    🔄 Re-check my GPS location
+                    Check my location again
                   </button>
                 </div>
               ) : (
                 <div className="p-3.5 rounded-2xl bg-stone-50 border border-stone-200 flex items-center justify-between">
-                  <span className="text-xs text-stone-600 font-medium">GPS location not verified yet.</span>
+                  <span className="text-xs text-stone-600 font-medium">Check that you’re near the salon to share an update.</span>
                   <button
                     type="button"
                     onClick={handleOpenCrowdModal}
                     className="px-3 py-1.5 rounded-xl bg-stone-900 text-white text-xs font-bold cursor-pointer"
                   >
-                    Check Location
+                    Check my location
                   </button>
                 </div>
               )}
@@ -1433,7 +1427,7 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
               {/* Question 1: Number of people */}
               <div>
                 <label className="block text-xs font-extrabold text-stone-800 mb-1.5">
-                  1. How many people are currently waiting / at studio?
+                  How many people are waiting?
                 </label>
                 <div className="grid grid-cols-4 sm:grid-cols-7 gap-1.5">
                   {[0, 1, 2, 3, 4, 5, 6].map((cnt) => (
@@ -1456,7 +1450,7 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
               {/* Question 2: Estimated Wait Time */}
               <div>
                 <label className="block text-xs font-extrabold text-stone-800 mb-1.5">
-                  2. Estimated wait time right now
+                  About how long is the wait?
                 </label>
                 <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
                   {[
@@ -1487,7 +1481,7 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
               {/* Question 3: Active Stylists / Barbers */}
               <div>
                 <label className="block text-xs font-extrabold text-stone-800 mb-1.5">
-                  3. Stylists / Barbers currently working (Optional)
+                  How many stylists or barbers are working? (Optional)
                 </label>
                 <div className="grid grid-cols-3 gap-2">
                   {[
@@ -1514,11 +1508,11 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
               {/* Observation note */}
               <div>
                 <label className="block text-xs font-extrabold text-stone-800 mb-1">
-                  Quick Note / Observation (Optional)
+                  Anything else to share? (Optional)
                 </label>
                 <input
                   type="text"
-                  placeholder="e.g. Chairs moving fast, tea offered"
+                  placeholder="e.g. The queue is moving quickly"
                   value={crowdNotes}
                   onChange={(e) => setCrowdNotes(e.target.value)}
                   maxLength={100}
@@ -1550,7 +1544,7 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
                 ) : (
                   <>
                     <Check className="w-4 h-4 stroke-[3]" />
-                    <span>Submit Verified Live Status</span>
+                    <span>Share update</span>
                   </>
                 )}
               </button>

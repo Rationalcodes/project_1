@@ -132,9 +132,9 @@ export const HomeScreen: React.FC = () => {
       subtitle: 'Real-time chair counts updated directly by your barber.',
     },
     {
-      badge: 'WHERE IS MY TRAIN MODE',
-      title: 'On-site live crowd verification',
-      subtitle: 'Customers physically at the salon verify live wait times.',
+      badge: 'A QUICK UPDATE FROM YOU',
+      title: 'Help keep wait times up to date',
+      subtitle: 'At the salon? Share what the queue looks like for others.',
     },
     {
       badge: 'DIGITAL WALK-IN TOKEN',
@@ -198,8 +198,8 @@ export const HomeScreen: React.FC = () => {
       a: 'Yes! Tap any salon to view details, then tap "Join Walk-In Queue" to grab a digital ticket (#01, #02...). You can time your visit so a chair is ready when you arrive.',
     },
     {
-      q: 'How does Where Is My Train-style verification work?',
-      a: 'Customers physically present at the salon (verified within 200m by GPS) can submit live crowd and wait times to keep queue estimates honest and reliable for everyone.',
+      q: 'Can I share a queue update?',
+      a: 'If you’re near a salon, you can share how many people are waiting and the estimated wait. Your location helps us confirm the update is from someone nearby.',
     },
   ];
 
