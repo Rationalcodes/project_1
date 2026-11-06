@@ -34,6 +34,7 @@ import {
   ClearQueueDto,
   UpdateStaffStatusDto,
   UpsertServiceDto,
+  SubmitCrowdReportDto,
 } from './dto/queue-action.dto';
 import { PublicSalonResponseDto, PublicReviewDto } from './dto/public-salon-response.dto';
 import { CreateReviewDto } from './dto/create-review.dto';
@@ -390,6 +391,34 @@ export class SalonsController {
   })
   async clearQueueEntries(@Param('id') id: string) {
     return this.salonsService.clearQueueEntries(id);
+  }
+
+  // ==========================================================================
+  // WHERE-IS-MY-TRAIN STYLE CROWDSOURCED LIVE LOCATION REPORTING
+  // ==========================================================================
+
+  @Post(':id/crowd-report')
+  @UseGuards(OptionalJwtAuthGuard)
+  @ApiOperation({
+    summary: 'Submit live crowdsourced salon status with GPS location verification (Where-Is-My-Train style)',
+    description: 'Requires customer GPS coordinates to match the salon (<= 200m). Updates estimated wait time and people count.',
+  })
+  @ApiResponse({ status: 201, description: 'Live crowd report verified and recorded' })
+  @ApiResponse({ status: 403, description: 'Customer is not physically at the salon location' })
+  async submitCrowdReport(
+    @Param('id') id: string,
+    @Body() dto: SubmitCrowdReportDto,
+    @CurrentUser() user?: AuthenticatedUser,
+  ) {
+    return this.salonsService.submitCrowdReport(id, dto, user?.id);
+  }
+
+  @Get(':id/crowd-report')
+  @ApiOperation({
+    summary: 'Get latest verified on-site crowd reports for a salon',
+  })
+  async getLatestCrowdReport(@Param('id') id: string) {
+    return this.salonsService.getLatestCrowdReport(id);
   }
 
   // ==========================================================================

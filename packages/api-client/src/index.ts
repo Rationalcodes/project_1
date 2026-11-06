@@ -626,6 +626,48 @@ export class KumbhakaranApiClient {
     }
     return await res.json();
   }
+
+  /**
+   * Submit live crowdsourced salon status with GPS location verification (Where-Is-My-Train style)
+   */
+  async submitCrowdReport(salonId: string, payload: {
+    latitude: number;
+    longitude: number;
+    peopleCount: number;
+    estimatedWaitMinutes: number;
+    activeBarbers?: number;
+    notes?: string;
+    customerName?: string;
+  }): Promise<{ success: boolean; message: string; report?: any }> {
+    const res = await fetch(`${this.baseUrl}/salons/${salonId}/crowd-report`, {
+      method: 'POST',
+      headers: this.getHeaders({
+        'Content-Type': 'application/json',
+      }),
+      body: JSON.stringify(payload),
+    });
+
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(data?.message || `Failed to submit crowd report (HTTP ${res.status})`);
+    }
+    return data;
+  }
+
+  /**
+   * Get latest verified on-site crowd report for a salon
+   */
+  async getLatestCrowdReport(salonId: string): Promise<{ report: any | null; history: any[] }> {
+    try {
+      const res = await fetch(`${this.baseUrl}/salons/${salonId}/crowd-report`, {
+        headers: this.getHeaders(),
+      });
+      if (!res.ok) return { report: null, history: [] };
+      return await res.json();
+    } catch {
+      return { report: null, history: [] };
+    }
+  }
 }
 
 export const defaultApiClient = new KumbhakaranApiClient();

@@ -25,6 +25,7 @@ import {
   ClearQueueDto,
   UpdateStaffStatusDto,
   UpsertServiceDto,
+  SubmitCrowdReportDto,
 } from './dto/queue-action.dto';
 import { CreateQueueEntryDto } from './dto/create-queue-entry.dto';
 
@@ -1992,4 +1993,191 @@ export class SalonsService {
     });
   }
 
+  // ==========================================================================
+  // WHERE-IS-MY-TRAIN STYLE CROWDSOURCED LIVE LOCATION REPORTING
+  // ==========================================================================
+
+  private readonly crowdReports = new Map<string, any[]>();
+
+  /**
+   * Calculates spherical distance in meters between two lat/lng coordinates (Haversine)
+   */
+  calculateDistanceMeters(lat1: number, lon1: number, lat2: number, lon2: number): number {
+    const R = 6371000; // Radius of Earth in meters
+    const dLat = ((lat2 - lat1) * Math.PI) / 180.0;
+    const dLon = ((lon2 - lon1) * Math.PI) / 180.0;
+    const a =
+      Math.sin(dLat / 2.0) ** 2 +
+      Math.cos((lat1 * Math.PI) / 180.0) *
+        Math.cos((lat2 * Math.PI) / 180.0) *
+        Math.sin(dLon / 2.0) ** 2;
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return Math.round(R * c);
+  }
+
+  /**
+   * Where Is My Train-style live crowd contribution
+   * Customers can only contribute if their verified GPS coordinates match the salon (<= 200m).
+   */
+  async submitCrowdReport(salonId: string, dto: SubmitCrowdReportDto, actorId?: string) {
+    // 1. Fetch salon coordinates
+    const salon = await this.prisma.salon.findUnique({
+      where: { id: salonId },
+      select: {
+        id: true,
+        name: true,
+        latitude: true,
+        longitude: true,
+        isOpen: true,
+        queueStatus: true,
+      },
+    });
+
+    const targetSalon = salon || this.localSalons.get(salonId);
+    if (!targetSalon) {
+      throw new NotFoundException(`Salon with ID ${salonId} not found`);
+    }
+
+    // 2. Strict Location Verification (Where Is My Train style)
+    const distanceMeters = this.calculateDistanceMeters(
+      dto.latitude,
+      dto.longitude,
+      targetSalon.latitude,
+      targetSalon.longitude,
+    );
+
+    const MAX_ALLOWED_DISTANCE_METERS = 200; // 200m geofence for indoor/mall tolerance
+    if (distanceMeters > MAX_ALLOWED_DISTANCE_METERS) {
+      const formattedDistance =
+        distanceMeters >= 1000
+          ? `${(distanceMeters / 1000).toFixed(1)} km`
+          : `${distanceMeters} meters`;
+      throw new ForbiddenException(
+        `Live status contribution is only allowed when you are physically at ${targetSalon.name}. You are currently ${formattedDistance} away (location limit is ${MAX_ALLOWED_DISTANCE_METERS}m).`,
+      );
+    }
+
+    // 3. Create verified report record
+    const now = new Date();
+    const report = {
+      id: `cr-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+      salonId,
+      peopleCount: Math.max(0, Math.round(dto.peopleCount)),
+      estimatedWaitMinutes: Math.max(0, Math.round(dto.estimatedWaitMinutes)),
+      activeBarbers: dto.activeBarbers ? Math.max(1, Math.round(dto.activeBarbers)) : undefined,
+      notes: dto.notes?.trim() || undefined,
+      customerName: dto.customerName?.trim() || 'Verified Customer at Studio',
+      distanceMeters,
+      reportedAt: now.toISOString(),
+      isFresh: true,
+    };
+
+    // 4. Cache in memory (keep last 10 reports, purge older than 24h)
+    const existingReports = this.crowdReports.get(salonId) || [];
+    const oneDayAgo = now.getTime() - 24 * 60 * 60 * 1000;
+    const filtered = existingReports.filter(
+      (r) => new Date(r.reportedAt).getTime() >= oneDayAgo,
+    );
+    this.crowdReports.set(salonId, [report, ...filtered].slice(0, 10));
+
+    // 5. Audit log in queue_events
+    await this.logQueueEvent(
+      salonId,
+      null,
+      actorId || 'verified-customer',
+      'customer',
+      'queue.crowdsource.report',
+      null,
+      null,
+      report,
+    );
+
+    // 6. Update salon's live queue if shop is currently open
+    const isShopOpen = targetSalon.isOpen !== false && targetSalon.queueStatus !== 'closed';
+    if (isShopOpen) {
+      this.syncLocalQueueCache(salonId, report.peopleCount);
+      await this.prisma.salon
+        .update({
+          where: { id: salonId },
+          data: {
+            currentQueue: report.peopleCount,
+            lastQueueUpdate: now,
+          },
+        })
+        .catch(() => {});
+    }
+
+    // 7. Realtime broadcast to all connected customers and partner
+    this.queueGateway.broadcastToSalon(salonId, 'queue.crowd_report', {
+      ...report,
+      salonName: targetSalon.name,
+    });
+
+    this.logger.log(
+      `[CrowdReport] Salon ${targetSalon.name} (${salonId}): verified customer at ${distanceMeters}m reported ${report.peopleCount} waiting, ~${report.estimatedWaitMinutes}m wait.`,
+    );
+
+    return {
+      success: true,
+      message: `Thank you for contributing! Live status verified at location (${distanceMeters}m away).`,
+      report,
+    };
+  }
+
+  /**
+   * Get the latest verified crowd reports for a salon
+   */
+  async getLatestCrowdReport(salonId: string): Promise<{ report: any | null; history: any[] }> {
+    const inMemory = this.crowdReports.get(salonId) || [];
+    const fortyFiveMinutesAgo = Date.now() - 45 * 60 * 1000;
+    const recentInMemory = inMemory.filter(
+      (r) => new Date(r.reportedAt).getTime() >= fortyFiveMinutesAgo,
+    );
+
+    if (recentInMemory.length > 0) {
+      return {
+        report: recentInMemory[0],
+        history: recentInMemory.slice(0, 5),
+      };
+    }
+
+    // Fallback to database queue_events
+    try {
+      const dbEvents = await this.prisma.queueEvent.findMany({
+        where: {
+          salonId,
+          eventType: 'queue.crowdsource.report',
+          createdAt: { gte: new Date(fortyFiveMinutesAgo) },
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 5,
+      });
+
+      if (dbEvents.length > 0) {
+        const reports = dbEvents.map((e) => {
+          const details = (e.details as any) || {};
+          return {
+            id: details.id || e.id,
+            salonId: e.salonId,
+            peopleCount: details.peopleCount ?? 0,
+            estimatedWaitMinutes: details.estimatedWaitMinutes ?? 0,
+            activeBarbers: details.activeBarbers,
+            notes: details.notes,
+            customerName: details.customerName || 'Verified Customer',
+            distanceMeters: details.distanceMeters ?? 0,
+            reportedAt: e.createdAt.toISOString(),
+            isFresh: true,
+          };
+        });
+
+        this.crowdReports.set(salonId, reports);
+        return {
+          report: reports[0],
+          history: reports,
+        };
+      }
+    } catch {}
+
+    return { report: null, history: [] };
+  }
 }

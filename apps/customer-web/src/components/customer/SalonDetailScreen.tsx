@@ -72,7 +72,10 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
     completeLiveQueue,
     markTicketInService,
     reportSalonCrowd,
-    updateCustomerName
+    updateCustomerName,
+    latestCrowdReport,
+    fetchLatestCrowdReport,
+    submitLocationCrowdReport,
   } = useSalon();
 
   // Join Live Queue & Token states
@@ -84,6 +87,90 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
   const [showQrModal, setShowQrModal] = useState(false);
   const [qrDataUrl, setQrDataUrl] = useState<string>('');
   const [copiedLink, setCopiedLink] = useState(false);
+
+  // Where Is My Train-style crowd contribution states
+  const [showCrowdModal, setShowCrowdModal] = useState(false);
+  const [crowdPeopleCount, setCrowdPeopleCount] = useState(2);
+  const [crowdWaitMinutes, setCrowdWaitMinutes] = useState(15);
+  const [crowdBarbers, setCrowdBarbers] = useState(2);
+  const [crowdNotes, setCrowdNotes] = useState('');
+  const [isSubmittingCrowd, setIsSubmittingCrowd] = useState(false);
+  const [isCheckingLocation, setIsCheckingLocation] = useState(false);
+  const [currentDistanceMeters, setCurrentDistanceMeters] = useState<number | null>(null);
+
+  const getSalonDistanceMeters = (userLat: number, userLng: number, salonLat: number, salonLng: number): number => {
+    const R = 6371000;
+    const dLat = ((salonLat - userLat) * Math.PI) / 180.0;
+    const dLon = ((salonLng - userLng) * Math.PI) / 180.0;
+    const a =
+      Math.sin(dLat / 2.0) ** 2 +
+      Math.cos((userLat * Math.PI) / 180.0) *
+        Math.cos((salonLat * Math.PI) / 180.0) *
+        Math.sin(dLon / 2.0) ** 2;
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return Math.round(R * c);
+  };
+
+  useEffect(() => {
+    if (selectedSalonForDetail?.id && fetchLatestCrowdReport) {
+      fetchLatestCrowdReport(selectedSalonForDetail.id);
+    }
+  }, [selectedSalonForDetail?.id]);
+
+  useEffect(() => {
+    if (selectedSalonForDetail && userLocation?.lat && userLocation?.lng) {
+      const s = selectedSalonForDetail as any;
+      const sLat = s.coordinates?.lat || s.latitude;
+      const sLng = s.coordinates?.lng || s.longitude;
+      if (sLat && sLng) {
+        const dist = getSalonDistanceMeters(userLocation.lat, userLocation.lng, sLat, sLng);
+        setCurrentDistanceMeters(dist);
+      }
+    }
+  }, [selectedSalonForDetail, userLocation]);
+
+  const handleOpenCrowdModal = () => {
+    setIsCheckingLocation(true);
+    setShowCrowdModal(true);
+
+    const s = selectedSalonForDetail as any;
+    const sLat = s?.coordinates?.lat || s?.latitude;
+    const sLng = s?.coordinates?.lng || s?.longitude;
+
+    if (navigator.geolocation && sLat && sLng) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const dist = getSalonDistanceMeters(pos.coords.latitude, pos.coords.longitude, sLat, sLng);
+          setCurrentDistanceMeters(dist);
+          setIsCheckingLocation(false);
+        },
+        () => {
+          setIsCheckingLocation(false);
+        },
+        { enableHighAccuracy: true, timeout: 8000 }
+      );
+    } else {
+      setIsCheckingLocation(false);
+    }
+  };
+
+  const handleCrowdSubmit = async () => {
+    if (!selectedSalonForDetail) return;
+    setIsSubmittingCrowd(true);
+    try {
+      await submitLocationCrowdReport(selectedSalonForDetail.id, {
+        peopleCount: crowdPeopleCount,
+        estimatedWaitMinutes: crowdWaitMinutes,
+        activeBarbers: crowdBarbers,
+        notes: crowdNotes || undefined,
+      });
+      setShowCrowdModal(false);
+    } catch {
+      // Error notification handled in context
+    } finally {
+      setIsSubmittingCrowd(false);
+    }
+  };
 
   // Generate QR Code for direct deep link
   useEffect(() => {
@@ -580,32 +667,71 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
           </div>
         ) : null}
 
-        {/* COMMUNITY CROWD CONFIRMATION (CUSTOMER-DRIVEN) */}
-        <div className="mt-4 pt-3.5 border-t border-[#E8E2D8] flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 bg-stone-50/60 -mx-5 -mb-5 px-5 py-3 rounded-b-3xl">
-          <div className="text-[11px] text-stone-600">
-            <span className="font-bold text-stone-900">At {salon.name} right now?</span> Help nearby customers with live status:
+        {/* LATEST VERIFIED LOCATION REPORT SHOWCASE */}
+        {latestCrowdReport && (
+          <div className="mt-3 p-3 rounded-2xl bg-emerald-50/90 border border-emerald-200 flex items-center justify-between gap-3 shadow-xs">
+            <div className="flex items-center gap-2.5">
+              <span className="relative flex h-3 w-3 shrink-0">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+              </span>
+              <div>
+                <div className="text-xs font-black text-emerald-950 flex items-center gap-1.5 flex-wrap">
+                  <span>📍 Verified On-Site Live Status</span>
+                  <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100/90 border border-emerald-300 px-1.5 py-0.2 rounded-full">
+                    Where Is My Train style
+                  </span>
+                </div>
+                <div className="text-[11px] text-emerald-800 font-medium mt-0.5">
+                  Customer at studio reported: <strong>{latestCrowdReport.peopleCount} waiting</strong> • ~<strong>{latestCrowdReport.estimatedWaitMinutes} min wait</strong>
+                  {latestCrowdReport.notes && <span className="italic text-emerald-700"> • "{latestCrowdReport.notes}"</span>}
+                </div>
+              </div>
+            </div>
+            <span className="text-[10px] font-bold text-emerald-800 bg-white border border-emerald-200 px-2.5 py-1 rounded-xl shrink-0 shadow-2xs">
+              Location Verified
+            </span>
           </div>
-          <div className="flex items-center gap-1.5 flex-wrap">
+        )}
+
+        {/* WHERE IS MY TRAIN STYLE CROWD REPORTING */}
+        <div className="mt-4 pt-3.5 border-t border-[#E8E2D8] bg-stone-50/80 -mx-5 -mb-5 px-5 py-3.5 rounded-b-3xl">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-start gap-2.5">
+              <div className="w-8 h-8 rounded-xl bg-orange-100 border border-orange-200 flex items-center justify-center text-sm shrink-0 mt-0.5">
+                📍
+              </div>
+              <div>
+                <div className="text-xs font-black text-stone-900 flex items-center gap-1.5">
+                  <span>At {salon.name} right now?</span>
+                  <span className="text-[10px] font-bold text-orange-700 bg-orange-100/80 border border-orange-200 px-1.5 py-0.2 rounded-md">
+                    Where Is My Train Mode
+                  </span>
+                </div>
+                <p className="text-[11px] text-stone-600 mt-0.5">
+                  {currentDistanceMeters !== null && currentDistanceMeters <= 200 ? (
+                    <span className="text-emerald-700 font-semibold flex items-center gap-1">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                      You are at this studio ({currentDistanceMeters}m away). Verified to contribute live wait & crowd!
+                    </span>
+                  ) : currentDistanceMeters !== null ? (
+                    <span className="text-stone-500">
+                      Location verification active. You are ~{currentDistanceMeters >= 1000 ? `${(currentDistanceMeters / 1000).toFixed(1)} km` : `${currentDistanceMeters}m`} away (must be within 200m).
+                    </span>
+                  ) : (
+                    <span>Matches your GPS location so only customers currently at the salon can update wait time and people count.</span>
+                  )}
+                </p>
+              </div>
+            </div>
+
             <button
               type="button"
-              onClick={() => reportSalonCrowd(salon.id, 'empty')}
-              className="text-[11px] font-bold px-2.5 py-1 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100 transition-colors cursor-pointer"
+              onClick={handleOpenCrowdModal}
+              className="px-3.5 py-2 rounded-xl bg-[#1F1F1F] hover:bg-stone-800 text-white font-extrabold text-xs shadow-xs transition-all flex items-center justify-center gap-1.5 shrink-0 cursor-pointer"
             >
-              🟢 0 Wait (Clear)
-            </button>
-            <button
-              type="button"
-              onClick={() => reportSalonCrowd(salon.id, 'medium')}
-              className="text-[11px] font-bold px-2.5 py-1 rounded-xl bg-amber-50 text-amber-800 border border-amber-200 hover:bg-amber-100 transition-colors cursor-pointer"
-            >
-              🟡 1-2 Waiting
-            </button>
-            <button
-              type="button"
-              onClick={() => reportSalonCrowd(salon.id, 'busy')}
-              className="text-[11px] font-bold px-2.5 py-1 rounded-xl bg-rose-50 text-rose-800 border border-rose-200 hover:bg-rose-100 transition-colors cursor-pointer"
-            >
-              🔴 3+ Busy
+              <Navigation className="w-3.5 h-3.5 text-[#FF6422]" />
+              <span>Contribute Live Status</span>
             </button>
           </div>
         </div>
@@ -1214,6 +1340,221 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* WHERE IS MY TRAIN STYLE CROWD REPORTING MODAL */}
+      {showCrowdModal && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-6 sm:p-7 max-w-lg w-full shadow-2xl border border-stone-200 animate-in fade-in zoom-in-95 max-h-[90vh] overflow-y-auto">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between pb-4 border-b border-[#E8E2D8]">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-2xl bg-orange-100 text-[#FF6422] flex items-center justify-center text-lg">
+                  📍
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-stone-900">Contribute Live Status</h3>
+                  <p className="text-xs text-stone-500">
+                    {salon.name} • Where Is My Train Mode
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowCrowdModal(false)}
+                className="text-stone-400 hover:text-stone-600 p-1.5 rounded-full hover:bg-stone-100 transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Location Verification Status Box */}
+            <div className="mt-4">
+              {isCheckingLocation ? (
+                <div className="p-3.5 rounded-2xl bg-stone-100 border border-stone-200 flex items-center gap-3">
+                  <RefreshCw className="w-4 h-4 text-[#FF6422] animate-spin" />
+                  <span className="text-xs font-semibold text-stone-700">
+                    Checking your live GPS location...
+                  </span>
+                </div>
+              ) : currentDistanceMeters !== null && currentDistanceMeters <= 200 ? (
+                <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-300 flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-sm shrink-0">
+                    ✓
+                  </div>
+                  <div>
+                    <div className="text-xs font-bold text-emerald-900">
+                      Verified at {salon.name}
+                    </div>
+                    <div className="text-[11px] text-emerald-700">
+                      You are physically within {currentDistanceMeters}m of the salon. Your report will be marked as verified!
+                    </div>
+                  </div>
+                </div>
+              ) : currentDistanceMeters !== null ? (
+                <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-300 flex flex-col gap-2">
+                  <div className="flex items-start gap-2.5">
+                    <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                    <div>
+                      <div className="text-xs font-bold text-amber-900">
+                        Location Check: {currentDistanceMeters >= 1000 ? `${(currentDistanceMeters / 1000).toFixed(1)} km` : `${currentDistanceMeters}m`} away
+                      </div>
+                      <div className="text-[11px] text-amber-800 mt-0.5">
+                        Just like in <strong>Where Is My Train</strong>, live queue status can only be contributed by customers currently inside or outside the studio (within 200m).
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleOpenCrowdModal}
+                    className="self-start text-[11px] font-bold text-amber-900 underline hover:text-amber-950 cursor-pointer"
+                  >
+                    🔄 Re-check my GPS location
+                  </button>
+                </div>
+              ) : (
+                <div className="p-3.5 rounded-2xl bg-stone-50 border border-stone-200 flex items-center justify-between">
+                  <span className="text-xs text-stone-600 font-medium">GPS location not verified yet.</span>
+                  <button
+                    type="button"
+                    onClick={handleOpenCrowdModal}
+                    className="px-3 py-1.5 rounded-xl bg-stone-900 text-white text-xs font-bold cursor-pointer"
+                  >
+                    Check Location
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Input Controls */}
+            <div className="mt-5 space-y-4">
+              {/* Question 1: Number of people */}
+              <div>
+                <label className="block text-xs font-extrabold text-stone-800 mb-1.5">
+                  1. How many people are currently waiting / at studio?
+                </label>
+                <div className="grid grid-cols-4 sm:grid-cols-7 gap-1.5">
+                  {[0, 1, 2, 3, 4, 5, 6].map((cnt) => (
+                    <button
+                      key={cnt}
+                      type="button"
+                      onClick={() => setCrowdPeopleCount(cnt)}
+                      className={`py-2 rounded-xl text-xs font-black transition-all border cursor-pointer ${
+                        crowdPeopleCount === cnt
+                          ? 'bg-[#FF6422] text-white border-[#FF6422] shadow-sm'
+                          : 'bg-stone-50 text-stone-700 border-stone-200 hover:bg-stone-100'
+                      }`}
+                    >
+                      {cnt === 0 ? '0 (Clear)' : cnt >= 6 ? '6+' : String(cnt)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Question 2: Estimated Wait Time */}
+              <div>
+                <label className="block text-xs font-extrabold text-stone-800 mb-1.5">
+                  2. Estimated wait time right now
+                </label>
+                <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                  {[
+                    { label: 'No wait (0m)', val: 0 },
+                    { label: '~10 mins', val: 10 },
+                    { label: '~15 mins', val: 15 },
+                    { label: '~20 mins', val: 20 },
+                    { label: '~30 mins', val: 30 },
+                    { label: '~45 mins', val: 45 },
+                    { label: '60+ mins', val: 60 },
+                  ].map((opt) => (
+                    <button
+                      key={opt.val}
+                      type="button"
+                      onClick={() => setCrowdWaitMinutes(opt.val)}
+                      className={`py-2 px-2 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
+                        crowdWaitMinutes === opt.val
+                          ? 'bg-[#1F1F1F] text-white border-[#1F1F1F] shadow-sm'
+                          : 'bg-stone-50 text-stone-700 border-stone-200 hover:bg-stone-100'
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Question 3: Active Stylists / Barbers */}
+              <div>
+                <label className="block text-xs font-extrabold text-stone-800 mb-1.5">
+                  3. Stylists / Barbers currently working (Optional)
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { label: '1 Stylist', val: 1 },
+                    { label: '2 Stylists', val: 2 },
+                    { label: '3+ Stylists', val: 3 },
+                  ].map((s) => (
+                    <button
+                      key={s.val}
+                      type="button"
+                      onClick={() => setCrowdBarbers(s.val)}
+                      className={`py-2 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
+                        crowdBarbers === s.val
+                          ? 'bg-amber-500 text-stone-950 border-amber-500 shadow-sm'
+                          : 'bg-stone-50 text-stone-700 border-stone-200 hover:bg-stone-100'
+                      }`}
+                    >
+                      {s.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Observation note */}
+              <div>
+                <label className="block text-xs font-extrabold text-stone-800 mb-1">
+                  Quick Note / Observation (Optional)
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Chairs moving fast, tea offered"
+                  value={crowdNotes}
+                  onChange={(e) => setCrowdNotes(e.target.value)}
+                  maxLength={100}
+                  className="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-300 rounded-xl text-xs text-stone-900 placeholder-stone-400 focus:outline-none focus:border-[#FF6422] focus:bg-white transition-all"
+                />
+              </div>
+            </div>
+
+            {/* Modal Actions */}
+            <div className="mt-6 pt-4 border-t border-[#E8E2D8] flex items-center justify-end gap-2.5">
+              <button
+                type="button"
+                onClick={() => setShowCrowdModal(false)}
+                className="px-4 py-2.5 rounded-xl text-xs font-bold text-stone-600 hover:text-stone-800 cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleCrowdSubmit}
+                disabled={isSubmittingCrowd || isCheckingLocation || (currentDistanceMeters !== null && currentDistanceMeters > 200)}
+                className="px-5 py-2.5 rounded-xl bg-[#FF6422] hover:bg-orange-600 text-white font-extrabold text-xs shadow-lg shadow-orange-500/25 active:scale-95 transition-all flex items-center gap-2 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {isSubmittingCrowd ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    <span>Submitting...</span>
+                  </>
+                ) : (
+                  <>
+                    <Check className="w-4 h-4 stroke-[3]" />
+                    <span>Submit Verified Live Status</span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       )}

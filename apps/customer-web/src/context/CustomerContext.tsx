@@ -128,6 +128,17 @@ interface CustomerContextType {
   completeLiveQueue: (salonId: string, entryId: string) => Promise<void>;
   markTicketInService: (salonId: string, entryId: string) => Promise<void>;
   reportSalonCrowd: (salonId: string, crowdLevel: 'empty' | 'medium' | 'busy') => Promise<void>;
+  latestCrowdReport: any | null;
+  fetchLatestCrowdReport: (salonId: string) => Promise<any | null>;
+  submitLocationCrowdReport: (
+    salonId: string,
+    payload: {
+      peopleCount: number;
+      estimatedWaitMinutes: number;
+      activeBarbers?: number;
+      notes?: string;
+    },
+  ) => Promise<{ success: boolean; message: string; report?: any }>;
   isExpressWalkin: boolean;
   setIsExpressWalkin: (active: boolean) => void;
 }
@@ -631,20 +642,109 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   };
 
-  const reportSalonCrowd = async (salonId: string, crowdLevel: 'empty' | 'medium' | 'busy') => {
-    const queueVal = crowdLevel === 'empty' ? 0 : crowdLevel === 'medium' ? 2 : 4;
-    setSalons((prev) =>
-      prev.map((s) => (s.id === salonId ? { ...s, currentQueue: queueVal, lastQueueUpdate: new Date().toISOString() } : s))
-    );
-    setSelectedSalonForDetail((prev) =>
-      prev && prev.id === salonId ? { ...prev, currentQueue: queueVal, lastQueueUpdate: new Date().toISOString() } : prev
-    );
-    broadcastTelemetryUpdate(salonId, queueVal);
-    triggerNotification(
-      `Thank you! Live crowd status reported as ${crowdLevel === 'empty' ? 'No Wait (0 waiting)' : crowdLevel === 'medium' ? '1-2 Waiting' : '3+ Waiting'}.`
-    );
+  const [latestCrowdReport, setLatestCrowdReport] = useState<any | null>(null);
+
+  const getCurrentGpsCoordinates = (): Promise<{ lat: number; lng: number }> => {
+    return new Promise((resolve, reject) => {
+      if (!navigator.geolocation) {
+        if (userLocation?.lat && userLocation?.lng) {
+          return resolve({ lat: userLocation.lat, lng: userLocation.lng });
+        }
+        return reject(new Error('Geolocation is not supported by your browser.'));
+      }
+      navigator.geolocation.getCurrentPosition(
+        (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+        () => {
+          if (userLocation?.lat && userLocation?.lng) {
+            return resolve({ lat: userLocation.lat, lng: userLocation.lng });
+          }
+          reject(new Error('Please enable device location/GPS to verify you are at this salon.'));
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 }
+      );
+    });
+  };
+
+  const fetchLatestCrowdReport = async (salonId: string) => {
     try {
-      await defaultApiClient.updateQueue(salonId, undefined, queueVal);
+      const data = await defaultApiClient.getLatestCrowdReport(salonId);
+      if (data && data.report) {
+        setLatestCrowdReport(data.report);
+        return data.report;
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  };
+
+  const submitLocationCrowdReport = async (
+    salonId: string,
+    payload: {
+      peopleCount: number;
+      estimatedWaitMinutes: number;
+      activeBarbers?: number;
+      notes?: string;
+    },
+  ) => {
+    try {
+      const coords = await getCurrentGpsCoordinates();
+      const res = await defaultApiClient.submitCrowdReport(salonId, {
+        latitude: coords.lat,
+        longitude: coords.lng,
+        peopleCount: payload.peopleCount,
+        estimatedWaitMinutes: payload.estimatedWaitMinutes,
+        activeBarbers: payload.activeBarbers,
+        notes: payload.notes,
+        customerName: userProfile.name || undefined,
+      });
+
+      if (res.report) {
+        setLatestCrowdReport(res.report);
+      }
+
+      setSalons((prev) =>
+        prev.map((s) =>
+          s.id === salonId
+            ? {
+                ...s,
+                currentQueue: payload.peopleCount,
+                lastQueueUpdate: new Date().toISOString(),
+              }
+            : s,
+        ),
+      );
+
+      setSelectedSalonForDetail((prev) =>
+        prev && prev.id === salonId
+          ? {
+              ...prev,
+              currentQueue: payload.peopleCount,
+              lastQueueUpdate: new Date().toISOString(),
+            }
+          : prev,
+      );
+
+      broadcastTelemetryUpdate(salonId, payload.peopleCount);
+      triggerNotification(
+        res.message || '📍 Live status successfully verified & contributed!',
+      );
+      return res;
+    } catch (err: any) {
+      const msg = err?.message || 'Failed to submit crowd status';
+      triggerNotification(msg);
+      throw err;
+    }
+  };
+
+  const reportSalonCrowd = async (salonId: string, crowdLevel: 'empty' | 'medium' | 'busy') => {
+    const peopleCount = crowdLevel === 'empty' ? 0 : crowdLevel === 'medium' ? 2 : 4;
+    const estWait = crowdLevel === 'empty' ? 0 : crowdLevel === 'medium' ? 15 : 30;
+    try {
+      await submitLocationCrowdReport(salonId, {
+        peopleCount,
+        estimatedWaitMinutes: estWait,
+      });
     } catch {}
   };
 
@@ -1295,6 +1395,9 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         completeLiveQueue,
         markTicketInService,
         reportSalonCrowd,
+        latestCrowdReport,
+        fetchLatestCrowdReport,
+        submitLocationCrowdReport,
         isExpressWalkin,
         setIsExpressWalkin,
       }}

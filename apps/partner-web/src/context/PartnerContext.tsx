@@ -54,6 +54,7 @@ interface PartnerContextType {
   addCustomerToQueue: (name: string, phone?: string, serviceName?: string) => Promise<void>;
   updateCustomerStatus: (entryId: string, status: string) => Promise<void>;
   clearQueue: () => Promise<void>;
+  latestCrowdReport: any | null;
 }
 
 export function normalizeSalon(raw: any): Salon {
@@ -186,6 +187,7 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [notificationMessage, setNotificationMessage] = useState<string | null>(null);
   const [queueEntries, setQueueEntries] = useState<QueueEntry[]>([]);
   const [isLoadingQueue, setIsLoadingQueue] = useState<boolean>(false);
+  const [latestCrowdReport, setLatestCrowdReport] = useState<any | null>(null);
 
   const activeSalon = salons.find((s) => s.id === activeSalonId) || salons[0] || null;
 
@@ -200,6 +202,7 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
     const sId = salonIdToFetch || activeSalonId;
     if (!sId) {
       setQueueEntries([]);
+      setLatestCrowdReport(null);
       return;
     }
     try {
@@ -224,6 +227,15 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
     } catch (err) {
       console.warn('Failed to fetch live queue entries:', err);
     }
+
+    try {
+      const crowdRes = await defaultApiClient.getLatestCrowdReport(sId);
+      if (crowdRes && crowdRes.report) {
+        setLatestCrowdReport(crowdRes.report);
+      } else {
+        setLatestCrowdReport(null);
+      }
+    } catch {}
   }, [activeSalonId]);
 
   // Poll live queue entries every 1.5 seconds when active salon is loaded + immediate sync on focus & broadcast
@@ -863,6 +875,7 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
         addCustomerToQueue,
         updateCustomerStatus,
         clearQueue,
+        latestCrowdReport,
       }}
     >
       {children}

@@ -69,6 +69,7 @@ export const OwnerApp: React.FC = () => {
     addCustomerToQueue,
     updateCustomerStatus,
     clearQueue,
+    latestCrowdReport,
   } = useSalon();
 
   // Walk-in Counter QR Standee state & URL generator
@@ -810,6 +811,28 @@ export const OwnerApp: React.FC = () => {
               <div className={`mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${queueInfo.badgeClass}`}>
                 {queueInfo.label}
               </div>
+
+              {/* Verified Location Crowd Report from Customers (Where Is My Train Style) */}
+              {latestCrowdReport && (
+                <div className="mt-4 max-w-md mx-auto p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-left flex items-center justify-between gap-3 shadow-lg">
+                  <div className="flex items-center gap-2.5">
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shrink-0"></span>
+                    <div className="text-xs text-emerald-300">
+                      <div className="font-bold text-white flex items-center gap-1.5">
+                        <span>Customer On-Site Report</span>
+                        <span className="text-[10px] bg-emerald-500/20 text-emerald-300 px-1.5 py-0.2 rounded-md font-semibold">Verified Location</span>
+                      </div>
+                      <div className="mt-0.5">
+                        <strong>{latestCrowdReport.peopleCount} waiting</strong> • ~<strong>{latestCrowdReport.estimatedWaitMinutes}m wait</strong>
+                        {latestCrowdReport.notes && <span className="text-zinc-400 italic"> • "{latestCrowdReport.notes}"</span>}
+                      </div>
+                    </div>
+                  </div>
+                  <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/20 px-2 py-1 rounded-xl shrink-0">
+                    Live Feedback
+                  </span>
+                </div>
+              )}
             </div>
 
             {/* The Main Big Touch Buttons */}

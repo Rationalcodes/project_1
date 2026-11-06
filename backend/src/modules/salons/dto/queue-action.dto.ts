@@ -114,3 +114,39 @@ export class UpsertServiceDto {
   @IsString()
   description?: string;
 }
+
+export class SubmitCrowdReportDto {
+  @ApiProperty({ description: 'Customer GPS latitude for geofence verification', example: 28.5355 })
+  @IsNumber()
+  latitude: number;
+
+  @ApiProperty({ description: 'Customer GPS longitude for geofence verification', example: 77.3910 })
+  @IsNumber()
+  longitude: number;
+
+  @ApiProperty({ example: 3, description: 'Number of people currently waiting or in salon' })
+  @IsNumber()
+  @Min(0)
+  peopleCount: number;
+
+  @ApiProperty({ example: 20, description: 'Estimated wait time in minutes' })
+  @IsNumber()
+  @Min(0)
+  estimatedWaitMinutes: number;
+
+  @ApiPropertyOptional({ example: 2, description: 'Number of active barbers working' })
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  activeBarbers?: number;
+
+  @ApiPropertyOptional({ description: 'Optional operational observation note' })
+  @IsOptional()
+  @IsString()
+  notes?: string;
+
+  @ApiPropertyOptional({ description: 'Customer display name' })
+  @IsOptional()
+  @IsString()
+  customerName?: string;
+}
