@@ -17,7 +17,7 @@ This document contains the complete, step-by-step instructions to deploy Kumbhak
 | **PostGIS Discovery** | ✅ VERIFIED | 10/10 automated tests passing (`test-phase2.ts`). |
 | **Auth & Security** | ✅ VERIFIED | 6/6 automated security tests passing (`test-auth-security.ts`). |
 | **SPA Route Rewrites** | ✅ VERIFIED | `vercel.json` configured in all 3 frontend apps to eliminate 404s on page refresh. |
-| **Dynamic CORS** | ✅ VERIFIED | Allows `localhost`, `*.vercel.app`, `kumbhakaran.in`, and `*.sloon.in`. |
+| **Dynamic CORS** | ✅ VERIFIED | Allows `localhost`, `*.vercel.app`, `kumbhakaran.in`, and the production SLOON origins including `www.sloon.in`. |
 
 ---
 

@@ -572,7 +572,7 @@ export const HomeScreen: React.FC = () => {
 
           <div className="shrink-0 w-full sm:w-auto">
             <a
-              href="https://partner.kumbhkaransalons.in"
+              href="https://partner.sloon.in"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-block w-full sm:w-auto px-5 py-2.5 rounded-full bg-[#FF6422] hover:bg-orange-600 text-white font-bold text-xs text-center shadow-md transition-all cursor-pointer"

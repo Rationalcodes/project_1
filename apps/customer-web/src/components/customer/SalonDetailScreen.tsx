@@ -174,7 +174,7 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
   // Generate QR Code for direct deep link
   useEffect(() => {
     if (selectedSalonForDetail?.id) {
-      const origin = typeof window !== 'undefined' ? window.location.origin : 'https://www.kumbhkaransalons.in';
+      const origin = typeof window !== 'undefined' ? window.location.origin : 'https://sloon.in';
       const url = `${origin}/?salon=${selectedSalonForDetail.id}&join=true`;
       QRCode.toDataURL(url, {
         width: 360,

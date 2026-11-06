@@ -43,7 +43,7 @@ async function bootstrap() {
       // Allow official Kumbhkaran Salons custom domains (*.kumbhkaransalons.in, *.kumbhakaran.in)
       if (/^https:\/\/(.*\.)?kumbhkaransalons\.in$/.test(origin)) return callback(null, true);
       if (/^https:\/\/(.*\.)?kumbhakaran\.in$/.test(origin)) return callback(null, true);
-      if (/^https:\/\/(sloon\.in|partner\.sloon\.in|admin\.sloon\.in)$/.test(origin)) return callback(null, true);
+      if (/^https:\/\/(www\.sloon\.in|sloon\.in|partner\.sloon\.in|admin\.sloon\.in)$/.test(origin)) return callback(null, true);
       if (/^https:\/\/(.*\.)?kumbhakaran-salons\..*$/.test(origin)) return callback(null, true);
 
       // In non-production environments, allow all origins
