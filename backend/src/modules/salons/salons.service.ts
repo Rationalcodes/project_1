@@ -12,7 +12,7 @@ import { UpdateQueueDto } from './dto/update-queue.dto';
 import { PublicSalonResponseDto, PublicReviewDto } from './dto/public-salon-response.dto';
 import { CreateReviewDto } from './dto/create-review.dto';
 import { AuthenticatedUser } from '../auth/interfaces/jwt-payload.interface';
-import { QueueEngineService } from './queue-engine.service';
+import { QueueEngineService, getStartOfTodayIST } from './queue-engine.service';
 import { QueueGateway } from './queue.gateway';
 import { validateQueueTransition } from './queue-state-machine';
 import {
@@ -801,6 +801,12 @@ export class SalonsService {
       if (dto.mediaGallery) salon.mediaGallery = dto.mediaGallery;
     }
 
+    if (dto.isOpen === false) {
+      this.clearQueue(id, { clearOption: 'cancelled', reason: 'Shop closed by owner' }, requesterOwnerId).catch((err) => {
+        this.logger.warn(`Could not auto-clear queue on closing salon ${id}: ${err.message}`);
+      });
+    }
+
     return {
       success: true,
       message: 'Salon updated successfully',
@@ -1038,8 +1044,7 @@ export class SalonsService {
     } catch {}
 
     // Monotonic daily ticket numbering
-    const startOfToday = new Date();
-    startOfToday.setHours(0, 0, 0, 0);
+    const startOfToday = getStartOfTodayIST();
 
     const maxRow: any[] = await this.prisma.$queryRawUnsafe(
       `SELECT COALESCE(MAX(position), 0) AS max_pos 
@@ -1051,8 +1056,9 @@ export class SalonsService {
     );
     let nextPos = Number(maxRow[0]?.max_pos || 0) + 1;
     const activeMax: any[] = await this.prisma.$queryRawUnsafe(
-      `SELECT COALESCE(MAX(position), 0) AS max_pos FROM salon_queue_entries WHERE salon_id = $1 AND status IN ('waiting', 'in_service', 'called');`,
+      `SELECT COALESCE(MAX(position), 0) AS max_pos FROM salon_queue_entries WHERE salon_id = $1 AND status IN ('waiting', 'in_service', 'called') AND joined_at >= $2;`,
       salonId,
+      startOfToday,
     );
     const activeNext = Number(activeMax[0]?.max_pos || 0) + 1;
     if (activeNext > nextPos) {
@@ -1542,6 +1548,10 @@ export class SalonsService {
         lastQueueUpdate: new Date(),
       },
     });
+
+    if (status === 'closed' || !isOpen) {
+      await this.clearQueue(salonId, { clearOption: 'cancelled', reason: dto.reason || 'Shop closed for the day' }, actorId);
+    }
 
     await this.logQueueEvent(salonId, null, actorId || 'owner', 'owner', 'queue.status.updated', null, status, {
       reason: dto.reason,

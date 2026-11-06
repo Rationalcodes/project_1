@@ -647,12 +647,24 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setSalons((prev) =>
       prev.map((s) => {
         if (s.id !== salonId) return s;
-        const updated = normalizeSalon({ ...s, ...updates });
+        const updated = normalizeSalon({
+          ...s,
+          ...updates,
+          ...(updates.isOpen === false ? { currentQueue: 0 } : {}),
+        });
         safeStorage.setItem('kumbhakaran_partner_active_salon', JSON.stringify(updated));
         return updated;
       }),
     );
     defaultApiClient.updateSalon(salonId, updates);
+
+    // If salon is being closed, clear active queue in local state & broadcast 0 queue count
+    if (updates.isOpen === false) {
+      setQueueEntries([]);
+      defaultApiClient.clearQueueEntries(salonId).catch(() => {});
+      broadcastTelemetryUpdate(salonId, 0);
+    }
+
     triggerNotification('Salon information and media updated successfully');
   };
 

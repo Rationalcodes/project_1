@@ -1,5 +1,62 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit, Optional } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { QueueGateway } from './queue.gateway';
+
+/**
+ * Computes start of today in India Standard Time (UTC+05:30)
+ */
+export function getStartOfTodayIST(): Date {
+  const now = new Date();
+  const istOffsetMs = 5.5 * 60 * 60 * 1000;
+  const istDate = new Date(now.getTime() + istOffsetMs);
+  const year = istDate.getUTCFullYear();
+  const month = istDate.getUTCMonth();
+  const date = istDate.getUTCDate();
+  return new Date(Date.UTC(year, month, date) - istOffsetMs);
+}
+
+/**
+ * Parses time string (e.g. "09:30 PM", "21:30") to minutes from midnight (0..1439)
+ */
+export function parseTimeToMinutes(timeStr?: string | null): number {
+  if (!timeStr) return 21 * 60 + 30; // Default 09:30 PM = 1290m
+  const trimmed = timeStr.trim();
+  const match12 = trimmed.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?$/i);
+  if (match12) {
+    let hours = parseInt(match12[1], 10);
+    const minutes = parseInt(match12[2], 10);
+    const meridiem = (match12[3] || '').toUpperCase();
+    if (meridiem === 'PM' && hours < 12) hours += 12;
+    if (meridiem === 'AM' && hours === 12) hours = 0;
+    return hours * 60 + minutes;
+  }
+  const match24 = trimmed.match(/^(\d{1,2}):(\d{2})$/);
+  if (match24) {
+    return parseInt(match24[1], 10) * 60 + parseInt(match24[2], 10);
+  }
+  return 21 * 60 + 30;
+}
+
+/**
+ * Determines whether current IST time is outside salon's daily operating hours
+ */
+export function isSalonPastClosingTime(closingHoursStr?: string | null, openHoursStr?: string | null): boolean {
+  const now = new Date();
+  const istOffsetMs = 5.5 * 60 * 60 * 1000;
+  const istDate = new Date(now.getTime() + istOffsetMs);
+  const currentMinutesInDay = istDate.getUTCHours() * 60 + istDate.getUTCMinutes();
+
+  const closeMinutes = parseTimeToMinutes(closingHoursStr || '09:30 PM');
+  const openMinutes = parseTimeToMinutes(openHoursStr || '09:00 AM');
+
+  if (closeMinutes > openMinutes) {
+    // Standard daytime: e.g. 09:00 AM to 09:30 PM
+    return currentMinutesInDay >= closeMinutes || currentMinutesInDay < openMinutes;
+  } else {
+    // Overnight: e.g. 06:00 PM to 02:00 AM
+    return currentMinutesInDay >= closeMinutes && currentMinutesInDay < openMinutes;
+  }
+}
 
 export interface CalculatedQueueItem {
   id: string;
@@ -60,10 +117,160 @@ export interface RecalculationResult {
 }
 
 @Injectable()
-export class QueueEngineService {
+export class QueueEngineService implements OnModuleInit {
   private readonly logger = new Logger(QueueEngineService.name);
+  private sweepTimer?: NodeJS.Timeout;
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Optional() private readonly queueGateway?: QueueGateway,
+  ) {}
+
+  async onModuleInit() {
+    this.logger.log('QueueEngineService initialized. Starting initial closing/daily queue reset sweep...');
+    // Initial run asynchronously
+    this.sweepAllSalonsClosingAndDailyReset().catch((err) => {
+      this.logger.error(`Error in initial queue closing sweep: ${err.message}`, err.stack);
+    });
+
+    // Schedule regular sweeps every 3 minutes
+    this.sweepTimer = setInterval(() => {
+      this.sweepAllSalonsClosingAndDailyReset().catch((err) => {
+        this.logger.error(`Error in periodic queue closing sweep: ${err.message}`, err.stack);
+      });
+    }, 3 * 60 * 1000);
+  }
+
+  /**
+   * Resets active queue entries when a salon closes or at start of a new business day.
+   * Preserves all completed service sessions, completed queue entries, and revenue history.
+   */
+  async performSalonClosingQueueReset(salonId: string, reason = 'Shop closed for the day'): Promise<number> {
+    const now = new Date();
+    let cancelledCount = 0;
+
+    await this.prisma.$transaction(async (tx) => {
+      const activeEntries = await tx.salonQueueEntry.findMany({
+        where: {
+          salonId,
+          status: { in: ['waiting', 'called', 'in_service', 'skipped'] },
+        },
+        select: { id: true },
+      });
+
+      cancelledCount = activeEntries.length;
+
+      if (cancelledCount > 0) {
+        await tx.salonQueueEntry.updateMany({
+          where: {
+            salonId,
+            status: { in: ['waiting', 'called', 'in_service', 'skipped'] },
+          },
+          data: {
+            status: 'cancelled',
+            cancelledAt: now,
+            cancellationReason: reason,
+          },
+        });
+      }
+
+      // Free all staff back to AVAILABLE
+      await tx.salonStaff.updateMany({
+        where: { salonId },
+        data: {
+          availability: 'AVAILABLE',
+          currentQueueEntryId: null,
+          breakStartedAt: null,
+        },
+      });
+
+      // Reset salon current queue counter
+      await tx.salon.update({
+        where: { id: salonId },
+        data: {
+          currentQueue: 0,
+          lastQueueUpdate: now,
+        },
+      });
+    });
+
+    if (cancelledCount > 0) {
+      this.logger.log(`[performSalonClosingQueueReset] Salon ${salonId}: reset ${cancelledCount} active entries. Reason: ${reason}`);
+      if (this.queueGateway) {
+        this.queueGateway.broadcastToSalon(salonId, 'queue.cleared', {
+          salonId,
+          clearedAt: now.toISOString(),
+          reason,
+        });
+      }
+    }
+
+    return cancelledCount;
+  }
+
+  /**
+   * Sweeps all salons to check if they are closed (manually or past closing time) or have stale tickets from previous days.
+   */
+  async sweepAllSalonsClosingAndDailyReset(): Promise<void> {
+    try {
+      const startOfToday = getStartOfTodayIST();
+      const salons = await this.prisma.salon.findMany({
+        select: {
+          id: true,
+          name: true,
+          isOpen: true,
+          queueStatus: true,
+          openingHoursClose: true,
+          openingHoursOpen: true,
+        },
+      });
+
+      for (const salon of salons) {
+        const isManuallyClosed = salon.isOpen === false || salon.queueStatus === 'closed';
+        const isPastClosingHours = isSalonPastClosingTime(salon.openingHoursClose, salon.openingHoursOpen);
+
+        if (isManuallyClosed || isPastClosingHours) {
+          const activeCount = await this.prisma.salonQueueEntry.count({
+            where: {
+              salonId: salon.id,
+              status: { in: ['waiting', 'called', 'in_service', 'skipped'] },
+            },
+          });
+          if (activeCount > 0) {
+            await this.performSalonClosingQueueReset(
+              salon.id,
+              isManuallyClosed ? 'Shop closed by salon partner' : `Daily reset: Operating hours ended (${salon.openingHoursClose || '09:30 PM'})`,
+            );
+          }
+        } else {
+          // Shop is open, but cancel any leftover tickets from yesterday
+          const staleTickets = await this.prisma.salonQueueEntry.findMany({
+            where: {
+              salonId: salon.id,
+              status: { in: ['waiting', 'called', 'in_service', 'skipped'] },
+              joinedAt: { lt: startOfToday },
+            },
+            select: { id: true },
+          });
+
+          if (staleTickets.length > 0) {
+            const staleIds = staleTickets.map((t) => t.id);
+            await this.prisma.salonQueueEntry.updateMany({
+              where: { id: { in: staleIds } },
+              data: {
+                status: 'cancelled',
+                cancelledAt: new Date(),
+                cancellationReason: 'Daily reset: Ticket expired at end of business day',
+              },
+            });
+            this.logger.log(`[sweepAllSalonsClosingAndDailyReset] Cancelled ${staleTickets.length} leftover tickets from yesterday for salon ${salon.id}`);
+          }
+        }
+      }
+    } catch (err) {
+      this.logger.error(`Error in sweepAllSalonsClosingAndDailyReset: ${(err as Error).message}`);
+    }
+  }
 
   /**
    * Recalculate intelligent ETAs and staff assignments for all active customers in a salon.
@@ -72,6 +279,7 @@ export class QueueEngineService {
   async recalculateSalonQueue(salonId: string): Promise<RecalculationResult> {
     const now = new Date();
     const nowMs = now.getTime();
+    const startOfToday = getStartOfTodayIST();
 
     // 1. Fetch Salon metadata
     const salon = await this.prisma.salon.findUnique({
@@ -83,14 +291,42 @@ export class QueueEngineService {
         avgServiceTimeMinutes: true,
         queueStatus: true,
         isOpen: true,
+        openingHoursOpen: true,
+        openingHoursClose: true,
       },
     });
 
+    const isPastClosing = isSalonPastClosingTime(salon?.openingHoursClose, salon?.openingHoursOpen);
+    const isClosed = salon?.isOpen === false || salon?.queueStatus === 'closed' || isPastClosing;
+
+    if (isClosed) {
+      // Ensure any lingering active tickets are reset
+      await this.performSalonClosingQueueReset(
+        salonId,
+        isPastClosing
+          ? `Daily reset: Operating hours ended (${salon?.openingHoursClose || '09:30 PM'})`
+          : 'Shop closed',
+      );
+    } else {
+      // If open, ensure any leftover active tickets from yesterday are cancelled
+      await this.prisma.salonQueueEntry.updateMany({
+        where: {
+          salonId,
+          status: { in: ['waiting', 'called', 'in_service', 'skipped'] },
+          joinedAt: { lt: startOfToday },
+        },
+        data: {
+          status: 'cancelled',
+          cancelledAt: now,
+          cancellationReason: 'Daily reset: Ticket expired at end of previous business day',
+        },
+      });
+    }
+
     const activeBarbersCount = Math.max(1, salon?.activeBarbers || 2);
-    const queueStatus: 'open' | 'paused' | 'closed' =
-      salon?.isOpen === false
-        ? 'closed'
-        : (salon?.queueStatus as any) || 'open';
+    const queueStatus: 'open' | 'paused' | 'closed' = isClosed
+      ? 'closed'
+      : (salon?.queueStatus as any) || 'open';
 
     // 2. Fetch staff members
     let staffList = await this.prisma.salonStaff.findMany({
@@ -156,36 +392,48 @@ export class QueueEngineService {
     }
 
     // 3. Fetch all active and recent queue entries for today
-    const rows = await this.prisma.salonQueueEntry.findMany({
-      where: {
-        salonId,
-        status: { in: ['waiting', 'called', 'in_service', 'skipped'] },
-      },
-      orderBy: [
-        { joinedAt: 'asc' },
-      ],
-      include: {
-        assignedStaff: { select: { id: true, name: true } },
-      },
-    });
+    const rows = isClosed
+      ? []
+      : await this.prisma.salonQueueEntry.findMany({
+          where: {
+            salonId,
+            status: { in: ['waiting', 'called', 'in_service', 'skipped'] },
+            joinedAt: { gte: startOfToday },
+          },
+          orderBy: [
+            { joinedAt: 'asc' },
+          ],
+          include: {
+            assignedStaff: { select: { id: true, name: true } },
+          },
+        });
 
-    // Count today's completed and cancelled entries
-    const [completedCount, cancelledCount] = await Promise.all([
+    // Count today's completed, cancelled entries and revenue
+    const [completedCount, cancelledCount, todayCompletedSessions] = await Promise.all([
       this.prisma.salonQueueEntry.count({
         where: {
           salonId,
           status: 'completed',
-          servedAt: { gte: new Date(now.getFullYear(), now.getMonth(), now.getDate()) },
+          servedAt: { gte: startOfToday },
         },
       }),
       this.prisma.salonQueueEntry.count({
         where: {
           salonId,
           status: 'cancelled',
-          cancelledAt: { gte: new Date(now.getFullYear(), now.getMonth(), now.getDate()) },
+          cancelledAt: { gte: startOfToday },
         },
       }),
+      this.prisma.serviceSession.findMany({
+        where: {
+          salonId,
+          completedAt: { gte: startOfToday },
+        },
+        select: { price: true },
+      }),
     ]);
+
+    const todayRevenue = todayCompletedSessions.reduce((acc, cur) => acc + Number(cur.price || 0), 0);
 
     // 4. Map in_service entries and assign to staff
     const inServiceEntries = rows.filter((r) => r.status === 'in_service');
@@ -445,9 +693,11 @@ export class QueueEngineService {
       .update({
         where: { id: salonId },
         data: {
-          currentQueue: waitingItems.length,
+          currentQueue: isClosed ? 0 : waitingItems.length,
           lastQueueUpdate: now,
           queueStatus,
+          todayCustomersServed: completedCount,
+          todayRevenue: todayRevenue,
         },
       })
       .catch(() => {});
