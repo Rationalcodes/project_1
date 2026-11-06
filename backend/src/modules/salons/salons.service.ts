@@ -16,7 +16,12 @@ import { UpdateQueueDto } from './dto/update-queue.dto';
 import { PublicSalonResponseDto, PublicReviewDto } from './dto/public-salon-response.dto';
 import { CreateReviewDto } from './dto/create-review.dto';
 import { AuthenticatedUser } from '../auth/interfaces/jwt-payload.interface';
-import { QueueEngineService, getStartOfTodayIST, isSalonPastClosingTime } from './queue-engine.service';
+import {
+  QueueEngineService,
+  getStartOfTodayIST,
+  getStartOfWeekMondayIST,
+  isSalonPastClosingTime,
+} from './queue-engine.service';
 import { QueueGateway } from './queue.gateway';
 import { validateQueueTransition } from './queue-state-machine';
 import {
@@ -1704,6 +1709,7 @@ export class SalonsService {
     const joinedAt = new Date();
     const queueAccessToken = this.queueEntryAccessToken({ id: entryId, salonId, joinedAt });
     const startOfToday = getStartOfTodayIST();
+    const startOfWeek = getStartOfWeekMondayIST();
     const transactionResult = await this.prisma.runTransaction(
       'queue.entry.create',
       async (tx) => {
@@ -1760,11 +1766,11 @@ export class SalonsService {
             COALESCE(MAX(position) FILTER (WHERE status IN ('waiting', 'called', 'in_service', 'skipped')), 0)::int AS max_pos,
             COUNT(*) FILTER (WHERE status IN ('waiting', 'called'))::int AS waiting_count,
             COALESCE(
-              MAX(NULLIF(regexp_replace(ticket_number, '[^0-9]', '', 'g'), '')::int),
+              MAX(NULLIF(regexp_replace(ticket_number, '[^0-9]', '', 'g'), '')::int) FILTER (WHERE joined_at >= ${startOfWeek}),
               0
             )::int AS max_ticket
           FROM public.salon_queue_entries
-          WHERE salon_id = ${salonId} AND joined_at >= ${startOfToday}
+          WHERE salon_id = ${salonId}
         `;
         const nextPos = Number(maxRow?.max_pos || 0) + 1;
         const ticketNumber = `#${String(Number(maxRow?.max_ticket || 0) + 1).padStart(2, '0')}`;

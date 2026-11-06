@@ -17,6 +17,21 @@ export function getStartOfTodayIST(): Date {
 }
 
 /**
+ * Computes start of the current week (Monday 00:00:00 IST) in India Standard Time (UTC+05:30).
+ * Resets token numbering every week on Monday, running Monday through Sunday.
+ */
+export function getStartOfWeekMondayIST(referenceDate: Date = new Date()): Date {
+  const istOffsetMs = 5.5 * 60 * 60 * 1000;
+  const istDate = new Date(referenceDate.getTime() + istOffsetMs);
+  const day = istDate.getUTCDay(); // 0 is Sunday, 1 is Monday, ..., 6 is Saturday
+  const daysSinceMonday = (day + 6) % 7;
+  const mondayDate = istDate.getUTCDate() - daysSinceMonday;
+  const year = istDate.getUTCFullYear();
+  const month = istDate.getUTCMonth();
+  return new Date(Date.UTC(year, month, mondayDate) - istOffsetMs);
+}
+
+/**
  * Parses time string (e.g. "09:30 PM", "21:30") to minutes from midnight (0..1439)
  */
 export function parseTimeToMinutes(timeStr?: string | null): number {
