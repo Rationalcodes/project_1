@@ -3,7 +3,13 @@
  * Connects React UI to NestJS + Fastify PostGIS Backend
  */
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api/v1';
+const API_BASE =
+  import.meta.env.VITE_API_BASE_URL ||
+  (typeof window !== 'undefined' &&
+  window.location?.hostname &&
+  !['localhost', '127.0.0.1'].includes(window.location.hostname)
+    ? 'https://kumbhakaran-salons.onrender.com/api/v1'
+    : 'http://localhost:3001/api/v1');
 
 export interface NearbySalonsApiResponse {
   totalFound: number;

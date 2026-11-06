@@ -17,7 +17,7 @@ This document contains the complete, step-by-step instructions to deploy Kumbhak
 | **PostGIS Discovery** | ✅ VERIFIED | 10/10 automated tests passing (`test-phase2.ts`). |
 | **Auth & Security** | ✅ VERIFIED | 6/6 automated security tests passing (`test-auth-security.ts`). |
 | **SPA Route Rewrites** | ✅ VERIFIED | `vercel.json` configured in all 3 frontend apps to eliminate 404s on page refresh. |
-| **Dynamic CORS** | ✅ VERIFIED | Allows `localhost`, `*.vercel.app`, and `kumbhakaran.in`. |
+| **Dynamic CORS** | ✅ VERIFIED | Allows `localhost`, `*.vercel.app`, `kumbhakaran.in`, and `*.sloon.in`. |
 
 ---
 
@@ -142,7 +142,7 @@ GRANT EXECUTE ON PROCEDURE public.promote_user_to_admin(TEXT) TO postgres;
 
 ## 3. BACKEND DEPLOYMENT (RENDER.COM)
 
-Deploy the backend first so you have its live URL (e.g. `https://kumbhakaran-backend.onrender.com`).
+Deploy the backend first; the current production API URL is `https://kumbhakaran-salons.onrender.com`.
 
 ### Option A: 1-Click Blueprints (Using `render.yaml`)
 1. Push this repository to **GitHub**.
@@ -168,7 +168,7 @@ Deploy the backend first so you have its live URL (e.g. `https://kumbhakaran-bac
   * `JWT_SECRET`: `kumbhakaran-production-jwt-secret-key-32chars`
   * `JWT_EXPIRES_IN`: `24h`
 
-Once deployed, copy your backend URL: e.g. `https://kumbhakaran-backend.onrender.com`
+Once deployed, use the backend URL: `https://kumbhakaran-salons.onrender.com`
 
 ---
 
@@ -180,12 +180,12 @@ Deploy the three frontend applications on Vercel as separate projects linked to 
 1. In [Vercel Dashboard](https://vercel.com/new), import your GitHub repository.
 2. Set **Root Directory**: `apps/customer-web`
 3. Framework Preset: **Vite**
-4. Configure **Environment Variables**:
-   * `VITE_API_BASE_URL`: `https://kumbhakaran-backend.onrender.com/api/v1`
+4. Add the custom domain `sloon.in` to this Vercel project.
+5. Configure **Environment Variables**:
+   * `VITE_API_BASE_URL`: `https://kumbhakaran-salons.onrender.com/api/v1` (optional; the customer app defaults to this production API URL)
    * `VITE_GOOGLE_CLIENT_ID`: `871471875670-ifpho22l5oa0r59kgsvvuoe3r7t5a2l9.apps.googleusercontent.com`
    * `VITE_GOOGLE_MAPS_API_KEY`: (Your Google Maps Browser Key)
-5. Click **Deploy**.
-6. Note the deployed URL: e.g. `https://kumbhakaran-customer.vercel.app`
+6. Click **Deploy**.
 
 ---
 
@@ -193,13 +193,13 @@ Deploy the three frontend applications on Vercel as separate projects linked to 
 1. In Vercel Dashboard, click **Add New** -> **Project** -> Import same repository.
 2. Set **Root Directory**: `apps/partner-web`
 3. Framework Preset: **Vite**
-4. Configure **Environment Variables**:
-   * `VITE_API_BASE_URL`: `https://kumbhakaran-backend.onrender.com/api/v1`
+4. Add the custom domain `partner.sloon.in` to this Vercel project.
+5. Configure **Environment Variables**:
+   * `VITE_API_BASE_URL`: `https://kumbhakaran-salons.onrender.com/api/v1`
    * `VITE_GOOGLE_CLIENT_ID`: `871471875670-ifpho22l5oa0r59kgsvvuoe3r7t5a2l9.apps.googleusercontent.com`
-   * `VITE_CUSTOMER_APP_URL`: `https://kumbhakaran-customer.vercel.app` (URL from Project 1)
+   * `VITE_CUSTOMER_APP_URL`: `https://sloon.in`
    * `VITE_GOOGLE_MAPS_API_KEY`: (Your Google Maps Browser Key)
-5. Click **Deploy**.
-6. Note the deployed URL: e.g. `https://kumbhakaran-partner.vercel.app`
+6. Click **Deploy**.
 
 ---
 
@@ -207,35 +207,35 @@ Deploy the three frontend applications on Vercel as separate projects linked to 
 1. In Vercel Dashboard, click **Add New** -> **Project** -> Import same repository.
 2. Set **Root Directory**: `apps/admin-web`
 3. Framework Preset: **Vite**
-4. Configure **Environment Variables**:
-   * `VITE_API_BASE_URL`: `https://kumbhakaran-backend.onrender.com/api/v1`
+4. Add the custom domain `admin.sloon.in` to this Vercel project.
+5. Configure **Environment Variables**:
+   * `VITE_API_BASE_URL`: `https://kumbhakaran-salons.onrender.com/api/v1`
    * `VITE_GOOGLE_CLIENT_ID`: `871471875670-ifpho22l5oa0r59kgsvvuoe3r7t5a2l9.apps.googleusercontent.com`
-   * `VITE_CUSTOMER_APP_URL`: `https://kumbhakaran-customer.vercel.app`
-   * `VITE_PARTNER_APP_URL`: `https://kumbhakaran-partner.vercel.app`
-5. Click **Deploy**.
-6. Note the deployed URL: e.g. `https://kumbhakaran-admin.vercel.app`
+   * `VITE_CUSTOMER_APP_URL`: `https://sloon.in` (optional; this is the default)
+   * `VITE_PARTNER_APP_URL`: `https://partner.sloon.in` (optional; this is the default)
+6. Click **Deploy**.
+
+The customer and partner apps default to the live Render API on non-local domains, so `VITE_API_BASE_URL` is optional for them. The admin app also uses the same API fallback. If you set it explicitly for any Vercel project, use `https://kumbhakaran-salons.onrender.com/api/v1` and redeploy.
 
 ---
 
 ## 5. POST-DEPLOYMENT: GOOGLE OAUTH URL AUTHORIZATION
 
-After obtaining your Vercel URLs, add them to your Google Cloud Console to allow Google Sign-in on the deployed URLs:
+Add all three production domains to your Google Cloud Console to allow Google Sign-in:
 
 1. Open **[Google Cloud Console Credentials](https://console.cloud.google.com/apis/credentials)**.
 2. Select your Client ID: `871471875670-ifpho22l5oa0r59kgsvvuoe3r7t5a2l9.apps.googleusercontent.com`.
 3. Under **Authorized JavaScript origins**, add your new production URLs:
-   * `https://kumbhakaran-customer.vercel.app`
-   * `https://kumbhakaran-partner.vercel.app`
-   * `https://kumbhakaran-admin.vercel.app`
-   * `https://kumbhakaran-backend.onrender.com`
-4. Under **Authorized redirect URIs**, add the same URLs.
+   * `https://sloon.in`
+   * `https://partner.sloon.in`
+   * `https://admin.sloon.in`
 5. Click **Save**.
 
 ---
 
 ## 6. PROVISIONING YOUR ADMIN ACCOUNT
 
-1. Visit your deployed Admin Web App: `https://kumbhakaran-admin.vercel.app`.
+1. Visit your deployed Admin Web App: `https://admin.sloon.in`.
 2. Click **"Sign in with Google"** with your administrator Google account (`prabhat@...`).
 3. The platform will initially display:
    > **Access Denied: Administrative Authorization Required (Role: CUSTOMER)**

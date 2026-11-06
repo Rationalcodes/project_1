@@ -71,7 +71,7 @@ export class DiscoveryService {
             location_images, work_images, last_queue_update, status
           FROM salons
           WHERE status = 'active'
-            AND (is_verified = TRUE OR is_verified IS NULL OR status = 'active')
+            AND is_verified = TRUE
             AND ST_DWithin(location, ST_SetSRID(ST_MakePoint($2, $1), 4326)::geography, $3)
           ORDER BY distance_km ASC
           LIMIT $4 OFFSET $5;`,
@@ -92,6 +92,7 @@ export class DiscoveryService {
             location_images, work_images, last_queue_update, status
           FROM salons
           WHERE status = 'active'
+            AND is_verified = TRUE
           ORDER BY rating DESC, review_count DESC
           LIMIT $1 OFFSET $2;`,
           limit,
@@ -99,8 +100,8 @@ export class DiscoveryService {
         );
       }
 
+      queriedFromDatabase = true;
       if (dbRows && dbRows.length > 0) {
-        queriedFromDatabase = true;
         items = dbRows.map((row) => {
           const barbers = Math.max(1, row.active_barbers || 2);
           const avgTime = row.avg_service_time_minutes || 20;
