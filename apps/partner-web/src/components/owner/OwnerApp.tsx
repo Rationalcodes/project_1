@@ -827,8 +827,8 @@ export const OwnerApp: React.FC = () => {
           )}
 
           {/* Big Live Queue Control Station */}
-          <div className="bg-gradient-to-b from-[#181822] via-[#13131c] to-[#0e0e13] border-2 border-zinc-700/80 rounded-3xl p-6 sm:p-10 shadow-2xl relative overflow-hidden text-center">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-900 border border-zinc-800 text-xs font-semibold text-zinc-300 mb-4">
+          <div className="bg-gradient-to-b from-[#181822] via-[#13131c] to-[#0e0e13] border-2 border-zinc-700/80 rounded-3xl p-5 sm:p-8 shadow-2xl relative overflow-hidden text-center">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-900 border border-zinc-800 text-xs font-semibold text-zinc-300 mb-3">
               <span className={`w-2 h-2 rounded-full ${queueInfo.dotClass}`} />
               <span>Broadcasts Live to All Nearby Customers in Real-Time</span>
             </div>
@@ -838,9 +838,9 @@ export const OwnerApp: React.FC = () => {
             </div>
 
             {/* Giant Counter Display */}
-            <div className="my-6">
-              <div className="text-7xl sm:text-9xl font-black text-white tracking-tight flex items-center justify-center gap-2 drop-shadow-2xl">
-                <span className="text-amber-400 font-light text-5xl sm:text-7xl">#</span>
+            <div className="my-4">
+              <div className="text-6xl sm:text-8xl font-black text-white tracking-tight flex items-center justify-center gap-2 drop-shadow-2xl">
+                <span className="text-amber-400 font-light text-4xl sm:text-6xl">#</span>
                 <span>{activeSalon.currentQueue < 10 ? `0${activeSalon.currentQueue}` : activeSalon.currentQueue}</span>
               </div>
               <div className={`mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${queueInfo.badgeClass}`}>
@@ -871,25 +871,25 @@ export const OwnerApp: React.FC = () => {
             </div>
 
             {/* The Main Big Touch Buttons */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-xl mx-auto my-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-lg mx-auto my-4">
               <button
                 onClick={() => setShowAddCustomerModal(true)}
-                className="py-5 px-6 rounded-2xl bg-amber-500 hover:bg-amber-400 text-black font-black text-lg sm:text-xl shadow-xl shadow-amber-500/25 active:scale-95 transition-all flex items-center justify-center gap-3 cursor-pointer"
+                className="py-3.5 px-5 rounded-2xl bg-amber-500 hover:bg-amber-400 text-black font-black text-base sm:text-lg shadow-lg shadow-amber-500/20 active:scale-95 transition-all flex items-center justify-center gap-2.5 cursor-pointer"
               >
-                <Plus className="w-7 h-7 stroke-[3]" />
+                <Plus className="w-5 h-5 stroke-[3]" />
                 <span>+ ADD CUSTOMER</span>
               </button>
 
               <button
                 onClick={() => updateQueue(activeSalon.id, -1)}
                 disabled={activeSalon.currentQueue <= 0}
-                className={`py-5 px-6 rounded-2xl font-black text-lg sm:text-xl shadow-xl active:scale-95 transition-all flex items-center justify-center gap-3 cursor-pointer ${
+                className={`py-3.5 px-5 rounded-2xl font-black text-base sm:text-lg shadow-md active:scale-95 transition-all flex items-center justify-center gap-2.5 cursor-pointer ${
                   activeSalon.currentQueue <= 0
                     ? 'bg-zinc-800 text-zinc-600 border border-zinc-700 cursor-not-allowed'
-                    : 'bg-zinc-800 hover:bg-zinc-700 text-white border border-zinc-600 shadow-zinc-900/50'
+                    : 'bg-zinc-800 hover:bg-zinc-700 text-white border border-zinc-600'
                 }`}
               >
-                <Minus className="w-7 h-7 stroke-[3]" />
+                <Minus className="w-5 h-5 stroke-[3]" />
                 <span>- REMOVE CUSTOMER</span>
               </button>
             </div>
