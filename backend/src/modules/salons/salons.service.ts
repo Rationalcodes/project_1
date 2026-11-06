@@ -1707,7 +1707,7 @@ export class SalonsService {
     const transactionResult = await this.prisma.runTransaction(
       'queue.entry.create',
       async (tx) => {
-        await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${salonId}), hashtext('queue-position'))`;
+        await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${salonId}), hashtext('queue-position'))`;
         const priorRequest = await tx.salonQueueEntry.findUnique({
           where: { salonId_clientRequestId: { salonId, clientRequestId: requestId } },
         });

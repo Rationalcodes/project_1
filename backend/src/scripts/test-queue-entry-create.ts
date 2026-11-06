@@ -32,6 +32,11 @@ function createHarness(options: {
   let createdEntry: Record<string, any> | null = null;
   const queries: string[] = [];
   const tx = {
+    $executeRaw: async (query: any) => {
+      const text = Array.isArray(query) ? query.join(" ") : query.sql || query.strings?.join(" ") || "";
+      queries.push(text);
+      return 1;
+    },
     $queryRaw: async (query: any) => {
       const text = Array.isArray(query)
         ? query.join(' ')
