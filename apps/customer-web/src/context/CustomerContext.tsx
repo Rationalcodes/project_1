@@ -647,20 +647,14 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const getCurrentGpsCoordinates = (): Promise<{ lat: number; lng: number }> => {
     return new Promise((resolve, reject) => {
       if (!navigator.geolocation) {
-        if (userLocation?.lat && userLocation?.lng) {
-          return resolve({ lat: userLocation.lat, lng: userLocation.lng });
-        }
         return reject(new Error('Geolocation is not supported by your browser.'));
       }
       navigator.geolocation.getCurrentPosition(
         (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
         () => {
-          if (userLocation?.lat && userLocation?.lng) {
-            return resolve({ lat: userLocation.lat, lng: userLocation.lng });
-          }
           reject(new Error('Please enable device location/GPS to verify you are at this salon.'));
         },
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 }
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
       );
     });
   };

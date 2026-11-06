@@ -1994,7 +1994,7 @@ export class SalonsService {
   }
 
   // ==========================================================================
-  // WHERE-IS-MY-TRAIN STYLE CROWDSOURCED LIVE LOCATION REPORTING
+  // Customer-submitted live location reports
   // ==========================================================================
 
   private readonly crowdReports = new Map<string, any[]>();
@@ -2016,8 +2016,7 @@ export class SalonsService {
   }
 
   /**
-   * Where Is My Train-style live crowd contribution
-   * Customers can only contribute if their verified GPS coordinates match the salon (<= 200m).
+   * Customers can only contribute if their current GPS coordinates are within 200m of the salon.
    */
   async submitCrowdReport(salonId: string, dto: SubmitCrowdReportDto, actorId?: string) {
     // 1. Fetch salon coordinates
@@ -2038,7 +2037,29 @@ export class SalonsService {
       throw new NotFoundException(`Salon with ID ${salonId} not found`);
     }
 
-    // 2. Strict Location Verification (Where Is My Train style)
+    if (
+      !Number.isFinite(dto.latitude) ||
+      dto.latitude < -90 ||
+      dto.latitude > 90 ||
+      !Number.isFinite(dto.longitude) ||
+      dto.longitude < -180 ||
+      dto.longitude > 180
+    ) {
+      throw new BadRequestException('A valid device location is required to share a queue update.');
+    }
+
+    if (
+      !Number.isFinite(targetSalon.latitude) ||
+      targetSalon.latitude < -90 ||
+      targetSalon.latitude > 90 ||
+      !Number.isFinite(targetSalon.longitude) ||
+      targetSalon.longitude < -180 ||
+      targetSalon.longitude > 180
+    ) {
+      throw new BadRequestException('This salon does not have a valid location for queue updates.');
+    }
+
+    // Verify that the customer is near the selected salon.
     const distanceMeters = this.calculateDistanceMeters(
       dto.latitude,
       dto.longitude,
@@ -2046,7 +2067,7 @@ export class SalonsService {
       targetSalon.longitude,
     );
 
-    const MAX_ALLOWED_DISTANCE_METERS = 200; // 200m geofence for indoor/mall tolerance
+    const MAX_ALLOWED_DISTANCE_METERS = 200;
     if (distanceMeters > MAX_ALLOWED_DISTANCE_METERS) {
       const formattedDistance =
         distanceMeters >= 1000

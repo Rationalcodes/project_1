@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsString, IsNumber, IsIn, Min } from 'class-validator';
+import { IsOptional, IsString, IsNumber, IsIn, Min, Max } from 'class-validator';
 
 export class StartServiceDto {
   @ApiPropertyOptional({ description: 'ID of staff member taking this customer' })
@@ -118,10 +118,14 @@ export class UpsertServiceDto {
 export class SubmitCrowdReportDto {
   @ApiProperty({ description: 'Customer GPS latitude for geofence verification', example: 28.5355 })
   @IsNumber()
+  @Min(-90)
+  @Max(90)
   latitude: number;
 
   @ApiProperty({ description: 'Customer GPS longitude for geofence verification', example: 77.3910 })
   @IsNumber()
+  @Min(-180)
+  @Max(180)
   longitude: number;
 
   @ApiProperty({ example: 3, description: 'Number of people currently waiting or in salon' })

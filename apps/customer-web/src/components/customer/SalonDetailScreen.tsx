@@ -117,27 +117,20 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
     }
   }, [selectedSalonForDetail?.id]);
 
-  useEffect(() => {
-    if (selectedSalonForDetail && userLocation?.lat && userLocation?.lng) {
-      const s = selectedSalonForDetail as any;
-      const sLat = s.coordinates?.lat || s.latitude;
-      const sLng = s.coordinates?.lng || s.longitude;
-      if (sLat && sLng) {
-        const dist = getSalonDistanceMeters(userLocation.lat, userLocation.lng, sLat, sLng);
-        setCurrentDistanceMeters(dist);
-      }
-    }
-  }, [selectedSalonForDetail, userLocation]);
-
   const handleOpenCrowdModal = () => {
     setIsCheckingLocation(true);
+    setCurrentDistanceMeters(null);
     setShowCrowdModal(true);
 
     const s = selectedSalonForDetail as any;
-    const sLat = s?.coordinates?.lat || s?.latitude;
-    const sLng = s?.coordinates?.lng || s?.longitude;
+    const sLat = s?.coordinates?.lat ?? s?.latitude;
+    const sLng = s?.coordinates?.lng ?? s?.longitude;
 
-    if (navigator.geolocation && sLat && sLng) {
+    if (
+      navigator.geolocation &&
+      Number.isFinite(sLat) &&
+      Number.isFinite(sLng)
+    ) {
       navigator.geolocation.getCurrentPosition(
         (pos) => {
           const dist = getSalonDistanceMeters(pos.coords.latitude, pos.coords.longitude, sLat, sLng);
@@ -1410,7 +1403,7 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
                 </div>
               ) : (
                 <div className="p-3.5 rounded-2xl bg-stone-50 border border-stone-200 flex items-center justify-between">
-                  <span className="text-xs text-stone-600 font-medium">Check that you’re near the salon to share an update.</span>
+                  <span className="text-xs text-stone-600 font-medium">We couldn’t verify your location. Enable device location and try again.</span>
                   <button
                     type="button"
                     onClick={handleOpenCrowdModal}
@@ -1533,7 +1526,12 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
               <button
                 type="button"
                 onClick={handleCrowdSubmit}
-                disabled={isSubmittingCrowd || isCheckingLocation || (currentDistanceMeters !== null && currentDistanceMeters > 200)}
+                disabled={
+                  isSubmittingCrowd ||
+                  isCheckingLocation ||
+                  currentDistanceMeters === null ||
+                  currentDistanceMeters > 200
+                }
                 className="px-5 py-2.5 rounded-xl bg-[#FF6422] hover:bg-orange-600 text-white font-extrabold text-xs shadow-lg shadow-orange-500/25 active:scale-95 transition-all flex items-center gap-2 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 {isSubmittingCrowd ? (
