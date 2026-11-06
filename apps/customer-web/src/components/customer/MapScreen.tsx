@@ -15,6 +15,9 @@ import {
   Layers,
   ExternalLink,
   Store,
+  SlidersHorizontal,
+  Check,
+  RotateCcw,
 } from 'lucide-react';
 import {
   useCustomer,
@@ -48,7 +51,13 @@ export const MapScreen: React.FC = () => {
 
   const [selectedMarkerSalon, setSelectedMarkerSalon] = useState<Salon | null>(salons[0] || null);
   const [mapSearch, setMapSearch] = useState('');
+  const [customDistanceInput, setCustomDistanceInput] = useState<string>('10');
   const [radiusKm, setRadiusKm] = useState<number>(10);
+  const [showFilterDrawer, setShowFilterDrawer] = useState(false);
+  const [maxPriceFilter, setMaxPriceFilter] = useState<number>(1500);
+  const [minRatingFilter, setMinRatingFilter] = useState<number>(0);
+  const [onlyOpenFilter, setOnlyOpenFilter] = useState<boolean>(false);
+  const [onlyVerifiedFilter, setOnlyVerifiedFilter] = useState<boolean>(false);
   const [viewMode, setViewMode] = useState<'map' | 'list'>('map');
   const [mapEngine, setMapEngine] = useState<'google' | 'leaflet'>('google');
   const [mapLayerType, setMapLayerType] = useState<'dark' | 'satellite'>('dark');
@@ -76,7 +85,7 @@ export const MapScreen: React.FC = () => {
   const leafletMarkersLayerRef = useRef<any>(null);
   const hasInitialFittedRef = useRef<boolean>(false);
 
-  // Dynamic distance computation with independent Haversine formula
+  // Dynamic distance computation with independent Haversine formula & Filters
   const visibleSalons = salons
     .map((s) => ({
       ...s,
@@ -92,11 +101,17 @@ export const MapScreen: React.FC = () => {
     .filter((s) => {
       if (!matchesGenderFilter(s, genderFilter)) return false;
       if (userLocation && s.computedDistance > radiusKm) return false;
+      if (onlyOpenFilter && s.isOpen === false) return false;
+      if (onlyVerifiedFilter && !s.isVerified) return false;
+      if (minRatingFilter > 0 && (s.rating || 0) < minRatingFilter) return false;
+      if (maxPriceFilter < 1500 && (s.startingPrice || 150) > maxPriceFilter) return false;
+
       if (mapSearch.trim()) {
         const q = mapSearch.toLowerCase();
         return (
           s.name.toLowerCase().includes(q) ||
           s.locality.toLowerCase().includes(q) ||
+          s.city.toLowerCase().includes(q) ||
           s.pincode.includes(q)
         );
       }
@@ -597,7 +612,7 @@ export const MapScreen: React.FC = () => {
 
   return (
     <div className="space-y-4 pb-28 text-stone-900">
-      {/* Header controls & radius switcher */}
+      {/* Header controls & distance entry */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">
@@ -614,62 +629,52 @@ export const MapScreen: React.FC = () => {
             </span>
           </div>
           <h1 className="text-xl sm:text-2xl font-black text-stone-900 mt-0.5 tracking-tight">
-            Nearby Salon Map
+            Salon Location Map
           </h1>
         </div>
 
-        {/* Radius, Layer & View Mode pills */}
+        {/* Distance Entry Input & Filter Button */}
         <div className="flex items-center gap-2 flex-wrap">
-          {/* Layer switcher for Google Maps */}
-          {mapEngine === 'google' && (
-            <div className="flex items-center bg-[#F3ECE4] border border-[#E2DDD5] rounded-xl p-0.5 text-xs font-semibold">
-              <button
-                onClick={() => setMapLayerType('dark')}
-                className={`px-2 py-1 rounded-lg transition-colors ${
-                  mapLayerType === 'dark'
-                    ? isWomen
-                      ? 'bg-[#E11D48] text-white font-bold shadow-sm'
-                      : 'bg-[#FF6422] text-white font-bold shadow-sm'
-                    : 'text-stone-600 hover:text-stone-900'
-                }`}
-                title="Default map style"
-              >
-                Standard
-              </button>
-              <button
-                onClick={() => setMapLayerType('satellite')}
-                className={`px-2 py-1 rounded-lg transition-colors ${
-                  mapLayerType === 'satellite'
-                    ? isWomen
-                      ? 'bg-[#E11D48] text-white font-bold shadow-sm'
-                      : 'bg-[#FF6422] text-white font-bold shadow-sm'
-                    : 'text-stone-600 hover:text-stone-900'
-                }`}
-                title="Satellite hybrid"
-              >
-                Satellite
-              </button>
-            </div>
-          )}
-
-          {/* Radius Filter */}
-          <div className="flex items-center bg-[#F3ECE4] border border-[#E2DDD5] rounded-xl p-0.5 text-xs font-semibold">
-            {[2, 5, 10, 20].map((r) => (
-              <button
-                key={r}
-                onClick={() => setRadiusKm(r)}
-                className={`px-2.5 py-1 rounded-lg transition-colors ${
-                  radiusKm === r
-                    ? isWomen
-                      ? 'bg-[#E11D48] text-white font-bold shadow-sm'
-                      : 'bg-[#FF6422] text-white font-bold shadow-sm'
-                    : 'text-stone-600 hover:text-stone-900'
-                }`}
-              >
-                {r}km
-              </button>
-            ))}
+          {/* Direct Distance Input */}
+          <div className="flex items-center bg-white border border-[#E2DDD5] rounded-xl px-2.5 py-1 shadow-2xs gap-1.5">
+            <Navigation className="w-3.5 h-3.5 text-stone-400" />
+            <span className="text-[11px] font-bold text-stone-500">Radius:</span>
+            <input
+              type="number"
+              min="1"
+              max="100"
+              value={customDistanceInput}
+              onChange={(e) => {
+                const val = e.target.value;
+                setCustomDistanceInput(val);
+                const num = parseFloat(val);
+                if (!isNaN(num) && num > 0) {
+                  setRadiusKm(num);
+                }
+              }}
+              className="w-12 text-xs font-black text-stone-900 focus:outline-none"
+              placeholder="10"
+            />
+            <span className="text-[11px] font-extrabold text-stone-600">km</span>
           </div>
+
+          {/* Filter Bar Trigger Button */}
+          <button
+            onClick={() => setShowFilterDrawer(!showFilterDrawer)}
+            className={`px-3 py-1.5 rounded-xl border text-xs font-black transition-all flex items-center gap-1.5 shadow-2xs cursor-pointer ${
+              showFilterDrawer || minRatingFilter > 0 || maxPriceFilter < 1500 || onlyOpenFilter || onlyVerifiedFilter
+                ? isWomen
+                  ? 'bg-rose-50 border-[#E11D48] text-[#E11D48]'
+                  : 'bg-orange-50 border-[#FF6422] text-[#FF6422]'
+                : 'bg-white border-[#E2DDD5] text-stone-700 hover:bg-stone-50'
+            }`}
+          >
+            <SlidersHorizontal className="w-3.5 h-3.5" />
+            <span>Filters</span>
+            {(minRatingFilter > 0 || maxPriceFilter < 1500 || onlyOpenFilter || onlyVerifiedFilter) && (
+              <span className="w-2 h-2 rounded-full bg-[#FF6422]" />
+            )}
+          </button>
 
           {/* Toggle Map / List view on mobile */}
           <div className="sm:hidden flex items-center bg-[#F3ECE4] border border-[#E2DDD5] rounded-xl p-0.5 text-xs">
@@ -703,14 +708,104 @@ export const MapScreen: React.FC = () => {
         </div>
       </div>
 
-      {/* Search Input Bar */}
+      {/* FILTER DRAWER / EXPANDABLE BAR */}
+      {showFilterDrawer && (
+        <div className="bg-white border border-[#E8E2D8] rounded-2xl p-4 shadow-sm animate-in slide-in-from-top-2 duration-150 space-y-3.5">
+          <div className="flex items-center justify-between border-b border-stone-100 pb-2">
+            <span className="text-xs font-black text-stone-900 flex items-center gap-1.5">
+              <SlidersHorizontal className="w-3.5 h-3.5 text-[#FF6422]" />
+              <span>Map Search Filters</span>
+            </span>
+            <button
+              onClick={() => {
+                setMinRatingFilter(0);
+                setMaxPriceFilter(1500);
+                setOnlyOpenFilter(false);
+                setOnlyVerifiedFilter(false);
+              }}
+              className="text-[11px] font-bold text-stone-500 hover:text-stone-800 flex items-center gap-1 cursor-pointer"
+            >
+              <RotateCcw className="w-3 h-3" />
+              <span>Reset</span>
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs">
+            {/* 1. Max Price Filter */}
+            <div>
+              <label className="block text-[11px] font-bold text-stone-600 mb-1">
+                Max Price: <strong className="text-stone-900">₹{maxPriceFilter}</strong>
+              </label>
+              <input
+                type="range"
+                min="100"
+                max="1500"
+                step="50"
+                value={maxPriceFilter}
+                onChange={(e) => setMaxPriceFilter(Number(e.target.value))}
+                className="w-full accent-[#FF6422] cursor-pointer"
+              />
+            </div>
+
+            {/* 2. Rating Filter */}
+            <div>
+              <label className="block text-[11px] font-bold text-stone-600 mb-1">
+                Minimum Rating: <strong className="text-stone-900">{minRatingFilter > 0 ? `${minRatingFilter}★+` : 'Any'}</strong>
+              </label>
+              <div className="flex items-center gap-1">
+                {[0, 4.0, 4.5, 4.8].map((rat) => (
+                  <button
+                    key={rat}
+                    onClick={() => setMinRatingFilter(rat)}
+                    className={`flex-1 py-1 rounded-lg border text-[11px] font-bold transition-all cursor-pointer ${
+                      minRatingFilter === rat
+                        ? 'bg-[#FF6422] text-white border-orange-500'
+                        : 'bg-stone-50 text-stone-700 border-stone-200'
+                    }`}
+                  >
+                    {rat === 0 ? 'All' : `${rat}★`}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* 3. Open Now Toggle */}
+            <div className="flex items-center">
+              <label className="flex items-center gap-2 cursor-pointer pt-3">
+                <input
+                  type="checkbox"
+                  checked={onlyOpenFilter}
+                  onChange={(e) => setOnlyOpenFilter(e.target.checked)}
+                  className="w-4 h-4 rounded text-[#FF6422] accent-[#FF6422] cursor-pointer"
+                />
+                <span className="text-xs font-bold text-stone-800">Only Open Studios</span>
+              </label>
+            </div>
+
+            {/* 4. Verified Salons Toggle */}
+            <div className="flex items-center">
+              <label className="flex items-center gap-2 cursor-pointer pt-3">
+                <input
+                  type="checkbox"
+                  checked={onlyVerifiedFilter}
+                  onChange={(e) => setOnlyVerifiedFilter(e.target.checked)}
+                  className="w-4 h-4 rounded text-[#FF6422] accent-[#FF6422] cursor-pointer"
+                />
+                <span className="text-xs font-bold text-stone-800">SLOON Verified Only</span>
+              </label>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Salon Searching Option Input Bar */}
       <div className="relative">
         <Search className={`w-4 h-4 absolute left-3.5 top-3 ${isWomen ? 'text-[#E11D48]' : 'text-[#FF6422]'}`} />
         <input
           type="text"
           value={mapSearch}
           onChange={(e) => setMapSearch(e.target.value)}
-          placeholder={isWomen ? "Filter map by parlour, beauty suite or locality..." : "Filter map by studio name, locality or PIN code..."}
+          placeholder={isWomen ? "Search salon name, locality or PIN code on map..." : "Search salon name, locality or PIN code on map..."}
           className={`w-full pl-10 pr-4 py-2.5 bg-white border rounded-2xl text-xs text-stone-900 placeholder-stone-400 focus:outline-none shadow-sm transition-colors ${
             isWomen
               ? 'border-[#FED7CC] focus:border-[#E11D48] focus:ring-1 focus:ring-[#E11D48]'
@@ -720,7 +815,7 @@ export const MapScreen: React.FC = () => {
         {mapSearch && (
           <button
             onClick={() => setMapSearch('')}
-            className="absolute right-3 top-3 text-stone-400 hover:text-stone-700"
+            className="absolute right-3 top-3 text-stone-400 hover:text-stone-700 cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>

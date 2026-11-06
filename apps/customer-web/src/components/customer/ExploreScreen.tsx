@@ -11,11 +11,8 @@ import {
   Store,
   Clock,
   Sparkles,
-  Ticket,
   Map as MapIcon,
-  Flame,
   ArrowRight,
-  Filter,
 } from 'lucide-react';
 import {
   useSalon,
@@ -24,11 +21,9 @@ import {
   matchesGenderFilter,
   getSalonType,
 } from '../../context/CustomerContext';
-import { Salon } from '@kumbhakaran/shared-types';
-import { LiveQueueTrackerView } from './LiveQueueTrackerView';
 import { MapScreen } from './MapScreen';
 
-type ExploreViewMode = 'studios' | 'queue' | 'map';
+type ExploreViewMode = 'studios' | 'map';
 type SortOption = 'all' | 'queue' | 'distance' | 'rating' | 'open';
 
 export const ExploreScreen: React.FC = () => {
@@ -40,15 +35,12 @@ export const ExploreScreen: React.FC = () => {
     toggleFavorite,
     userProfile,
     genderFilter,
-    activeTicket,
   } = useSalon();
 
   const [viewMode, setViewMode] = useState<ExploreViewMode>('studios');
   const [activeFilter, setActiveFilter] = useState<SortOption>('all');
-  const [trackerSalon, setTrackerSalon] = useState<Salon | null>(null);
 
   const isWomen = genderFilter === 'women';
-  const primaryThemeColor = isWomen ? '#E11D48' : '#FF6422';
 
   // Filtered & Sorted Salon Records
   const processedSalons = salons
@@ -75,9 +67,9 @@ export const ExploreScreen: React.FC = () => {
     });
 
   return (
-    <div className="space-y-4 pb-28 text-stone-900 max-w-4xl mx-auto">
-      {/* 1. PROFESSIONAL STICKY HEADER & SEGMENTED CONTROLLER */}
-      <header className="sticky top-0 z-30 pt-1 pb-2 bg-[#FAF7F2]/95 backdrop-blur-md space-y-2.5">
+    <div className="space-y-4 pb-28 text-stone-900 max-w-5xl mx-auto">
+      {/* 1. TOP HEADER & TWO-WAY TOGGLE: [ 🏢 Explore Studios | 🗺️ Map ] */}
+      <header className="sticky top-0 z-30 pt-1 pb-2 bg-[#FAF7F2]/95 backdrop-blur-md space-y-2">
         <div className="flex items-center justify-between px-1">
           <div>
             <h1 className="text-lg font-black tracking-tight text-stone-950 flex items-center gap-2">
@@ -87,28 +79,13 @@ export const ExploreScreen: React.FC = () => {
               </span>
             </h1>
             <p className="text-[11px] text-stone-500 font-medium">
-              Discover studios, track live wait times, and take instant tokens.
+              Discover studios, check live waiting lines, and find locations on the map.
             </p>
           </div>
-
-          {/* Quick Active Ticket Notification Pill */}
-          {activeTicket && (
-            <button
-              onClick={() => {
-                const s = salons.find((x) => x.id === activeTicket.salonId);
-                if (s) setTrackerSalon(s);
-                setViewMode('queue');
-              }}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500 text-white text-xs font-black shadow-sm animate-pulse hover:bg-emerald-600 transition-colors cursor-pointer"
-            >
-              <Ticket className="w-3.5 h-3.5" />
-              <span>Token #{activeTicket.ticketNumber || activeTicket.position} Active</span>
-            </button>
-          )}
         </div>
 
-        {/* Clean 3-Stage Segmented Control: [ Explore Studios | ⚡ Live Queue | 🗺️ Map ] */}
-        <div className="bg-stone-200/70 p-1 rounded-2xl flex items-center gap-1">
+        {/* Clean 2-Way Segmented Control: [ Explore Studios | 🗺️ Map ] */}
+        <div className="bg-stone-200/70 p-1 rounded-2xl flex items-center gap-1 max-w-md">
           <button
             type="button"
             onClick={() => setViewMode('studios')}
@@ -124,22 +101,6 @@ export const ExploreScreen: React.FC = () => {
 
           <button
             type="button"
-            onClick={() => setViewMode('queue')}
-            className={`flex-1 py-2 px-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-2 cursor-pointer relative ${
-              viewMode === 'queue'
-                ? 'bg-white text-stone-900 shadow-sm'
-                : 'text-stone-600 hover:text-stone-900 hover:bg-white/40'
-            }`}
-          >
-            <Ticket className={`w-4 h-4 ${isWomen ? 'text-[#E11D48]' : 'text-[#FF6422]'}`} />
-            <span>Live Queue</span>
-            {activeTicket && (
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping absolute top-2 right-2" />
-            )}
-          </button>
-
-          <button
-            type="button"
             onClick={() => setViewMode('map')}
             className={`flex-1 py-2 px-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-2 cursor-pointer ${
               viewMode === 'map'
@@ -148,43 +109,19 @@ export const ExploreScreen: React.FC = () => {
             }`}
           >
             <MapIcon className="w-4 h-4 text-emerald-600" />
-            <span>Map & Distance</span>
+            <span>Map</span>
           </button>
         </div>
       </header>
 
-      {/* VIEW MODE 1: LIVE QUEUE & TOKENS VIEW */}
-      {viewMode === 'queue' && (
-        <div className="animate-in fade-in duration-200">
-          <LiveQueueTrackerView
-            initialSalon={trackerSalon || processedSalons[0] || null}
-            onOpenSalonDetails={(s) => setSelectedSalonForDetail(s)}
-            onSwitchToMap={() => setViewMode('map')}
-          />
-        </div>
-      )}
-
-      {/* VIEW MODE 2: MAP VIEW */}
+      {/* VIEW MODE 1: DEDICATED MAP VIEW ONLY */}
       {viewMode === 'map' && (
-        <div className="animate-in fade-in duration-200 space-y-3">
-          <div className="flex items-center justify-between px-1">
-            <span className="text-xs font-bold text-stone-600">
-              Locate studios geographically with live radius & navigation
-            </span>
-            <button
-              onClick={() => setViewMode('studios')}
-              className="text-xs font-extrabold text-[#FF6422] hover:underline"
-            >
-              ← Back to List
-            </button>
-          </div>
-          <div className="rounded-3xl overflow-hidden border border-[#E8E2D8] bg-white shadow-sm min-h-[580px]">
-            <MapScreen />
-          </div>
+        <div className="animate-in fade-in duration-200">
+          <MapScreen />
         </div>
       )}
 
-      {/* VIEW MODE 3: STUDIOS DIRECTORY LIST */}
+      {/* VIEW MODE 2: STUDIOS DIRECTORY LIST */}
       {viewMode === 'studios' && (
         <div className="space-y-3.5 animate-in fade-in duration-200">
           {/* Search Bar */}
@@ -289,20 +226,11 @@ export const ExploreScreen: React.FC = () => {
             </button>
           </div>
 
-          {/* Subheader: Salon counter & 1-tap fast queue switch */}
+          {/* Subheader: Salon counter */}
           <div className="flex items-center justify-between text-xs text-stone-500 px-1 pt-1">
             <span>
               Showing <strong className="text-stone-900">{processedSalons.length}</strong> studios
             </span>
-            <button
-              onClick={() => setViewMode('queue')}
-              className={`font-bold flex items-center gap-1 text-[11px] ${
-                isWomen ? 'text-[#E11D48]' : 'text-[#FF6422]'
-              } hover:underline cursor-pointer`}
-            >
-              <Ticket className="w-3.5 h-3.5" />
-              <span>Track Live Queue & Token →</span>
-            </button>
           </div>
 
           {/* Salon Card Directory */}
@@ -311,7 +239,7 @@ export const ExploreScreen: React.FC = () => {
               <Store className="w-12 h-12 text-stone-300 mx-auto mb-3" />
               <p className="text-stone-800 font-bold text-sm">No studios found</p>
               <p className="text-stone-500 text-xs mt-1">
-                Try loosening your search query or gender filter.
+                Try loosening your search query or filter.
               </p>
               <button
                 onClick={() => {
@@ -397,7 +325,7 @@ export const ExploreScreen: React.FC = () => {
                         </button>
                       </div>
 
-                      {/* Live Queue Overlay Pill on Photo */}
+                      {/* Queue & Wait Pill on Photo */}
                       <div className="absolute bottom-2.5 left-2.5 right-2.5 flex items-center justify-between text-white">
                         <div className="flex items-center gap-2">
                           <div
@@ -429,23 +357,10 @@ export const ExploreScreen: React.FC = () => {
                           )}
                         </div>
 
-                        {/* Fast Queue Status Button */}
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setTrackerSalon(salon);
-                            setViewMode('queue');
-                          }}
-                          className={`px-3 py-1 rounded-xl text-xs font-black backdrop-blur-md shadow-xs border flex items-center gap-1.5 transition-transform active:scale-95 cursor-pointer ${
-                            isWomen
-                              ? 'bg-[#E11D48] text-white border-rose-400'
-                              : 'bg-[#FF6422] text-white border-orange-400'
-                          }`}
-                        >
-                          <Ticket className="w-3.5 h-3.5" />
-                          <span>Live Queue</span>
-                        </button>
+                        <span className="text-white/80 font-bold text-xs flex items-center gap-1 bg-black/40 backdrop-blur-md px-2 py-1 rounded-xl">
+                          <span>View Studio</span>
+                          <ArrowRight className="w-3 h-3" />
+                        </span>
                       </div>
                     </div>
 
@@ -488,7 +403,7 @@ export const ExploreScreen: React.FC = () => {
                         </div>
                       </div>
 
-                      {/* Bottom Footer: Price, Open status, and Action */}
+                      {/* Bottom Footer: Price & Open status */}
                       <div className="pt-2.5 border-t border-stone-100 flex items-center justify-between text-xs">
                         <div className="flex items-center gap-1.5">
                           <span className="text-[11px] text-stone-500">Starts at</span>
