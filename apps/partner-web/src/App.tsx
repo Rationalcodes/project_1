@@ -1,14 +1,18 @@
 import React from 'react';
 import { PartnerProvider, usePartner } from './context/PartnerContext';
+import { LanguageProvider, useLanguage } from './i18n/LanguageContext';
 import { PartnerPortal } from './components/partner/PartnerPortal';
 import { NotificationToast } from './components/common/NotificationToast';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
+import { LanguageSelectorButton } from './components/common/LanguageSelectorButton';
+import { MandatoryLanguageModal } from './components/common/MandatoryLanguageModal';
 import { Store, LogOut, User } from 'lucide-react';
 import logoWhite from './assets/logo-white.png';
 import logoFallback from './assets/logo.png';
 
 const PartnerMainContent: React.FC = () => {
   const { partnerUser, isAuthenticated, logout } = usePartner();
+  const { t, hasChosenLanguage } = useLanguage();
 
   return (
     <div className="min-h-screen bg-[#09090c] text-slate-100 flex flex-col font-sans selection:bg-amber-500/30 selection:text-amber-300 w-full max-w-full overflow-x-hidden">
@@ -25,11 +29,14 @@ const PartnerMainContent: React.FC = () => {
               }}
             />
             <span className="hidden sm:inline text-[10px] uppercase tracking-widest px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-400 font-bold border border-amber-500/30 shrink-0 self-center">
-              Partner OS
+              {t.partnerOS}
             </span>
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3 text-xs shrink-0">
+            {/* Quick Language Selector Pill Button */}
+            <LanguageSelectorButton />
+
             {isAuthenticated && (
               <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
                 <div className="flex items-center gap-1.5 px-2 py-1 rounded-xl bg-zinc-900 border border-zinc-800 text-xs">
@@ -49,8 +56,8 @@ const PartnerMainContent: React.FC = () => {
 
                 <button
                   onClick={() => logout()}
-                  className="p-1.5 rounded-xl bg-zinc-900 border border-zinc-800 hover:border-red-500 text-zinc-400 hover:text-red-400 transition-colors"
-                  title="Sign out of Partner OS"
+                  className="p-1.5 rounded-xl bg-zinc-900 border border-zinc-800 hover:border-red-500 text-zinc-400 hover:text-red-400 transition-colors cursor-pointer"
+                  title={t.signOut}
                 >
                   <LogOut className="w-3.5 h-3.5" />
                 </button>
@@ -65,6 +72,9 @@ const PartnerMainContent: React.FC = () => {
         <PartnerPortal />
       </main>
 
+      {/* Mandatory Language Selection Modal - triggers for authenticated partner if not yet chosen */}
+      <MandatoryLanguageModal forceMandatory={isAuthenticated && !hasChosenLanguage} />
+
       <NotificationToast />
     </div>
   );
@@ -73,9 +83,11 @@ const PartnerMainContent: React.FC = () => {
 export function App() {
   return (
     <ErrorBoundary>
-      <PartnerProvider>
-        <PartnerMainContent />
-      </PartnerProvider>
+      <LanguageProvider>
+        <PartnerProvider>
+          <PartnerMainContent />
+        </PartnerProvider>
+      </LanguageProvider>
     </ErrorBoundary>
   );
 }

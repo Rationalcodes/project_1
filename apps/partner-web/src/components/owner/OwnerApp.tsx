@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSalon, getEstimatedWaitMinutes, getQueueDisplay, getQueueFreshness } from '../../context/PartnerContext';
+import { useLanguage } from '../../i18n/LanguageContext';
 import {
   LayoutDashboard,
   Users,
@@ -78,6 +79,8 @@ export const OwnerApp: React.FC = () => {
     latestCrowdReport,
     setPartnerView,
   } = useSalon();
+
+  const { t, languageInfo } = useLanguage();
 
   // Walk-in Counter QR Standee state & URL generator
   const [partnerQrDataUrl, setPartnerQrDataUrl] = useState<string>('');
@@ -500,14 +503,14 @@ export const OwnerApp: React.FC = () => {
 
   // Navigation Items
   const navTabs: { id: OwnerTab; label: string; icon: React.FC<{ className?: string }>; highlight?: boolean }[] = [
-    { id: 'live-queue', label: 'Live Queue', icon: Users, highlight: true },
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'services', label: 'Services & Pricing', icon: Scissors },
-    { id: 'staff', label: 'Staff Management', icon: UserCheck },
-    { id: 'reviews', label: 'Customer Reviews', icon: Star },
-    { id: 'gallery', label: 'Media & Loop Video', icon: Film },
-    { id: 'analytics', label: 'Traffic Analytics', icon: BarChart3 },
-    { id: 'settings', label: 'Salon Settings', icon: Settings }
+    { id: 'live-queue', label: t.liveQueue, icon: Users, highlight: true },
+    { id: 'dashboard', label: t.dashboard, icon: LayoutDashboard },
+    { id: 'services', label: t.services, icon: Scissors },
+    { id: 'staff', label: t.staff, icon: UserCheck },
+    { id: 'reviews', label: t.reviews, icon: Star },
+    { id: 'gallery', label: t.gallery, icon: Film },
+    { id: 'analytics', label: t.analytics, icon: BarChart3 },
+    { id: 'settings', label: t.settings, icon: Settings }
   ];
 
   const locationPhotosList = (activeSalon.locationImages && Array.isArray(activeSalon.locationImages))
@@ -835,7 +838,7 @@ export const OwnerApp: React.FC = () => {
             </div>
 
             <div className="text-xs font-extrabold uppercase tracking-widest text-zinc-400">
-              Current Waiting Customers
+              {t.currentQueue} ({t.peopleInQueue})
             </div>
 
             {/* Giant Counter Display */}
@@ -878,7 +881,7 @@ export const OwnerApp: React.FC = () => {
                 className="py-3.5 px-5 rounded-2xl bg-amber-500 hover:bg-amber-400 text-black font-black text-base sm:text-lg shadow-lg shadow-amber-500/20 active:scale-95 transition-all flex items-center justify-center gap-2.5 cursor-pointer"
               >
                 <Plus className="w-5 h-5 stroke-[3]" />
-                <span>+ ADD CUSTOMER</span>
+                <span>+ {t.addCustomerToQueue.toUpperCase()}</span>
               </button>
 
               <button
@@ -891,7 +894,7 @@ export const OwnerApp: React.FC = () => {
                 }`}
               >
                 <Minus className="w-5 h-5 stroke-[3]" />
-                <span>- REMOVE CUSTOMER</span>
+                <span>- {t.callNext.toUpperCase()}</span>
               </button>
             </div>
 
@@ -988,9 +991,9 @@ export const OwnerApp: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
                   <h2 className="text-lg sm:text-xl font-black text-white tracking-tight flex items-center gap-2">
-                    Live Waiting Customer List
+                    {t.waitingCustomersList}
                     <span className="text-xs px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30 font-bold">
-                      {queueEntries.length} In Line
+                      {queueEntries.length} {t.waiting}
                     </span>
                   </h2>
                 </div>
@@ -1004,10 +1007,10 @@ export const OwnerApp: React.FC = () => {
                   type="button"
                   onClick={() => setShowStandeeModal(true)}
                   className="px-3.5 py-2 rounded-xl bg-zinc-900 border border-amber-500/30 hover:border-amber-400 text-amber-400 font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-xs active:scale-95"
-                  title="Print Counter QR Standee for Your Salon"
+                  title={t.printStandee}
                 >
                   <QrCode className="w-4 h-4 text-amber-400" />
-                  <span>Desk QR Standee</span>
+                  <span>{t.counterStandee}</span>
                 </button>
 
                 <button
@@ -1016,7 +1019,7 @@ export const OwnerApp: React.FC = () => {
                   className="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-extrabold text-xs flex items-center gap-1.5 shadow-lg shadow-amber-500/20 active:scale-95 transition-all cursor-pointer"
                 >
                   <UserPlus className="w-4 h-4 stroke-[2.5]" />
-                  <span>+ Add Customer with Phone</span>
+                  <span>+ {t.addCustomerToQueue}</span>
                 </button>
 
                 <button

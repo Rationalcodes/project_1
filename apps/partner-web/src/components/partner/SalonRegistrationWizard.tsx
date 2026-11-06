@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useSalon } from '../../context/PartnerContext';
+import { useLanguage } from '../../i18n/LanguageContext';
 import { SalonLocationPicker } from './SalonLocationPicker';
 // Address & Location step
 import {
@@ -24,6 +25,7 @@ interface SalonRegistrationWizardProps {
 
 export const SalonRegistrationWizard: React.FC<SalonRegistrationWizardProps> = ({ onSuccess }) => {
   const { registerSalon, partnerUser, activeSalon, setPartnerView } = useSalon();
+  const { t } = useLanguage();
   const [currentStep, setCurrentStep] = useState<number>(1);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [submissionError, setSubmissionError] = useState<string | null>(null);
@@ -192,7 +194,7 @@ export const SalonRegistrationWizard: React.FC<SalonRegistrationWizardProps> = (
         {currentStep === 1 && (
           <div className="space-y-4 animate-in fade-in">
             <h3 className="text-sm font-bold text-white flex items-center gap-2">
-              <Store className="w-4 h-4 text-amber-400" /> Step 1: Salon & Owner Details
+              <Store className="w-4 h-4 text-amber-400" /> {t.step1Title}
             </h3>
 
             <div>
@@ -321,7 +323,7 @@ export const SalonRegistrationWizard: React.FC<SalonRegistrationWizardProps> = (
           <div className="space-y-4 animate-in fade-in">
             <div>
               <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                <MapPin className="w-4 h-4 text-amber-400" /> Step 2: Salon Address & Location
+                <MapPin className="w-4 h-4 text-amber-400" /> {t.step2Title}
               </h3>
               <p className="text-xs text-zinc-400 mt-0.5">
                 Search your address or click directly on the interactive map to position your salon marker.
@@ -379,7 +381,7 @@ export const SalonRegistrationWizard: React.FC<SalonRegistrationWizardProps> = (
         {currentStep === 3 && (
           <div className="space-y-4 animate-in fade-in">
             <h3 className="text-sm font-bold text-white flex items-center gap-2">
-              <Clock className="w-4 h-4 text-amber-400" /> Step 3: Operating Hours & Capacity
+              <Clock className="w-4 h-4 text-amber-400" /> {t.step3Title}
             </h3>
 
             <div className="grid grid-cols-2 gap-3">
@@ -550,7 +552,7 @@ export const SalonRegistrationWizard: React.FC<SalonRegistrationWizardProps> = (
           <div className="space-y-4 animate-in fade-in">
             <div>
               <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                <Scissors className="w-4 h-4 text-amber-400" /> Step 4: Confirm Services & Walk-In Pricing
+                <Scissors className="w-4 h-4 text-amber-400" /> {t.step4Title}
               </h3>
               <p className="text-xs text-zinc-400 mt-0.5">
                 Customize your starting prices. You can edit or add more anytime in your partner dashboard.
@@ -612,7 +614,7 @@ export const SalonRegistrationWizard: React.FC<SalonRegistrationWizardProps> = (
                 className="px-8 py-3 rounded-2xl bg-gradient-to-r from-amber-400 to-amber-500 text-black font-extrabold text-sm hover:from-amber-300 hover:to-amber-400 shadow-xl shadow-amber-500/30 flex items-center gap-2 cursor-pointer transition-all disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 <CheckCircle2 className="w-4 h-4" />
-                <span>{isSubmitting ? 'Registering Studio...' : 'Launch & Open Live Queue'}</span>
+                <span>{isSubmitting ? 'Registering Studio...' : t.launchStudio}</span>
               </button>
             </div>
           </div>
