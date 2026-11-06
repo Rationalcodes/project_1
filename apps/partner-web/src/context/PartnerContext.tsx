@@ -470,6 +470,15 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   // Helper to load the single salon tied to this Gmail ID or user memberships
   const loadUserSalon = useCallback(async (user: AuthUser, initialMemberships?: SalonMembership[]) => {
+    const ensurePartnerView = (defaultView: PartnerView = 'live-queue') => {
+      const saved = safeStorage.getItem('kumbhakaran_partner_view') as PartnerView;
+      if (saved && ['live-queue', 'dashboard', 'services', 'staff', 'reviews', 'analytics', 'settings', 'gallery'].includes(saved)) {
+        setPartnerViewState(saved);
+      } else {
+        setPartnerView(defaultView);
+      }
+    };
+
     try {
       // 1. Fetch via getMySalon (backend checks ownerId, memberships, and email)
       const mySalon = await defaultApiClient.getMySalon(user.email);
@@ -477,7 +486,7 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
         const normalized = normalizeSalon(mySalon);
         setSalons([normalized]);
         setActiveSalonId(normalized.id);
-        setPartnerView('live-queue');
+        ensurePartnerView();
         safeStorage.setItem('kumbhakaran_partner_active_salon', JSON.stringify(normalized));
         return normalized;
       }
@@ -491,7 +500,7 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
           const normalized = normalizeSalon(memSalon);
           setSalons([normalized]);
           setActiveSalonId(normalized.id);
-          setPartnerView('live-queue');
+          ensurePartnerView();
           safeStorage.setItem('kumbhakaran_partner_active_salon', JSON.stringify(normalized));
           return normalized;
         }
@@ -509,7 +518,7 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
           const normalized = normalizeSalon(parsed);
           setSalons([normalized]);
           setActiveSalonId(normalized.id);
-          setPartnerView('live-queue');
+          ensurePartnerView();
           return normalized;
         }
       }
