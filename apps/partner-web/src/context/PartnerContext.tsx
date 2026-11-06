@@ -536,12 +536,8 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
           setMemberships(res.memberships || []);
           safeStorage.setItem('kumbhakaran_partner_user', JSON.stringify(freshUser));
           await loadUserSalon(freshUser, res.memberships);
-        } else {
-          // Invalidate session if token rejected
-          setPartnerUser(null);
-          safeStorage.removeItem('kumbhakaran_partner_token');
-          safeStorage.removeItem('kumbhakaran_partner_user');
         }
+        // Note: Do not remove tokens on transient failures so partner stays logged in across reloads/restarts
       }).catch(() => {
         // Network timeout / transient issue: retain optimistic session from localStorage
       });

@@ -158,11 +158,6 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
               safeStorage.setItem('kumbhakaran_admin_user', JSON.stringify(freshUser));
             } catch {}
             refreshSalons();
-          } else {
-            // Token has been invalidated or expired
-            setAdminUser(null);
-            safeStorage.removeItem('kumbhakaran_admin_token');
-            safeStorage.removeItem('kumbhakaran_admin_user');
           }
         }
       }).catch(() => {

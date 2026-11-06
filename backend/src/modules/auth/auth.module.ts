@@ -19,7 +19,7 @@ import { PrismaModule } from '../../prisma/prisma.module';
       useFactory: (config: ConfigService) => ({
         secret: config.get<string>('JWT_SECRET') || 'kumbhakaran-jwt-secure-default-key-32chars-min',
         signOptions: {
-          expiresIn: (config.get<string>('JWT_EXPIRES_IN') || '24h') as any,
+          expiresIn: (config.get<string>('JWT_EXPIRES_IN') || '30d') as any,
         },
       }),
     }),

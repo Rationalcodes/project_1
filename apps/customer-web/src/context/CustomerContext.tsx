@@ -926,14 +926,13 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
               name: freshUser.name,
               avatar: freshUser.avatarUrl || prev.avatar,
             }));
-          } else {
-            setAuthUser(null);
-            safeStorage.removeItem('kumbhakaran_customer_token');
-            safeStorage.removeItem('kumbhakaran_customer_user');
           }
+          // Note: If /auth/me returns non-user or fails (e.g. backend cold start or temporary CORS/network drop),
+          // do NOT wipe saved token and log out the user. The optimistic session restored on initialization
+          // remains intact so the user stays signed in.
         }
       }).catch(() => {
-        // Network timeout: retain optimistic session from localStorage
+        // Network timeout / transient issue: retain optimistic session from localStorage
       });
     }
     return () => {
