@@ -532,24 +532,34 @@ export class KumbhakaranApiClient {
    * Get waiting customer entries in the live walk-in queue
    */
   async getQueueEntries(salonId: string): Promise<any[]> {
-    try {
-      const res = await fetch(`${this.baseUrl}/salons/${salonId}/queue-entries`, {
-        headers: this.getHeaders(),
-      });
-      if (!res.ok) return [];
-      return await res.json();
-    } catch {
-      return [];
+    const res = await fetch(`${this.baseUrl}/salons/${salonId}/queue-entries`, {
+      headers: this.getHeaders(),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || 'Could not load the salon queue');
     }
+    return await res.json();
+  }
+
+  async getPartnerQueueEntries(salonId: string): Promise<any[]> {
+    const res = await fetch(`${this.baseUrl}/salons/${salonId}/partner-queue-entries`, {
+      headers: this.getHeaders(),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || 'Failed to load the salon queue');
+    }
+    return res.json();
   }
 
   /**
-   * Get single queue entry status by entry ID
+   * Get the current customer's queue ticket using its private access token.
    */
-  async getQueueEntry(salonId: string, entryId: string): Promise<any> {
+  async getQueueEntry(salonId: string, entryId: string, accessToken?: string): Promise<any> {
     try {
-      const res = await fetch(`${this.baseUrl}/salons/${salonId}/queue-entries/${entryId}`, {
-        headers: this.getHeaders(),
+      const res = await fetch(`${this.baseUrl}/salons/${salonId}/queue-entries/${entryId}/customer-status`, {
+        headers: this.getHeaders(accessToken ? { 'X-Queue-Access-Token': accessToken } : {}),
       });
       if (!res.ok) return null;
       return await res.json();
@@ -567,6 +577,8 @@ export class KumbhakaranApiClient {
     serviceName?: string;
     deviceId?: string;
     userId?: string;
+    partySize?: number;
+    checkInToken?: string;
   }): Promise<any> {
     const res = await fetch(`${this.baseUrl}/salons/${salonId}/queue-entries`, {
       method: 'POST',
@@ -593,19 +605,170 @@ export class KumbhakaranApiClient {
       }),
       body: JSON.stringify({ status }),
     });
-    if (!res.ok) return null;
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || 'Failed to update queue entry status');
+    }
     return await res.json();
+  }
+
+  async cancelCustomerQueueEntry(salonId: string, entryId: string, accessToken: string): Promise<any> {
+    const res = await fetch(`${this.baseUrl}/salons/${salonId}/queue-entries/${entryId}/customer-cancel`, {
+      method: 'POST',
+      headers: this.getHeaders({ 'X-Queue-Access-Token': accessToken }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || 'Failed to leave the queue');
+    }
+    return res.json();
+  }
+
+  async confirmCustomerQueueArrival(
+    salonId: string,
+    entryId: string,
+    accessToken: string,
+    qrToken: string,
+  ): Promise<any> {
+    const res = await fetch(`${this.baseUrl}/salons/${salonId}/queue-entries/${entryId}/check-in`, {
+      method: 'POST',
+      headers: this.getHeaders({
+        'Content-Type': 'application/json',
+        'X-Queue-Access-Token': accessToken,
+      }),
+      body: JSON.stringify({ qrToken }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || 'Could not confirm salon check-in');
+    }
+    return res.json();
+  }
+
+  async setCustomerQueueLocationConsent(
+    salonId: string,
+    entryId: string,
+    accessToken: string,
+    enabled: boolean,
+  ): Promise<any> {
+    const res = await fetch(`${this.baseUrl}/salons/${salonId}/queue-entries/${entryId}/location-consent`, {
+      method: 'PATCH',
+      headers: this.getHeaders({
+        'Content-Type': 'application/json',
+        'X-Queue-Access-Token': accessToken,
+      }),
+      body: JSON.stringify({ enabled }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || 'Could not update location consent');
+    }
+    return res.json();
+  }
+
+  async submitCustomerQueueLocation(
+    salonId: string,
+    entryId: string,
+    accessToken: string,
+    observation: { latitude: number; longitude: number; accuracyMeters: number; observedAt: string },
+  ): Promise<any> {
+    const res = await fetch(`${this.baseUrl}/salons/${salonId}/queue-entries/${entryId}/location-observation`, {
+      method: 'POST',
+      headers: this.getHeaders({
+        'Content-Type': 'application/json',
+        'X-Queue-Access-Token': accessToken,
+      }),
+      body: JSON.stringify(observation),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || 'Could not verify the current location');
+    }
+    return res.json();
+  }
+
+  async respondToCustomerQueueDeparture(
+    salonId: string,
+    entryId: string,
+    accessToken: string,
+    response: 'left' | 'still_here' | 'returning',
+  ): Promise<any> {
+    const res = await fetch(`${this.baseUrl}/salons/${salonId}/queue-entries/${entryId}/departure-response`, {
+      method: 'POST',
+      headers: this.getHeaders({
+        'Content-Type': 'application/json',
+        'X-Queue-Access-Token': accessToken,
+      }),
+      body: JSON.stringify({ response }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || 'Could not update your queue status');
+    }
+    return res.json();
+  }
+
+  async getSalonCheckInQr(salonId: string): Promise<{ salonId: string; checkInToken: string; geofenceRadiusMeters: number }> {
+    const res = await fetch(`${this.baseUrl}/salons/${salonId}/check-in-qr`, {
+      headers: this.getHeaders(),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || 'Could not load the salon check-in QR');
+    }
+    return res.json();
+  }
+
+  async updateSmartQueueSettings(salonId: string, geofenceRadiusMeters: number): Promise<any> {
+    const res = await fetch(`${this.baseUrl}/salons/${salonId}/smart-queue-settings`, {
+      method: 'PATCH',
+      headers: this.getHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({ geofenceRadiusMeters }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || 'Could not save SmartQueue settings');
+    }
+    return res.json();
+  }
+
+  async confirmQueueDepartureByStaff(salonId: string, entryId: string): Promise<any> {
+    const res = await fetch(`${this.baseUrl}/salons/${salonId}/queue-entries/${entryId}/confirm-departure`, {
+      method: 'POST',
+      headers: this.getHeaders(),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || 'Could not confirm customer departure');
+    }
+    return res.json();
+  }
+
+  async restoreQueueEntry(salonId: string, entryId: string): Promise<any> {
+    const res = await fetch(`${this.baseUrl}/salons/${salonId}/queue-entries/${entryId}/recall`, {
+      method: 'POST',
+      headers: this.getHeaders(),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || 'Could not restore the queue ticket');
+    }
+    return res.json();
   }
 
   /**
    * Reset / clear all waiting queue entries
    */
   async clearQueueEntries(salonId: string): Promise<any> {
-    const res = await fetch(`${this.baseUrl}/salons/${salonId}/queue-entries`, {
-      method: 'DELETE',
-      headers: this.getHeaders(),
+    const res = await fetch(`${this.baseUrl}/salons/${salonId}/queue/clear`, {
+      method: 'POST',
+      headers: this.getHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({ clearOption: 'cancelled', reason: 'Cleared by salon staff' }),
     });
-    if (!res.ok) return null;
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || 'Could not clear the salon queue');
+    }
     return await res.json();
   }
 

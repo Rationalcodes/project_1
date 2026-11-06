@@ -15,7 +15,7 @@ export interface StateTransitionRule {
 }
 
 export const VALID_TRANSITIONS: Record<QueueStatus, QueueStatus[]> = {
-  waiting: ['called', 'in_service', 'skipped', 'cancelled', 'completed'],
+  waiting: ['called', 'in_service', 'skipped', 'cancelled', 'completed', 'no_show'],
   called: ['in_service', 'skipped', 'cancelled', 'no_show', 'waiting'],
   in_service: ['completed', 'cancelled'],
   skipped: ['waiting', 'called', 'cancelled', 'in_service'],

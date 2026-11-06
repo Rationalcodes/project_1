@@ -138,6 +138,25 @@ REVOKE EXECUTE ON PROCEDURE public.promote_user_to_admin(TEXT) FROM PUBLIC;
 GRANT EXECUTE ON PROCEDURE public.promote_user_to_admin(TEXT) TO postgres;
 ```
 
+### SmartQueue release migration
+
+SmartQueue requires the additive schema changes in
+[`backend/migrations/005_smart_queue_assistance.sql`](./backend/migrations/005_smart_queue_assistance.sql).
+The application build does **not** apply this migration. Apply it to a staging
+database first, then to production through the approved database change process;
+take a database backup before production execution. It adds columns with
+defaults and does not delete or rewrite existing salon or queue records.
+
+The migration must be applied before deploying the SmartQueue backend because
+Prisma reads the new columns. Do not deploy the new backend against a database
+that has not received migration `005`. Existing queue entries receive the
+defaults (`party_size = 1`, location consent off, and no arrival confirmation).
+
+SmartQueue QR and ticket-access tokens are signed using the existing
+`JWT_SECRET`. Keep that production secret configured and stable during rollout;
+rotating it invalidates already printed check-in QR codes and active ticket
+access links.
+
 ---
 
 ## 3. BACKEND DEPLOYMENT (RENDER.COM)

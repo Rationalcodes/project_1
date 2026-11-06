@@ -123,10 +123,18 @@ interface CustomerContextType {
   queueEntries: QueueEntry[];
   activeTicket: QueueEntry | null;
   fetchSalonQueue: (salonId: string) => Promise<QueueEntry[]>;
-  joinLiveQueue: (salonId: string, name: string, phone?: string, serviceName?: string) => Promise<QueueEntry>;
+  joinLiveQueue: (
+    salonId: string,
+    name: string,
+    phone?: string,
+    serviceName?: string,
+    options?: { partySize?: number; checkInToken?: string | null },
+  ) => Promise<QueueEntry>;
+  confirmQueueArrival: (salonId: string, entryId: string, qrToken: string) => Promise<void>;
+  setQueueLocationConsent: (salonId: string, entryId: string, enabled: boolean) => Promise<void>;
+  observeQueueLocation: (salonId: string, entryId: string) => Promise<any>;
+  respondToQueueDeparture: (salonId: string, entryId: string, response: 'left' | 'still_here' | 'returning') => Promise<void>;
   leaveLiveQueue: (salonId: string, entryId: string) => Promise<void>;
-  completeLiveQueue: (salonId: string, entryId: string) => Promise<void>;
-  markTicketInService: (salonId: string, entryId: string) => Promise<void>;
   reportSalonCrowd: (salonId: string, crowdLevel: 'empty' | 'medium' | 'busy') => Promise<void>;
   latestCrowdReport: any | null;
   fetchLatestCrowdReport: (salonId: string) => Promise<any | null>;
@@ -190,11 +198,12 @@ export interface UrlTargetInfo {
   autoJoin: boolean;
   serviceName: string | null;
   isExpressWalkin: boolean;
+  checkInToken: string | null;
 }
 
 export function getTargetSalonFromUrl(): UrlTargetInfo {
   if (typeof window === 'undefined') {
-    return { salonId: null, autoJoin: false, serviceName: null, isExpressWalkin: false };
+    return { salonId: null, autoJoin: false, serviceName: null, isExpressWalkin: false, checkInToken: null };
   }
   try {
     const params = new URLSearchParams(window.location.search);
@@ -204,7 +213,9 @@ export function getTargetSalonFromUrl(): UrlTargetInfo {
       params.get('walkin') === 'true' ||
       params.get('express') === 'true' ||
       params.get('checkin') === 'true' ||
+      Boolean(params.get('checkin') && params.get('checkin') !== 'true') ||
       params.get('counter') === 'true';
+    const checkInToken = params.get('checkin') && params.get('checkin') !== 'true' ? params.get('checkin') : null;
     const serviceName = params.get('service') || null;
 
     if (!salonId && window.location.pathname) {
@@ -221,9 +232,9 @@ export function getTargetSalonFromUrl(): UrlTargetInfo {
       }
     }
 
-    return { salonId, autoJoin, serviceName, isExpressWalkin };
+    return { salonId, autoJoin, serviceName, isExpressWalkin, checkInToken };
   } catch {
-    return { salonId: null, autoJoin: false, serviceName: null, isExpressWalkin: false };
+    return { salonId: null, autoJoin: false, serviceName: null, isExpressWalkin: false, checkInToken: null };
   }
 }
 
@@ -511,13 +522,20 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         if (curTicket && (curTicket.salonId === salonId || !curTicket.salonId)) {
           const match = entries.find((e: QueueEntry) => e.id === curTicket.id);
           if (match) {
-            const updatedTicket = { ...match, salonId };
+            const privateStatus = curTicket.queueAccessToken
+              ? await defaultApiClient.getQueueEntry(salonId, curTicket.id, curTicket.queueAccessToken)
+              : null;
+            const updatedTicket = { ...curTicket, ...match, ...(privateStatus || {}), salonId };
             setActiveTicket(updatedTicket);
             safeStorage.setItem('kumbhakaran_customer_ticket', JSON.stringify(updatedTicket));
           } else if (curTicket.salonId === salonId) {
             // Verify specific ticket status before clearing out
             try {
-              const ticketStatus = await defaultApiClient.getQueueEntry(salonId, curTicket.id);
+              const ticketStatus = await defaultApiClient.getQueueEntry(
+                salonId,
+                curTicket.id,
+                curTicket.queueAccessToken,
+              );
               if (ticketStatus && ticketStatus.status === 'completed') {
                 triggerNotification('🎉 Service completed! Thank you for visiting.');
                 setActiveTicket(null);
@@ -556,7 +574,8 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     salonId: string,
     name: string,
     phone?: string,
-    serviceName?: string
+    serviceName?: string,
+    options?: { partySize?: number; checkInToken?: string | null },
   ): Promise<QueueEntry> => {
     const deviceId = getOrCreateDeviceId();
     const res = await defaultApiClient.addQueueEntry(salonId, {
@@ -564,9 +583,16 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       phone,
       serviceName,
       deviceId,
+      partySize: options?.partySize,
+      checkInToken: options?.checkInToken || undefined,
     });
     if (res?.entry) {
-      const entryWithSalon: QueueEntry = { ...res.entry, salonId };
+      const entryWithSalon: QueueEntry = {
+        ...res.entry,
+        salonId,
+        queueAccessToken: res.queueAccessToken,
+        ...res.smartQueue,
+      };
       setActiveTicket(entryWithSalon);
       safeStorage.setItem('kumbhakaran_customer_ticket', JSON.stringify(entryWithSalon));
       setQueueEntries((prev) => [...prev, entryWithSalon]);
@@ -590,7 +616,11 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const leaveLiveQueue = async (salonId: string, entryId: string) => {
     try {
-      await defaultApiClient.updateQueueEntryStatus(salonId, entryId, 'cancelled');
+      const ticket = activeTicketRef.current;
+      if (!ticket?.queueAccessToken || ticket.id !== entryId) {
+        throw new Error('This ticket is missing its private access link. Rejoin using the salon QR code or contact salon staff.');
+      }
+      await defaultApiClient.cancelCustomerQueueEntry(salonId, entryId, ticket.queueAccessToken);
       setActiveTicket(null);
       safeStorage.removeItem('kumbhakaran_customer_ticket');
       setSalons((prev) =>
@@ -609,37 +639,89 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   };
 
-  const completeLiveQueue = async (salonId: string, entryId: string) => {
-    try {
-      await defaultApiClient.updateQueueEntryStatus(salonId, entryId, 'completed');
-      setActiveTicket(null);
-      safeStorage.removeItem('kumbhakaran_customer_ticket');
-      setSalons((prev) =>
-        prev.map((s) => (s.id === salonId ? { ...s, currentQueue: Math.max(0, s.currentQueue - 1), lastQueueUpdate: new Date().toISOString() } : s))
-      );
-      setSelectedSalonForDetail((prev) =>
-        prev && prev.id === salonId
-          ? { ...prev, currentQueue: Math.max(0, prev.currentQueue - 1), lastQueueUpdate: new Date().toISOString() }
-          : prev
-      );
-      broadcastTelemetryUpdate(salonId);
-      triggerNotification('Service completed! Hope you loved your new haircut ✂️');
-      await fetchSalonQueue(salonId);
-    } catch (err: any) {
-      triggerNotification(err?.message || 'Failed to complete queue ticket');
+  const confirmQueueArrival = async (salonId: string, entryId: string, qrToken: string) => {
+    const ticket = activeTicketRef.current;
+    if (!ticket?.queueAccessToken || ticket.id !== entryId) {
+      throw new Error('This ticket is missing its private access link.');
     }
+    const updated = await defaultApiClient.confirmCustomerQueueArrival(
+      salonId,
+      entryId,
+      ticket.queueAccessToken,
+      qrToken,
+    );
+    const nextTicket = { ...ticket, ...updated };
+    setActiveTicket(nextTicket);
+    safeStorage.setItem('kumbhakaran_customer_ticket', JSON.stringify(nextTicket));
+    triggerNotification('You’re checked in at the salon. Your place in line is safe.');
   };
 
-  const markTicketInService = async (salonId: string, entryId: string) => {
-    try {
-      await defaultApiClient.updateQueueEntryStatus(salonId, entryId, 'in_service');
-      setActiveTicket((prev) => (prev ? { ...prev, status: 'in_service' } : null));
-      broadcastTelemetryUpdate(salonId);
-      triggerNotification("You're in the styling chair! Enjoy your service 💈");
-      await fetchSalonQueue(salonId);
-    } catch (err: any) {
-      triggerNotification(err?.message || 'Failed to update chair status');
+  const setQueueLocationConsent = async (salonId: string, entryId: string, enabled: boolean) => {
+    const ticket = activeTicketRef.current;
+    if (!ticket?.queueAccessToken || ticket.id !== entryId) {
+      throw new Error('This ticket is missing its private access link.');
     }
+    const result = await defaultApiClient.setCustomerQueueLocationConsent(
+      salonId,
+      entryId,
+      ticket.queueAccessToken,
+      enabled,
+    );
+    const nextTicket = { ...ticket, locationConsent: result.locationConsent };
+    setActiveTicket(nextTicket);
+    safeStorage.setItem('kumbhakaran_customer_ticket', JSON.stringify(nextTicket));
+  };
+
+  const observeQueueLocation = async (salonId: string, entryId: string) => {
+    const ticket = activeTicketRef.current;
+    if (!ticket?.queueAccessToken || ticket.id !== entryId) {
+      throw new Error('This ticket is missing its private access link.');
+    }
+    if (!navigator.geolocation) throw new Error('Location is not available in this browser.');
+    const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+      navigator.geolocation.getCurrentPosition(resolve, reject, {
+        enableHighAccuracy: true,
+        maximumAge: 0,
+        timeout: 12000,
+      });
+    });
+    return defaultApiClient.submitCustomerQueueLocation(salonId, entryId, ticket.queueAccessToken, {
+      latitude: position.coords.latitude,
+      longitude: position.coords.longitude,
+      accuracyMeters: position.coords.accuracy,
+      observedAt: new Date(position.timestamp).toISOString(),
+    });
+  };
+
+  const respondToQueueDeparture = async (
+    salonId: string,
+    entryId: string,
+    response: 'left' | 'still_here' | 'returning',
+  ) => {
+    const ticket = activeTicketRef.current;
+    if (!ticket?.queueAccessToken || ticket.id !== entryId) {
+      throw new Error('This ticket is missing its private access link.');
+    }
+    const result = await defaultApiClient.respondToCustomerQueueDeparture(
+      salonId,
+      entryId,
+      ticket.queueAccessToken,
+      response,
+    );
+    if (response === 'left' || result.status === 'cancelled') {
+      setActiveTicket(null);
+      safeStorage.removeItem('kumbhakaran_customer_ticket');
+      triggerNotification('You left the queue. Thanks for letting the salon know.');
+      await fetchSalonQueue(salonId);
+      return;
+    }
+    const updated = {
+      ...ticket,
+      departureDetectedAt: null,
+      departureReviewRequired: false,
+    };
+    setActiveTicket(updated);
+    safeStorage.setItem('kumbhakaran_customer_ticket', JSON.stringify(updated));
   };
 
   const [latestCrowdReport, setLatestCrowdReport] = useState<any | null>(null);
@@ -1385,9 +1467,11 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         activeTicket,
         fetchSalonQueue,
         joinLiveQueue,
+        confirmQueueArrival,
+        setQueueLocationConsent,
+        observeQueueLocation,
+        respondToQueueDeparture,
         leaveLiveQueue,
-        completeLiveQueue,
-        markTicketInService,
         reportSalonCrowd,
         latestCrowdReport,
         fetchLatestCrowdReport,

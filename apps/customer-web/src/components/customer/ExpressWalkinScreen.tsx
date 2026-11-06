@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { useCustomer, getEstimatedWaitMinutes } from '../../context/CustomerContext';
+import { getTargetSalonFromUrl, useCustomer, getEstimatedWaitMinutes } from '../../context/CustomerContext';
 import { Salon, QueueEntry } from '@kumbhakaran/shared-types';
 import {
-  Scissors,
   CheckCircle2,
   Clock,
   Users,
@@ -17,10 +16,9 @@ import {
   ExternalLink,
   ChevronRight,
   Info,
-  XCircle,
-  HelpCircle,
 } from 'lucide-react';
 import { openGoogleMapsLocation } from '@kumbhakaran/ui';
+import { SmartQueueAssist } from './SmartQueueAssist';
 
 interface ExpressWalkinScreenProps {
   salon: Salon | null;
@@ -39,8 +37,6 @@ export const ExpressWalkinScreen: React.FC<ExpressWalkinScreenProps> = ({
     activeTicket,
     joinLiveQueue,
     leaveLiveQueue,
-    completeLiveQueue,
-    markTicketInService,
     reportSalonCrowd,
     fetchSalonQueue,
     triggerNotification,
@@ -49,8 +45,10 @@ export const ExpressWalkinScreen: React.FC<ExpressWalkinScreenProps> = ({
   const [name, setName] = useState<string>(userProfile.name || '');
   const [phone, setPhone] = useState<string>(userProfile.phone || '');
   const [selectedService, setSelectedService] = useState<string>('Haircut & Styling');
+  const [partySize, setPartySize] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [submittedTicket, setSubmittedTicket] = useState<QueueEntry | null>(activeTicket);
+  const [checkInToken] = useState(() => getTargetSalonFromUrl().checkInToken);
 
   // Sync ticket when activeTicket changes
   useEffect(() => {
@@ -121,7 +119,8 @@ export const ExpressWalkinScreen: React.FC<ExpressWalkinScreenProps> = ({
         salon.id,
         trimmedName,
         phone.trim() || undefined,
-        selectedService
+        selectedService,
+        { partySize, checkInToken },
       );
       setSubmittedTicket(ticket);
     } catch (err: any) {
@@ -270,32 +269,13 @@ export const ExpressWalkinScreen: React.FC<ExpressWalkinScreenProps> = ({
             </div>
           </div>
 
-          {/* Auto-Pilot Customer Actions */}
+          <SmartQueueAssist salon={salon} ticket={currentTicket} checkInToken={checkInToken} />
+
+          {/* Customer ticket controls */}
           <div className="space-y-2 pt-2">
             <div className="text-[11px] font-bold text-stone-500 uppercase tracking-wide">
-              Self-Service Check-In Actions
+              Ticket options
             </div>
-
-            {currentTicket.status !== 'in_service' ? (
-              <button
-                type="button"
-                onClick={() => markTicketInService(salon.id, currentTicket.id)}
-                className="w-full py-3 px-4 rounded-2xl bg-emerald-600 hover:bg-emerald-700 active:scale-98 text-white font-black text-xs sm:text-sm shadow-md shadow-emerald-600/20 flex items-center justify-center gap-2 transition-all cursor-pointer"
-              >
-                <Scissors className="w-4 h-4" />
-                <span>I'm on Chair Now (Start Service)</span>
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={() => completeLiveQueue(salon.id, currentTicket.id)}
-                className="w-full py-3 px-4 rounded-2xl bg-stone-900 hover:bg-stone-800 active:scale-98 text-white font-black text-xs sm:text-sm shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer"
-              >
-                <Check className="w-4 h-4 text-emerald-400" />
-                <span>Service Finished / Haircut Done</span>
-              </button>
-            )}
-
             <div className="flex items-center gap-2 pt-1">
               {currentTicket.status !== 'in_service' && (
                 <button
@@ -356,15 +336,30 @@ export const ExpressWalkinScreen: React.FC<ExpressWalkinScreenProps> = ({
               <span>Instant Digital Token</span>
             </div>
             <h2 className="text-xl sm:text-2xl font-black text-stone-900 mt-2">
-              Enter Your Name to Join Queue
+              {checkInToken ? 'Check in at the salon' : 'Join the salon queue'}
             </h2>
             <p className="text-xs text-stone-500 mt-1">
-              No registration needed. You will receive an instant digital token number.
+              No account needed. Your place stays in the queue unless you or salon staff change it.
             </p>
           </div>
 
           <form onSubmit={handleJoin} className="space-y-4">
             {/* Customer Name Input (Primary) */}
+            <div>
+              <label className="block text-xs font-extrabold text-stone-800 mb-1.5">
+                Number of people
+              </label>
+              <select
+                value={partySize}
+                onChange={(event) => setPartySize(Number(event.target.value))}
+                className="w-full rounded-xl border border-stone-300 bg-stone-50 px-3 py-2.5 text-sm font-semibold text-stone-900"
+              >
+                {[1, 2, 3, 4, 5, 6].map((size) => (
+                  <option key={size} value={size}>{size}</option>
+                ))}
+              </select>
+            </div>
+
             <div>
               <label className="block text-xs font-extrabold text-stone-800 mb-1.5">
                 Your Name <span className="text-[#FF6422]">*</span>

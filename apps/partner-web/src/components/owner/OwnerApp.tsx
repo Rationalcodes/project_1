@@ -46,6 +46,7 @@ import {
 import QRCode from 'qrcode';
 import { OwnerTab, Service, Staff, QueueEntry } from '@kumbhakaran/shared-types';
 import { openGoogleMapsLocation } from '@kumbhakaran/ui';
+import { defaultApiClient } from '@kumbhakaran/api-client';
 
 export const OwnerApp: React.FC = () => {
   const {
@@ -68,42 +69,61 @@ export const OwnerApp: React.FC = () => {
     refreshQueueEntries,
     addCustomerToQueue,
     updateCustomerStatus,
+    confirmQueueDeparture,
+    restoreQueueEntry,
+    updateSmartQueueRadius,
     clearQueue,
     latestCrowdReport,
   } = useSalon();
 
   // Walk-in Counter QR Standee state & URL generator
   const [partnerQrDataUrl, setPartnerQrDataUrl] = useState<string>('');
+  const [partnerQueueUrl, setPartnerQueueUrl] = useState<string>('');
+  const [partnerQrError, setPartnerQrError] = useState<string | null>(null);
   const [copiedQueueLink, setCopiedQueueLink] = useState(false);
   const [showStandeeModal, setShowStandeeModal] = useState(false);
+  const [geofenceRadius, setGeofenceRadius] = useState(100);
 
   const getCustomerQueueUrl = (salonId: string) => {
-    if (typeof window === 'undefined') {
-      return `https://www.kumbhkaransalons.in/?salon=${salonId}&join=true`;
-    }
-    const isLocal = ['localhost', '127.0.0.1'].includes(window.location.hostname);
-    const base = isLocal ? `http://${window.location.hostname}:5173` : 'https://www.kumbhkaransalons.in';
-    return `${base}/?salon=${salonId}&join=true`;
+    return partnerQueueUrl.includes(`salon=${encodeURIComponent(salonId)}`) ? partnerQueueUrl : '';
   };
 
   useEffect(() => {
-    if (activeSalon?.id) {
-      const queueUrl = getCustomerQueueUrl(activeSalon.id);
-      QRCode.toDataURL(queueUrl, {
-        width: 400,
-        margin: 2,
-        color: { dark: '#111111', light: '#FFFFFF' },
+    if (!activeSalon?.id) return;
+    let active = true;
+    setPartnerQrDataUrl('');
+    setPartnerQueueUrl('');
+    setPartnerQrError(null);
+    defaultApiClient.getSalonCheckInQr(activeSalon.id)
+      .then(async ({ checkInToken, geofenceRadiusMeters }) => {
+        const isLocal = ['localhost', '127.0.0.1'].includes(window.location.hostname);
+        const baseUrl = isLocal ? `http://${window.location.hostname}:5173` : 'https://sloon.in';
+        const url = new URL('/', baseUrl);
+        url.searchParams.set('salon', activeSalon.id);
+        url.searchParams.set('checkin', checkInToken);
+        const qr = await QRCode.toDataURL(url.toString(), {
+          width: 400,
+          margin: 2,
+          color: { dark: '#111111', light: '#FFFFFF' },
+        });
+        if (!active) return;
+        setGeofenceRadius(geofenceRadiusMeters);
+        setPartnerQueueUrl(url.toString());
+        setPartnerQrDataUrl(qr);
       })
-        .then(setPartnerQrDataUrl)
-        .catch(() => {});
-    }
+      .catch((error: Error) => {
+        if (!active) return;
+        setPartnerQrError(error.message || 'Could not load a secure salon QR code.');
+      });
+    return () => { active = false; };
   }, [activeSalon?.id]);
 
   const handlePrintDeskStandee = () => {
     if (!activeSalon || !partnerQrDataUrl) return;
     const printWindow = window.open('', '_blank', 'width=800,height=920');
     if (!printWindow) return;
-    const directLink = getCustomerQueueUrl(activeSalon.id);
+    const directLink = partnerQueueUrl;
+    if (!directLink) return;
 
     const salonBgImage =
       activeSalon.coverImage ||
@@ -1042,6 +1062,7 @@ export const OwnerApp: React.FC = () => {
               <div className="mt-5 grid grid-cols-1 md:grid-cols-2 gap-3.5">
                 {queueEntries.map((entry, index) => {
                   const isServing = entry.status === 'in_service';
+                  const isAbsent = entry.status === 'no_show';
                   const joinedDate = entry.joinedAt ? new Date(entry.joinedAt) : null;
                   const minsAgo = joinedDate ? Math.max(0, Math.floor((Date.now() - joinedDate.getTime()) / 60000)) : null;
 
@@ -1051,7 +1072,9 @@ export const OwnerApp: React.FC = () => {
                       className={`rounded-2xl border p-4 transition-all ${
                         isServing
                           ? 'bg-emerald-950/20 border-emerald-500/40 shadow-lg shadow-emerald-950/20'
-                          : 'bg-[#181824] border-zinc-800 hover:border-zinc-700 shadow-md'
+                          : isAbsent
+                            ? 'bg-rose-950/20 border-rose-500/30 shadow-md'
+                            : 'bg-[#181824] border-zinc-800 hover:border-zinc-700 shadow-md'
                       }`}
                     >
                       <div className="flex items-start justify-between gap-3">
@@ -1073,7 +1096,11 @@ export const OwnerApp: React.FC = () => {
                               <h4 className="text-sm font-black text-white">
                                 {entry.customerName || `Customer #${index + 1}`}
                               </h4>
-                              {isServing ? (
+                              {isAbsent ? (
+                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-500/15 text-rose-300 border border-rose-500/30">
+                                  Marked absent
+                                </span>
+                              ) : isServing ? (
                                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 animate-pulse">
                                   At Chair • In Service
                                 </span>
@@ -1093,6 +1120,23 @@ export const OwnerApp: React.FC = () => {
                                 </span>
                               )}
                             </p>
+                            <div className="mt-1 flex flex-wrap gap-1.5">
+                              {entry.arrivalConfirmedAt && (
+                                <span className="text-[9px] font-bold rounded-full px-2 py-0.5 bg-emerald-500/10 text-emerald-300 border border-emerald-500/20">
+                                  {entry.checkInMethod === 'qr' ? 'QR check-in' : 'Arrived'}
+                                </span>
+                              )}
+                              {entry.departureDetectedAt && !isAbsent && (
+                                <span className="text-[9px] font-bold rounded-full px-2 py-0.5 bg-amber-500/10 text-amber-300 border border-amber-500/20">
+                                  {entry.departureReviewRequired ? 'Staff review needed' : 'Departure pending'}
+                                </span>
+                              )}
+                              {(entry.partySize || 1) > 1 && (
+                                <span className="text-[9px] font-bold rounded-full px-2 py-0.5 bg-zinc-800 text-zinc-300 border border-zinc-700">
+                                  Group of {entry.partySize}
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </div>
 
@@ -1126,7 +1170,18 @@ export const OwnerApp: React.FC = () => {
                       {/* Status Action Buttons */}
                       <div className="mt-3 pt-2.5 border-t border-zinc-800/80 flex items-center justify-between gap-2">
                         <div className="flex items-center gap-1.5">
-                          {!isServing && (
+                          {isAbsent ? (
+                            <button
+                              type="button"
+                              onClick={() => restoreQueueEntry(entry.id).catch((error) =>
+                                triggerNotification(error instanceof Error ? error.message : 'Could not restore ticket')
+                              )}
+                              className="px-2.5 py-1.5 rounded-lg bg-zinc-900 border border-emerald-500/40 text-emerald-300 text-xs font-bold transition-all flex items-center gap-1 cursor-pointer"
+                            >
+                              <RefreshCw className="w-3 h-3" />
+                              <span>Restore to Queue</span>
+                            </button>
+                          ) : !isServing && (
                             <button
                               type="button"
                               onClick={() => updateCustomerStatus(entry.id, 'in_service')}
@@ -1136,24 +1191,38 @@ export const OwnerApp: React.FC = () => {
                               <span>Take to Chair</span>
                             </button>
                           )}
-                          <button
-                            type="button"
-                            onClick={() => updateCustomerStatus(entry.id, 'completed')}
-                            className="px-2.5 py-1.5 rounded-lg bg-emerald-500/15 border border-emerald-500/30 hover:bg-emerald-500 text-emerald-400 hover:text-black text-xs font-bold transition-all flex items-center gap-1 cursor-pointer"
-                          >
-                            <Check className="w-3 h-3 stroke-[3]" />
-                            <span>Done / Served</span>
-                          </button>
+                          {!isAbsent && (
+                            <button
+                              type="button"
+                              onClick={() => updateCustomerStatus(entry.id, 'completed')}
+                              className="px-2.5 py-1.5 rounded-lg bg-emerald-500/15 border border-emerald-500/30 hover:bg-emerald-500 text-emerald-400 hover:text-black text-xs font-bold transition-all flex items-center gap-1 cursor-pointer"
+                            >
+                              <Check className="w-3 h-3 stroke-[3]" />
+                              <span>Done / Served</span>
+                            </button>
+                          )}
+                          {!isAbsent && entry.departureDetectedAt && entry.departureReviewRequired && (
+                            <button
+                              type="button"
+                              onClick={() => confirmQueueDeparture(entry.id).catch((error) =>
+                                triggerNotification(error instanceof Error ? error.message : 'Could not confirm departure')
+                              )}
+                              className="px-2.5 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-bold transition-all flex items-center gap-1 cursor-pointer"
+                            >
+                              <UserCheck className="w-3 h-3" />
+                              <span>Confirm left</span>
+                            </button>
+                          )}
                         </div>
 
-                        <button
+                        {!isAbsent && <button
                           type="button"
                           onClick={() => updateCustomerStatus(entry.id, 'cancelled')}
                           className="p-1.5 text-zinc-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors cursor-pointer"
                           title="Remove customer from queue"
                         >
                           <XCircle className="w-4 h-4" />
-                        </button>
+                        </button>}
                       </div>
                     </div>
                   );
@@ -2324,6 +2393,12 @@ export const OwnerApp: React.FC = () => {
               </button>
             </div>
 
+            {partnerQrError && (
+              <div className="my-3 rounded-xl border border-rose-500/30 bg-rose-950/30 p-3 text-xs text-rose-300">
+                {partnerQrError}. Apply the SmartQueue database migration and reload this page.
+              </div>
+            )}
+
             {/* Standee Live Card Preview with Salon Background & White Padded Rounded QR Container */}
             <div className="relative rounded-3xl overflow-hidden border-2 border-amber-500/40 shadow-2xl p-5 text-center my-4 group">
               {/* Salon Shop Photo in Background */}
@@ -2376,6 +2451,34 @@ export const OwnerApp: React.FC = () => {
                   Place this standee on your counter for customer walk-in check-in
                 </div>
               </div>
+            </div>
+
+            <div className="flex items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-900/70 p-3 my-3">
+              <label htmlFor="smart-queue-radius" className="flex-1 text-[11px] font-semibold text-zinc-300">
+                Location assistance radius (50–500 m)
+              </label>
+              <input
+                id="smart-queue-radius"
+                type="number"
+                min={50}
+                max={500}
+                value={geofenceRadius}
+                onChange={(event) => setGeofenceRadius(Number(event.target.value))}
+                className="w-20 rounded-lg border border-zinc-700 bg-zinc-950 px-2 py-1.5 text-xs text-white"
+              />
+              <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    await updateSmartQueueRadius(geofenceRadius);
+                  } catch (error) {
+                    triggerNotification(error instanceof Error ? error.message : 'Could not save SmartQueue radius');
+                  }
+                }}
+                className="rounded-lg bg-amber-500 px-3 py-1.5 text-[11px] font-bold text-black"
+              >
+                Save
+              </button>
             </div>
 
             {/* Direct URL input with copy */}

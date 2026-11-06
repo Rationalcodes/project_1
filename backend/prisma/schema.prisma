@@ -53,6 +53,7 @@ model Salon {
   startingPrice           Decimal  @default(150.0) @map("starting_price") @db.Decimal(10, 2)
   isVerified              Boolean  @default(false) @map("is_verified")
   status                  String   @default("active") @db.VarChar(20)
+  smartQueueGeofenceRadiusMeters Int @default(100) @map("smart_queue_geofence_radius_meters")
 
   todayCustomersServed    Int      @default(0) @map("today_customers_served")
   todayRevenue            Decimal  @default(0.0) @map("today_revenue") @db.Decimal(12, 2)
@@ -221,6 +222,18 @@ model SalonQueueEntry {
   userId                  String?         @map("user_id") @db.VarChar(64)
   notes                   String?
   cancellationReason      String?         @map("cancellation_reason") @db.VarChar(255)
+  checkInMethod           String          @default("online") @map("check_in_method") @db.VarChar(20)
+  partySize               Int             @default(1) @map("party_size")
+  locationConsent         Boolean         @default(false) @map("location_consent")
+  arrivalConfirmedAt      DateTime?       @map("arrival_confirmed_at") @db.Timestamptz
+  lastLocationObservedAt  DateTime?       @map("last_location_observed_at") @db.Timestamptz
+  lastLocationAccuracy    Float?          @map("last_location_accuracy")
+  outsideObservationCount Int             @default(0) @map("outside_observation_count")
+  firstOutsideObservedAt  DateTime?       @map("first_outside_observed_at") @db.Timestamptz
+  departureDetectedAt     DateTime?       @map("departure_detected_at") @db.Timestamptz
+  departureConfirmedAt    DateTime?       @map("departure_confirmed_at") @db.Timestamptz
+  departureConfirmationSource String?     @map("departure_confirmation_source") @db.VarChar(30)
+  departureReviewRequired Boolean         @default(false) @map("departure_review_required")
   updatedAt               DateTime        @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
 
   salon                   Salon           @relation(fields: [salonId], references: [id], onDelete: Cascade)

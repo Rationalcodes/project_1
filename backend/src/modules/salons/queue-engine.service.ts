@@ -68,6 +68,7 @@ export interface CalculatedQueueItem {
   serviceName: string;
   serviceId?: string | null;
   serviceDuration: number;
+  partySize?: number;
   servicePrice: number;
   assignedStaffId?: string | null;
   assignedStaffName?: string | null;
@@ -463,7 +464,10 @@ export class QueueEngineService implements OnModuleInit {
           staffBusyMap[staff.id] = activeItem;
           const startedMs = activeItem.startedAt.getTime();
           const totalDurationMs =
-            ((activeItem.serviceDuration || 20) + (activeItem.extendedMinutes || 0)) * 60 * 1000;
+            (
+              (activeItem.serviceDuration || 20) * Math.max(1, activeItem.partySize || 1) +
+              (activeItem.extendedMinutes || 0)
+            ) * 60 * 1000;
           const expectedFinishMs = startedMs + totalDurationMs;
 
           // If expected finish is in the past, add an overdue buffer of 3 minutes
@@ -498,7 +502,8 @@ export class QueueEngineService implements OnModuleInit {
     // Process IN_SERVICE items
     for (const item of inServiceEntries) {
       const startedMs = item.startedAt ? item.startedAt.getTime() : nowMs;
-      const durationMins = (item.serviceDuration || 20) + (item.extendedMinutes || 0);
+      const durationMins =
+        (item.serviceDuration || 20) * Math.max(1, item.partySize || 1) + (item.extendedMinutes || 0);
       const elapsedMins = Math.max(0, Math.floor((nowMs - startedMs) / (60 * 1000)));
       const remainingMins = Math.max(0, durationMins - elapsedMins);
       const isOverdue = elapsedMins > durationMins;
@@ -516,6 +521,7 @@ export class QueueEngineService implements OnModuleInit {
         serviceName: item.serviceName,
         serviceId: item.serviceId,
         serviceDuration: item.serviceDuration,
+        partySize: item.partySize || 1,
         servicePrice: Number(item.servicePrice || 150),
         assignedStaffId: item.assignedStaffId,
         assignedStaffName: staff?.name || 'Assigned Stylist',
@@ -539,7 +545,8 @@ export class QueueEngineService implements OnModuleInit {
     let waitPos = 0;
     for (const item of waitingEntries) {
       waitPos += 1;
-      const durationMins = item.serviceDuration || salon?.avgServiceTimeMinutes || 20;
+      const durationMins =
+        (item.serviceDuration || salon?.avgServiceTimeMinutes || 20) * Math.max(1, item.partySize || 1);
       const durationMs = durationMins * 60 * 1000;
 
       // Identify eligible staff
@@ -596,6 +603,7 @@ export class QueueEngineService implements OnModuleInit {
         serviceName: item.serviceName,
         serviceId: item.serviceId,
         serviceDuration: durationMins,
+        partySize: item.partySize || 1,
         servicePrice: Number(item.servicePrice || 150),
         assignedStaffId: item.assignedStaffId || earliestStaff.id,
         assignedStaffName: earliestStaff.name,

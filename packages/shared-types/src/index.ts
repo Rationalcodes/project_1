@@ -177,11 +177,18 @@ export interface QueueEntry {
   customerName: string;
   phone?: string | null;
   serviceName?: string | null;
-  status: 'waiting' | 'in_service' | 'completed' | 'cancelled';
+  status: 'waiting' | 'called' | 'in_service' | 'skipped' | 'no_show' | 'completed' | 'cancelled';
   joinedAt: string;
   servedAt?: string | null;
   deviceId?: string | null;
   userId?: string | null;
+  partySize?: number;
+  checkInMethod?: 'online' | 'qr' | string;
+  arrivalConfirmedAt?: string | null;
+  locationConsent?: boolean;
+  departureDetectedAt?: string | null;
+  departureReviewRequired?: boolean;
+  queueAccessToken?: string;
 }
 
 export interface CustomerProfile {

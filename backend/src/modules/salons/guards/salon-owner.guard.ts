@@ -5,6 +5,7 @@ import {
   ForbiddenException,
   UnauthorizedException,
   NotFoundException,
+  InternalServerErrorException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../../../prisma/prisma.service';
@@ -84,8 +85,7 @@ export class SalonOwnerGuard implements CanActivate {
         isMemberOwner = memberRecord?.role === 'PARTNER_OWNER';
       }
     } catch {
-      // In offline / fallback mode, simulate existing salon record
-      salon = { id: salonId, ownerId: user.id };
+      throw new InternalServerErrorException('Salon authorization could not be verified.');
     }
 
     if (!salon) {

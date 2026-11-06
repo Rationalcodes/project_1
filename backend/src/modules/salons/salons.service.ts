@@ -3,8 +3,10 @@ import {
   NotFoundException,
   ForbiddenException,
   BadRequestException,
+  InternalServerErrorException,
   Logger,
 } from '@nestjs/common';
+import { createHmac, randomUUID, timingSafeEqual } from 'crypto';
 import { PrismaService } from '../../prisma/prisma.service';
 import { RegisterSalonDto } from './dto/register-salon.dto';
 import { UpdateSalonDto } from './dto/update-salon.dto';
@@ -28,10 +30,21 @@ import {
   SubmitCrowdReportDto,
 } from './dto/queue-action.dto';
 import { CreateQueueEntryDto } from './dto/create-queue-entry.dto';
+import {
+  SmartQueueCheckInDto,
+  SmartQueueConsentDto,
+  SmartQueueDepartureResponseDto,
+  SmartQueueLocationDto,
+  SmartQueueSettingsDto,
+} from './dto/smart-queue.dto';
 
 @Injectable()
 export class SalonsService {
   private readonly logger = new Logger(SalonsService.name);
+  private readonly departureAccuracyLimitMeters = 50;
+  private readonly minimumOutsideObservations = 2;
+  private readonly departureGracePeriodMs = 3 * 60 * 1000;
+  private readonly staffReviewDelayMs = 5 * 60 * 1000;
 
   // In-memory backing store for local testing / offline development
   private localSalons: Map<string, any> = new Map();
@@ -41,6 +54,41 @@ export class SalonsService {
     private readonly queueEngine: QueueEngineService = new QueueEngineService(prisma),
     private readonly queueGateway: QueueGateway = new QueueGateway(),
   ) {}
+
+  private smartQueueSignature(purpose: string, value: string): string {
+    if (!process.env.JWT_SECRET && process.env.NODE_ENV === 'production') {
+      throw new InternalServerErrorException('Secure SmartQueue tokens are not configured.');
+    }
+    const secret = process.env.JWT_SECRET || 'kumbhakaran-jwt-secure-default-key-32chars-min';
+    return createHmac('sha256', secret).update(`${purpose}:${value}`).digest('base64url');
+  }
+
+  private secureTokenMatches(expected: string, provided?: string): boolean {
+    if (!provided) return false;
+    const expectedBytes = Buffer.from(expected);
+    const providedBytes = Buffer.from(provided);
+    return expectedBytes.length === providedBytes.length && timingSafeEqual(expectedBytes, providedBytes);
+  }
+
+  private isValidSalonCheckInToken(salonId: string, token?: string): boolean {
+    return this.secureTokenMatches(this.smartQueueSignature('salon-check-in', salonId), token);
+  }
+
+  private queueEntryAccessToken(entry: { id: string; salonId: string; joinedAt: Date }): string {
+    return this.smartQueueSignature(
+      'queue-entry-access',
+      `${entry.salonId}:${entry.id}:${entry.joinedAt.getTime()}`,
+    );
+  }
+
+  private requireQueueEntryAccess(
+    entry: { id: string; salonId: string; joinedAt: Date },
+    accessToken?: string,
+  ) {
+    if (!this.secureTokenMatches(this.queueEntryAccessToken(entry), accessToken)) {
+      throw new ForbiddenException('A valid ticket access link is required.');
+    }
+  }
 
   async registerSalon(dto: RegisterSalonDto, resolvedOwnerId?: string): Promise<any> {
     const searchEmail = dto.email?.toLowerCase().trim();
@@ -948,14 +996,85 @@ export class SalonsService {
    * 2. Get all active queue entries with calculated ETAs & assigned staff
    */
   async getQueueEntries(salonId: string) {
-    try {
-      const res = await this.queueEngine.recalculateSalonQueue(salonId);
-      this.syncLocalQueueCache(salonId, res.overview.totalWaiting);
-      return res.activeEntries;
-    } catch (err) {
-      this.logger.warn(`Failed to fetch intelligent queue entries for salon ${salonId}: ${err}`);
-      return [];
-    }
+    const res = await this.queueEngine.recalculateSalonQueue(salonId);
+    this.syncLocalQueueCache(salonId, res.overview.totalWaiting);
+    return res.activeEntries.map((entry: any) => ({
+      id: entry.id,
+      salonId: entry.salonId,
+      position: entry.position,
+      ticketNumber: entry.ticketNumber,
+      partySize: entry.partySize || 1,
+      status: entry.status,
+      serviceName: entry.serviceName,
+      joinedAt: entry.joinedAt,
+      estimatedWaitMinutes: entry.estimatedWaitMinutes,
+    }));
+  }
+
+  async getPartnerQueueEntries(salonId: string) {
+    const res = await this.queueEngine.recalculateSalonQueue(salonId);
+    this.syncLocalQueueCache(salonId, res.overview.totalWaiting);
+    const smartMetadata = await this.prisma.salonQueueEntry.findMany({
+      where: {
+        salonId,
+        status: { in: ['waiting', 'called', 'in_service', 'skipped', 'no_show'] },
+      },
+      select: {
+        id: true,
+        checkInMethod: true,
+        partySize: true,
+        locationConsent: true,
+        arrivalConfirmedAt: true,
+        departureDetectedAt: true,
+        departureReviewRequired: true,
+        departureConfirmationSource: true,
+      },
+    });
+    const metadataById = new Map(smartMetadata.map((entry) => [entry.id, entry]));
+    const activeEntries = res.activeEntries.map((entry: any) => ({
+      ...entry,
+      ...metadataById.get(entry.id),
+      checkInMethod: metadataById.get(entry.id)?.checkInMethod || 'online',
+      arrivalConfirmedAt: metadataById.get(entry.id)?.arrivalConfirmedAt?.toISOString() || null,
+      departureDetectedAt: metadataById.get(entry.id)?.departureDetectedAt?.toISOString() || null,
+    }));
+    const absentEntries = await this.prisma.salonQueueEntry.findMany({
+      where: { salonId, status: 'no_show' },
+      orderBy: { updatedAt: 'desc' },
+      take: 20,
+      select: {
+        id: true,
+        salonId: true,
+        position: true,
+        ticketNumber: true,
+        customerName: true,
+        phone: true,
+        serviceName: true,
+        serviceDuration: true,
+        servicePrice: true,
+        status: true,
+        joinedAt: true,
+        updatedAt: true,
+        checkInMethod: true,
+        partySize: true,
+        locationConsent: true,
+        arrivalConfirmedAt: true,
+        departureDetectedAt: true,
+        departureReviewRequired: true,
+        departureConfirmationSource: true,
+      },
+    });
+    return [
+      ...activeEntries,
+      ...absentEntries.map((entry) => ({
+        ...entry,
+        servicePrice: Number(entry.servicePrice),
+        joinedAt: entry.joinedAt.toISOString(),
+        updatedAt: entry.updatedAt.toISOString(),
+        arrivalConfirmedAt: entry.arrivalConfirmedAt?.toISOString() || null,
+        departureDetectedAt: entry.departureDetectedAt?.toISOString() || null,
+      })),
+    ];
   }
 
   /**
@@ -996,14 +1115,403 @@ export class SalonsService {
     };
   }
 
+  async getCustomerQueueEntry(salonId: string, entryId: string, accessToken?: string) {
+    const entry = await this.prisma.salonQueueEntry.findFirst({
+      where: { id: entryId, salonId },
+    });
+    if (!entry) throw new NotFoundException(`Queue ticket '${entryId}' not found.`);
+    this.requireQueueEntryAccess(entry, accessToken);
+    const publicQueueEntries = await this.getQueueEntries(salonId);
+    const activeQueueEntry = publicQueueEntries.find((item: any) => item.id === entryId);
+    return {
+      id: entry.id,
+      salonId: entry.salonId,
+      position: activeQueueEntry?.position ?? entry.position,
+      ticketNumber: entry.ticketNumber,
+      customerName: entry.customerName,
+      serviceName: entry.serviceName,
+      partySize: entry.partySize,
+      status: entry.status,
+      joinedAt: entry.joinedAt.toISOString(),
+      calledAt: entry.calledAt?.toISOString() || null,
+      startedAt: entry.startedAt?.toISOString() || null,
+      servedAt: entry.servedAt?.toISOString() || null,
+      cancelledAt: entry.cancelledAt?.toISOString() || null,
+      estimatedWaitMinutes: activeQueueEntry?.estimatedWaitMinutes ?? entry.estimatedWaitMinutes,
+      checkInMethod: entry.checkInMethod,
+      locationConsent: entry.locationConsent,
+      arrivalConfirmedAt: entry.arrivalConfirmedAt?.toISOString() || null,
+      departureDetectedAt: entry.departureDetectedAt?.toISOString() || null,
+      departureReviewRequired: entry.departureReviewRequired,
+    };
+  }
+
+  async getSalonCheckInQr(salonId: string) {
+    const salon = await this.prisma.salon.findUnique({
+      where: { id: salonId },
+      select: { id: true, smartQueueGeofenceRadiusMeters: true },
+    });
+    if (!salon) throw new NotFoundException(`Salon with ID '${salonId}' not found.`);
+    return {
+      salonId,
+      checkInToken: this.smartQueueSignature('salon-check-in', salonId),
+      geofenceRadiusMeters: salon.smartQueueGeofenceRadiusMeters,
+    };
+  }
+
+  async updateSmartQueueSettings(salonId: string, dto: SmartQueueSettingsDto) {
+    if (dto.geofenceRadiusMeters === undefined) {
+      return this.getSalonCheckInQr(salonId);
+    }
+    const radius = Math.round(dto.geofenceRadiusMeters);
+    if (radius < 50 || radius > 500) {
+      throw new BadRequestException('The SmartQueue radius must be between 50 and 500 metres.');
+    }
+    const salon = await this.prisma.salon.update({
+      where: { id: salonId },
+      data: { smartQueueGeofenceRadiusMeters: radius },
+      select: { id: true, smartQueueGeofenceRadiusMeters: true },
+    });
+    return { salonId: salon.id, geofenceRadiusMeters: salon.smartQueueGeofenceRadiusMeters };
+  }
+
+  async confirmQueueEntryArrival(
+    salonId: string,
+    entryId: string,
+    dto: SmartQueueCheckInDto,
+    accessToken?: string,
+  ) {
+    if (!this.isValidSalonCheckInToken(salonId, dto.qrToken)) {
+      throw new ForbiddenException('This salon check-in QR code is invalid.');
+    }
+    const entry = await this.prisma.salonQueueEntry.findFirst({ where: { id: entryId, salonId } });
+    if (!entry) throw new NotFoundException(`Queue ticket '${entryId}' not found.`);
+    this.requireQueueEntryAccess(entry, accessToken);
+    if (!['waiting', 'called', 'skipped'].includes(entry.status)) {
+      throw new BadRequestException('Only an active queue ticket can be checked in.');
+    }
+    if (entry.arrivalConfirmedAt) {
+      return this.getCustomerQueueEntry(salonId, entryId, accessToken);
+    }
+    const now = new Date();
+    await this.prisma.salonQueueEntry.update({
+      where: { id: entryId },
+      data: { arrivalConfirmedAt: now, checkInMethod: 'qr' },
+    });
+    await this.logQueueEvent(salonId, entryId, entry.userId || 'customer', 'customer', 'queue.arrival.qr_confirmed', entry.status, entry.status);
+    this.queueGateway.broadcastToSalon(salonId, 'queue.entry.arrival_confirmed', {
+      entryId,
+      method: 'qr',
+      arrivalConfirmedAt: now.toISOString(),
+    });
+    return this.getCustomerQueueEntry(salonId, entryId, accessToken);
+  }
+
+  async updateQueueLocationConsent(
+    salonId: string,
+    entryId: string,
+    dto: SmartQueueConsentDto,
+    accessToken?: string,
+  ) {
+    const entry = await this.prisma.salonQueueEntry.findFirst({ where: { id: entryId, salonId } });
+    if (!entry) throw new NotFoundException(`Queue ticket '${entryId}' not found.`);
+    this.requireQueueEntryAccess(entry, accessToken);
+    if (!['waiting', 'called', 'skipped'].includes(entry.status)) {
+      throw new BadRequestException('Location assistance is no longer available for this ticket.');
+    }
+    const updated = await this.prisma.salonQueueEntry.update({
+      where: { id: entryId },
+      data: dto.enabled
+        ? { locationConsent: true }
+        : {
+            locationConsent: false,
+            lastLocationObservedAt: null,
+            lastLocationAccuracy: null,
+            outsideObservationCount: 0,
+            firstOutsideObservedAt: null,
+            departureDetectedAt: null,
+            departureReviewRequired: false,
+          },
+      select: { locationConsent: true },
+    });
+    await this.logQueueEvent(salonId, entryId, entry.userId || 'customer', 'customer', 'queue.location.consent_changed', entry.status, entry.status, {
+      enabled: updated.locationConsent,
+    });
+    return { success: true, locationConsent: updated.locationConsent };
+  }
+
+  async observeQueueEntryLocation(
+    salonId: string,
+    entryId: string,
+    dto: SmartQueueLocationDto,
+    accessToken?: string,
+  ) {
+    const entry = await this.prisma.salonQueueEntry.findFirst({ where: { id: entryId, salonId } });
+    if (!entry) throw new NotFoundException(`Queue ticket '${entryId}' not found.`);
+    this.requireQueueEntryAccess(entry, accessToken);
+    if (!entry.locationConsent) {
+      throw new ForbiddenException('Enable location assistance first.');
+    }
+    if (!['waiting', 'called', 'skipped'].includes(entry.status)) {
+      return { accepted: false, reason: 'ticket_not_waiting', departureCandidate: false };
+    }
+
+    const observedAt = new Date(dto.observedAt);
+    const now = new Date();
+    if (
+      Number.isNaN(observedAt.getTime()) ||
+      observedAt.getTime() > now.getTime() + 30_000 ||
+      now.getTime() - observedAt.getTime() > 2 * 60 * 1000
+    ) {
+      throw new BadRequestException('Location observation timestamp is stale or invalid.');
+    }
+    if (entry.lastLocationObservedAt && observedAt <= entry.lastLocationObservedAt) {
+      return {
+        accepted: false,
+        reason: 'duplicate_observation',
+        departureCandidate: Boolean(entry.departureDetectedAt),
+        requiresStaffReview: entry.departureReviewRequired,
+      };
+    }
+    if (dto.accuracyMeters > this.departureAccuracyLimitMeters) {
+      return { accepted: false, reason: 'location_accuracy_too_low', departureCandidate: Boolean(entry.departureDetectedAt) };
+    }
+
+    const salon = await this.prisma.salon.findUnique({
+      where: { id: salonId },
+      select: { latitude: true, longitude: true, smartQueueGeofenceRadiusMeters: true },
+    });
+    if (!salon) throw new NotFoundException(`Salon with ID '${salonId}' not found.`);
+    const distanceMeters = this.calculateDistanceMeters(
+      dto.latitude,
+      dto.longitude,
+      salon.latitude,
+      salon.longitude,
+    );
+    const isInside = distanceMeters <= salon.smartQueueGeofenceRadiusMeters;
+    if (!entry.arrivalConfirmedAt) {
+      const observed = await this.prisma.salonQueueEntry.updateMany({
+        where: {
+          id: entryId,
+          salonId,
+          status: { in: ['waiting', 'called', 'skipped'] },
+          lastLocationObservedAt: entry.lastLocationObservedAt,
+        },
+        data: {
+          lastLocationObservedAt: observedAt,
+          lastLocationAccuracy: dto.accuracyMeters,
+        },
+      });
+      if (observed.count === 0) {
+        return { accepted: false, reason: 'observation_already_processed', arrivalAssistance: true };
+      }
+      return {
+        accepted: true,
+        nearSalon: isInside,
+        arrivalAssistance: true,
+        requiresQrCheckIn: isInside,
+      };
+    }
+
+    const firstOutsideAt = isInside ? null : entry.firstOutsideObservedAt || observedAt;
+    const outsideObservationCount = isInside ? 0 : (entry.outsideObservationCount || 0) + 1;
+    const departureDetectedAt =
+      !isInside &&
+      outsideObservationCount >= this.minimumOutsideObservations &&
+      firstOutsideAt &&
+      observedAt.getTime() - firstOutsideAt.getTime() >= this.departureGracePeriodMs
+        ? entry.departureDetectedAt || observedAt
+        : isInside
+          ? null
+          : entry.departureDetectedAt;
+    const departureReviewRequired = Boolean(
+      departureDetectedAt && now.getTime() - departureDetectedAt.getTime() >= this.staffReviewDelayMs,
+    );
+
+    const updated = await this.prisma.salonQueueEntry.updateMany({
+      where: {
+        id: entryId,
+        salonId,
+        status: { in: ['waiting', 'called', 'skipped'] },
+        lastLocationObservedAt: entry.lastLocationObservedAt,
+      },
+      data: {
+        lastLocationObservedAt: observedAt,
+        lastLocationAccuracy: dto.accuracyMeters,
+        outsideObservationCount,
+        firstOutsideObservedAt: firstOutsideAt,
+        departureDetectedAt,
+        departureReviewRequired,
+      },
+    });
+    if (updated.count === 0) {
+      return { accepted: false, reason: 'observation_already_processed', departureCandidate: Boolean(entry.departureDetectedAt) };
+    }
+    if (departureDetectedAt) {
+      this.queueGateway.broadcastToSalon(salonId, 'queue.entry.departure_candidate', {
+        entryId,
+        detectedAt: departureDetectedAt.toISOString(),
+        requiresStaffReview: departureReviewRequired,
+      });
+    }
+    return {
+      accepted: true,
+      nearSalon: isInside,
+      departureCandidate: Boolean(departureDetectedAt),
+      requiresCustomerConfirmation: Boolean(departureDetectedAt),
+      requiresStaffReview: departureReviewRequired,
+    };
+  }
+
+  async respondToQueueDeparture(
+    salonId: string,
+    entryId: string,
+    dto: SmartQueueDepartureResponseDto,
+    accessToken?: string,
+  ) {
+    const entry = await this.prisma.salonQueueEntry.findFirst({ where: { id: entryId, salonId } });
+    if (!entry) throw new NotFoundException(`Queue ticket '${entryId}' not found.`);
+    this.requireQueueEntryAccess(entry, accessToken);
+    if (!entry.departureDetectedAt) {
+      throw new BadRequestException('There is no departure confirmation to respond to.');
+    }
+    if (!['waiting', 'called', 'skipped'].includes(entry.status)) {
+      throw new BadRequestException('This queue ticket can no longer be changed by the customer.');
+    }
+
+    if (dto.response === 'left') {
+      validateQueueTransition(entry.status, 'cancelled');
+      const now = new Date();
+      const updated = await this.prisma.salonQueueEntry.updateMany({
+        where: {
+          id: entryId,
+          salonId,
+          status: { in: ['waiting', 'called', 'skipped'] },
+          departureDetectedAt: { not: null },
+        },
+        data: {
+          status: 'cancelled',
+          cancelledAt: now,
+          departureConfirmedAt: now,
+          departureConfirmationSource: 'customer',
+          departureReviewRequired: false,
+          cancellationReason: 'Customer confirmed leaving before service',
+        },
+      });
+      if (updated.count === 0) {
+        throw new BadRequestException('This queue ticket changed before the departure response was saved.');
+      }
+      await this.logQueueEvent(salonId, entryId, entry.userId || 'customer', 'customer', 'queue.departure.customer_confirmed', entry.status, 'cancelled');
+      const queueData = await this.queueEngine.recalculateSalonQueue(salonId);
+      this.syncLocalQueueCache(salonId, queueData.overview.totalWaiting);
+      this.queueGateway.broadcastToSalon(salonId, 'queue.entry.updated', {
+        entryId,
+        status: 'cancelled',
+        overview: queueData.overview,
+        entries: queueData.activeEntries,
+      });
+      return { success: true, status: 'cancelled', overview: queueData.overview };
+    }
+
+    await this.prisma.salonQueueEntry.update({
+      where: { id: entryId },
+      data: {
+        outsideObservationCount: 0,
+        firstOutsideObservedAt: null,
+        departureDetectedAt: null,
+        departureReviewRequired: false,
+      },
+    });
+    await this.logQueueEvent(salonId, entryId, entry.userId || 'customer', 'customer', `queue.departure.${dto.response}`, entry.status, entry.status);
+    return { success: true, status: entry.status };
+  }
+
+  async confirmQueueDepartureByStaff(salonId: string, entryId: string, actorId?: string) {
+    const entry = await this.prisma.salonQueueEntry.findFirst({ where: { id: entryId, salonId } });
+    if (!entry) throw new NotFoundException(`Queue ticket '${entryId}' not found.`);
+    if (!['waiting', 'called', 'skipped'].includes(entry.status)) {
+      throw new BadRequestException('Only a waiting customer can be marked as having left.');
+    }
+    validateQueueTransition(entry.status, 'no_show');
+    const now = new Date();
+    const updated = await this.prisma.salonQueueEntry.updateMany({
+      where: { id: entryId, salonId, status: { in: ['waiting', 'called', 'skipped'] } },
+      data: {
+        status: 'no_show',
+        departureConfirmedAt: now,
+        departureConfirmationSource: 'staff',
+        departureReviewRequired: false,
+        departureDetectedAt: null,
+        locationConsent: false,
+        lastLocationObservedAt: null,
+        lastLocationAccuracy: null,
+        outsideObservationCount: 0,
+        firstOutsideObservedAt: null,
+      },
+    });
+    if (updated.count === 0) {
+      throw new BadRequestException('This queue ticket is no longer waiting for service.');
+    }
+    await this.logQueueEvent(salonId, entryId, actorId || 'staff', 'staff', 'queue.departure.staff_confirmed', entry.status, 'no_show');
+    const queueData = await this.queueEngine.recalculateSalonQueue(salonId);
+    this.syncLocalQueueCache(salonId, queueData.overview.totalWaiting);
+    this.queueGateway.broadcastToSalon(salonId, 'queue.entry.updated', {
+      entryId,
+      status: 'no_show',
+      overview: queueData.overview,
+      entries: queueData.activeEntries,
+    });
+    return { success: true, status: 'no_show', overview: queueData.overview };
+  }
+
+  async customerCancelQueueEntry(salonId: string, entryId: string, accessToken?: string) {
+    const entry = await this.prisma.salonQueueEntry.findFirst({ where: { id: entryId, salonId } });
+    if (!entry) throw new NotFoundException(`Queue ticket '${entryId}' not found.`);
+    this.requireQueueEntryAccess(entry, accessToken);
+    if (!['waiting', 'called', 'skipped'].includes(entry.status)) {
+      throw new BadRequestException('Only an unserved queue ticket can be cancelled by the customer.');
+    }
+    validateQueueTransition(entry.status, 'cancelled');
+    const now = new Date();
+    const updated = await this.prisma.salonQueueEntry.updateMany({
+      where: { id: entryId, salonId, status: { in: ['waiting', 'called', 'skipped'] } },
+      data: {
+        status: 'cancelled',
+        cancelledAt: now,
+        departureConfirmedAt: entry.departureDetectedAt ? now : null,
+        departureConfirmationSource: entry.departureDetectedAt ? 'customer' : null,
+        departureReviewRequired: false,
+        cancellationReason: 'Customer cancelled their queue ticket',
+      },
+    });
+    if (updated.count === 0) {
+      throw new BadRequestException('This queue ticket is no longer waiting for service.');
+    }
+    await this.logQueueEvent(salonId, entryId, entry.userId || 'customer', 'customer', 'queue.entry.customer_cancelled', entry.status, 'cancelled');
+    const queueData = await this.queueEngine.recalculateSalonQueue(salonId);
+    this.syncLocalQueueCache(salonId, queueData.overview.totalWaiting);
+    this.queueGateway.broadcastToSalon(salonId, 'queue.entry.updated', {
+      entryId,
+      status: 'cancelled',
+      overview: queueData.overview,
+      entries: queueData.activeEntries,
+    });
+    return { success: true, status: 'cancelled', overview: queueData.overview };
+  }
+
   /**
    * 3. Add customer to queue (With service duration & price snapshotting!)
    */
   async addQueueEntry(salonId: string, dto: CreateQueueEntryDto, actorId?: string) {
-    const entryId = `q-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+    const entryId = `q-${randomUUID()}`;
     const cleanName = (dto.customerName || '').trim() || 'Walk-in Customer';
     const cleanPhone = (dto.phone || '').trim() || null;
     const cleanService = (dto.serviceName || '').trim() || 'Haircut & Styling';
+    const checkInMethod = dto.checkInToken ? 'qr' : 'online';
+
+    if (dto.checkInToken && !this.isValidSalonCheckInToken(salonId, dto.checkInToken)) {
+      throw new ForbiddenException('This salon check-in QR code is invalid.');
+    }
 
     // Verify salon exists & queue is not closed
     const salon = await this.prisma.salon.findUnique({
@@ -1069,7 +1577,8 @@ export class SalonsService {
     const ticketNumber = `#${String(nextPos).padStart(2, '0')}`;
 
     // Insert queue entry with immutable snapshot
-    await this.prisma.salonQueueEntry.create({
+    const joinedAt = new Date();
+    const entry = await this.prisma.salonQueueEntry.create({
       data: {
         id: entryId,
         salonId,
@@ -1083,10 +1592,13 @@ export class SalonsService {
         servicePrice: snapshotPrice,
         assignedStaffId: dto.preferredStaffId || null,
         status: 'waiting',
-        joinedAt: new Date(),
+        joinedAt,
         deviceId: dto.deviceId || null,
-        userId: dto.userId || null,
+        userId: actorId || null,
         notes: dto.notes || null,
+        checkInMethod,
+        partySize: dto.partySize || 1,
+        arrivalConfirmedAt: checkInMethod === 'qr' ? joinedAt : null,
       },
     });
 
@@ -1135,6 +1647,13 @@ export class SalonsService {
         servicePrice: snapshotPrice,
         status: 'waiting',
         joinedAt: new Date().toISOString(),
+      },
+      queueAccessToken: this.queueEntryAccessToken(entry),
+      smartQueue: {
+        checkInMethod: entry.checkInMethod,
+        partySize: entry.partySize,
+        arrivalConfirmedAt: entry.arrivalConfirmedAt?.toISOString() || null,
+        locationConsent: entry.locationConsent,
       },
       currentQueue: queueData.overview.totalWaiting,
       overview: queueData.overview,
@@ -1377,10 +1896,28 @@ export class SalonsService {
 
     validateQueueTransition(entry.status, 'waiting');
 
-    await this.prisma.salonQueueEntry.update({
-      where: { id: entryId },
-      data: { status: 'waiting' },
+    const updated = await this.prisma.salonQueueEntry.updateMany({
+      where: { id: entryId, salonId, status: entry.status },
+      data: {
+        status: 'waiting',
+        ...(entry.status === 'no_show'
+          ? {
+              departureDetectedAt: null,
+              departureConfirmedAt: null,
+              departureConfirmationSource: null,
+              departureReviewRequired: false,
+              locationConsent: false,
+              lastLocationObservedAt: null,
+              lastLocationAccuracy: null,
+              outsideObservationCount: 0,
+              firstOutsideObservedAt: null,
+            }
+          : {}),
+      },
     });
+    if (updated.count === 0) {
+      throw new BadRequestException('This queue ticket changed before it could be restored.');
+    }
 
     await this.logQueueEvent(salonId, entryId, actorId || 'staff', 'staff', 'queue.entry.recalled', entry.status, 'waiting');
 
@@ -1644,7 +2181,10 @@ export class SalonsService {
     if (normalized === 'cancelled') {
       return this.cancelQueueEntry(salonId, entryId);
     }
-    return { success: true };
+    if (normalized === 'waiting') {
+      return this.recallCustomer(salonId, entryId);
+    }
+    throw new BadRequestException(`Unsupported queue status '${status}'.`);
   }
 
   /**

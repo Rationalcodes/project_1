@@ -53,6 +53,9 @@ interface PartnerContextType {
   refreshQueueEntries: (salonId?: string) => Promise<void>;
   addCustomerToQueue: (name: string, phone?: string, serviceName?: string) => Promise<void>;
   updateCustomerStatus: (entryId: string, status: string) => Promise<void>;
+  confirmQueueDeparture: (entryId: string) => Promise<void>;
+  restoreQueueEntry: (entryId: string) => Promise<void>;
+  updateSmartQueueRadius: (radiusMeters: number) => Promise<void>;
   clearQueue: () => Promise<void>;
   latestCrowdReport: any | null;
 }
@@ -206,7 +209,7 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
       return;
     }
     try {
-      const entries = await defaultApiClient.getQueueEntries(sId);
+      const entries = await defaultApiClient.getPartnerQueueEntries(sId);
       if (Array.isArray(entries)) {
         setQueueEntries(entries);
         // Only increase currentQueue if digital tickets exceed manual queue count
@@ -360,6 +363,31 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
     } catch (err: any) {
       triggerNotification(err?.message || 'Failed to update customer status');
     }
+  };
+
+  const confirmQueueDeparture = async (entryId: string) => {
+    const sId = activeSalonId || activeSalon?.id;
+    if (!sId) return;
+    await defaultApiClient.confirmQueueDepartureByStaff(sId, entryId);
+    broadcastTelemetryUpdate(sId);
+    triggerNotification('Customer marked absent. Their ticket can still be restored.');
+    await refreshQueueEntries(sId);
+  };
+
+  const restoreQueueEntry = async (entryId: string) => {
+    const sId = activeSalonId || activeSalon?.id;
+    if (!sId) return;
+    await defaultApiClient.restoreQueueEntry(sId, entryId);
+    broadcastTelemetryUpdate(sId);
+    triggerNotification('Customer ticket restored to the queue.');
+    await refreshQueueEntries(sId);
+  };
+
+  const updateSmartQueueRadius = async (radiusMeters: number) => {
+    const sId = activeSalonId || activeSalon?.id;
+    if (!sId) return;
+    await defaultApiClient.updateSmartQueueSettings(sId, radiusMeters);
+    triggerNotification(`Location assistance radius set to ${Math.round(radiusMeters)} metres.`);
   };
 
   const clearQueue = async () => {
@@ -673,7 +701,9 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
     // If salon is being closed, clear active queue in local state & broadcast 0 queue count
     if (updates.isOpen === false) {
       setQueueEntries([]);
-      defaultApiClient.clearQueueEntries(salonId).catch(() => {});
+      defaultApiClient.clearQueueEntries(salonId).catch((err) => {
+        triggerNotification(err instanceof Error ? err.message : 'Failed to clear the queue');
+      });
       broadcastTelemetryUpdate(salonId, 0);
     }
 
@@ -874,6 +904,9 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
         refreshQueueEntries,
         addCustomerToQueue,
         updateCustomerStatus,
+        confirmQueueDeparture,
+        restoreQueueEntry,
+        updateSmartQueueRadius,
         clearQueue,
         latestCrowdReport,
       }}

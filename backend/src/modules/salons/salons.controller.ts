@@ -10,6 +10,7 @@ import {
   UseGuards,
   HttpCode,
   HttpStatus,
+  Headers,
   Req,
 } from '@nestjs/common';
 import {
@@ -46,6 +47,13 @@ import { AuthenticatedUser } from '../auth/interfaces/jwt-payload.interface';
 import { DiscoveryService } from '../discovery/discovery.service';
 import { NearbySalonsQueryDto } from '../discovery/dto/nearby-salons-query.dto';
 import { NearbySalonsResponseDto } from '../discovery/dto/nearby-salon-response.dto';
+import {
+  SmartQueueCheckInDto,
+  SmartQueueConsentDto,
+  SmartQueueDepartureResponseDto,
+  SmartQueueLocationDto,
+  SmartQueueSettingsDto,
+} from './dto/smart-queue.dto';
 
 @ApiTags('Salons')
 @Controller('salons')
@@ -203,6 +211,8 @@ export class SalonsController {
   }
 
   @Get(':id/queue-overview')
+  @UseGuards(JwtAuthGuard, SalonOwnerGuard)
+  @ApiBearerAuth()
   @ApiOperation({
     summary: 'Get live queue overview with staff availability & stats',
     description: 'Returns real-time queue overview, live timer calculations, and active staff states.',
@@ -215,13 +225,118 @@ export class SalonsController {
   @ApiOperation({
     summary: 'Get live walk-in waiting queue entries for a salon',
     description:
-      'Returns list of customers waiting in queue with their ID, name, phone, ticket number, and wait time.',
+      'Returns a privacy-safe public queue view without customer names, phone numbers, or coordinates.',
   })
   async getQueueEntries(@Param('id') id: string) {
     return this.salonsService.getQueueEntries(id);
   }
 
+  @Get(':id/partner-queue-entries')
+  @UseGuards(JwtAuthGuard, SalonOwnerGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get authorized partner queue roster and SmartQueue status indicators' })
+  async getPartnerQueueEntries(@Param('id') id: string) {
+    return this.salonsService.getPartnerQueueEntries(id);
+  }
+
+  @Get(':id/check-in-qr')
+  @UseGuards(JwtAuthGuard, SalonOwnerGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get a signed physical check-in QR token for this salon' })
+  async getSalonCheckInQr(@Param('id') id: string) {
+    return this.salonsService.getSalonCheckInQr(id);
+  }
+
+  @Patch(':id/smart-queue-settings')
+  @UseGuards(JwtAuthGuard, SalonOwnerGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Configure the salon SmartQueue assistance geofence radius' })
+  async updateSmartQueueSettings(
+    @Param('id') id: string,
+    @Body() dto: SmartQueueSettingsDto,
+  ) {
+    return this.salonsService.updateSmartQueueSettings(id, dto);
+  }
+
+  @Get(':id/queue-entries/:entryId/customer-status')
+  @ApiOperation({ summary: 'Get only the ticket associated with a valid customer access token' })
+  async getCustomerQueueEntry(
+    @Param('id') id: string,
+    @Param('entryId') entryId: string,
+    @Headers('x-queue-access-token') accessToken?: string,
+  ) {
+    return this.salonsService.getCustomerQueueEntry(id, entryId, accessToken);
+  }
+
+  @Post(':id/queue-entries/:entryId/check-in')
+  @ApiOperation({ summary: 'Confirm physical arrival by scanning this salon’s signed QR code' })
+  async confirmQueueEntryArrival(
+    @Param('id') id: string,
+    @Param('entryId') entryId: string,
+    @Body() dto: SmartQueueCheckInDto,
+    @Headers('x-queue-access-token') accessToken?: string,
+  ) {
+    return this.salonsService.confirmQueueEntryArrival(id, entryId, dto, accessToken);
+  }
+
+  @Patch(':id/queue-entries/:entryId/location-consent')
+  @ApiOperation({ summary: 'Opt in or out of foreground-only location assistance for a queue ticket' })
+  async updateQueueLocationConsent(
+    @Param('id') id: string,
+    @Param('entryId') entryId: string,
+    @Body() dto: SmartQueueConsentDto,
+    @Headers('x-queue-access-token') accessToken?: string,
+  ) {
+    return this.salonsService.updateQueueLocationConsent(id, entryId, dto, accessToken);
+  }
+
+  @Post(':id/queue-entries/:entryId/location-observation')
+  @ApiOperation({ summary: 'Submit a consented, accuracy-checked foreground location observation' })
+  async observeQueueEntryLocation(
+    @Param('id') id: string,
+    @Param('entryId') entryId: string,
+    @Body() dto: SmartQueueLocationDto,
+    @Headers('x-queue-access-token') accessToken?: string,
+  ) {
+    return this.salonsService.observeQueueEntryLocation(id, entryId, dto, accessToken);
+  }
+
+  @Post(':id/queue-entries/:entryId/departure-response')
+  @ApiOperation({ summary: 'Let the customer confirm or dismiss a departure prompt' })
+  async respondToQueueDeparture(
+    @Param('id') id: string,
+    @Param('entryId') entryId: string,
+    @Body() dto: SmartQueueDepartureResponseDto,
+    @Headers('x-queue-access-token') accessToken?: string,
+  ) {
+    return this.salonsService.respondToQueueDeparture(id, entryId, dto, accessToken);
+  }
+
+  @Post(':id/queue-entries/:entryId/customer-cancel')
+  @ApiOperation({ summary: 'Allow a customer to cancel only their own unserved queue ticket' })
+  async customerCancelQueueEntry(
+    @Param('id') id: string,
+    @Param('entryId') entryId: string,
+    @Headers('x-queue-access-token') accessToken?: string,
+  ) {
+    return this.salonsService.customerCancelQueueEntry(id, entryId, accessToken);
+  }
+
+  @Post(':id/queue-entries/:entryId/confirm-departure')
+  @UseGuards(JwtAuthGuard, SalonOwnerGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Staff confirms a customer has left before service and marks the ticket absent' })
+  async confirmQueueDepartureByStaff(
+    @Param('id') id: string,
+    @Param('entryId') entryId: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.salonsService.confirmQueueDepartureByStaff(id, entryId, user.id);
+  }
+
   @Get(':id/queue-entries/:entryId')
+  @UseGuards(JwtAuthGuard, SalonOwnerGuard)
+  @ApiBearerAuth()
   @ApiOperation({
     summary: 'Get single queue ticket details and status by ID',
     description:
@@ -312,7 +427,8 @@ export class SalonsController {
   }
 
   @Post(':id/queue-entries/:entryId/cancel')
-  @UseGuards(OptionalJwtAuthGuard)
+  @UseGuards(JwtAuthGuard, SalonOwnerGuard)
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Cancel queue entry with optional reason' })
   async cancelQueueEntry(
     @Param('id') id: string,
@@ -374,6 +490,8 @@ export class SalonsController {
   }
 
   @Patch(':id/queue-entries/:entryId')
+  @UseGuards(JwtAuthGuard, SalonOwnerGuard)
+  @ApiBearerAuth()
   @ApiOperation({
     summary: 'Update a customer queue entry status (Backwards-compatible)',
   })
@@ -386,6 +504,8 @@ export class SalonsController {
   }
 
   @Delete(':id/queue-entries')
+  @UseGuards(JwtAuthGuard, SalonOwnerGuard)
+  @ApiBearerAuth()
   @ApiOperation({
     summary: 'Reset or clear all waiting customers in queue (Backwards-compatible)',
   })
