@@ -536,33 +536,50 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
         </div>
       </div>
 
-      {/* Tabs navigation: Live Queue, Services, Location & Map, Stylists, Reviews, Gallery */}
-      <div className="flex border-b border-[#E8E2D8] text-xs font-bold bg-white sticky top-0 z-20 overflow-x-auto no-scrollbar">
-        {[
-          { id: 'queue', label: `⚡ Live Queue (${salon.currentQueue})` },
-          { id: 'map', label: '🗺️ Map & Location' },
-          { id: 'services', label: `Services (${salon.services.length})` },
-          { id: 'staff', label: `Stylists (${salon.staff.length})` },
-          { id: 'reviews', label: `Reviews (${salon.reviewCount})` },
-          { id: 'gallery', label: `Showcase (${galleryItems.length})` }
-        ].map((tab) => (
+      {/* TOP NAVIGATION TABS (DIAGRAM MATCH: Live Queue | Services | Showcase) */}
+      <div className="bg-white border-y border-[#E8E2D8] sticky top-0 z-20">
+        <div className="flex divide-x divide-[#E8E2D8] text-xs font-bold text-center">
           <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id as any)}
-            className={`py-3 px-3.5 whitespace-nowrap text-center border-b-2 transition-all cursor-pointer ${
-              activeTab === tab.id
-                ? 'border-[#FF6422] text-[#FF6422] bg-orange-50/50'
-                : 'border-transparent text-stone-500 hover:text-stone-900'
+            type="button"
+            onClick={() => setActiveTab('queue')}
+            className={`flex-1 py-3 px-2 transition-all cursor-pointer ${
+              activeTab === 'queue'
+                ? 'bg-orange-50/70 text-[#FF6422] font-black border-b-2 border-[#FF6422]'
+                : 'text-stone-600 hover:text-stone-900 hover:bg-stone-50'
             }`}
           >
-            {tab.label}
+            Live Queue ({salon.currentQueue})
           </button>
-        ))}
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('services')}
+            className={`flex-1 py-3 px-2 transition-all cursor-pointer ${
+              activeTab === 'services'
+                ? 'bg-orange-50/70 text-[#FF6422] font-black border-b-2 border-[#FF6422]'
+                : 'text-stone-600 hover:text-stone-900 hover:bg-stone-50'
+            }`}
+          >
+            Services ({salon.services.length})
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('gallery')}
+            className={`flex-1 py-3 px-2 transition-all cursor-pointer ${
+              activeTab === 'gallery'
+                ? 'bg-orange-50/70 text-[#FF6422] font-black border-b-2 border-[#FF6422]'
+                : 'text-stone-600 hover:text-stone-900 hover:bg-stone-50'
+            }`}
+          >
+            Showcase ({galleryItems.length})
+          </button>
+        </div>
       </div>
 
-      {/* TAB 1: PROMINENT LIVE QUEUE CARD */}
+      {/* PROMINENT LIVE QUEUE CARD (WITH STUDIO LOCATION PIN INCLUDED IN THE CARD) */}
       {activeTab === 'queue' && (
-        <section className="bg-white border-2 border-orange-200 rounded-3xl p-5 shadow-[0_4px_20px_rgba(255,100,34,0.06)] relative overflow-hidden">
+        <section className="bg-white border-2 border-orange-200 rounded-3xl p-5 shadow-[0_4px_20px_rgba(255,100,34,0.06)] relative overflow-hidden space-y-4">
           <div className="absolute top-0 right-0 -mr-10 -mt-10 w-44 h-44 rounded-full bg-orange-400/10 blur-3xl pointer-events-none" />
 
           <div className="flex items-center justify-between mb-3 pb-2 border-b border-[#E8E2D8]">
@@ -705,7 +722,7 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
           )}
 
           {/* Customer queue updates */}
-          <div className="mt-4 pt-3.5 border-t border-[#E8E2D8] bg-stone-50/80 -mx-5 -mb-5 px-5 py-3.5 rounded-b-3xl">
+          <div className="mt-4 pt-3.5 border-t border-[#E8E2D8] bg-stone-50/80 -mx-5 px-5 py-3.5">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="flex items-start gap-2.5">
                 <div className="w-8 h-8 rounded-xl bg-orange-100 border border-orange-200 flex items-center justify-center text-sm shrink-0 mt-0.5">
@@ -743,97 +760,76 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
             </div>
           </div>
 
-          {/* LIVE WAITING CUSTOMER LIST (PUBLIC TICKETS & NAMES) */}
-          {queueEntries.length > 0 && (
-            <div className="mt-4 pt-3 border-t border-[#E8E2D8]">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-bold text-stone-800 flex items-center gap-1.5">
-                  <Users className="w-3.5 h-3.5 text-[#FF6422]" />
-                  Waiting in Studio ({queueEntries.length})
+          {/* LOCATION INTEGRATED INSIDE THE CARD (DIAGRAM MATCH: 'card ... location') */}
+          <div className="mt-4 pt-4 border-t border-orange-200 bg-[#FAF7F2] -mx-5 -mb-5 p-4 rounded-b-3xl space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <MapPin className="w-4 h-4 text-[#FF6422]" />
+                <span className="text-xs font-black text-stone-900 uppercase tracking-wide">
+                  Studio Location
                 </span>
-                <span className="text-[11px] text-stone-500 font-medium">Synced live</span>
               </div>
-              <div className="flex flex-wrap gap-2">
-                {queueEntries.map((entry, idx) => {
-                  const isServing = entry.status === 'in_service';
-                  const isMyEntry = activeTicket?.id === entry.id;
-                  return (
-                    <div
-                      key={entry.id || idx}
-                      className={`text-xs px-2.5 py-1 rounded-xl border flex items-center gap-1.5 ${
-                        isMyEntry
-                          ? 'bg-[#FF6422] text-white border-orange-600 font-bold shadow-xs'
-                          : isServing
-                          ? 'bg-emerald-50 text-emerald-800 border-emerald-200 font-semibold'
-                          : 'bg-[#FAF7F2] text-stone-700 border-[#E8E2D8]'
-                      }`}
-                    >
-                      <span className="font-black">
-                        {entry.ticketNumber || `#0${idx + 1}`.slice(-3)}
-                      </span>
-                      <span className="text-[10px]">
-                        {isServing ? 'In service' : `Position ${entry.position || idx + 1}`}
-                      </span>
-                      {isMyEntry && <span className="text-[10px] bg-white/25 px-1 rounded font-bold">(You)</span>}
-                    </div>
-                  );
-                })}
-              </div>
+              <span className="text-[11px] text-stone-500 font-bold">
+                {salon.distanceKm} km away • {salon.locality}
+              </span>
             </div>
-          )}
 
-          {/* Important Business Rule Banner */}
-          <div className="mt-4 pt-3 border-t border-[#E8E2D8] flex items-start gap-2.5 text-xs text-stone-600 bg-orange-50/50 p-3 rounded-2xl border border-orange-100">
-            <Info className="w-4 h-4 text-[#FF6422] shrink-0 mt-0.5" />
-            <p>
-              <strong className="text-stone-900">Walk-in policy:</strong> SLOON eliminates blind waiting. Check the live queue or take a token to walk straight in without wasting time.
-            </p>
-          </div>
-        </section>
-      )}
+            <SalonMapboxView
+              salon={salon}
+              userLocation={userLocation}
+              height="220px"
+            />
 
-      {/* TAB 2: INTERACTIVE MAP & STUDIO LOCATION */}
-      {activeTab === 'map' && (
-        <section className="bg-white border border-[#E8E2D8] rounded-3xl p-4 sm:p-5 space-y-4 shadow-xs">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <MapPin className="w-4 h-4 text-[#FF6422]" />
-              <h3 className="text-sm font-bold text-stone-900">
-                Studio Location & Directions
-              </h3>
-            </div>
-            <span className="text-[11px] text-stone-500 font-medium">
-              {salon.distanceKm} km away • {salon.locality}
-            </span>
-          </div>
-
-          <SalonMapboxView
-            salon={salon}
-            userLocation={userLocation}
-            height="320px"
-          />
-
-          <div className="pt-2 flex flex-wrap items-center justify-between gap-3 text-xs border-t border-[#E8E2D8]">
-            <p className="text-stone-600">
-              <strong>Address:</strong> {salon.address}, {salon.locality}, {salon.city}
-            </p>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center justify-between gap-2 pt-1">
+              <p className="text-[11px] text-stone-600 truncate">
+                {salon.address}
+              </p>
               <button
+                type="button"
                 onClick={() => redirectToGoogleMaps({
                   lat: salon.coordinates.lat,
                   lng: salon.coordinates.lng,
                   name: salon.name,
                   address: salon.address
                 }, userLocation || undefined)}
-                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#FF6422] text-white font-bold hover:bg-orange-600 transition-all shadow-md shadow-orange-500/20 active:scale-95"
+                className="px-3 py-1.5 rounded-xl bg-[#FF6422] text-white font-extrabold text-xs shadow-xs flex items-center gap-1 shrink-0 hover:bg-orange-600 transition-colors cursor-pointer"
               >
-                <Navigation className="w-3.5 h-3.5 fill-white" />
-                <span>Open in Google Maps ↗</span>
+                <Navigation className="w-3 h-3 fill-white" />
+                <span>Directions ↗</span>
               </button>
             </div>
           </div>
         </section>
       )}
+
+      {/* BOTTOM NAVIGATION TABS (DIAGRAM MATCH: Stylists | Reviews) */}
+      <div className="bg-white border-y border-[#E8E2D8] mt-6">
+        <div className="flex divide-x divide-[#E8E2D8] text-xs font-bold text-center">
+          <button
+            type="button"
+            onClick={() => setActiveTab('staff')}
+            className={`flex-1 py-3 px-2 transition-all cursor-pointer ${
+              activeTab === 'staff'
+                ? 'bg-orange-50/70 text-[#FF6422] font-black border-b-2 border-[#FF6422]'
+                : 'text-stone-600 hover:text-stone-900 hover:bg-stone-50'
+            }`}
+          >
+            Stylists ({salon.staff.length})
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('reviews')}
+            className={`flex-1 py-3 px-2 transition-all cursor-pointer ${
+              activeTab === 'reviews'
+                ? 'bg-orange-50/70 text-[#FF6422] font-black border-b-2 border-[#FF6422]'
+                : 'text-stone-600 hover:text-stone-900 hover:bg-stone-50'
+            }`}
+          >
+            Reviews ({salon.reviewCount})
+          </button>
+        </div>
+      </div>
 
       {/* TAB CONTENT: SERVICES & PRICING */}
       {activeTab === 'services' && (
