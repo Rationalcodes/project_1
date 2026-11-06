@@ -265,6 +265,7 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
   const [isLoopVideoMuted, setIsLoopVideoMuted] = useState(true);
   const [galleryFilter, setGalleryFilter] = useState<'all' | 'location' | 'work' | 'video'>('all');
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const [showInAppMap, setShowInAppMap] = useState(false);
 
   if (!selectedSalonForDetail) return null;
 
@@ -375,6 +376,427 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
           </button>
         </div>
       </div>
+
+      {/* TOP NAVIGATION TABS (DIAGRAM MATCH: Live Queue | Services | Showcase) */}
+      <div className="bg-white border-y border-[#E8E2D8] sticky top-0 z-20">
+        <div className="flex divide-x divide-[#E8E2D8] text-xs font-bold text-center">
+          <button
+            type="button"
+            onClick={() => setActiveTab('queue')}
+            className={`flex-1 py-3 px-2 transition-all cursor-pointer ${
+              activeTab === 'queue'
+                ? 'bg-orange-50/70 text-[#FF6422] font-black border-b-2 border-[#FF6422]'
+                : 'text-stone-600 hover:text-stone-900 hover:bg-stone-50'
+            }`}
+          >
+            Live Queue ({salon.currentQueue})
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('services')}
+            className={`flex-1 py-3 px-2 transition-all cursor-pointer ${
+              activeTab === 'services'
+                ? 'bg-orange-50/70 text-[#FF6422] font-black border-b-2 border-[#FF6422]'
+                : 'text-stone-600 hover:text-stone-900 hover:bg-stone-50'
+            }`}
+          >
+            Services ({salon.services.length})
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('gallery')}
+            className={`flex-1 py-3 px-2 transition-all cursor-pointer ${
+              activeTab === 'gallery'
+                ? 'bg-orange-50/70 text-[#FF6422] font-black border-b-2 border-[#FF6422]'
+                : 'text-stone-600 hover:text-stone-900 hover:bg-stone-50'
+            }`}
+          >
+            Showcase ({galleryItems.length})
+          </button>
+        </div>
+      </div>
+
+      {/* PROMINENT LIVE QUEUE CARD (WITH STUDIO LOCATION PIN INCLUDED IN THE CARD) */}
+      {activeTab === 'queue' && (
+        <section className="bg-white border-2 border-orange-200 rounded-3xl p-5 shadow-[0_4px_20px_rgba(255,100,34,0.06)] relative overflow-hidden space-y-4">
+          <div className="absolute top-0 right-0 -mr-10 -mt-10 w-44 h-44 rounded-full bg-orange-400/10 blur-3xl pointer-events-none" />
+
+          <div className="flex items-center justify-between mb-3 pb-2 border-b border-[#E8E2D8]">
+            <div className="flex items-center gap-2">
+              <span className={`w-3 h-3 rounded-full ${queueInfo.dotClass}`} />
+              <span className="text-xs font-black uppercase tracking-wider text-[#FF6422]">
+                Live Queue Status
+              </span>
+            </div>
+
+            <span className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-full ${freshness.badgeClass}`}>
+              {freshness.text}
+            </span>
+          </div>
+
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <div className="text-[11px] uppercase tracking-widest text-stone-500 font-semibold mb-1">Current Queue</div>
+              <div className="text-5xl font-black text-stone-900 tracking-tight leading-none">
+                {String(salon.currentQueue).padStart(2, '0')}
+              </div>
+              <div className="text-xs font-bold text-stone-500 mt-1 uppercase tracking-wide">People in Queue</div>
+              <div className={`mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${queueInfo.pillClass}`}>
+                <Users className="w-3.5 h-3.5" />
+                {queueInfo.label}
+              </div>
+            </div>
+            <div className="text-right bg-[#FAF7F2] border border-[#E8E2D8] rounded-2xl p-3 min-w-[110px]">
+              <div className="flex items-center gap-1 justify-end text-[10px] text-stone-500 uppercase tracking-wider font-semibold">
+                <Clock className="w-3 h-3" />
+                Estimated Wait Time
+              </div>
+              <div className="text-3xl font-black text-stone-900 mt-1 flex items-baseline gap-1">
+                ~{waitTime} <span className="text-xs font-normal text-stone-500">minutes</span>
+              </div>
+              <p className="text-[10px] text-stone-500 mt-1 leading-snug">
+                Direct walk-in counter synced live with salon.
+              </p>
+            </div>
+          </div>
+
+          {/* CUSTOMER'S ACTIVE TICKET (IF CURRENTLY IN QUEUE) */}
+          {activeTicket && (activeTicket.salonId === salon.id || !activeTicket.salonId) ? (
+            <div className="mt-4 pt-4 border-t border-orange-200 bg-gradient-to-br from-amber-500/10 via-orange-500/5 to-amber-500/10 rounded-2xl p-4 border border-amber-300">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className="text-xs font-black uppercase tracking-wider text-amber-900">
+                    Your Live Walk-In Token
+                  </span>
+                </div>
+                <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
+                  {activeTicket.status === 'in_service' ? 'At Chair · In Service' : 'Waiting in Queue'}
+                </span>
+              </div>
+
+              <div className="mt-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <div className="text-3xl font-black text-stone-900 tracking-tight flex items-baseline gap-1">
+                    <span className="text-[#FF6422]">#</span>
+                    <span>{(activeTicket.ticketNumber || String(activeTicket.position || '')).replace(/^#+/, '')}</span>
+                  </div>
+                  <p className="text-xs text-stone-700 font-semibold mt-0.5">
+                    {activeTicket.customerName} · {activeTicket.serviceName || 'Haircut & Styling'}
+                  </p>
+                </div>
+
+                <SmartQueueAssist salon={salon} ticket={activeTicket} />
+
+                {/* Customer Self-Service Actions */}
+                <div className="flex items-center gap-2 flex-wrap">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (window.confirm('Leave the queue and give up your ticket?')) {
+                        leaveLiveQueue(salon.id, activeTicket.id);
+                      }
+                    }}
+                    className="text-xs text-stone-500 hover:text-rose-600 font-bold px-2.5 py-2 rounded-xl hover:bg-stone-100 transition-colors cursor-pointer"
+                  >
+                    Leave
+                  </button>
+                </div>
+              </div>
+
+              <p className="text-[11px] text-stone-600 mt-2.5 bg-white/80 p-2.5 rounded-xl border border-orange-200/50">
+                Salon staff will update your ticket when service starts and finishes. Your location never changes service status automatically.
+              </p>
+            </div>
+          ) : salon.isOpen && salon.queueStatus === 'paused' ? (
+            <div className="mt-4 pt-4 border-t border-amber-200 bg-amber-50 rounded-2xl p-4 text-sm text-amber-900">
+              <strong>New queue entries are temporarily paused.</strong>
+              <span className="block mt-1 text-xs">The current queue is being served. Please check back shortly.</span>
+            </div>
+          ) : salon.isOpen ? (
+            /* JOIN LIVE QUEUE CTA */
+            <div className="mt-4 pt-4 border-t border-orange-200 flex flex-col sm:flex-row items-center justify-between gap-3">
+              <div className="text-xs text-stone-600">
+                <strong className="text-stone-900">Heading to the studio?</strong> Join the live queue to get your token so the salon can call you when your turn arrives.
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowJoinQueueModal(true)}
+                className="w-full sm:w-auto px-5 py-2.5 rounded-2xl bg-[#FF6422] hover:bg-orange-600 active:scale-95 text-white font-extrabold text-xs shadow-lg shadow-orange-500/25 transition-all flex items-center justify-center gap-2 cursor-pointer shrink-0"
+              >
+                <Ticket className="w-4 h-4" />
+                <span>Join Live Queue & Get Token</span>
+              </button>
+            </div>
+          ) : null}
+
+          {/* LATEST VERIFIED LOCATION REPORT SHOWCASE */}
+          {latestCrowdReport && (
+            <div className="mt-3 p-3 rounded-2xl bg-emerald-50/90 border border-emerald-200 flex items-center justify-between gap-3 shadow-xs">
+              <div className="flex items-center gap-2.5">
+                <span className="relative flex h-3 w-3 shrink-0">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                </span>
+                <div>
+                  <div className="text-xs font-black text-emerald-950 flex items-center gap-1.5 flex-wrap">
+                    <span>📍 Update from a customer at the salon</span>
+                  </div>
+                  <div className="text-[11px] text-emerald-800 font-medium mt-0.5">
+                    A customer nearby shared: <strong>{latestCrowdReport.peopleCount} waiting</strong> · about <strong>{latestCrowdReport.estimatedWaitMinutes} min wait</strong>
+                    {latestCrowdReport.notes && <span className="italic text-emerald-700"> · "{latestCrowdReport.notes}"</span>}
+                  </div>
+                </div>
+              </div>
+              <span className="text-[10px] font-bold text-emerald-800 bg-white border border-emerald-200 px-2.5 py-1 rounded-xl shrink-0 shadow-2xs">
+                Location Verified
+              </span>
+            </div>
+          )}
+
+          {/* Customer queue updates */}
+          <div className="mt-4 pt-3.5 border-t border-[#E8E2D8] bg-stone-50/80 -mx-5 px-5 py-3.5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-start gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-orange-100 border border-orange-200 flex items-center justify-center text-sm shrink-0 mt-0.5">
+                  📍
+                </div>
+                <div>
+                  <div className="text-xs font-black text-stone-900 flex items-center gap-1.5">
+                    <span>At {salon.name} right now?</span>
+                  </div>
+                  <p className="text-[11px] text-stone-600 mt-0.5">
+                    {currentDistanceMeters !== null && currentDistanceMeters <= 3 ? (
+                      <span className="text-emerald-700 font-semibold flex items-center gap-1">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                        You're nearby. Share a quick update to help others know what to expect.
+                      </span>
+                    ) : currentDistanceMeters !== null ? (
+                      <span className="text-stone-500">
+                        You're about {currentDistanceMeters >= 1000 ? `${(currentDistanceMeters / 1000).toFixed(1)} km` : `${Math.round(currentDistanceMeters)} m`} away. You can share an update when you're within 3 m.
+                      </span>
+                    ) : (
+                      <span>We'll check that you're near the salon before you share an update.</span>
+                    )}
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleOpenCrowdModal}
+                className="px-3.5 py-2 rounded-xl bg-[#1F1F1F] hover:bg-stone-800 text-white font-extrabold text-xs shadow-xs transition-all flex items-center justify-center gap-1.5 shrink-0 cursor-pointer"
+              >
+                <Navigation className="w-3.5 h-3.5 text-[#FF6422]" />
+                <span>Share a quick update</span>
+              </button>
+            </div>
+          </div>
+
+          {/* LOCATION INTEGRATED INSIDE THE CARD (DIAGRAM MATCH: 'card ... location') */}
+          <div className="mt-4 pt-4 border-t border-orange-200 bg-[#FAF7F2] -mx-5 -mb-5 p-4 rounded-b-3xl space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <MapPin className="w-4 h-4 text-[#FF6422]" />
+                <span className="text-xs font-black text-stone-900 uppercase tracking-wide">
+                  Studio Location
+                </span>
+              </div>
+              <span className="text-[11px] text-stone-500 font-bold">
+                {salon.distanceKm} km away · {salon.locality}
+              </span>
+            </div>
+
+            <SalonMapboxView
+              salon={salon}
+              userLocation={userLocation}
+              height="220px"
+            />
+
+            <div className="flex items-center justify-between gap-2 pt-1">
+              <p className="text-[11px] text-stone-600 truncate">
+                {salon.address}
+              </p>
+              <button
+                type="button"
+                onClick={() => redirectToGoogleMaps({
+                  lat: salon.coordinates.lat,
+                  lng: salon.coordinates.lng,
+                  name: salon.name,
+                  address: salon.address
+                }, userLocation || undefined)}
+                className="px-3 py-1.5 rounded-xl bg-[#FF6422] text-white font-extrabold text-xs shadow-xs flex items-center gap-1 shrink-0 hover:bg-orange-600 transition-colors cursor-pointer"
+              >
+                <Navigation className="w-3 h-3 fill-white" />
+                <span>Directions ↗</span>
+              </button>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* TAB CONTENT: SERVICES & PRICING */}
+      {activeTab === 'services' && (
+        <div className="space-y-4">
+          {/* Category Filter */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
+            {serviceCategories.map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setSelectedServiceCategory(cat)}
+                className={`px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap border transition-all ${
+                  selectedServiceCategory === cat
+                    ? 'bg-[#FF6422] text-white border-orange-500 shadow-xs'
+                    : 'bg-white border-[#E2DDD5] text-stone-700 hover:border-orange-300'
+                }`}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+
+          {/* Service Catalogue List */}
+          <div className="space-y-2.5">
+            {filteredServices.map((service) => (
+              <div
+                key={service.id}
+                className="bg-white border border-[#E8E2D8] rounded-2xl p-4 flex items-start justify-between gap-3 hover:border-orange-300 transition-colors shadow-xs"
+              >
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-sm font-bold text-stone-900">
+                      {service.name}
+                    </h3>
+                    {service.popular && (
+                      <span className="text-[9px] uppercase font-extrabold px-1.5 py-0.5 rounded bg-orange-50 text-[#FF6422] border border-orange-200">
+                        Popular
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-stone-600 mt-1 leading-relaxed">
+                    {service.description}
+                  </p>
+                  <div className="flex items-center gap-3 mt-2 text-[11px] text-stone-500">
+                    <span className="flex items-center gap-1">
+                      <Clock className="w-3 h-3 text-stone-400" /> ~{service.durationMinutes} mins
+                    </span>
+                    <span>•</span>
+                    <span className="text-stone-500">Category: {service.category}</span>
+                  </div>
+                </div>
+
+                <div className="text-right shrink-0">
+                  <div className="text-base font-extrabold text-[#FF6422]">
+                    ₹{service.price}
+                  </div>
+                  <span className="text-[10px] text-stone-500 block mt-0.5">
+                    Pay at salon
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* TAB CONTENT: SHOWCASE & GALLERY */}
+      {activeTab === 'gallery' && (
+        <div className="space-y-4">
+          {/* Sub-Category Filters */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
+            {[
+              { id: 'all' as const, label: `All Media (${galleryItems.length})`, icon: LayoutGrid },
+              { id: 'location' as const, label: `Location (${locationPhotos.length})`, icon: MapPin },
+              { id: 'work' as const, label: `Our Work (${workPhotos.length})`, icon: Scissors },
+              ...(salon.loopVideoUrl ? [{ id: 'video' as const, label: `Video Tour (1)`, icon: Play }] : []),
+            ].map((f) => {
+              const Icon = f.icon;
+              const isSelected = galleryFilter === f.id;
+              return (
+                <button
+                  key={f.id}
+                  type="button"
+                  onClick={() => setGalleryFilter(f.id)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all shadow-xs ${
+                    isSelected
+                      ? 'bg-[#FF6422] text-white shadow-sm shadow-orange-500/20'
+                      : 'bg-white text-stone-700 hover:border-orange-300 border border-[#E2DDD5]'
+                  }`}
+                >
+                  <Icon className="w-3.5 h-3.5" />
+                  <span>{f.label}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Media Grid */}
+          {filteredGalleryItems.length === 0 ? (
+            <div className="bg-white border border-[#E8E2D8] rounded-2xl p-8 text-center text-xs text-stone-500 shadow-xs">
+              No media in this category yet.
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {filteredGalleryItems.map((item, idx) => (
+                <div
+                  key={item.id}
+                  onClick={() => setLightboxIndex(galleryItems.findIndex(g => g.id === item.id))}
+                  className="group relative h-44 rounded-2xl overflow-hidden border border-[#E8E2D8] bg-stone-100 cursor-pointer shadow-xs hover:border-orange-400 transition-all"
+                >
+                  {item.type === 'video' ? (
+                    <div className="w-full h-full relative">
+                      <video
+                        src={item.url}
+                        autoPlay
+                        loop
+                        muted
+                        playsInline
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                      <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
+                        <div className="w-9 h-9 rounded-full bg-[#FF6422] text-white flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                          <Play className="w-4 h-4 fill-white ml-0.5" />
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <img
+                      src={item.url}
+                      alt={item.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
+                  )}
+
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20 opacity-90 group-hover:opacity-100 transition-opacity" />
+
+                  {/* Badge */}
+                  <div className="absolute top-2 left-2">
+                    <span className="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full backdrop-blur-md bg-white/90 text-stone-900 border border-stone-200">
+                      {item.categoryLabel}
+                    </span>
+                  </div>
+
+                  {/* Title & Enlarge icon */}
+                  <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between text-[11px] text-white font-medium">
+                    <span className="truncate drop-shadow-md">{item.title}</span>
+                    <Maximize2 className="w-3.5 h-3.5 text-stone-200 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 ml-1" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Informational Callout */}
+          <div className="p-3.5 rounded-2xl bg-orange-50/50 border border-orange-200 flex items-center gap-2.5 text-xs text-stone-700">
+            <Camera className="w-4 h-4 text-[#FF6422] shrink-0" />
+            <span>
+              Real photos and loop video captured directly on location at <strong className="text-stone-900">{salon.name}</strong>, {salon.locality}.
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* Cover Image Carousel, Poster & Loop Video Showcase */}
       <div className="rounded-3xl overflow-hidden border border-[#E8E2D8] bg-white relative shadow-sm">
@@ -496,12 +918,41 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
 
           {/* Location & Quick Actions */}
           <div className="mt-4 pt-3 border-t border-[#E8E2D8] flex flex-wrap items-center justify-between gap-3 text-xs">
-            <div className="flex items-center gap-2 text-stone-700">
-              <MapPin className="w-4 h-4 text-[#FF6422] shrink-0" />
-              <span className="truncate max-w-xs">{salon.address}</span>
-            </div>
+            <button
+              type="button"
+              onClick={() => setShowInAppMap(true)}
+              className="flex items-center gap-2.5 text-stone-700 hover:text-[#FF6422] transition-colors cursor-pointer group text-left max-w-full sm:max-w-xs"
+              title="Click to view salon pinned on our in-app map"
+            >
+              <div className="w-8 h-8 rounded-xl bg-orange-50 border border-orange-200 flex items-center justify-center text-[#FF6422] group-hover:bg-[#FF6422] group-hover:text-white transition-colors shrink-0 shadow-2xs">
+                <MapPin className="w-4 h-4" />
+              </div>
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5 font-bold text-stone-900 group-hover:text-[#FF6422]">
+                  <span className="truncate">{salon.address}</span>
+                  <span className="text-[10px] bg-orange-100 text-[#FF6422] font-black px-1.5 py-0.5 rounded-full shrink-0">
+                    PIN
+                  </span>
+                </div>
+                <div className="text-[11px] text-[#FF6422] font-semibold flex items-center gap-1 mt-0.5">
+                  <span>{salon.locality}</span>
+                  <span>·</span>
+                  <span className="underline underline-offset-2">Open Pinned Map ↗</span>
+                </div>
+              </div>
+            </button>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              <button
+                type="button"
+                onClick={() => setShowInAppMap(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-orange-50 border border-orange-200 text-[#FF6422] hover:bg-orange-100 text-xs font-bold shadow-xs transition-colors cursor-pointer"
+                title="View salon pinned on map on our website"
+              >
+                <MapIcon className="w-3.5 h-3.5" />
+                <span>Pinned Map</span>
+              </button>
+
               <a
                 href={`tel:${salon.phone}`}
                 className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-white border border-[#E2DDD5] text-stone-700 hover:text-stone-900 shadow-xs"
@@ -521,286 +972,12 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
                 title="Navigate in Google Maps"
               >
                 <Navigation className="w-3.5 h-3.5 fill-white" />
-                <span>{salon.distanceKm} km • Navigate ↗</span>
-              </button>
-              <button
-                onClick={() => openGoogleMapsLocation(salon.coordinates.lat, salon.coordinates.lng)}
-                className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-white border border-[#E2DDD5] text-[#FF6422] hover:border-[#FF6422] text-xs font-semibold shadow-xs"
-                title="View exact pin on Google Maps"
-              >
-                <ExternalLink className="w-3 h-3" />
-                <span className="hidden sm:inline">Maps Pin ↗</span>
+                <span>{salon.distanceKm} km · Directions ↗</span>
               </button>
             </div>
           </div>
         </div>
       </div>
-
-      {/* TOP NAVIGATION TABS (DIAGRAM MATCH: Live Queue | Services | Showcase) */}
-      <div className="bg-white border-y border-[#E8E2D8] sticky top-0 z-20">
-        <div className="flex divide-x divide-[#E8E2D8] text-xs font-bold text-center">
-          <button
-            type="button"
-            onClick={() => setActiveTab('queue')}
-            className={`flex-1 py-3 px-2 transition-all cursor-pointer ${
-              activeTab === 'queue'
-                ? 'bg-orange-50/70 text-[#FF6422] font-black border-b-2 border-[#FF6422]'
-                : 'text-stone-600 hover:text-stone-900 hover:bg-stone-50'
-            }`}
-          >
-            Live Queue ({salon.currentQueue})
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab('services')}
-            className={`flex-1 py-3 px-2 transition-all cursor-pointer ${
-              activeTab === 'services'
-                ? 'bg-orange-50/70 text-[#FF6422] font-black border-b-2 border-[#FF6422]'
-                : 'text-stone-600 hover:text-stone-900 hover:bg-stone-50'
-            }`}
-          >
-            Services ({salon.services.length})
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab('gallery')}
-            className={`flex-1 py-3 px-2 transition-all cursor-pointer ${
-              activeTab === 'gallery'
-                ? 'bg-orange-50/70 text-[#FF6422] font-black border-b-2 border-[#FF6422]'
-                : 'text-stone-600 hover:text-stone-900 hover:bg-stone-50'
-            }`}
-          >
-            Showcase ({galleryItems.length})
-          </button>
-        </div>
-      </div>
-
-      {/* PROMINENT LIVE QUEUE CARD (WITH STUDIO LOCATION PIN INCLUDED IN THE CARD) */}
-      {activeTab === 'queue' && (
-        <section className="bg-white border-2 border-orange-200 rounded-3xl p-5 shadow-[0_4px_20px_rgba(255,100,34,0.06)] relative overflow-hidden space-y-4">
-          <div className="absolute top-0 right-0 -mr-10 -mt-10 w-44 h-44 rounded-full bg-orange-400/10 blur-3xl pointer-events-none" />
-
-          <div className="flex items-center justify-between mb-3 pb-2 border-b border-[#E8E2D8]">
-            <div className="flex items-center gap-2">
-              <span className={`w-3 h-3 rounded-full ${queueInfo.dotClass}`} />
-              <span className="text-xs font-black uppercase tracking-wider text-[#FF6422]">
-                Live Queue Status
-              </span>
-            </div>
-
-            <span className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-full ${freshness.badgeClass}`}>
-              {freshness.text}
-            </span>
-          </div>
-
-          {/* Big Counter Display */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-2">
-            <div>
-              <div className="text-[11px] font-extrabold uppercase tracking-widest text-stone-500 mb-1">
-                Current Queue
-              </div>
-              <div className="text-4xl sm:text-5xl font-black text-stone-900 flex items-baseline gap-3 tracking-tight">
-                <span>{salon.currentQueue < 10 ? `0${salon.currentQueue}` : salon.currentQueue}</span>
-                <span className="text-sm sm:text-base font-semibold text-stone-500 uppercase tracking-wider">
-                  People in Queue
-                </span>
-              </div>
-              <div className={`mt-2 inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-xl ${queueInfo.badgeClass}`}>
-                <Users className="w-3.5 h-3.5" />
-                <span>{queueInfo.label}</span>
-              </div>
-            </div>
-
-            {/* Estimated Wait Card */}
-            <div className="bg-[#FAF7F2] border border-[#E8E2D8] rounded-2xl p-4 sm:w-56 shrink-0 shadow-xs">
-              <div className="text-[10px] text-stone-500 uppercase font-semibold flex items-center gap-1">
-                <Clock className="w-3.5 h-3.5 text-[#FF6422]" /> Estimated Wait Time
-              </div>
-              <div className="text-2xl font-black text-stone-900 mt-1">
-                ~{waitTime} <span className="text-xs font-normal text-stone-500">minutes</span>
-              </div>
-              <p className="text-[10px] text-stone-500 mt-1 leading-snug">
-                Direct walk-in counter synced live with salon.
-              </p>
-            </div>
-          </div>
-
-          {/* CUSTOMER'S ACTIVE TICKET (IF CURRENTLY IN QUEUE) */}
-          {activeTicket && (activeTicket.salonId === salon.id || !activeTicket.salonId) ? (
-            <div className="mt-4 pt-4 border-t border-orange-200 bg-gradient-to-br from-amber-500/10 via-orange-500/5 to-amber-500/10 rounded-2xl p-4 border border-amber-300">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-                  <span className="text-xs font-black uppercase tracking-wider text-amber-900">
-                    Your Live Walk-In Token
-                  </span>
-                </div>
-                <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
-                  {activeTicket.status === 'in_service' ? 'At Chair • In Service' : 'Waiting in Queue'}
-                </span>
-              </div>
-
-              <div className="mt-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div>
-                  <div className="text-3xl font-black text-stone-900 tracking-tight flex items-baseline gap-1">
-                    <span className="text-[#FF6422]">#</span>
-                    <span>{(activeTicket.ticketNumber || String(activeTicket.position || '')).replace(/^#+/, '')}</span>
-                  </div>
-                  <p className="text-xs text-stone-700 font-semibold mt-0.5">
-                    {activeTicket.customerName} • {activeTicket.serviceName || 'Haircut & Styling'}
-                  </p>
-                </div>
-
-                <SmartQueueAssist salon={salon} ticket={activeTicket} />
-
-                {/* Customer Self-Service Actions */}
-                <div className="flex items-center gap-2 flex-wrap">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (window.confirm('Leave the queue and give up your ticket?')) {
-                        leaveLiveQueue(salon.id, activeTicket.id);
-                      }
-                    }}
-                    className="text-xs text-stone-500 hover:text-rose-600 font-bold px-2.5 py-2 rounded-xl hover:bg-stone-100 transition-colors cursor-pointer"
-                  >
-                    Leave
-                  </button>
-                </div>
-              </div>
-
-              <p className="text-[11px] text-stone-600 mt-2.5 bg-white/80 p-2.5 rounded-xl border border-orange-200/50">
-                Salon staff will update your ticket when service starts and finishes. Your location never changes service status automatically.
-              </p>
-            </div>
-          ) : salon.isOpen && salon.queueStatus === 'paused' ? (
-            <div className="mt-4 pt-4 border-t border-amber-200 bg-amber-50 rounded-2xl p-4 text-sm text-amber-900">
-              <strong>New queue entries are temporarily paused.</strong>
-              <span className="block mt-1 text-xs">The current queue is being served. Please check back shortly.</span>
-            </div>
-          ) : salon.isOpen ? (
-            /* JOIN LIVE QUEUE CTA */
-            <div className="mt-4 pt-4 border-t border-orange-200 flex flex-col sm:flex-row items-center justify-between gap-3">
-              <div className="text-xs text-stone-600">
-                <strong className="text-stone-900">Heading to the studio?</strong> Join the live queue to get your token so the salon can call you when your turn arrives.
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowJoinQueueModal(true)}
-                className="w-full sm:w-auto px-5 py-2.5 rounded-2xl bg-[#FF6422] hover:bg-orange-600 active:scale-95 text-white font-extrabold text-xs shadow-lg shadow-orange-500/25 transition-all flex items-center justify-center gap-2 cursor-pointer shrink-0"
-              >
-                <Ticket className="w-4 h-4" />
-                <span>Join Live Queue & Get Token</span>
-              </button>
-            </div>
-          ) : null}
-
-          {/* LATEST VERIFIED LOCATION REPORT SHOWCASE */}
-          {latestCrowdReport && (
-            <div className="mt-3 p-3 rounded-2xl bg-emerald-50/90 border border-emerald-200 flex items-center justify-between gap-3 shadow-xs">
-              <div className="flex items-center gap-2.5">
-                <span className="relative flex h-3 w-3 shrink-0">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
-                </span>
-                <div>
-                  <div className="text-xs font-black text-emerald-950 flex items-center gap-1.5 flex-wrap">
-                    <span>📍 Update from a customer at the salon</span>
-                  </div>
-                  <div className="text-[11px] text-emerald-800 font-medium mt-0.5">
-                    A customer nearby shared: <strong>{latestCrowdReport.peopleCount} waiting</strong> • about <strong>{latestCrowdReport.estimatedWaitMinutes} min wait</strong>
-                    {latestCrowdReport.notes && <span className="italic text-emerald-700"> • "{latestCrowdReport.notes}"</span>}
-                  </div>
-                </div>
-              </div>
-              <span className="text-[10px] font-bold text-emerald-800 bg-white border border-emerald-200 px-2.5 py-1 rounded-xl shrink-0 shadow-2xs">
-                Location Verified
-              </span>
-            </div>
-          )}
-
-          {/* Customer queue updates */}
-          <div className="mt-4 pt-3.5 border-t border-[#E8E2D8] bg-stone-50/80 -mx-5 px-5 py-3.5">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div className="flex items-start gap-2.5">
-                <div className="w-8 h-8 rounded-xl bg-orange-100 border border-orange-200 flex items-center justify-center text-sm shrink-0 mt-0.5">
-                  📍
-                </div>
-                <div>
-                  <div className="text-xs font-black text-stone-900 flex items-center gap-1.5">
-                    <span>At {salon.name} right now?</span>
-                  </div>
-                  <p className="text-[11px] text-stone-600 mt-0.5">
-                    {currentDistanceMeters !== null && currentDistanceMeters <= 3 ? (
-                      <span className="text-emerald-700 font-semibold flex items-center gap-1">
-                        <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                        You’re nearby. Share a quick update to help others know what to expect.
-                      </span>
-                    ) : currentDistanceMeters !== null ? (
-                      <span className="text-stone-500">
-                        You’re about {currentDistanceMeters >= 1000 ? `${(currentDistanceMeters / 1000).toFixed(1)} km` : `${Math.round(currentDistanceMeters)} m`} away. You can share an update when you’re within 3 m.
-                      </span>
-                    ) : (
-                      <span>We’ll check that you’re near the salon before you share an update.</span>
-                    )}
-                  </p>
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={handleOpenCrowdModal}
-                className="px-3.5 py-2 rounded-xl bg-[#1F1F1F] hover:bg-stone-800 text-white font-extrabold text-xs shadow-xs transition-all flex items-center justify-center gap-1.5 shrink-0 cursor-pointer"
-              >
-                <Navigation className="w-3.5 h-3.5 text-[#FF6422]" />
-                <span>Share a quick update</span>
-              </button>
-            </div>
-          </div>
-
-          {/* LOCATION INTEGRATED INSIDE THE CARD (DIAGRAM MATCH: 'card ... location') */}
-          <div className="mt-4 pt-4 border-t border-orange-200 bg-[#FAF7F2] -mx-5 -mb-5 p-4 rounded-b-3xl space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <MapPin className="w-4 h-4 text-[#FF6422]" />
-                <span className="text-xs font-black text-stone-900 uppercase tracking-wide">
-                  Studio Location
-                </span>
-              </div>
-              <span className="text-[11px] text-stone-500 font-bold">
-                {salon.distanceKm} km away • {salon.locality}
-              </span>
-            </div>
-
-            <SalonMapboxView
-              salon={salon}
-              userLocation={userLocation}
-              height="220px"
-            />
-
-            <div className="flex items-center justify-between gap-2 pt-1">
-              <p className="text-[11px] text-stone-600 truncate">
-                {salon.address}
-              </p>
-              <button
-                type="button"
-                onClick={() => redirectToGoogleMaps({
-                  lat: salon.coordinates.lat,
-                  lng: salon.coordinates.lng,
-                  name: salon.name,
-                  address: salon.address
-                }, userLocation || undefined)}
-                className="px-3 py-1.5 rounded-xl bg-[#FF6422] text-white font-extrabold text-xs shadow-xs flex items-center gap-1 shrink-0 hover:bg-orange-600 transition-colors cursor-pointer"
-              >
-                <Navigation className="w-3 h-3 fill-white" />
-                <span>Directions ↗</span>
-              </button>
-            </div>
-          </div>
-        </section>
-      )}
 
       {/* BOTTOM NAVIGATION TABS (DIAGRAM MATCH: Stylists | Reviews) */}
       <div className="bg-white border-y border-[#E8E2D8] mt-6">
@@ -830,70 +1007,6 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
           </button>
         </div>
       </div>
-
-      {/* TAB CONTENT: SERVICES & PRICING */}
-      {activeTab === 'services' && (
-        <div className="space-y-4">
-          {/* Category Filter */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
-            {serviceCategories.map((cat) => (
-              <button
-                key={cat}
-                onClick={() => setSelectedServiceCategory(cat)}
-                className={`px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap border transition-all ${
-                  selectedServiceCategory === cat
-                    ? 'bg-[#FF6422] text-white border-orange-500 shadow-xs'
-                    : 'bg-white border-[#E2DDD5] text-stone-700 hover:border-orange-300'
-                }`}
-              >
-                {cat}
-              </button>
-            ))}
-          </div>
-
-          {/* Service Catalogue List */}
-          <div className="space-y-2.5">
-            {filteredServices.map((service) => (
-              <div
-                key={service.id}
-                className="bg-white border border-[#E8E2D8] rounded-2xl p-4 flex items-start justify-between gap-3 hover:border-orange-300 transition-colors shadow-xs"
-              >
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-sm font-bold text-stone-900">
-                      {service.name}
-                    </h3>
-                    {service.popular && (
-                      <span className="text-[9px] uppercase font-extrabold px-1.5 py-0.5 rounded bg-orange-50 text-[#FF6422] border border-orange-200">
-                        Popular
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-xs text-stone-600 mt-1 leading-relaxed">
-                    {service.description}
-                  </p>
-                  <div className="flex items-center gap-3 mt-2 text-[11px] text-stone-500">
-                    <span className="flex items-center gap-1">
-                      <Clock className="w-3 h-3 text-stone-400" /> ~{service.durationMinutes} mins
-                    </span>
-                    <span>•</span>
-                    <span className="text-stone-500">Category: {service.category}</span>
-                  </div>
-                </div>
-
-                <div className="text-right shrink-0">
-                  <div className="text-base font-extrabold text-[#FF6422]">
-                    ₹{service.price}
-                  </div>
-                  <span className="text-[10px] text-stone-500 block mt-0.5">
-                    Pay at salon
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* TAB CONTENT: STAFF & STYLISTS */}
       {activeTab === 'staff' && (
@@ -1050,99 +1163,73 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
         </div>
       )}
 
-      {/* TAB CONTENT: SHOWCASE & GALLERY */}
-      {activeTab === 'gallery' && (
-        <div className="space-y-4">
-          {/* Sub-Category Filters */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
-            {[
-              { id: 'all' as const, label: `All Media (${galleryItems.length})`, icon: LayoutGrid },
-              { id: 'location' as const, label: `Location (${locationPhotos.length})`, icon: MapPin },
-              { id: 'work' as const, label: `Our Work (${workPhotos.length})`, icon: Scissors },
-              ...(salon.loopVideoUrl ? [{ id: 'video' as const, label: `Video Tour (1)`, icon: Play }] : []),
-            ].map((f) => {
-              const Icon = f.icon;
-              const isSelected = galleryFilter === f.id;
-              return (
-                <button
-                  key={f.id}
-                  type="button"
-                  onClick={() => setGalleryFilter(f.id)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all shadow-xs ${
-                    isSelected
-                      ? 'bg-[#FF6422] text-white shadow-sm shadow-orange-500/20'
-                      : 'bg-white text-stone-700 hover:border-orange-300 border border-[#E2DDD5]'
-                  }`}
-                >
-                  <Icon className="w-3.5 h-3.5" />
-                  <span>{f.label}</span>
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Media Grid */}
-          {filteredGalleryItems.length === 0 ? (
-            <div className="bg-white border border-[#E8E2D8] rounded-2xl p-8 text-center text-xs text-stone-500 shadow-xs">
-              No media in this category yet.
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              {filteredGalleryItems.map((item, idx) => (
-                <div
-                  key={item.id}
-                  onClick={() => setLightboxIndex(galleryItems.findIndex(g => g.id === item.id))}
-                  className="group relative h-44 rounded-2xl overflow-hidden border border-[#E8E2D8] bg-stone-100 cursor-pointer shadow-xs hover:border-orange-400 transition-all"
-                >
-                  {item.type === 'video' ? (
-                    <div className="w-full h-full relative">
-                      <video
-                        src={item.url}
-                        autoPlay
-                        loop
-                        muted
-                        playsInline
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      />
-                      <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
-                        <div className="w-9 h-9 rounded-full bg-[#FF6422] text-white flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-                          <Play className="w-4 h-4 fill-white ml-0.5" />
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <img
-                      src={item.url}
-                      alt={item.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
-                  )}
-
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20 opacity-90 group-hover:opacity-100 transition-opacity" />
-
-                  {/* Badge */}
-                  <div className="absolute top-2 left-2">
-                    <span className="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full backdrop-blur-md bg-white/90 text-stone-900 border border-stone-200">
-                      {item.categoryLabel}
-                    </span>
-                  </div>
-
-                  {/* Title & Enlarge icon */}
-                  <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between text-[11px] text-white font-medium">
-                    <span className="truncate drop-shadow-md">{item.title}</span>
-                    <Maximize2 className="w-3.5 h-3.5 text-stone-200 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 ml-1" />
-                  </div>
+      {/* IN-APP MAP MODAL (PINNED ON OUR WEBSITE ONLY) */}
+      {showInAppMap && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex flex-col justify-end sm:justify-center sm:items-center sm:p-6 animate-in fade-in duration-200">
+          <div className="bg-white w-full sm:max-w-3xl sm:rounded-3xl rounded-t-3xl overflow-hidden shadow-2xl flex flex-col h-[85vh] sm:h-[650px] border border-stone-200 animate-in slide-in-from-bottom duration-300">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-4 px-5 border-b border-[#E8E2D8] bg-[#FAF7F2]">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-2xl bg-orange-100 border border-orange-200 flex items-center justify-center text-[#FF6422]">
+                  <MapPin className="w-5 h-5" />
                 </div>
-              ))}
+                <div>
+                  <h3 className="font-extrabold text-sm sm:text-base text-stone-900 leading-tight">
+                    {salon.name}
+                  </h3>
+                  <p className="text-xs text-stone-500 truncate max-w-[220px] sm:max-w-md">
+                    {salon.address} · {salon.locality}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowInAppMap(false)}
+                className="p-2 rounded-full bg-white border border-[#E2DDD5] text-stone-600 hover:text-stone-900 hover:bg-stone-100 transition-colors cursor-pointer"
+                aria-label="Close Map"
+              >
+                <X className="w-5 h-5" />
+              </button>
             </div>
-          )}
 
-          {/* Informational Callout */}
-          <div className="p-3.5 rounded-2xl bg-orange-50/50 border border-orange-200 flex items-center gap-2.5 text-xs text-stone-700">
-            <Camera className="w-4 h-4 text-[#FF6422] shrink-0" />
-            <span>
-              Real photos and loop video captured directly on location at <strong className="text-stone-900">{salon.name}</strong>, {salon.locality}.
-            </span>
+            {/* Embedded In-App Mapbox Map */}
+            <div className="flex-1 relative overflow-hidden bg-stone-100 p-2">
+              <SalonMapboxView
+                salon={salon}
+                userLocation={userLocation}
+                height="100%"
+              />
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-3.5 px-5 bg-white border-t border-[#E8E2D8] flex items-center justify-between gap-3">
+              <div className="text-xs text-stone-600">
+                <span className="font-bold text-stone-900">{salon.distanceKm} km away</span>
+                <span className="hidden sm:inline text-stone-400"> · Live Queue: {salon.currentQueue} waiting</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => redirectToGoogleMaps({
+                    lat: salon.coordinates.lat,
+                    lng: salon.coordinates.lng,
+                    name: salon.name,
+                    address: salon.address
+                  }, userLocation || undefined)}
+                  className="px-3 py-1.5 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 font-bold text-xs flex items-center gap-1.5 transition-colors"
+                >
+                  <Navigation className="w-3.5 h-3.5" />
+                  <span>Google Maps</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowInAppMap(false)}
+                  className="px-4 py-1.5 rounded-xl bg-[#FF6422] text-white font-extrabold text-xs hover:bg-orange-600 transition-colors cursor-pointer"
+                >
+                  Close Map
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
