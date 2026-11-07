@@ -61,14 +61,14 @@ export class DiscoveryService {
       let dbRows: any[] = [];
 
       if (query.latitude !== undefined && query.longitude !== undefined) {
-        // PostGIS ST_DWithin query around user coordinates
+        // Optimized PostGIS ST_DWithin query (omits heavy full gallery arrays on list views)
         dbRows = await this.prisma.$queryRawUnsafe(
           `SELECT 
             id, name, tagline, locality, city, latitude, longitude,
             ROUND((ST_Distance(location, ST_SetSRID(ST_MakePoint($2, $1), 4326)::geography) / 1000)::numeric, 2) AS distance_km,
             rating, review_count, current_queue, avg_service_time_minutes, active_barbers,
             starting_price, is_open, queue_status, is_verified, cover_image, poster_image, loop_video_url,
-            location_images, work_images, last_queue_update, status
+            last_queue_update, status
           FROM salons
           WHERE status = 'active'
             AND is_verified = TRUE
@@ -82,14 +82,14 @@ export class DiscoveryService {
           offset,
         );
       } else {
-        // Query all active verified salons across India with zero hardcoding
+        // Query active verified salons across India (omits heavy gallery arrays on list view)
         dbRows = await this.prisma.$queryRawUnsafe(
           `SELECT 
             id, name, tagline, locality, city, latitude, longitude,
             0.0 AS distance_km,
             rating, review_count, current_queue, avg_service_time_minutes, active_barbers,
             starting_price, is_open, queue_status, is_verified, cover_image, poster_image, loop_video_url,
-            location_images, work_images, last_queue_update, status
+            last_queue_update, status
           FROM salons
           WHERE status = 'active'
             AND is_verified = TRUE
@@ -107,13 +107,7 @@ export class DiscoveryService {
           const avgTime = row.avg_service_time_minutes || 20;
           const queue = Number(row.current_queue || 0);
           const waitMins = queue > 0 ? Math.ceil((queue * avgTime) / barbers) : 0;
-          const locImages = Array.isArray(row.location_images) ? row.location_images : [];
-          const workImages = Array.isArray(row.work_images) ? row.work_images : [];
-          const effectiveCover = row.cover_image || row.poster_image || locImages[0] || workImages[0] || '';
-          // Avoid duplicating identical image data across coverImage, posterImage and images in the discovery JSON payload
-          const distinctGallery = [...locImages, ...workImages].filter(
-            (v: string, i: number, a: string[]) => v && v !== effectiveCover && a.indexOf(v) === i,
-          );
+          const effectiveCover = row.cover_image || row.poster_image || '';
 
           return {
             id: row.id,
@@ -135,9 +129,10 @@ export class DiscoveryService {
             coverImage: effectiveCover,
             posterImage: (row.poster_image && row.poster_image !== effectiveCover) ? row.poster_image : '',
             loopVideoUrl: row.loop_video_url || '',
-            images: distinctGallery,
-            locationImages: locImages,
-            workImages: workImages,
+            // Lightweight arrays for 100% frontend contract safety; full galleries loaded on salon detail page
+            images: effectiveCover ? [effectiveCover] : [],
+            locationImages: [],
+            workImages: [],
             lastQueueUpdate: row.last_queue_update || new Date().toISOString(),
             freshnessBadge: this.calculateFreshnessBadge(row.last_queue_update),
           };

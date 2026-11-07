@@ -2,6 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify';
 import { ValidationPipe, Logger } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import compress from '@fastify/compress';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
@@ -16,7 +17,13 @@ async function bootstrap() {
     }),
   );
 
-  // 2. Configure Global API Prefix (API Versioning v1)
+  // 2. High-Performance Gzip/Deflate Payload Compression (Phase 1 Optimization)
+  await app.register(compress, {
+    encodings: ['gzip', 'deflate'],
+    threshold: 1024, // Compress responses exceeding 1KB
+  });
+
+  // 3. Configure Global API Prefix (API Versioning v1)
   app.setGlobalPrefix('api/v1');
   app.enableShutdownHooks();
 

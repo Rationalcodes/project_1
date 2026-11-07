@@ -2699,9 +2699,13 @@ export class SalonsService {
     try {
       const dbSalons = await this.prisma.salon.findMany({
         include: {
-          services: true,
-          staff: true,
-          members: true,
+          _count: {
+            select: {
+              services: true,
+              staff: true,
+              members: true,
+            },
+          },
         },
         orderBy: { createdAt: 'desc' },
       });
@@ -2727,9 +2731,9 @@ export class SalonsService {
         reviewCount: s.reviewCount,
         startingPrice: Number(s.startingPrice),
         isOpen: s.isOpen,
-        servicesCount: s.services.length,
-        staffCount: s.staff.length,
-        membersCount: s.members.length,
+        servicesCount: (s as any)._count?.services ?? 0,
+        staffCount: (s as any)._count?.staff ?? 0,
+        membersCount: (s as any)._count?.members ?? 0,
         createdAt: s.createdAt,
         coverImage: s.coverImage,
       }));
