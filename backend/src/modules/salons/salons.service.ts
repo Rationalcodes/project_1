@@ -136,7 +136,7 @@ export class SalonsService {
       entry.serviceName === ((dto.serviceName || '').trim() || 'Haircut & Styling') &&
       entry.deviceId === ((dto.deviceId || '').trim() || null) &&
       entry.userId === (actorId || null) &&
-      entry.assignedStaffId === (dto.preferredStaffId || null) &&
+      (!dto.preferredStaffId || entry.assignedStaffId === dto.preferredStaffId) &&
       entry.partySize === (dto.partySize || 1) &&
       (!dto.serviceId || entry.serviceId === dto.serviceId);
     if (!matches) {
