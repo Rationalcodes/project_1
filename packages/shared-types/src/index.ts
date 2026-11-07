@@ -165,7 +165,7 @@ export type LazyFilter = 'all' | '0-5' | '5-15' | '15-30' | '30+';
 
 export type CustomerTab = 'home' | 'explore' | 'map' | 'favourites' | 'offers' | 'profile';
 
-export type PartnerView = 'dashboard' | 'register' | 'live-queue' | 'services' | 'staff' | 'reviews' | 'analytics' | 'settings' | 'gallery';
+export type PartnerView = 'home' | 'dashboard' | 'register' | 'live-queue' | 'services' | 'staff' | 'reviews' | 'analytics' | 'settings' | 'gallery';
 export type OwnerTab = PartnerView;
 
 export type AdminTab = 'overview' | 'salons' | 'customers' | 'verification' | 'reviews' | 'subscriptions' | 'analytics' | 'settings';

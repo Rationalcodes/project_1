@@ -48,6 +48,7 @@ export const AdminApp: React.FC = () => {
 
   const [adminSearch, setAdminSearch] = useState('');
   const [salonStatusFilter, setSalonStatusFilter] = useState<'all' | 'active' | 'suspended' | 'pending'>('all');
+  const [verificationFilter, setVerificationFilter] = useState<'pending' | 'verified' | 'all'>('pending');
   const [deleteTargetSalon, setDeleteTargetSalon] = useState<Salon | null>(null);
   const [deleteConfirmInput, setDeleteConfirmInput] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
@@ -733,46 +734,111 @@ export const AdminApp: React.FC = () => {
         </div>
       )}
 
-      {/* TAB 3: SALON VERIFICATION */}
+      {/* TAB 3: SALON VERIFICATION & ADMIN AUTHORIZATION */}
       {adminTab === 'verification' && (
         <div className="space-y-4">
-          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 text-xs">
-            <h3 className="font-bold text-white mb-1">Salon Verification Desk</h3>
-            <p className="text-zinc-400">
-              Verified salons receive the official SLOON Gold Badge, boosting walk-in trustworthiness.
-            </p>
+          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 sm:p-5 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] uppercase tracking-wider font-extrabold px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                  Gatekeeper
+                </span>
+                <h3 className="font-bold text-white text-sm">Salon Authorization Desk</h3>
+              </div>
+              <p className="text-zinc-400 mt-1 max-w-xl">
+                Only authorized salons appear on the public customer web app. Review pending partner submissions and authorize studios to make them live.
+              </p>
+            </div>
+
+            {/* Filter pills: Pending vs Authorized vs All */}
+            <div className="flex items-center gap-1.5 bg-black/40 p-1 rounded-xl border border-zinc-800 self-start sm:self-center">
+              <button
+                type="button"
+                onClick={() => setVerificationFilter('pending')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  verificationFilter === 'pending'
+                    ? 'bg-amber-500 text-black shadow-md shadow-amber-500/20'
+                    : 'text-zinc-400 hover:text-white'
+                }`}
+              >
+                Pending ({salons.filter((s) => !s.isVerified).length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setVerificationFilter('verified')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  verificationFilter === 'verified'
+                    ? 'bg-emerald-500 text-black shadow-md shadow-emerald-500/20'
+                    : 'text-zinc-400 hover:text-white'
+                }`}
+              >
+                Authorized ({salons.filter((s) => s.isVerified).length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setVerificationFilter('all')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  verificationFilter === 'all'
+                    ? 'bg-zinc-700 text-white'
+                    : 'text-zinc-400 hover:text-white'
+                }`}
+              >
+                All ({salons.length})
+              </button>
+            </div>
           </div>
 
           <div className="space-y-3">
-            {salons.map((salon) => (
-              <div key={salon.id} className="bg-[#14141c] border border-zinc-800 rounded-2xl p-4 flex items-center justify-between text-xs">
-                <div className="flex items-center gap-3">
-                  <img src={salon.coverImage} alt={salon.name} className="w-12 h-12 rounded-xl object-cover" />
-                  <div>
-                    <h4 className="font-bold text-white text-sm">{salon.name}</h4>
-                    <p className="text-zinc-400">{salon.locality} • Contact: {salon.phone}</p>
-                    <span className="text-[10px] text-zinc-500">Business proof verified</span>
+            {salons
+              .filter((salon) => {
+                if (verificationFilter === 'pending') return !salon.isVerified;
+                if (verificationFilter === 'verified') return salon.isVerified;
+                return true;
+              })
+              .map((salon) => (
+                <div key={salon.id} className="bg-[#14141c] border border-zinc-800 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                  <div className="flex items-center gap-3">
+                    <img src={salon.coverImage} alt={salon.name} className="w-12 h-12 rounded-xl object-cover shrink-0" />
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-bold text-white text-sm">{salon.name}</h4>
+                        <span className={`text-[9px] uppercase font-bold px-2 py-0.5 rounded-full border ${
+                          salon.isVerified
+                            ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40'
+                            : 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                        }`}>
+                          {salon.isVerified ? 'Authorized' : 'Pending Authorization'}
+                        </span>
+                      </div>
+                      <p className="text-zinc-400">{salon.locality} • Contact: {salon.phone}</p>
+                      <span className="text-[10px] text-zinc-500">ID: {salon.id} • Registered by: {salon.ownerName || 'Partner'}</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 self-end sm:self-center">
+                    <button
+                      type="button"
+                      onClick={() => setWalkinQrSalon(salon)}
+                      className="px-3 py-1.5 rounded-xl font-bold border bg-orange-500/15 hover:bg-orange-500/25 text-orange-400 border-orange-500/40 flex items-center gap-1.5 transition-colors cursor-pointer text-xs"
+                      title="Generate Express Walk-in Link & QR Standee"
+                    >
+                      <QrCode className="w-3.5 h-3.5 text-orange-400" />
+                      <span>Walk-in Link</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => verifySalon(salon.id, !salon.isVerified)}
+                      className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                        salon.isVerified
+                          ? 'bg-zinc-800 text-zinc-300 border border-zinc-700 hover:border-red-500/50 hover:text-red-300'
+                          : 'bg-emerald-500 hover:bg-emerald-400 text-black shadow-md shadow-emerald-500/20'
+                      }`}
+                    >
+                      {salon.isVerified ? 'Revoke Authorization' : 'Authorize & Allow Salon'}
+                    </button>
                   </div>
                 </div>
-
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setWalkinQrSalon(salon)}
-                    className="px-3 py-1.5 rounded-xl font-bold border bg-orange-500/15 hover:bg-orange-500/25 text-orange-400 border-orange-500/40 flex items-center gap-1.5 transition-colors cursor-pointer text-xs"
-                    title="Generate Express Walk-in Link & QR Standee"
-                  >
-                    <QrCode className="w-3.5 h-3.5 text-orange-400" />
-                    <span>Walk-in Link</span>
-                  </button>
-                  <button
-                    onClick={() => verifySalon(salon.id, true)}
-                    className="px-3.5 py-1.5 rounded-xl bg-amber-500 text-black font-bold hover:bg-amber-400"
-                  >
-                    {salon.isVerified ? 'Verified ✓' : 'Approve & Verify'}
-                  </button>
-                </div>
-              </div>
-            ))}
+              ))}
           </div>
         </div>
       )}

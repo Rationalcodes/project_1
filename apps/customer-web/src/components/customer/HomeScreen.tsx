@@ -17,6 +17,7 @@ import {
   X,
   Navigation,
   Sparkles,
+  PhoneOff,
 } from 'lucide-react';
 import {
   useSalon,
@@ -42,8 +43,6 @@ export const HomeScreen: React.FC = () => {
 
   const isWomen = genderFilter === 'women';
 
-  // Banner carousel state
-  const [currentSlide, setCurrentSlide] = useState(0);
   const [showHowItWorksModal, setShowHowItWorksModal] = useState(false);
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
 
@@ -119,38 +118,6 @@ export const HomeScreen: React.FC = () => {
         },
       ];
 
-  // Banner slides content tailored for SLOON
-  const bannerSlides = [
-    {
-      badge: 'HOW IT WORKS',
-      title: 'Book now, pay at the salon',
-      subtitle: 'No card needed — cash or card at the counter.',
-    },
-    {
-      badge: 'LIVE QUEUE ENGINE',
-      title: 'Know the wait before you step out',
-      subtitle: 'Real-time chair counts updated directly by your barber.',
-    },
-    {
-      badge: 'A QUICK UPDATE FROM YOU',
-      title: 'Help keep wait times up to date',
-      subtitle: 'At the salon? Share what the queue looks like for others.',
-    },
-    {
-      badge: 'DIGITAL WALK-IN TOKEN',
-      title: 'Grab your token from home',
-      subtitle: 'Take token #01, #02... and walk right into your chair.',
-    },
-  ];
-
-  // Auto-advance banner carousel every 4.5s
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % bannerSlides.length);
-    }, 4500);
-    return () => clearInterval(timer);
-  }, [bannerSlides.length]);
-
   const genderMatchedSalons = salons.filter((s) => matchesGenderFilter(s, genderFilter));
 
   // Filter salons if a category is clicked
@@ -205,69 +172,100 @@ export const HomeScreen: React.FC = () => {
 
   return (
     <div className="space-y-6 pb-28 text-stone-900">
-      {/* 1. TOP PROMOTIONAL / HOW IT WORKS BANNER CAROUSEL */}
+      {/* 1. HERO BANNER: "Too lazy to call. Too smart to wait." */}
       <section className="relative">
-        <div
-          className={`relative overflow-hidden rounded-3xl p-6 sm:p-7 text-white shadow-lg transition-all duration-500 ${
-            isWomen
-              ? 'bg-gradient-to-br from-[#E11D48] via-[#BE123C] to-[#9F1239]'
-              : 'bg-gradient-to-br from-[#1E40AF] via-[#2563EB] to-[#1D4ED8]'
-          }`}
-        >
-          {/* Subtle Store Awning Watermark Illustration in Corner (matches screenshot) */}
-          <div className="absolute -right-4 -bottom-6 w-44 h-44 text-white/10 pointer-events-none transform rotate-3">
-            <svg viewBox="0 0 100 100" fill="none" stroke="currentColor" strokeWidth="3" className="w-full h-full">
-              <path d="M10 30 Q 30 10 50 30 T 90 30 L 90 70 L 10 70 Z" fill="currentColor" fillOpacity="0.08" />
-              <path d="M15 30 L 15 70 M 35 30 L 35 70 M 55 30 L 55 70 M 75 30 L 75 70" stroke="currentColor" strokeWidth="4" />
-              <rect x="25" y="45" width="20" height="25" rx="3" stroke="currentColor" strokeWidth="3" />
-              <rect x="55" y="45" width="20" height="25" rx="3" stroke="currentColor" strokeWidth="3" />
-              <path d="M10 70 L 90 70 L 85 90 L 15 90 Z" fill="currentColor" fillOpacity="0.15" />
-            </svg>
-          </div>
-
-          <div className="relative z-10 max-w-lg">
-            {/* Top Pill: HOW IT WORKS */}
-            <div className="mb-4">
-              <button
-                type="button"
-                onClick={() => setShowHowItWorksModal(true)}
-                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 hover:bg-white/25 border border-white/25 text-white text-[11px] font-bold tracking-wide backdrop-blur-md transition-all cursor-pointer shadow-xs active:scale-95"
-              >
-                <Info className="w-3.5 h-3.5 text-white/90" />
-                <span className="uppercase tracking-wider">
-                  {bannerSlides[currentSlide].badge}
+        <div className="relative overflow-hidden rounded-3xl sm:rounded-[2.5rem] bg-[#FAF6EF] border border-[#EBE3D7] p-6 sm:p-8 md:p-10 shadow-xs transition-all">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-6 sm:gap-8 items-center">
+            {/* Left Content Column */}
+            <div className="md:col-span-7 lg:col-span-8 space-y-4 sm:space-y-5 z-10">
+              {/* Brand Header */}
+              <div className="flex items-center gap-2">
+                <span className="font-extrabold text-stone-900 text-lg sm:text-xl tracking-tight lowercase">
+                  sloon
                 </span>
-              </button>
+                <span className="w-1.5 h-1.5 rounded-full bg-[#E05326]" />
+                <span className="text-[11px] sm:text-xs font-black tracking-[0.22em] text-[#E05326] uppercase">
+                  SLOON.IN
+                </span>
+              </div>
+
+              {/* Master Serif Headlines */}
+              <div className="space-y-1 sm:space-y-1.5">
+                <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-[3.35rem] font-serif font-black text-stone-900 tracking-tight leading-[1.08]">
+                  Too lazy to call.
+                </h1>
+                <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-[3.35rem] font-serif italic font-bold text-[#E05326] tracking-tight leading-[1.08]">
+                  Too smart to wait.
+                </h2>
+              </div>
+
+              {/* Subtitle */}
+              <p className="text-xs sm:text-sm md:text-base text-stone-600 font-medium leading-relaxed max-w-xl">
+                See the live queue at salons near you, grab your token from home, and walk straight into your chair.
+              </p>
+
+              {/* Pill Tags */}
+              <div className="flex flex-wrap items-center gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => setShowHowItWorksModal(true)}
+                  className="inline-flex items-center px-4 py-1.5 rounded-full border border-stone-300/80 bg-white/70 backdrop-blur-xs text-xs font-semibold text-stone-700 shadow-2xs hover:bg-white transition-colors cursor-pointer"
+                >
+                  Live queue
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowHowItWorksModal(true)}
+                  className="inline-flex items-center px-4 py-1.5 rounded-full border border-stone-300/80 bg-white/70 backdrop-blur-xs text-xs font-semibold text-stone-700 shadow-2xs hover:bg-white transition-colors cursor-pointer"
+                >
+                  Digital token
+                </button>
+              </div>
+
+              {/* CTA Row */}
+              <div className="flex flex-wrap items-center gap-3 sm:gap-4 pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const targetSalon = displayedSalons.find((s) => s.isOpen) || displayedSalons[0];
+                    if (targetSalon) {
+                      handleSalonCardClick(targetSalon);
+                    } else {
+                      setCustomerTab('explore');
+                    }
+                  }}
+                  className="px-6 py-3 rounded-full bg-[#18181b] hover:bg-black text-white text-xs sm:text-sm font-bold shadow-md hover:shadow-lg transition-all active:scale-95 cursor-pointer flex items-center gap-2"
+                >
+                  <span>Get your token</span>
+                </button>
+                <span className="text-xs text-stone-500 font-medium">
+                  Live salon queues, all at sloon.in
+                </span>
+              </div>
             </div>
 
-            {/* Bold Headline */}
-            <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight leading-snug drop-shadow-sm min-h-[64px] sm:min-h-[72px] flex items-center">
-              {bannerSlides[currentSlide].title}
-            </h1>
+            {/* Right Graphic Column: Concentric Orbit Rings & Phone-Off Badge */}
+            <div className="md:col-span-5 lg:col-span-4 flex items-center justify-center py-4 md:py-0">
+              <div className="relative w-52 h-52 sm:w-64 sm:h-64 flex items-center justify-center">
+                {/* Outer concentric thin ring */}
+                <div className="absolute inset-0 rounded-full border border-[#EBDCCB]/90" />
+                
+                {/* Secondary middle concentric thin ring */}
+                <div className="absolute inset-4 sm:inset-5 rounded-full border border-[#F0E6D8]" />
 
-            {/* Subtitle */}
-            <p className="text-xs sm:text-sm text-white/85 font-medium mt-1 leading-relaxed">
-              {bannerSlides[currentSlide].subtitle}
-            </p>
+                {/* Orbit dot top-left (solid black dot) */}
+                <div className="absolute top-5 left-8 sm:top-6 sm:left-9 w-2.5 h-2.5 rounded-full bg-stone-900 shadow-xs" />
+
+                {/* Orbit dot bottom-right (hollow outline circle) */}
+                <div className="absolute bottom-6 right-7 sm:bottom-7 sm:right-8 w-3 h-3 rounded-full border-2 border-stone-800" />
+
+                {/* Center vibrant orange circle */}
+                <div className="relative w-32 h-32 sm:w-36 sm:h-36 rounded-full bg-[#E05326] flex items-center justify-center shadow-xl shadow-orange-500/25 transition-transform hover:scale-105 duration-300">
+                  <PhoneOff className="w-14 h-14 sm:w-16 sm:h-16 text-white stroke-[2.2]" />
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
-
-        {/* Carousel Indicator Dots */}
-        <div className="flex items-center justify-center gap-1.5 mt-3">
-          {bannerSlides.map((_, idx) => (
-            <button
-              key={idx}
-              onClick={() => setCurrentSlide(idx)}
-              className={`h-1.5 rounded-full transition-all cursor-pointer ${
-                currentSlide === idx
-                  ? isWomen
-                    ? 'w-6 bg-rose-600'
-                    : 'w-6 bg-blue-600'
-                  : 'w-1.5 bg-stone-300 hover:bg-stone-400'
-              }`}
-              aria-label={`Slide ${idx + 1}`}
-            />
-          ))}
         </div>
       </section>
 

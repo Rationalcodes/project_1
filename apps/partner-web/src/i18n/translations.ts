@@ -26,6 +26,7 @@ export type LanguageCode = string;
 
 export interface TranslationDictionary {
   // Navigation & Common
+  home?: string;
   partnerOS: string;
   partnerPortal: string;
   salonForOwners: string;
@@ -144,6 +145,7 @@ export interface TranslationDictionary {
 
 export const translations: Record<string, TranslationDictionary> = {
   en: {
+    home: 'Home',
     partnerOS: 'Partner',
     partnerPortal: 'Partner Portal',
     salonForOwners: 'SLOON for Owners',

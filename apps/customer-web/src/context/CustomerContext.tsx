@@ -1092,7 +1092,10 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
         if (isMounted) {
           if (discoveredSalons.length > 0) {
-            const mapped = mapApiSalons(discoveredSalons, userLocation);
+            // Only authorized and approved salons are discoverable to customers
+            const mapped = mapApiSalons(discoveredSalons, userLocation).filter(
+              (s) => s.isVerified !== false && s.status !== 'pending' && s.status !== 'suspended'
+            );
             setSalons(mapped);
             try {
               safeStorage.setItem('kumbhakaran_cached_salons', JSON.stringify(mapped));

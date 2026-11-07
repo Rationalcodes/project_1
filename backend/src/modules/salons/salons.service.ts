@@ -193,7 +193,7 @@ export class SalonsService {
            SET name = $1, tagline = $2, owner_name = $3, phone = $4,
                address = $5, locality = $6, city = $7, state = $8, pincode = $9,
                latitude = $10, longitude = $11, location = ST_SetSRID(ST_MakePoint($11, $10), 4326)::geography,
-               is_verified = TRUE, status = 'active', last_queue_update = NOW()
+               last_queue_update = NOW()
            WHERE id = $12;`,
           dto.name,
           dto.tagline || existingSalon.tagline,
@@ -264,8 +264,8 @@ export class SalonsService {
       activeBarbers: dto.activeBarbers || 2,
       startingPrice,
       isOpen: true,
-      isVerified: true, // Immediate verification so salon is visible to customers immediately!
-      status: 'active',
+      isVerified: false, // Requires Admin authorization before becoming discoverable to public customers
+      status: 'pending',
       rating: 5.0,
       reviewCount: 0,
       lastQueueUpdate: new Date().toISOString(),
@@ -2747,11 +2747,17 @@ export class SalonsService {
 
     const updated = await this.prisma.salon.update({
       where: { id },
-      data: { isVerified },
+      data: {
+        isVerified,
+        ...(isVerified ? { status: 'active' } : {}),
+      },
     });
 
     if (this.localSalons.has(id)) {
       this.localSalons.get(id).isVerified = isVerified;
+      if (isVerified) {
+        this.localSalons.get(id).status = 'active';
+      }
     }
 
     // Audit log

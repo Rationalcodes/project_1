@@ -42,16 +42,28 @@ import {
   Printer,
   Download,
   Copy,
-  X
+  X,
+  Home,
+  Sparkles,
+  ChevronDown,
+  PlusCircle,
+  ArrowRight,
+  Tag
 } from 'lucide-react';
 import QRCode from 'qrcode';
 import { OwnerTab, Service, Staff, QueueEntry } from '@kumbhakaran/shared-types';
 import { openGoogleMapsLocation } from '@kumbhakaran/ui';
 import { defaultApiClient } from '@kumbhakaran/api-client';
 
-export const OwnerApp: React.FC = () => {
+export interface OwnerAppProps {
+  onOpenWalkthrough?: () => void;
+}
+
+export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
   const {
     activeSalon,
+    salons = [],
+    setActiveSalonId,
     updateQueue,
     updateQueueStatus,
     isUpdatingQueueStatus,
@@ -89,6 +101,7 @@ export const OwnerApp: React.FC = () => {
   const [copiedQueueLink, setCopiedQueueLink] = useState(false);
   const [showStandeeModal, setShowStandeeModal] = useState(false);
   const [geofenceRadius, setGeofenceRadius] = useState(100);
+  const [salonDropdownOpen, setSalonDropdownOpen] = useState(false);
 
   const getCustomerQueueUrl = (salonId: string) => {
     return partnerQueueUrl.includes(`salon=${encodeURIComponent(salonId)}`) ? partnerQueueUrl : '';
@@ -599,9 +612,12 @@ export const OwnerApp: React.FC = () => {
   const isQueuePaused = activeSalon.queueStatus === 'paused';
   const freshness = getQueueFreshness(activeSalon.lastQueueUpdate);
   const waitTime = getEstimatedWaitMinutes(activeSalon.currentQueue, activeSalon.avgServiceTimeMinutes, activeSalon.activeBarbers);
+  const currentHour = new Date().getHours();
+  const timeGreeting = currentHour < 12 ? 'Good Morning' : currentHour < 17 ? 'Good Afternoon' : 'Good Evening';
 
   // Navigation Items
   const navTabs: { id: OwnerTab; label: string; icon: React.FC<{ className?: string }>; highlight?: boolean }[] = [
+    { id: 'home', label: t.home || 'Home', icon: Home },
     { id: 'live-queue', label: t.liveQueue, icon: Users, highlight: true },
     { id: 'dashboard', label: t.dashboard, icon: LayoutDashboard },
     { id: 'services', label: t.services, icon: Scissors },
@@ -822,85 +838,364 @@ export const OwnerApp: React.FC = () => {
   };
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6 pb-28 text-slate-100">
-      {/* Top B2B Header & Operational Status Bar */}
-      <div className="bg-gradient-to-r from-[#171720] via-[#13131a] to-[#0d0d12] border border-zinc-800 rounded-3xl p-5 shadow-2xl flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] uppercase tracking-widest font-extrabold px-2 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30">
-              Salon Partner SaaS
-            </span>
-            <span className="text-xs text-zinc-400">ID: {activeSalon.id}</span>
+    <div className="max-w-md sm:max-w-2xl mx-auto space-y-4 sm:space-y-5 pb-28 text-stone-900">
+      {/* 
+        HOME TAB SCREEN: Matches mobile layout from sloon partner design exactly!
+      */}
+      {ownerTab === 'home' ? (
+        <div className="space-y-4">
+          {/* 1. Dynamic Greeting Header */}
+          <div className="pt-1 px-0.5">
+            <h1 className="text-2xl sm:text-3xl font-serif font-black text-stone-900 tracking-tight leading-snug">
+              {timeGreeting},<br />
+              {activeSalon.name} 👋
+            </h1>
+            <p className="text-xs sm:text-sm text-stone-500 font-medium mt-1">
+              Command center for today.
+            </p>
           </div>
-          <h1 className="text-xl sm:text-2xl font-black text-white mt-1 font-['Syne',sans-serif]">
-            {activeSalon.name}
-          </h1>
-          <p className="text-xs text-zinc-400">
-            {activeSalon.address} • {activeSalon.activeBarbers} Active Stylists Today
-          </p>
-        </div>
 
-        {/* Operating status switcher */}
-        <div className="flex items-center gap-3">
-          <div className="text-right hidden sm:block">
-            <div className="text-[10px] text-zinc-400 uppercase font-semibold">Walk-in Status</div>
-            <div className={`text-xs font-bold ${isQueuePaused ? 'text-amber-300' : activeSalon.isOpen ? 'text-emerald-400' : 'text-rose-400'}`}>
-              {isQueuePaused ? 'Temporarily Paused' : activeSalon.isOpen ? 'Accepting Customers' : 'Currently Closed'}
+          {/* 2. Branch / Salon Selector Dropdown */}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setSalonDropdownOpen(!salonDropdownOpen)}
+              className="w-full bg-white border border-[#EFE8DC] rounded-2xl px-4 py-3 flex items-center justify-between shadow-2xs hover:border-orange-400 transition-all cursor-pointer"
+            >
+              <div className="flex items-center gap-2.5 min-w-0">
+                <Store className="w-4 h-4 text-stone-700 shrink-0" />
+                <span className="text-xs sm:text-sm font-bold text-stone-900 truncate">
+                  {activeSalon.name} {activeSalon.locality ? `– ${activeSalon.locality}` : ''}
+                </span>
+              </div>
+              <ChevronDown className="w-4 h-4 text-stone-400 shrink-0" />
+            </button>
+
+            {salonDropdownOpen && (
+              <div className="absolute left-0 right-0 mt-2 bg-white border border-stone-200 rounded-2xl shadow-xl p-2 z-40 space-y-1">
+                <div className="text-[10px] uppercase font-bold text-stone-400 px-3 py-1">
+                  Your Studios ({salons.length})
+                </div>
+                {salons.map((s) => (
+                  <button
+                    key={s.id}
+                    type="button"
+                    onClick={() => {
+                      setActiveSalonId(s.id);
+                      setSalonDropdownOpen(false);
+                    }}
+                    className={`w-full text-left px-3 py-2.5 text-xs rounded-xl flex items-center justify-between transition-colors cursor-pointer ${
+                      activeSalon.id === s.id
+                        ? 'bg-[#FFF3EC] text-[#E05326] font-bold'
+                        : 'text-stone-700 hover:bg-stone-50'
+                    }`}
+                  >
+                    <div>
+                      <div className="font-bold text-stone-900 truncate">{s.name}</div>
+                      <div className="text-[10px] text-stone-500">{s.locality} • Queue: {s.currentQueue} waiting</div>
+                    </div>
+                    {activeSalon.id === s.id && <Check className="w-4 h-4 text-[#E05326]" />}
+                  </button>
+                ))}
+                <div className="pt-1 border-t border-stone-100 flex items-center justify-between">
+                  <button
+                    type="button"
+                    onClick={() => setPartnerView('register')}
+                    className="text-left px-3 py-2 text-xs font-bold text-[#E05326] hover:bg-[#FFF3EC] rounded-xl flex items-center gap-2 cursor-pointer transition-colors"
+                  >
+                    <PlusCircle className="w-3.5 h-3.5" />
+                    <span>Register New Studio</span>
+                  </button>
+                  {onOpenWalkthrough && (
+                    <button
+                      type="button"
+                      onClick={onOpenWalkthrough}
+                      className="px-3 py-2 text-xs font-semibold text-stone-500 hover:text-stone-800 rounded-xl flex items-center gap-1 cursor-pointer"
+                    >
+                      <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                      <span>Walkthrough</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* 3. Admin Authorization Notice (if pending) */}
+          {(!activeSalon.isVerified || activeSalon.status === 'pending') && (
+            <div className="bg-amber-50 border border-amber-200/90 rounded-2xl p-3 sm:p-3.5 shadow-2xs flex items-center justify-between gap-3 text-xs">
+              <div className="flex items-center gap-2.5">
+                <Clock className="w-4 h-4 text-amber-600 shrink-0" />
+                <span className="font-semibold text-amber-900 text-xs">
+                  Awaiting Admin Authorization • In review at SLOON HQ
+                </span>
+              </div>
+              <span className="text-[10px] font-bold text-amber-700 bg-amber-100 border border-amber-300/60 px-2 py-0.5 rounded-full shrink-0">
+                Pending
+              </span>
+            </div>
+          )}
+
+          {/* 4. Operational Status Bar (Dark Glossy Card matching screenshot) */}
+          <div className="bg-[#18181b] border border-stone-800 rounded-2xl sm:rounded-3xl p-3.5 sm:p-4 text-white shadow-xs flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <span className={`w-2.5 h-2.5 rounded-full ${
+                isQueuePaused
+                  ? 'bg-amber-400 shadow-[0_0_8px_#FBBF24]'
+                  : activeSalon.isOpen
+                  ? 'bg-emerald-400 shadow-[0_0_8px_#34D399]'
+                  : 'bg-rose-500 shadow-[0_0_8px_#F43F5E]'
+              }`} />
+              <span className="text-xs sm:text-sm font-bold tracking-tight">
+                {isQueuePaused ? 'Walk-ins Paused' : activeSalon.isOpen ? 'Walk-ins Live' : 'Studio Closed'}
+              </span>
+            </div>
+
+            {/* iOS-Style Toggle inside Pill */}
+            <button
+              type="button"
+              disabled={isUpdatingQueueStatus}
+              onClick={() => updateQueueStatus(activeSalon.id, isQueuePaused ? 'open' : 'paused')}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
+                !isQueuePaused && activeSalon.isOpen
+                  ? 'bg-emerald-950/70 text-emerald-300 border border-emerald-500/40'
+                  : 'bg-stone-800 text-stone-300 border border-stone-700'
+              }`}
+            >
+              <span>{isQueuePaused ? 'Paused' : activeSalon.isOpen ? 'Open' : 'Closed'}</span>
+              <div className={`w-8 h-4 rounded-full transition-colors relative ${
+                !isQueuePaused && activeSalon.isOpen ? 'bg-emerald-500' : 'bg-stone-600'
+              }`}>
+                <div className={`w-3.5 h-3.5 rounded-full bg-white absolute top-0.25 transition-all ${
+                  !isQueuePaused && activeSalon.isOpen ? 'right-0.5' : 'left-0.5'
+                }`} />
+              </div>
+            </button>
+          </div>
+
+          {/* 5. Live Queue Card (White card with People Waiting and Stepper) */}
+          <div className="bg-white border border-[#EFE8DC] rounded-3xl p-5 shadow-2xs space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-stone-100">
+              <div className="flex items-center gap-2">
+                <Users className="w-4 h-4 text-stone-800" />
+                <h3 className="text-sm font-black text-stone-900">Live Queue</h3>
+              </div>
+              <div className="flex items-center gap-1.5 text-xs text-stone-600 font-semibold">
+                <Clock className="w-3.5 h-3.5 text-stone-500" />
+                <span>≈ {waitTime} min</span>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between py-1">
+              <div className="flex items-baseline gap-2.5">
+                <span className="text-4xl sm:text-5xl font-black text-[#E05326] font-serif leading-none">
+                  {activeSalon.currentQueue}
+                </span>
+                <span className="text-xs sm:text-sm font-bold text-stone-700">
+                  People Waiting
+                </span>
+              </div>
+
+              {/* Stepper buttons: -1 and +1 */}
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => updateQueue(activeSalon.id, -1)}
+                  disabled={activeSalon.currentQueue <= 0}
+                  className="w-11 h-9 rounded-xl bg-[#FFF3EC] hover:bg-[#FFE6D8] border border-[#FED7CC] text-[#E05326] font-black text-sm flex items-center justify-center transition-colors disabled:opacity-40 cursor-pointer shadow-2xs"
+                >
+                  -1
+                </button>
+                <button
+                  type="button"
+                  onClick={() => updateQueue(activeSalon.id, 1)}
+                  className="w-11 h-9 rounded-xl bg-[#FFF3EC] hover:bg-[#FFE6D8] border border-[#FED7CC] text-[#E05326] font-black text-sm flex items-center justify-center transition-colors cursor-pointer shadow-2xs"
+                >
+                  +1
+                </button>
+              </div>
+            </div>
+
+            {/* Solid Vibrant Orange Action Button */}
+            <button
+              type="button"
+              onClick={() => setOwnerTab('live-queue')}
+              className="w-full py-3.5 rounded-2xl bg-[#E05326] hover:bg-[#D4481D] text-white text-xs sm:text-sm font-bold shadow-md shadow-orange-500/25 transition-all active:scale-[0.98] flex items-center justify-center gap-1.5 cursor-pointer"
+            >
+              <span>Open Queue Desk</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
+
+          {/* 6. Today's Performance Card */}
+          <div className="space-y-2.5">
+            <div className="flex items-center justify-between px-1">
+              <h3 className="text-sm font-black text-stone-900">Today's Performance</h3>
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                <span>Live Today</span>
+              </span>
+            </div>
+
+            <div className="grid grid-cols-3 gap-2.5 sm:gap-3">
+              {/* Served */}
+              <div className="bg-white border border-[#EFE8DC] rounded-2xl p-3 shadow-2xs text-center flex flex-col items-center justify-center">
+                <div className="flex items-center gap-1.5 text-stone-700">
+                  <Users className="w-3.5 h-3.5 text-[#E05326]" />
+                  <span className="text-base sm:text-lg font-black text-stone-900">{realCustomersServed}</span>
+                </div>
+                <span className="text-[10px] text-stone-500 font-semibold mt-0.5">Served</span>
+              </div>
+
+              {/* Revenue */}
+              <div className="bg-white border border-[#EFE8DC] rounded-2xl p-3 shadow-2xs text-center flex flex-col items-center justify-center">
+                <div className="flex items-center gap-1 text-stone-700">
+                  <span className="text-xs font-bold text-[#E05326]">₹</span>
+                  <span className="text-base sm:text-lg font-black text-stone-900">
+                    {Number(realTodayRevenue).toLocaleString('en-IN')}
+                  </span>
+                </div>
+                <span className="text-[10px] text-stone-500 font-semibold mt-0.5">Revenue</span>
+              </div>
+
+              {/* Stylists */}
+              <div className="bg-white border border-[#EFE8DC] rounded-2xl p-3 shadow-2xs text-center flex flex-col items-center justify-center">
+                <div className="flex items-center gap-1.5 text-stone-700">
+                  <Scissors className="w-3.5 h-3.5 text-[#E05326]" />
+                  <span className="text-base sm:text-lg font-black text-stone-900">{activeSalon.activeBarbers}</span>
+                </div>
+                <span className="text-[10px] text-stone-500 font-semibold mt-0.5">Stylists</span>
+              </div>
             </div>
           </div>
 
-          <button
-            type="button"
-            disabled={!activeSalon.isOpen || isUpdatingQueueStatus}
-            onClick={() => updateQueueStatus(activeSalon.id, isQueuePaused ? 'open' : 'paused')}
-            className={`px-4 py-2 rounded-2xl text-xs font-bold transition-all border disabled:opacity-50 disabled:cursor-not-allowed ${
-              isQueuePaused
-                ? 'bg-amber-500/20 border-amber-500/50 text-amber-200 hover:bg-amber-500/30'
-                : 'bg-zinc-800 border-zinc-600 text-zinc-200 hover:bg-zinc-700'
-            }`}
-          >
-            {isUpdatingQueueStatus ? 'Updating...' : isQueuePaused ? '▶ Resume Queue' : 'Ⅱ Pause New Customers'}
-          </button>
+          {/* 7. Quick Tools Section (4-Box Grid) */}
+          <div className="space-y-2.5">
+            <h3 className="text-sm font-black text-stone-900 px-1">Quick Tools</h3>
+            <div className="grid grid-cols-4 gap-2.5 sm:gap-3">
+              {/* Prices */}
+              <button
+                type="button"
+                onClick={() => setOwnerTab('services')}
+                className="bg-white hover:bg-stone-50 border border-[#EFE8DC] rounded-2xl p-3 sm:p-4 text-center flex flex-col items-center justify-center shadow-2xs transition-all active:scale-95 cursor-pointer group"
+              >
+                <div className="w-9 h-9 rounded-xl bg-[#FFF3EC] text-[#E05326] flex items-center justify-center group-hover:scale-105 transition-transform">
+                  <Tag className="w-4 h-4" />
+                </div>
+                <span className="text-xs font-bold text-stone-800 mt-2">Prices</span>
+              </button>
 
-          <button
-            onClick={() => {
-              updateSalonInfo(activeSalon.id, { isOpen: !activeSalon.isOpen });
-            }}
-            className={`px-4 py-2 rounded-2xl text-xs font-bold transition-all border ${
-              activeSalon.isOpen
-                ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-300 hover:bg-emerald-500/30'
-                : 'bg-rose-500/20 border-rose-500/50 text-rose-300 hover:bg-rose-500/30'
-            }`}
-          >
-            {activeSalon.isOpen ? '🟢 Open for Walk-ins' : '🔴 Closed'}
-          </button>
-        </div>
-      </div>
+              {/* Staff */}
+              <button
+                type="button"
+                onClick={() => setOwnerTab('staff')}
+                className="bg-white hover:bg-stone-50 border border-[#EFE8DC] rounded-2xl p-3 sm:p-4 text-center flex flex-col items-center justify-center shadow-2xs transition-all active:scale-95 cursor-pointer group"
+              >
+                <div className="w-9 h-9 rounded-xl bg-[#FFF3EC] text-[#E05326] flex items-center justify-center group-hover:scale-105 transition-transform">
+                  <Users className="w-4 h-4" />
+                </div>
+                <span className="text-xs font-bold text-stone-800 mt-2">Staff</span>
+              </button>
 
-      {/* Owner Navigation Tabs */}
-      <div className="flex items-center gap-1.5 overflow-x-auto pb-2 no-scrollbar border-b border-zinc-800">
-        {navTabs.map((tab) => {
-          const Icon = tab.icon;
-          const isActive = ownerTab === tab.id;
+              {/* Media */}
+              <button
+                type="button"
+                onClick={() => setOwnerTab('gallery')}
+                className="bg-white hover:bg-stone-50 border border-[#EFE8DC] rounded-2xl p-3 sm:p-4 text-center flex flex-col items-center justify-center shadow-2xs transition-all active:scale-95 cursor-pointer group"
+              >
+                <div className="w-9 h-9 rounded-xl bg-[#FFF3EC] text-[#E05326] flex items-center justify-center group-hover:scale-105 transition-transform">
+                  <ImageIcon className="w-4 h-4" />
+                </div>
+                <span className="text-xs font-bold text-stone-800 mt-2">Media</span>
+              </button>
 
-          return (
+              {/* Setup */}
+              <button
+                type="button"
+                onClick={() => setOwnerTab('settings')}
+                className="bg-white hover:bg-stone-50 border border-[#EFE8DC] rounded-2xl p-3 sm:p-4 text-center flex flex-col items-center justify-center shadow-2xs transition-all active:scale-95 cursor-pointer group"
+              >
+                <div className="w-9 h-9 rounded-xl bg-[#FFF3EC] text-[#E05326] flex items-center justify-center group-hover:scale-105 transition-transform">
+                  <Settings className="w-4 h-4" />
+                </div>
+                <span className="text-xs font-bold text-stone-800 mt-2">Setup</span>
+              </button>
+            </div>
+          </div>
+
+          {/* 8. Desk QR Standee Quick Action Bar */}
+          <div className="flex items-center justify-between bg-white border border-[#EFE8DC] rounded-2xl px-4 py-3 shadow-2xs">
+            <div className="flex items-center gap-2.5">
+              <QrCode className="w-4 h-4 text-[#E05326]" />
+              <span className="text-xs font-bold text-stone-800">Counter QR Standee</span>
+            </div>
             <button
-              key={tab.id}
-              onClick={() => setOwnerTab(tab.id)}
-              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
-                isActive
-                  ? 'bg-amber-500 text-black shadow-lg shadow-amber-500/20'
-                  : tab.highlight
-                  ? 'bg-amber-500/10 text-amber-300 border border-amber-500/30 hover:bg-amber-500/20'
-                  : 'bg-zinc-900 text-zinc-400 border border-zinc-800 hover:text-white hover:bg-zinc-800'
-              }`}
+              type="button"
+              onClick={() => setShowStandeeModal(true)}
+              className="text-xs font-bold text-[#E05326] hover:underline cursor-pointer flex items-center gap-1"
             >
-              <Icon className="w-4 h-4" />
-              <span>{tab.label}</span>
+              <Printer className="w-3.5 h-3.5" />
+              <span>Print Standee ↗</span>
             </button>
-          );
-        })}
-      </div>
+          </div>
+        </div>
+      ) : (
+        /* Sleek Minimal Breadcrumb Bar on Sub-Pages */
+        <div className="space-y-4">
+          <div className="flex items-center justify-between pb-2 pt-1 border-b border-stone-200">
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setOwnerTab('home')}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-stone-200 text-xs font-semibold text-stone-600 hover:text-[#E05326] hover:border-orange-300 transition-all cursor-pointer shadow-2xs"
+              >
+                <Home className="w-3.5 h-3.5 text-[#E05326]" />
+                <span>Home</span>
+              </button>
+              <span className="text-stone-400 text-xs font-bold">/</span>
+              <span className="text-xs font-black text-[#E05326] uppercase tracking-wider">
+                {navTabs.find((t) => t.id === ownerTab)?.label || ownerTab}
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-stone-500 hidden sm:inline">{activeSalon.name}</span>
+              <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full border ${
+                isQueuePaused
+                  ? 'bg-amber-50 text-amber-700 border-amber-200'
+                  : activeSalon.isOpen
+                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                  : 'bg-rose-50 text-rose-700 border-rose-200'
+              }`}>
+                {isQueuePaused ? '⏸ Paused' : activeSalon.isOpen ? '🟢 Open' : '🔴 Closed'}
+              </span>
+            </div>
+          </div>
+
+          {/* Desktop Navigation Tabs for Sub-Pages */}
+          <div className="hidden md:flex items-center gap-1.5 overflow-x-auto pb-2 no-scrollbar border-b border-stone-200">
+            {navTabs.map((tab) => {
+              const Icon = tab.icon;
+              const isActive = ownerTab === tab.id;
+
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setOwnerTab(tab.id)}
+                  className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
+                    isActive
+                      ? 'bg-[#E05326] text-white shadow-md shadow-orange-500/20'
+                      : 'bg-white text-stone-600 border border-stone-200 hover:text-stone-900 hover:bg-stone-50'
+                  }`}
+                >
+                  <Icon className="w-4 h-4" />
+                  <span>{tab.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* TAB 1: LIVE QUEUE MANAGEMENT (THE CORE B2B FUNCTIONALITY) */}
       {ownerTab === 'live-queue' && (
@@ -2377,11 +2672,12 @@ export const OwnerApp: React.FC = () => {
         </form>
       )}
 
-      {/* Mobile Sticky Bottom Nav for Salon Owners on Smartphones */}
+      {/* Mobile Sticky Bottom Nav for Salon Owners on Smartphones (7 Primary Tabs with Home First) */}
       <nav className="fixed bottom-0 left-0 right-0 z-40 md:hidden bg-gradient-to-t from-black via-[#0c0c10] to-transparent pt-3 pb-safe">
-        <div className="max-w-md mx-auto px-3 pb-2">
-          <div className="bg-[#121218]/95 backdrop-blur-xl border border-zinc-800/90 rounded-3xl shadow-2xl p-1.5 flex items-center justify-around ring-1 ring-white/5">
+        <div className="max-w-md mx-auto px-2 pb-2">
+          <div className="bg-[#121218]/95 backdrop-blur-xl border border-zinc-800/90 rounded-3xl shadow-2xl p-1.5 flex items-center justify-between ring-1 ring-white/5">
             {[
+              { id: 'home' as const, label: 'Home', icon: Home },
               { id: 'live-queue' as const, label: 'Queue', icon: Users },
               { id: 'dashboard' as const, label: 'Stats', icon: LayoutDashboard },
               { id: 'services' as const, label: 'Prices', icon: Scissors },
@@ -2395,14 +2691,14 @@ export const OwnerApp: React.FC = () => {
                 <button
                   key={item.id}
                   onClick={() => setOwnerTab(item.id)}
-                  className={`relative flex flex-col items-center justify-center py-1 px-2.5 rounded-2xl transition-all ${
+                  className={`relative flex flex-col items-center justify-center py-1 px-1 sm:px-1.5 rounded-2xl transition-all flex-1 min-w-0 ${
                     isActive
                       ? 'text-amber-400 font-bold bg-amber-500/15'
                       : 'text-zinc-400 hover:text-zinc-200'
                   }`}
                 >
-                  <Icon className={`w-4 h-4 transition-transform ${isActive ? 'scale-110 text-amber-400' : ''}`} />
-                  <span className={`text-[9px] mt-0.5 ${isActive ? 'text-amber-400 font-bold' : 'text-zinc-400'}`}>
+                  <Icon className={`w-4 h-4 transition-transform shrink-0 ${isActive ? 'scale-110 text-amber-400' : ''}`} />
+                  <span className={`text-[9px] mt-0.5 truncate max-w-full leading-tight ${isActive ? 'text-amber-400 font-bold' : 'text-zinc-400'}`}>
                     {item.label}
                   </span>
                   {isActive && <span className="absolute -bottom-1 w-1.5 h-1.5 rounded-full bg-amber-400" />}

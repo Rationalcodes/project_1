@@ -168,11 +168,11 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [partnerView, setPartnerViewState] = useState<PartnerView>(() => {
     try {
       const saved = safeStorage.getItem('kumbhakaran_partner_view') as PartnerView;
-      if (saved && ['live-queue', 'services', 'staff', 'analytics', 'reviews', 'settings', 'register-new', 'register'].includes(saved)) {
+      if (saved && ['home', 'live-queue', 'dashboard', 'services', 'staff', 'analytics', 'reviews', 'settings', 'gallery', 'register-new', 'register'].includes(saved)) {
         return saved;
       }
     } catch {}
-    return 'live-queue';
+    return 'home';
   });
 
   const setPartnerView = (view: PartnerView) => {
@@ -677,9 +677,9 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
         overallExperience: 5.0,
       },
       reviews: [],
-      featured: true,
-      isVerified: true,
-      status: 'active',
+      featured: false,
+      isVerified: false,
+      status: 'pending',
       todayCustomersServed: 0,
       todayRevenue: 0,
       monthlyRevenue: 0,
@@ -687,9 +687,9 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
     setSalons((prev) => [newSalon, ...prev.filter((s) => s.id !== newId)]);
     setActiveSalonId(newId);
-    setPartnerView('live-queue');
+    setPartnerView('home');
     safeStorage.setItem('kumbhakaran_partner_active_salon', JSON.stringify(newSalon));
-    triggerNotification(`🎉 Salon "${newSalon.name}" registered successfully! Your live walk-in queue is ready.`);
+    triggerNotification(`🎉 Salon "${newSalon.name}" registered! Submitted for Admin authorization.`);
 
     return newSalon;
   };
