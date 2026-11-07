@@ -82,28 +82,15 @@ export async function createQueueRequestFingerprint(fields: Array<string | numbe
 }
 
 export function getDefaultApiBaseUrl(): string {
+  let url = '';
   // 1. Explicit window-level override
   if (typeof window !== 'undefined' && (window as any).__API_BASE_URL__) {
-    return (window as any).__API_BASE_URL__;
-  }
-
-  // 2. Vite build-time environment variable
-  try {
-    if (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_API_BASE_URL) {
-      return (import.meta as any).env.VITE_API_BASE_URL;
-    }
-  } catch {}
-
-  // 3. Node / SSR environment variable
-  try {
-    const proc = (globalThis as any).process;
-    if (proc && proc.env?.VITE_API_BASE_URL) {
-      return proc.env.VITE_API_BASE_URL;
-    }
-  } catch {}
-
-  // 4. In browser runtime: check hostname
-  if (typeof window !== 'undefined' && window.location?.hostname) {
+    url = (window as any).__API_BASE_URL__;
+  } else if (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_API_BASE_URL) {
+    url = (import.meta as any).env.VITE_API_BASE_URL;
+  } else if (typeof globalThis !== 'undefined' && (globalThis as any).process?.env?.VITE_API_BASE_URL) {
+    url = (globalThis as any).process.env.VITE_API_BASE_URL;
+  } else if (typeof window !== 'undefined' && window.location?.hostname) {
     const h = window.location.hostname;
     const isLocal =
       ['localhost', '127.0.0.1', '::1'].includes(h) ||
@@ -113,14 +100,19 @@ export function getDefaultApiBaseUrl(): string {
       h.endsWith('.local');
 
     if (isLocal) {
-      return `http://${h === 'localhost' || h === '127.0.0.1' ? 'localhost' : h}:3001/api/v1`;
+      url = `http://${h === 'localhost' || h === '127.0.0.1' ? 'localhost' : h}:3001/api/v1`;
+    } else {
+      url = 'https://project-1-tt3c.onrender.com/api/v1';
     }
-
-    return 'https://kumbhakaran-salons.onrender.com/api/v1';
+  } else {
+    url = 'http://localhost:3001/api/v1';
   }
 
-  // 5. Default local development backend
-  return 'http://localhost:3001/api/v1';
+  let trimmed = url.replace(/\/+$/, '');
+  if (!trimmed.endsWith('/api/v1')) {
+    trimmed = `${trimmed}/api/v1`;
+  }
+  return trimmed;
 }
 
 export class KumbhakaranApiClient {
@@ -178,7 +170,11 @@ export class KumbhakaranApiClient {
 
   setBaseUrl(url: string) {
     if (url && typeof url === 'string') {
-      this.baseUrl = url.replace(/\/+$/, '');
+      let trimmed = url.replace(/\/+$/, '');
+      if (!trimmed.endsWith('/api/v1')) {
+        trimmed = `${trimmed}/api/v1`;
+      }
+      this.baseUrl = trimmed;
     }
   }
 
