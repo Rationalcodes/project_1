@@ -1,19 +1,48 @@
-import React, { useState } from 'react';
+import React, { useState, Suspense, lazy } from 'react';
 import { CustomerProvider, useCustomer } from './context/CustomerContext';
 import { Header } from './components/common/Header';
 import { BottomNav } from './components/common/BottomNav';
 import { NotificationToast } from './components/common/NotificationToast';
-import { CompareModal } from './components/common/CompareModal';
 import { HomeScreen } from './components/customer/HomeScreen';
-import { ExploreScreen } from './components/customer/ExploreScreen';
-import { MapScreen } from './components/customer/MapScreen';
-import { SalonDetailScreen } from './components/customer/SalonDetailScreen';
-import { FavouritesScreen } from './components/customer/FavouritesScreen';
-import { ProfileScreen } from './components/customer/ProfileScreen';
-import { OffersScreen } from './components/customer/OffersScreen';
-import { WriteReviewModal } from './components/customer/WriteReviewModal';
 import { LocationPermissionBanner } from './components/common/LocationPermissionBanner';
-import { ExpressWalkinScreen } from './components/customer/ExpressWalkinScreen';
+
+// Code-split secondary screens & heavy modals (Phase 4 Optimization)
+const ExploreScreen = lazy(() =>
+  import('./components/customer/ExploreScreen').then((m) => ({ default: m.ExploreScreen })),
+);
+const MapScreen = lazy(() =>
+  import('./components/customer/MapScreen').then((m) => ({ default: m.MapScreen })),
+);
+const SalonDetailScreen = lazy(() =>
+  import('./components/customer/SalonDetailScreen').then((m) => ({ default: m.SalonDetailScreen })),
+);
+const FavouritesScreen = lazy(() =>
+  import('./components/customer/FavouritesScreen').then((m) => ({ default: m.FavouritesScreen })),
+);
+const ProfileScreen = lazy(() =>
+  import('./components/customer/ProfileScreen').then((m) => ({ default: m.ProfileScreen })),
+);
+const OffersScreen = lazy(() =>
+  import('./components/customer/OffersScreen').then((m) => ({ default: m.OffersScreen })),
+);
+const ExpressWalkinScreen = lazy(() =>
+  import('./components/customer/ExpressWalkinScreen').then((m) => ({ default: m.ExpressWalkinScreen })),
+);
+const CompareModal = lazy(() =>
+  import('./components/common/CompareModal').then((m) => ({ default: m.CompareModal })),
+);
+const WriteReviewModal = lazy(() =>
+  import('./components/customer/WriteReviewModal').then((m) => ({ default: m.WriteReviewModal })),
+);
+
+const ScreenFallback = () => (
+  <div className="flex items-center justify-center min-h-[300px] w-full py-12">
+    <div className="flex flex-col items-center gap-3">
+      <div className="w-8 h-8 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
+      <span className="text-xs text-stone-500 font-medium">Loading view...</span>
+    </div>
+  </div>
+);
 
 const CustomerMainContent: React.FC = () => {
   const {
@@ -33,21 +62,25 @@ const CustomerMainContent: React.FC = () => {
     // If opened via Express Walk-in Link or QR Code (?salon=...&walkin=true)
     if (isExpressWalkin) {
       return (
-        <ExpressWalkinScreen
-          salon={selectedSalonForDetail}
-          onDismiss={() => setIsExpressWalkin(false)}
-          onViewSalonDetails={() => setIsExpressWalkin(false)}
-        />
+        <Suspense fallback={<ScreenFallback />}>
+          <ExpressWalkinScreen
+            salon={selectedSalonForDetail}
+            onDismiss={() => setIsExpressWalkin(false)}
+            onViewSalonDetails={() => setIsExpressWalkin(false)}
+          />
+        </Suspense>
       );
     }
 
     if (selectedSalonForDetail) {
       return (
-        <SalonDetailScreen
-          onBack={() => setSelectedSalonForDetail(null)}
-          onOpenReviewModal={() => setIsReviewModalOpen(true)}
-          onOpenDirectionsModal={() => {}}
-        />
+        <Suspense fallback={<ScreenFallback />}>
+          <SalonDetailScreen
+            onBack={() => setSelectedSalonForDetail(null)}
+            onOpenReviewModal={() => setIsReviewModalOpen(true)}
+            onOpenDirectionsModal={() => {}}
+          />
+        </Suspense>
       );
     }
 
@@ -55,46 +88,72 @@ const CustomerMainContent: React.FC = () => {
       case 'home':
         return <HomeScreen />;
       case 'explore':
-        return <ExploreScreen />;
+        return (
+          <Suspense fallback={<ScreenFallback />}>
+            <ExploreScreen />
+          </Suspense>
+        );
       case 'map':
-        return <MapScreen />;
+        return (
+          <Suspense fallback={<ScreenFallback />}>
+            <MapScreen />
+          </Suspense>
+        );
       case 'favourites':
-        return <FavouritesScreen />;
+        return (
+          <Suspense fallback={<ScreenFallback />}>
+            <FavouritesScreen />
+          </Suspense>
+        );
       case 'offers':
-        return <OffersScreen />;
+        return (
+          <Suspense fallback={<ScreenFallback />}>
+            <OffersScreen />
+          </Suspense>
+        );
       case 'profile':
-        return <ProfileScreen />;
+        return (
+          <Suspense fallback={<ScreenFallback />}>
+            <ProfileScreen />
+          </Suspense>
+        );
       default:
         return <HomeScreen />;
     }
   };
 
   return (
-    <div className={`min-h-screen flex flex-col font-sans w-full max-w-full overflow-x-hidden transition-colors duration-300 ${
-      isWomen
-        ? 'bg-[#FFF8F5] text-stone-900 selection:bg-rose-500/20 selection:text-rose-950'
-        : 'bg-[#FAF7F2] text-stone-900 selection:bg-orange-500/20 selection:text-orange-950'
-    }`}>
+    <div
+      className={`min-h-screen flex flex-col font-sans w-full max-w-full overflow-x-hidden transition-colors duration-300 ${
+        isWomen
+          ? 'bg-[#FFF8F5] text-stone-900 selection:bg-rose-500/20 selection:text-rose-950'
+          : 'bg-[#FAF7F2] text-stone-900 selection:bg-orange-500/20 selection:text-orange-950'
+      }`}
+    >
       {/* Universal Responsive Header */}
       <Header />
 
-      {/* Fluid Responsive Main Content (Mobile-first, No artificial phone bezel frame) */}
+      {/* Mandatory Precise Browser Geolocation Banner */}
+      <LocationPermissionBanner />
+
+      {/* Fluid Responsive Main Content (No artificial phone bezel frame) */}
       <main className="flex-1 w-full max-w-7xl mx-auto px-3 py-4 sm:px-6 lg:px-8 overflow-x-hidden">
-        <LocationPermissionBanner />
-        {renderContent()}
+        <div className="w-full">{renderContent()}</div>
       </main>
 
-      {/* Bottom Nav for Mobile Screens (< md breakpoint) */}
+      {/* Mobile Navigation */}
       <BottomNav />
 
-      {/* Floating System Modals */}
+      {/* Global Modals & Notifications */}
       <NotificationToast />
-      <CompareModal />
-      <WriteReviewModal
-        isOpen={isReviewModalOpen}
-        salon={selectedSalonForDetail}
-        onClose={() => setIsReviewModalOpen(false)}
-      />
+
+      <Suspense fallback={null}>
+        <CompareModal />
+        <WriteReviewModal
+          isOpen={isReviewModalOpen}
+          onClose={() => setIsReviewModalOpen(false)}
+        />
+      </Suspense>
     </div>
   );
 };

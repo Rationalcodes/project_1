@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Search,
   Star,
@@ -42,29 +42,31 @@ export const ExploreScreen: React.FC = () => {
 
   const isWomen = genderFilter === 'women';
 
-  // Filtered & Sorted Salon Records
-  const processedSalons = salons
-    .filter((salon) => {
-      if (!matchesGenderFilter(salon, genderFilter)) return false;
-      if (activeFilter === 'open' && !salon.isOpen) return false;
+  // Filtered & Sorted Salon Records (Memoized for Phase 4 Optimization)
+  const processedSalons = useMemo(() => {
+    return salons
+      .filter((salon) => {
+        if (!matchesGenderFilter(salon, genderFilter)) return false;
+        if (activeFilter === 'open' && !salon.isOpen) return false;
 
-      if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase();
-        return (
-          salon.name.toLowerCase().includes(q) ||
-          salon.locality.toLowerCase().includes(q) ||
-          salon.city.toLowerCase().includes(q) ||
-          (salon.tagline && salon.tagline.toLowerCase().includes(q))
-        );
-      }
-      return true;
-    })
-    .sort((a, b) => {
-      if (activeFilter === 'queue') return a.currentQueue - b.currentQueue;
-      if (activeFilter === 'distance') return a.distanceKm - b.distanceKm;
-      if (activeFilter === 'rating') return b.rating - a.rating;
-      return 0;
-    });
+        if (searchQuery.trim()) {
+          const q = searchQuery.toLowerCase();
+          return (
+            salon.name.toLowerCase().includes(q) ||
+            salon.locality.toLowerCase().includes(q) ||
+            salon.city.toLowerCase().includes(q) ||
+            (salon.tagline && salon.tagline.toLowerCase().includes(q))
+          );
+        }
+        return true;
+      })
+      .sort((a, b) => {
+        if (activeFilter === 'queue') return a.currentQueue - b.currentQueue;
+        if (activeFilter === 'distance') return a.distanceKm - b.distanceKm;
+        if (activeFilter === 'rating') return b.rating - a.rating;
+        return 0;
+      });
+  }, [salons, genderFilter, activeFilter, searchQuery]);
 
   return (
     <div className="space-y-4 pb-28 text-stone-900 max-w-5xl mx-auto">
@@ -280,6 +282,7 @@ export const ExploreScreen: React.FC = () => {
                         alt={salon.name}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                         loading="lazy"
+                        decoding="async"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent" />
 

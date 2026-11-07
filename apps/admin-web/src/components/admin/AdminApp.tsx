@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import QRCode from 'qrcode';
 import { useSalon } from '../../context/AdminContext';
 import {
@@ -415,32 +415,47 @@ export const AdminApp: React.FC = () => {
     triggerNotification(`Downloaded QR Code for ${salon.name}`);
   };
 
-  // Stats calculation
-  const totalSalons = salons.length;
-  const activeSalons = salons.filter(s => s.status === 'active').length;
-  const pendingVerificationSalons = salons.filter(s => !s.isVerified);
-  const totalWaitingRightNow = salons.reduce((acc, s) => acc + s.currentQueue, 0);
-  const totalCustomersServedToday = salons.reduce((acc, s) => acc + s.todayCustomersServed, 0);
-  const platformRevenueEst = salons.reduce((acc, s) => acc + s.monthlyRevenue, 0) * 0.05; // 5% SaaS fee
+  // Stats and list memoization (Phase 4 Optimization)
+  const {
+    totalSalons,
+    activeSalons,
+    pendingVerificationSalons,
+    totalWaitingRightNow,
+    totalCustomersServedToday,
+    platformRevenueEst,
+  } = useMemo(() => {
+    return {
+      totalSalons: salons.length,
+      activeSalons: salons.filter(s => s.status === 'active').length,
+      pendingVerificationSalons: salons.filter(s => !s.isVerified),
+      totalWaitingRightNow: salons.reduce((acc, s) => acc + s.currentQueue, 0),
+      totalCustomersServedToday: salons.reduce((acc, s) => acc + s.todayCustomersServed, 0),
+      platformRevenueEst: salons.reduce((acc, s) => acc + s.monthlyRevenue, 0) * 0.05,
+    };
+  }, [salons]);
 
-  const allReviewsWithSalon = salons.flatMap(s =>
-    s.reviews.map(r => ({ ...r, salonName: s.name, salonId: s.id }))
-  );
+  const { allReviewsWithSalon, flaggedReviews } = useMemo(() => {
+    const all = salons.flatMap(s =>
+      s.reviews.map(r => ({ ...r, salonName: s.name, salonId: s.id }))
+    );
+    const flagged = all.filter(r => r.flagged);
+    return { allReviewsWithSalon: all, flaggedReviews: flagged };
+  }, [salons]);
 
-  const flaggedReviews = allReviewsWithSalon.filter(r => r.flagged);
-
-  const filteredSalons = salons.filter(s => {
-    if (salonStatusFilter !== 'all' && s.status !== salonStatusFilter) return false;
-    if (adminSearch.trim()) {
-      const q = adminSearch.toLowerCase();
-      return (
-        s.name.toLowerCase().includes(q) ||
-        s.locality.toLowerCase().includes(q) ||
-        s.city.toLowerCase().includes(q)
-      );
-    }
-    return true;
-  });
+  const filteredSalons = useMemo(() => {
+    return salons.filter(s => {
+      if (salonStatusFilter !== 'all' && s.status !== salonStatusFilter) return false;
+      if (adminSearch.trim()) {
+        const q = adminSearch.toLowerCase();
+        return (
+          s.name.toLowerCase().includes(q) ||
+          s.locality.toLowerCase().includes(q) ||
+          s.city.toLowerCase().includes(q)
+        );
+      }
+      return true;
+    });
+  }, [salons, salonStatusFilter, adminSearch]);
 
   const adminTabs: { id: AdminTab; label: string; icon: React.FC<{ className?: string }>; badge?: number }[] = [
     { id: 'overview', label: 'Platform Overview', icon: BarChart2 },

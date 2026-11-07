@@ -1,20 +1,50 @@
-import React, { useState } from 'react';
+import React, { useState, Suspense, lazy } from 'react';
 import { SalonProvider, useSalon } from './context/SalonContext';
 import { Header } from './components/common/Header';
 import { BottomNav } from './components/common/BottomNav';
 import { NotificationToast } from './components/common/NotificationToast';
-import { CompareModal } from './components/common/CompareModal';
 import { HomeScreen } from './components/customer/HomeScreen';
-import { ExploreScreen } from './components/customer/ExploreScreen';
-import { MapScreen } from './components/customer/MapScreen';
-import { SalonDetailScreen } from './components/customer/SalonDetailScreen';
-import { FavouritesScreen } from './components/customer/FavouritesScreen';
-import { ProfileScreen } from './components/customer/ProfileScreen';
-import { OffersScreen } from './components/customer/OffersScreen';
-import { WriteReviewModal } from './components/customer/WriteReviewModal';
-import { DirectionsModal } from './components/customer/DirectionsModal';
-import { PartnerPortal } from './components/partner/PartnerPortal';
-import { AdminApp } from './components/admin/AdminApp';
+
+// Code-split heavy portals, secondary screens and modals (Phase 4 Optimization)
+const PartnerPortal = lazy(() =>
+  import('./components/partner/PartnerPortal').then((m) => ({ default: m.PartnerPortal })),
+);
+const AdminApp = lazy(() =>
+  import('./components/admin/AdminApp').then((m) => ({ default: m.AdminApp })),
+);
+const ExploreScreen = lazy(() =>
+  import('./components/customer/ExploreScreen').then((m) => ({ default: m.ExploreScreen })),
+);
+const SalonDetailScreen = lazy(() =>
+  import('./components/customer/SalonDetailScreen').then((m) => ({ default: m.SalonDetailScreen })),
+);
+const FavouritesScreen = lazy(() =>
+  import('./components/customer/FavouritesScreen').then((m) => ({ default: m.FavouritesScreen })),
+);
+const ProfileScreen = lazy(() =>
+  import('./components/customer/ProfileScreen').then((m) => ({ default: m.ProfileScreen })),
+);
+const OffersScreen = lazy(() =>
+  import('./components/customer/OffersScreen').then((m) => ({ default: m.OffersScreen })),
+);
+const CompareModal = lazy(() =>
+  import('./components/common/CompareModal').then((m) => ({ default: m.CompareModal })),
+);
+const WriteReviewModal = lazy(() =>
+  import('./components/customer/WriteReviewModal').then((m) => ({ default: m.WriteReviewModal })),
+);
+const DirectionsModal = lazy(() =>
+  import('./components/customer/DirectionsModal').then((m) => ({ default: m.DirectionsModal })),
+);
+
+const ScreenFallback = () => (
+  <div className="flex items-center justify-center min-h-[300px] w-full py-12">
+    <div className="flex flex-col items-center gap-3">
+      <div className="w-8 h-8 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
+      <span className="text-xs text-stone-500 font-medium">Loading view...</span>
+    </div>
+  </div>
+);
 
 const MainContent: React.FC = () => {
   const {
@@ -34,11 +64,13 @@ const MainContent: React.FC = () => {
   const renderCustomerContent = () => {
     if (selectedSalonForDetail) {
       return (
-        <SalonDetailScreen
-          onBack={() => setSelectedSalonForDetail(null)}
-          onOpenReviewModal={() => setIsReviewModalOpen(true)}
-          onOpenDirectionsModal={() => setIsDirectionsModalOpen(true)}
-        />
+        <Suspense fallback={<ScreenFallback />}>
+          <SalonDetailScreen
+            onBack={() => setSelectedSalonForDetail(null)}
+            onOpenReviewModal={() => setIsReviewModalOpen(true)}
+            onOpenDirectionsModal={() => setIsDirectionsModalOpen(true)}
+          />
+        </Suspense>
       );
     }
 
@@ -46,39 +78,59 @@ const MainContent: React.FC = () => {
       case 'home':
         return <HomeScreen />;
       case 'explore':
-        return <ExploreScreen />;
+        return (
+          <Suspense fallback={<ScreenFallback />}>
+            <ExploreScreen />
+          </Suspense>
+        );
       case 'map':
         return <HomeScreen />;
       case 'favourites':
-        return <FavouritesScreen />;
+        return (
+          <Suspense fallback={<ScreenFallback />}>
+            <FavouritesScreen />
+          </Suspense>
+        );
       case 'offers':
-        return <OffersScreen />;
+        return (
+          <Suspense fallback={<ScreenFallback />}>
+            <OffersScreen />
+          </Suspense>
+        );
       case 'profile':
-        return <ProfileScreen />;
+        return (
+          <Suspense fallback={<ScreenFallback />}>
+            <ProfileScreen />
+          </Suspense>
+        );
       default:
         return <HomeScreen />;
     }
   };
 
   return (
-    <div className={`min-h-screen flex flex-col font-sans w-full max-w-full overflow-x-hidden transition-colors duration-300 ${
-      isWomen
-        ? 'bg-[#FFF8F5] text-stone-900 selection:bg-rose-500/20 selection:text-rose-950'
-        : 'bg-[#FAF7F2] text-stone-900 selection:bg-orange-500/20 selection:text-orange-950'
-    }`}>
+    <div
+      className={`min-h-screen flex flex-col font-sans w-full max-w-full overflow-x-hidden transition-colors duration-300 ${
+        isWomen
+          ? 'bg-[#FFF8F5] text-stone-900 selection:bg-rose-500/20 selection:text-rose-950'
+          : 'bg-[#FAF7F2] text-stone-900 selection:bg-orange-500/20 selection:text-orange-950'
+      }`}
+    >
       {/* Universal Responsive Header */}
       <Header />
 
       {/* Fluid Responsive Main Content (No artificial phone bezel frame) */}
       <main className="flex-1 w-full max-w-7xl mx-auto px-3 py-4 sm:px-6 lg:px-8 overflow-x-hidden">
         {portal === 'customer' ? (
-          <div className="w-full">
-            {renderCustomerContent()}
-          </div>
+          <div className="w-full">{renderCustomerContent()}</div>
         ) : portal === 'partner' ? (
-          <PartnerPortal />
+          <Suspense fallback={<ScreenFallback />}>
+            <PartnerPortal />
+          </Suspense>
         ) : (
-          <AdminApp />
+          <Suspense fallback={<ScreenFallback />}>
+            <AdminApp />
+          </Suspense>
         )}
       </main>
 
@@ -87,15 +139,18 @@ const MainContent: React.FC = () => {
 
       {/* Global Modals & Notifications */}
       <NotificationToast />
-      <CompareModal />
-      <WriteReviewModal
-        isOpen={isReviewModalOpen}
-        onClose={() => setIsReviewModalOpen(false)}
-      />
-      <DirectionsModal
-        isOpen={isDirectionsModalOpen}
-        onClose={() => setIsDirectionsModalOpen(false)}
-      />
+
+      <Suspense fallback={null}>
+        <CompareModal />
+        <WriteReviewModal
+          isOpen={isReviewModalOpen}
+          onClose={() => setIsReviewModalOpen(false)}
+        />
+        <DirectionsModal
+          isOpen={isDirectionsModalOpen}
+          onClose={() => setIsDirectionsModalOpen(false)}
+        />
+      </Suspense>
     </div>
   );
 };

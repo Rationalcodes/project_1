@@ -97,11 +97,16 @@ export async function createQueueRequestFingerprint(fields: Array<string | numbe
 
 export function getDefaultApiBaseUrl(): string {
   let url = '';
+  let viteEnvUrl: string | undefined;
+  try {
+    viteEnvUrl = (new Function('return typeof import.meta !== "undefined" ? import.meta.env?.VITE_API_BASE_URL : undefined'))();
+  } catch {}
+
   // 1. Explicit window-level override
   if (typeof window !== 'undefined' && (window as any).__API_BASE_URL__) {
     url = (window as any).__API_BASE_URL__;
-  } else if (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_API_BASE_URL) {
-    url = (import.meta as any).env.VITE_API_BASE_URL;
+  } else if (viteEnvUrl) {
+    url = viteEnvUrl;
   } else if (typeof globalThis !== 'undefined' && (globalThis as any).process?.env?.VITE_API_BASE_URL) {
     url = (globalThis as any).process.env.VITE_API_BASE_URL;
   } else if (typeof window !== 'undefined' && window.location?.hostname) {
@@ -140,6 +145,62 @@ export class KumbhakaranApiClient {
   private socketConnected = false;
   private activeSalonSubscriptions = new Map<string, Set<QueueEventListener>>();
   private salonLatestSequence = new Map<string, number>();
+
+  // Short-lived API response cache and in-flight request deduplication (Phase 4 Optimization)
+  private responseCache = new Map<string, { data: any; expiresAt: number }>();
+  private inFlightRequests = new Map<string, Promise<any>>();
+
+  /**
+   * Coalesces concurrent identical GET requests and caches responses for specified TTL (in ms).
+   * Prevents duplicate network requests across concurrent React components and effects.
+   */
+  public async cachedFetch<T>(
+    cacheKey: string,
+    ttlMs: number,
+    fetcher: () => Promise<T>,
+  ): Promise<T> {
+    const now = Date.now();
+    const cached = this.responseCache.get(cacheKey);
+    if (cached && cached.expiresAt > now) {
+      return cached.data as T;
+    }
+
+    // In-flight coalescing: If an identical request is already active, reuse its Promise
+    const existing = this.inFlightRequests.get(cacheKey);
+    if (existing) {
+      return existing as Promise<T>;
+    }
+
+    const promise = fetcher()
+      .then((data) => {
+        if (data !== null && data !== undefined) {
+          this.responseCache.set(cacheKey, { data, expiresAt: Date.now() + ttlMs });
+        }
+        return data;
+      })
+      .finally(() => {
+        this.inFlightRequests.delete(cacheKey);
+      });
+
+    this.inFlightRequests.set(cacheKey, promise);
+    return promise;
+  }
+
+  /**
+   * Invalidate cached data by exact key or prefix.
+   * Invoked after mutations or on incoming WebSocket queue events.
+   */
+  public invalidateCache(prefix?: string) {
+    if (!prefix) {
+      this.responseCache.clear();
+      return;
+    }
+    for (const key of this.responseCache.keys()) {
+      if (key.startsWith(prefix)) {
+        this.responseCache.delete(key);
+      }
+    }
+  }
 
   constructor(baseUrl?: string) {
     this.baseUrl = baseUrl || getDefaultApiBaseUrl();
@@ -240,6 +301,10 @@ export class KumbhakaranApiClient {
     }
 
     const listeners = this.activeSalonSubscriptions.get(salonId);
+    // Invalidate affected salon cache so next query gets fresh DB state
+    this.invalidateCache(`salon:${salonId}`);
+    this.invalidateCache('discovery:');
+
     if (listeners && listeners.size > 0) {
       for (const listener of listeners) {
         try {
@@ -453,31 +518,34 @@ export class KumbhakaranApiClient {
     radiusKm: number = 25,
     lazyFilter?: string,
   ): Promise<NearbySalonsApiResponse | null> {
-    try {
-      const params = new URLSearchParams();
+    const params = new URLSearchParams();
 
-      if (latitude !== undefined && latitude !== null && longitude !== undefined && longitude !== null) {
-        params.append('latitude', latitude.toString());
-        params.append('longitude', longitude.toString());
-        params.append('radius_km', radiusKm.toString());
-      }
-
-      if (lazyFilter && lazyFilter !== 'all') {
-        params.append('lazy_filter', lazyFilter);
-      }
-
-      const queryString = params.toString();
-      const url = queryString ? `${this.baseUrl}/salons/nearby?${queryString}` : `${this.baseUrl}/salons/nearby`;
-
-      const res = await fetch(url, {
-        headers: this.getHeaders(),
-      });
-
-      if (!res.ok) return null;
-      return await res.json();
-    } catch {
-      return null;
+    if (latitude !== undefined && latitude !== null && longitude !== undefined && longitude !== null) {
+      params.append('latitude', latitude.toString());
+      params.append('longitude', longitude.toString());
+      params.append('radius_km', radiusKm.toString());
     }
+
+    if (lazyFilter && lazyFilter !== 'all') {
+      params.append('lazy_filter', lazyFilter);
+    }
+
+    const queryString = params.toString();
+    const cacheKey = `discovery:${queryString}`;
+
+    return this.cachedFetch<NearbySalonsApiResponse | null>(cacheKey, 12000, async () => {
+      try {
+        const url = queryString ? `${this.baseUrl}/salons/nearby?${queryString}` : `${this.baseUrl}/salons/nearby`;
+        const res = await fetch(url, {
+          headers: this.getHeaders(),
+        });
+
+        if (!res.ok) return null;
+        return await res.json();
+      } catch {
+        return null;
+      }
+    });
   }
 
   /**
@@ -504,15 +572,18 @@ export class KumbhakaranApiClient {
    * Public Salon Profile (strictly excludes walk-in customer names and revenue)
    */
   async getPublicSalonById(id: string): Promise<Salon | null> {
-    try {
-      const res = await fetch(`${this.baseUrl}/salons/${id}`, {
-        headers: this.getHeaders(),
-      });
-      if (!res.ok) return null;
-      return await res.json();
-    } catch {
-      return null;
-    }
+    const cacheKey = `salon:${id}`;
+    return this.cachedFetch<Salon | null>(cacheKey, 10000, async () => {
+      try {
+        const res = await fetch(`${this.baseUrl}/salons/${id}`, {
+          headers: this.getHeaders(),
+        });
+        if (!res.ok) return null;
+        return await res.json();
+      } catch {
+        return null;
+      }
+    });
   }
 
   /**
@@ -860,6 +931,8 @@ export class KumbhakaranApiClient {
       const err = await res.json().catch(() => ({}));
       throw new Error(err.message || 'Failed to add customer to queue');
     }
+    this.invalidateCache(`salon:${salonId}`);
+    this.invalidateCache('discovery:');
     return await res.json();
   }
 
@@ -878,6 +951,8 @@ export class KumbhakaranApiClient {
       const err = await res.json().catch(() => ({}));
       throw new Error(err.message || 'Failed to update queue entry status');
     }
+    this.invalidateCache(`salon:${salonId}`);
+    this.invalidateCache('discovery:');
     return await res.json();
   }
 
@@ -890,6 +965,8 @@ export class KumbhakaranApiClient {
       const err = await res.json().catch(() => ({}));
       throw new Error(err.message || 'Failed to leave the queue');
     }
+    this.invalidateCache(`salon:${salonId}`);
+    this.invalidateCache('discovery:');
     return res.json();
   }
 
@@ -1070,17 +1147,19 @@ export class KumbhakaranApiClient {
    * Home Banners and Promotional Posters
    */
   async getBanners(): Promise<HomeBanner[]> {
-    try {
-      const res = await fetch(`${this.baseUrl}/banners`, {
-        headers: this.getHeaders({ Accept: 'application/json' }),
-      });
-      if (res.ok) {
-        return await res.json();
+    return this.cachedFetch<HomeBanner[]>('banners', 60000, async () => {
+      try {
+        const res = await fetch(`${this.baseUrl}/banners`, {
+          headers: this.getHeaders({ Accept: 'application/json' }),
+        });
+        if (res.ok) {
+          return await res.json();
+        }
+      } catch (err) {
+        console.warn('Failed to fetch banners from backend API:', err);
       }
-    } catch (err) {
-      console.warn('Failed to fetch banners from backend API:', err);
-    }
-    return [];
+      return [];
+    });
   }
 
   async saveBanners(banners: HomeBanner[]): Promise<boolean> {
@@ -1093,6 +1172,7 @@ export class KumbhakaranApiClient {
       const err = await res.json().catch(() => ({}));
       throw new Error(err.message || 'Failed to save banners on backend');
     }
+    this.invalidateCache('banners');
     return true;
   }
 

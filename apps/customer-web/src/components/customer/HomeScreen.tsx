@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Star,
   Clock,
@@ -209,21 +209,27 @@ export const HomeScreen: React.FC = () => {
         },
       ];
 
-  const genderMatchedSalons = salons.filter((s) => matchesGenderFilter(s, genderFilter));
+  // Memoized gender and service category filtering (Phase 4 Optimization)
+  const genderMatchedSalons = useMemo(
+    () => salons.filter((s) => matchesGenderFilter(s, genderFilter)),
+    [salons, genderFilter],
+  );
 
   // Filter salons if a category is clicked
-  const displayedSalons = genderMatchedSalons.filter((salon) => {
-    if (selectedServiceFilter === 'All' || !selectedServiceFilter) return true;
-    // Check salon services
-    if (Array.isArray(salon.services) && salon.services.length > 0) {
-      return salon.services.some(
-        (svc) =>
-          svc.category?.toLowerCase() === selectedServiceFilter.toLowerCase() ||
-          svc.name?.toLowerCase().includes(selectedServiceFilter.toLowerCase()),
-      );
-    }
-    return true;
-  });
+  const displayedSalons = useMemo(() => {
+    return genderMatchedSalons.filter((salon) => {
+      if (selectedServiceFilter === 'All' || !selectedServiceFilter) return true;
+      // Check salon services
+      if (Array.isArray(salon.services) && salon.services.length > 0) {
+        return salon.services.some(
+          (svc) =>
+            svc.category?.toLowerCase() === selectedServiceFilter.toLowerCase() ||
+            svc.name?.toLowerCase().includes(selectedServiceFilter.toLowerCase()),
+        );
+      }
+      return true;
+    });
+  }, [genderMatchedSalons, selectedServiceFilter]);
 
   const handleSalonCardClick = (salon: Salon) => {
     addToRecentlyViewed(salon.id);
@@ -295,6 +301,8 @@ export const HomeScreen: React.FC = () => {
                     <img
                       src={banner.imageUrl}
                       alt={banner.title || `Poster #${banner.slot}`}
+                      loading="lazy"
+                      decoding="async"
                       className="w-full h-full object-cover"
                     />
                     {(banner.title || banner.subtitle) && (
@@ -413,6 +421,8 @@ export const HomeScreen: React.FC = () => {
                   <img
                     src={cat.image}
                     alt={cat.name}
+                    loading="lazy"
+                    decoding="async"
                     className="w-full h-full object-cover rounded-full group-hover:scale-105 transition-transform duration-300"
                   />
                 </div>
@@ -510,6 +520,8 @@ export const HomeScreen: React.FC = () => {
                       <img
                         src={cover}
                         alt={salon.name}
+                        loading="lazy"
+                        decoding="async"
                         className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-500"
                       />
                     ) : (
