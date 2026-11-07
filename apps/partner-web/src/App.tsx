@@ -6,7 +6,7 @@ import { NotificationToast } from './components/common/NotificationToast';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { LanguageSelectorButton } from './components/common/LanguageSelectorButton';
 import { MandatoryLanguageModal } from './components/common/MandatoryLanguageModal';
-import { Store, LogOut, User } from 'lucide-react';
+import { Store, LogOut, User, LogIn } from 'lucide-react';
 import logoWhite from './assets/logo-white.png';
 import logoFallback from './assets/logo.png';
 
@@ -37,9 +37,20 @@ const PartnerMainContent: React.FC = () => {
             {/* Quick Language Selector Pill Button */}
             <LanguageSelectorButton />
 
-            {isAuthenticated && (
+            {!isAuthenticated ? (
+              <button
+                type="button"
+                onClick={() => {
+                  window.dispatchEvent(new CustomEvent('open-partner-signin'));
+                }}
+                className="px-3.5 py-1.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/35 text-amber-300 font-bold text-xs flex items-center gap-1.5 transition-all shadow-xs cursor-pointer active:scale-95"
+              >
+                <LogIn className="w-3.5 h-3.5 text-amber-400" />
+                <span>Sign In</span>
+              </button>
+            ) : (
               <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-                <div className="flex items-center gap-1.5 px-2 py-1 rounded-xl bg-zinc-900 border border-zinc-800 text-xs">
+                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-zinc-900 border border-zinc-800 text-xs">
                   {partnerUser?.avatarUrl ? (
                     <img
                       src={partnerUser.avatarUrl}
