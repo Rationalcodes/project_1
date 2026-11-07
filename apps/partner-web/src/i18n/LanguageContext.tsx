@@ -28,7 +28,7 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         return saved;
       }
     } catch {}
-    return 'hi'; // Default friendly fallback for Indian partners
+    return 'en'; // Default language for partner portal is English
   });
 
   const [hasChosenLanguage, setHasChosenLanguage] = useState<boolean>(() => {

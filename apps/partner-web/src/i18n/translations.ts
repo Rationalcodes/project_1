@@ -7,8 +7,8 @@ export interface LanguageOption {
 }
 
 export const INDIAN_LANGUAGES: LanguageOption[] = [
+  { code: 'en', name: 'English', nativeName: 'English (Default)', region: 'Pan India & Business', greeting: 'Welcome' },
   { code: 'hi', name: 'Hindi', nativeName: 'हिन्दी', region: 'North & Central India', greeting: 'नमस्ते' },
-  { code: 'en', name: 'English', nativeName: 'English', region: 'Pan India & Business', greeting: 'Welcome' },
   { code: 'mr', name: 'Marathi', nativeName: 'मराठी', region: 'Maharashtra', greeting: 'नमस्कार' },
   { code: 'gu', name: 'Gujarati', nativeName: 'ગુજરાતી', region: 'Gujarat', greeting: 'નમસ્તે' },
   { code: 'bn', name: 'Bengali', nativeName: 'বাংলা', region: 'West Bengal & East', greeting: 'নমস্কার' },
