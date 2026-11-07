@@ -1202,14 +1202,14 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
         <div className="space-y-6">
           {/* Stale Data Warning Banner if not updated recently */}
           {freshness.isStale && (
-            <div className="bg-amber-500/15 border-2 border-amber-500/40 rounded-3xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs animate-pulse">
+            <div className="bg-amber-50 border border-amber-200 rounded-3xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs shadow-2xs">
               <div className="flex items-center gap-3">
-                <AlertTriangle className="w-6 h-6 text-amber-400 shrink-0" />
+                <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0" />
                 <div>
-                  <h4 className="font-bold text-amber-300">
+                  <h4 className="font-bold text-amber-900">
                     Queue Update Recommended!
                   </h4>
-                  <p className="text-zinc-300 text-[11px]">
+                  <p className="text-amber-700 text-[11px]">
                     Last updated {freshness.text}. Customers trust studios with fresh walk-in numbers.
                   </p>
                 </div>
@@ -1217,7 +1217,7 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
 
               <button
                 onClick={() => updateQueue(activeSalon.id, 0, activeSalon.currentQueue)}
-                className="px-4 py-2 rounded-xl bg-amber-400 text-black font-extrabold hover:bg-amber-300 shadow transition-colors shrink-0"
+                className="px-4 py-2 rounded-xl bg-amber-500 text-white font-bold hover:bg-amber-600 shadow transition-colors shrink-0"
               >
                 Confirm Current Count ({activeSalon.currentQueue}) is Correct
               </button>
@@ -1225,20 +1225,20 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
           )}
 
           {/* Big Live Queue Control Station */}
-          <div className="bg-gradient-to-b from-[#181822] via-[#13131c] to-[#0e0e13] border-2 border-zinc-700/80 rounded-3xl p-5 sm:p-8 shadow-2xl relative overflow-hidden text-center">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-900 border border-zinc-800 text-xs font-semibold text-zinc-300 mb-3">
+          <div className="bg-white border border-[#E8E2D8] rounded-3xl p-5 sm:p-8 shadow-xs relative overflow-hidden text-center">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#FAF7F2] border border-stone-200 text-xs font-semibold text-stone-600 mb-3">
               <span className={`w-2 h-2 rounded-full ${queueInfo.dotClass}`} />
               <span>Broadcasts Live to All Nearby Customers in Real-Time</span>
             </div>
 
-            <div className="text-xs font-extrabold uppercase tracking-widest text-zinc-400">
+            <div className="text-xs font-bold uppercase tracking-wider text-stone-400">
               {t.currentQueue} ({t.peopleInQueue})
             </div>
 
             {/* Giant Counter Display */}
             <div className="my-4">
-              <div className="text-6xl sm:text-8xl font-black text-white tracking-tight flex items-center justify-center gap-2 drop-shadow-2xl">
-                <span className="text-amber-400 font-light text-4xl sm:text-6xl">#</span>
+              <div className="text-6xl sm:text-8xl font-black text-[#E05326] font-serif tracking-tight flex items-center justify-center gap-2">
+                <span className="text-orange-200 font-light text-4xl sm:text-6xl">#</span>
                 <span>{activeSalon.currentQueue < 10 ? `0${activeSalon.currentQueue}` : activeSalon.currentQueue}</span>
               </div>
               <div className={`mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${queueInfo.badgeClass}`}>
@@ -1247,21 +1247,21 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
 
               {/* Verified Location Crowd Report from Customers (Where Is My Train Style) */}
               {latestCrowdReport && (
-                <div className="mt-4 max-w-md mx-auto p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-left flex items-center justify-between gap-3 shadow-lg">
+                <div className="mt-4 max-w-md mx-auto p-3 rounded-2xl bg-emerald-50 border border-emerald-200 text-left flex items-center justify-between gap-3 shadow-2xs">
                   <div className="flex items-center gap-2.5">
-                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shrink-0"></span>
-                    <div className="text-xs text-emerald-300">
-                      <div className="font-bold text-white flex items-center gap-1.5">
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shrink-0"></span>
+                    <div className="text-xs text-emerald-900">
+                      <div className="font-bold text-stone-900 flex items-center gap-1.5">
                         <span>Customer On-Site Report</span>
-                        <span className="text-[10px] bg-emerald-500/20 text-emerald-300 px-1.5 py-0.2 rounded-md font-semibold">Verified Location</span>
+                        <span className="text-[10px] bg-emerald-100 text-emerald-800 px-1.5 py-0.2 rounded-md font-semibold">Verified Location</span>
                       </div>
-                      <div className="mt-0.5">
-                        <strong>{latestCrowdReport.peopleCount} waiting</strong> • ~<strong>{latestCrowdReport.estimatedWaitMinutes}m wait</strong>
-                        {latestCrowdReport.notes && <span className="text-zinc-400 italic"> • "{latestCrowdReport.notes}"</span>}
+                      <div className="mt-0.5 text-stone-600">
+                        <strong className="text-stone-900">{latestCrowdReport.peopleCount} waiting</strong> • ~<strong>{latestCrowdReport.estimatedWaitMinutes}m wait</strong>
+                        {latestCrowdReport.notes && <span className="text-stone-500 italic"> • "{latestCrowdReport.notes}"</span>}
                       </div>
                     </div>
                   </div>
-                  <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/20 px-2 py-1 rounded-xl shrink-0">
+                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-1 rounded-xl shrink-0">
                     Live Feedback
                   </span>
                 </div>
@@ -1272,7 +1272,7 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-lg mx-auto my-4">
               <button
                 onClick={() => setShowAddCustomerModal(true)}
-                className="py-3.5 px-5 rounded-2xl bg-amber-500 hover:bg-amber-400 text-black font-black text-base sm:text-lg shadow-lg shadow-amber-500/20 active:scale-95 transition-all flex items-center justify-center gap-2.5 cursor-pointer"
+                className="py-3.5 px-5 rounded-2xl bg-[#E05326] hover:bg-[#D0481E] text-white font-black text-base sm:text-lg shadow-md shadow-orange-500/20 active:scale-95 transition-all flex items-center justify-center gap-2.5 cursor-pointer"
               >
                 <Plus className="w-5 h-5 stroke-[3]" />
                 <span>+ {t.addCustomerToQueue.toUpperCase()}</span>
@@ -1281,10 +1281,10 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
               <button
                 onClick={() => updateQueue(activeSalon.id, -1)}
                 disabled={activeSalon.currentQueue <= 0}
-                className={`py-3.5 px-5 rounded-2xl font-black text-base sm:text-lg shadow-md active:scale-95 transition-all flex items-center justify-center gap-2.5 cursor-pointer ${
+                className={`py-3.5 px-5 rounded-2xl font-black text-base sm:text-lg shadow-2xs active:scale-95 transition-all flex items-center justify-center gap-2.5 cursor-pointer ${
                   activeSalon.currentQueue <= 0
-                    ? 'bg-zinc-800 text-zinc-600 border border-zinc-700 cursor-not-allowed'
-                    : 'bg-zinc-800 hover:bg-zinc-700 text-white border border-zinc-600'
+                    ? 'bg-stone-100 text-stone-400 border border-stone-200 cursor-not-allowed'
+                    : 'bg-[#18181B] hover:bg-black text-white'
                 }`}
               >
                 <Minus className="w-5 h-5 stroke-[3]" />
@@ -1294,29 +1294,29 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
 
             {/* Quick Adjustment Pills */}
             <div className="flex flex-wrap items-center justify-center gap-2 max-w-md mx-auto">
-              <span className="text-xs text-zinc-400 mr-1">Quick:</span>
+              <span className="text-xs text-stone-500 mr-1">Quick:</span>
               <button
                 onClick={() => updateQueue(activeSalon.id, 2)}
-                className="px-3 py-1.5 rounded-xl bg-zinc-900 border border-zinc-800 hover:border-zinc-600 text-xs font-bold text-zinc-300"
+                className="px-3 py-1.5 rounded-xl bg-white border border-stone-200 hover:border-orange-300 text-xs font-bold text-stone-700 shadow-2xs cursor-pointer"
               >
                 +2 People
               </button>
               <button
                 onClick={() => updateQueue(activeSalon.id, 5)}
-                className="px-3 py-1.5 rounded-xl bg-zinc-900 border border-zinc-800 hover:border-zinc-600 text-xs font-bold text-zinc-300"
+                className="px-3 py-1.5 rounded-xl bg-white border border-stone-200 hover:border-orange-300 text-xs font-bold text-stone-700 shadow-2xs cursor-pointer"
               >
                 +5 Rush Group
               </button>
               <button
                 onClick={() => updateQueue(activeSalon.id, 0, 0)}
-                className="px-3 py-1.5 rounded-xl bg-zinc-900 border border-zinc-800 hover:border-zinc-600 text-xs font-bold text-rose-400"
+                className="px-3 py-1.5 rounded-xl bg-white border border-rose-200 hover:border-rose-300 text-xs font-bold text-rose-600 shadow-2xs cursor-pointer"
               >
                 Reset to 0
               </button>
 
               <button
                 onClick={() => setIsEditingManual(!isEditingManual)}
-                className="px-3 py-1.5 rounded-xl bg-zinc-900 border border-zinc-800 hover:border-zinc-600 text-xs font-bold text-amber-400"
+                className="px-3 py-1.5 rounded-xl bg-[#FFF3EC] border border-[#FED7CC] text-xs font-bold text-[#E05326] shadow-2xs cursor-pointer"
               >
                 Manual Entry
               </button>
@@ -1332,18 +1332,18 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
                   value={manualQueueInput}
                   onChange={(e) => setManualQueueInput(e.target.value)}
                   placeholder="Exact count..."
-                  className="w-28 px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-xl text-xs text-white text-center font-bold focus:outline-none focus:border-amber-400"
+                  className="w-28 px-3 py-2 bg-white border border-stone-300 rounded-xl text-xs text-stone-900 text-center font-bold focus:outline-none focus:border-[#E05326]"
                 />
                 <button
                   type="submit"
-                  className="px-3 py-2 rounded-xl bg-amber-500 text-black font-bold text-xs hover:bg-amber-400"
+                  className="px-3.5 py-2 rounded-xl bg-[#E05326] text-white font-bold text-xs hover:bg-[#D0481E] cursor-pointer"
                 >
                   Set Count
                 </button>
                 <button
                   type="button"
                   onClick={() => setIsEditingManual(false)}
-                  className="px-2 py-2 text-xs text-zinc-400 hover:text-white"
+                  className="px-2 py-2 text-xs text-stone-500 hover:text-stone-800 cursor-pointer"
                 >
                   Cancel
                 </button>
@@ -1351,47 +1351,47 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
             )}
 
             {/* Live Queue Metadata */}
-            <div className="mt-8 pt-4 border-t border-zinc-800/80 flex flex-wrap items-center justify-between text-xs text-zinc-400 gap-3">
+            <div className="mt-8 pt-4 border-t border-stone-100 flex flex-wrap items-center justify-between text-xs text-stone-500 gap-3">
               <div className="flex items-center gap-1.5">
-                <Clock className="w-4 h-4 text-amber-400" />
-                <span>Last updated: <strong className="text-white">{freshness.text}</strong></span>
+                <Clock className="w-4 h-4 text-[#E05326]" />
+                <span>Last updated: <strong className="text-stone-800">{freshness.text}</strong></span>
               </div>
 
               <div>
-                <span>Est. customer wait time: <strong className="text-emerald-400">~{waitTime} mins</strong></span>
+                <span>Est. customer wait time: <strong className="text-emerald-700">~{waitTime} mins</strong></span>
               </div>
 
               <div>
-                <span>Completed today: <strong className="text-white">{realCustomersServed} customers</strong></span>
+                <span>Completed today: <strong className="text-stone-800">{realCustomersServed} customers</strong></span>
               </div>
             </div>
           </div>
 
           {/* Live Customer Calling & Queue Roster */}
-          <div className="bg-[#14141d] border border-zinc-800 rounded-3xl p-5 sm:p-7 shadow-2xl">
+          <div className="bg-white border border-[#E8E2D8] rounded-3xl p-5 sm:p-7 shadow-xs">
             {/* Small Barber Auto-Pilot Explainer Banner */}
-            <div className="mb-5 p-3.5 bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent border border-amber-500/25 rounded-2xl flex items-start gap-3 text-xs">
+            <div className="mb-5 p-3.5 bg-[#FFF3EC] border border-[#FED7CC] rounded-2xl flex items-start gap-3 text-xs">
               <span className="text-base shrink-0">🤖</span>
               <div className="flex-1">
-                <span className="font-extrabold text-amber-300">Customer Self-Service Auto-Pilot Active:</span>
-                <span className="text-zinc-300 ml-1">
+                <span className="font-extrabold text-[#E05326]">Customer Self-Service Auto-Pilot Active:</span>
+                <span className="text-stone-700 ml-1">
                   Small barbers do not need to manually tally on the phone while cutting hair! Customers scan your counter QR standee to join, pick services, and tap "Done" when finished. Old tickets auto-expire after service time.
                 </span>
               </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-zinc-800/80">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-stone-100">
               <div>
                 <div className="flex items-center gap-2">
                   <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-                  <h2 className="text-lg sm:text-xl font-black text-white tracking-tight flex items-center gap-2">
+                  <h2 className="text-lg sm:text-xl font-black text-stone-900 tracking-tight flex items-center gap-2 font-serif">
                     {t.waitingCustomersList}
-                    <span className="text-xs px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30 font-bold">
+                    <span className="text-xs px-2.5 py-0.5 rounded-full bg-[#FFF3EC] text-[#E05326] border border-[#FED7CC] font-bold">
                       {queueEntries.length} {t.waiting}
                     </span>
                   </h2>
                 </div>
-                <p className="text-xs text-zinc-400 mt-1">
+                <p className="text-xs text-stone-500 mt-1">
                   Live tickets from customers who scanned your counter QR standee or joined online.
                 </p>
               </div>
@@ -1400,17 +1400,17 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
                 <button
                   type="button"
                   onClick={() => setShowStandeeModal(true)}
-                  className="px-3.5 py-2 rounded-xl bg-zinc-900 border border-amber-500/30 hover:border-amber-400 text-amber-400 font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-xs active:scale-95"
+                  className="px-3.5 py-2 rounded-xl bg-white border border-stone-200 hover:border-orange-300 text-[#E05326] font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs active:scale-95"
                   title={t.printStandee}
                 >
-                  <QrCode className="w-4 h-4 text-amber-400" />
+                  <QrCode className="w-4 h-4 text-[#E05326]" />
                   <span>{t.counterStandee}</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={() => setShowAddCustomerModal(true)}
-                  className="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-extrabold text-xs flex items-center gap-1.5 shadow-lg shadow-amber-500/20 active:scale-95 transition-all cursor-pointer"
+                  className="px-3.5 py-2 rounded-xl bg-[#E05326] hover:bg-[#D0481E] text-white font-extrabold text-xs flex items-center gap-1.5 shadow-md shadow-orange-500/20 active:scale-95 transition-all cursor-pointer"
                 >
                   <UserPlus className="w-4 h-4 stroke-[2.5]" />
                   <span>+ {t.addCustomerToQueue}</span>
@@ -1420,10 +1420,10 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
                   type="button"
                   onClick={() => refreshQueueEntries(activeSalon.id)}
                   disabled={isLoadingQueue}
-                  className="p-2 rounded-xl bg-zinc-900 border border-zinc-800 hover:border-zinc-700 text-zinc-300 hover:text-white transition-all cursor-pointer"
+                  className="p-2 rounded-xl bg-white border border-stone-200 hover:bg-stone-50 text-stone-600 hover:text-stone-900 transition-all cursor-pointer shadow-2xs"
                   title="Refresh Queue"
                 >
-                  <RefreshCw className={`w-4 h-4 ${isLoadingQueue ? 'animate-spin text-amber-400' : ''}`} />
+                  <RefreshCw className={`w-4 h-4 ${isLoadingQueue ? 'animate-spin text-[#E05326]' : ''}`} />
                 </button>
 
                 {queueEntries.length > 0 && (
@@ -1434,7 +1434,7 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
                         clearQueue();
                       }
                     }}
-                    className="px-3 py-2 rounded-xl bg-zinc-900 border border-zinc-800 hover:border-rose-900 text-zinc-400 hover:text-rose-400 text-xs font-semibold transition-all cursor-pointer"
+                    className="px-3 py-2 rounded-xl bg-white border border-rose-200 hover:bg-rose-50 text-rose-600 text-xs font-semibold transition-all cursor-pointer shadow-2xs"
                   >
                     Clear All
                   </button>
@@ -1445,18 +1445,18 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
             {/* Customer List or Empty State */}
             {queueEntries.length === 0 ? (
               <div className="py-12 px-4 text-center">
-                <div className="w-14 h-14 rounded-2xl bg-zinc-900/90 border border-zinc-800 flex items-center justify-center mx-auto mb-3 text-zinc-500">
+                <div className="w-14 h-14 rounded-2xl bg-[#FAF7F2] border border-[#E8E2D8] flex items-center justify-center mx-auto mb-3 text-stone-400">
                   <Users className="w-7 h-7" />
                 </div>
-                <h3 className="text-sm font-bold text-zinc-300">No Customers Currently Waiting</h3>
-                <p className="text-xs text-zinc-500 mt-1 max-w-sm mx-auto">
-                  When walk-ins arrive, use <strong className="text-amber-400">+ ADD CUSTOMER</strong> above or log their name & phone number so you can call them when their turn arrives.
+                <h3 className="text-sm font-bold text-stone-900">No Customers Currently Waiting</h3>
+                <p className="text-xs text-stone-500 mt-1 max-w-sm mx-auto">
+                  When walk-ins arrive, use <strong className="text-[#E05326]">+ ADD CUSTOMER</strong> above or log their name & phone number so you can call them when their turn arrives.
                 </p>
                 <div className="mt-4 flex items-center justify-center gap-2 flex-wrap">
                   <button
                     type="button"
                     onClick={() => setShowAddCustomerModal(true)}
-                    className="px-4 py-2 rounded-xl bg-zinc-900 border border-zinc-700 hover:border-amber-500/50 text-xs font-bold text-amber-400 inline-flex items-center gap-1.5 transition-all cursor-pointer"
+                    className="px-4 py-2 rounded-xl bg-[#FFF3EC] border border-[#FED7CC] hover:bg-orange-100 text-xs font-bold text-[#E05326] inline-flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs"
                   >
                     <UserPlus className="w-3.5 h-3.5" />
                     <span>Log First Customer</span>
@@ -1464,9 +1464,9 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
                   <button
                     type="button"
                     onClick={() => setShowStandeeModal(true)}
-                    className="px-4 py-2 rounded-xl bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500/20 text-xs font-bold text-amber-300 inline-flex items-center gap-1.5 transition-all cursor-pointer"
+                    className="px-4 py-2 rounded-xl bg-white border border-stone-200 hover:bg-stone-50 text-xs font-bold text-stone-700 inline-flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs"
                   >
-                    <Printer className="w-3.5 h-3.5 text-amber-400" />
+                    <Printer className="w-3.5 h-3.5 text-[#E05326]" />
                     <span>Print Counter Standee</span>
                   </button>
                 </div>
@@ -1484,10 +1484,10 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
                       key={entry.id || index}
                       className={`rounded-2xl border p-4 transition-all ${
                         isServing
-                          ? 'bg-emerald-950/20 border-emerald-500/40 shadow-lg shadow-emerald-950/20'
+                          ? 'bg-emerald-50/70 border-emerald-300 shadow-2xs'
                           : isAbsent
-                            ? 'bg-rose-950/20 border-rose-500/30 shadow-md'
-                            : 'bg-[#181824] border-zinc-800 hover:border-zinc-700 shadow-md'
+                            ? 'bg-rose-50/60 border-rose-200 shadow-2xs'
+                            : 'bg-white border-[#E8E2D8] hover:border-orange-300 shadow-2xs'
                       }`}
                     >
                       <div className="flex items-start justify-between gap-3">
@@ -1495,8 +1495,8 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
                           {/* Ticket Token Badge */}
                           <div className={`w-12 h-12 rounded-xl flex flex-col items-center justify-center font-black shrink-0 ${
                             isServing
-                              ? 'bg-emerald-500 text-black shadow-md shadow-emerald-500/30'
-                              : 'bg-amber-500/15 border border-amber-500/30 text-amber-400'
+                              ? 'bg-emerald-600 text-white shadow-xs'
+                              : 'bg-[#FFF3EC] border border-[#FED7CC] text-[#E05326]'
                           }`}>
                             <span className="text-[10px] uppercase font-bold tracking-wider leading-none">Token</span>
                             <span className="text-base font-black leading-tight">
@@ -1506,46 +1506,46 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
 
                           <div>
                             <div className="flex items-center gap-2 flex-wrap">
-                              <h4 className="text-sm font-black text-white">
+                              <h4 className="text-sm font-black text-stone-900">
                                 {entry.customerName || `Customer #${index + 1}`}
                               </h4>
                               {isAbsent ? (
-                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-500/15 text-rose-300 border border-rose-500/30">
+                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-100 text-rose-700 border border-rose-200">
                                   Marked absent
                                 </span>
                               ) : isServing ? (
-                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 animate-pulse">
+                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 animate-pulse">
                                   At Chair • In Service
                                 </span>
                               ) : (
-                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-orange-100 text-[#E05326] border border-orange-200">
                                   {entry.position === 1 ? 'Next in Turn' : `Position #${entry.position || 1}`}
                                 </span>
                               )}
                             </div>
 
-                            <p className="text-xs text-zinc-400 mt-0.5 flex items-center gap-2">
+                            <p className="text-xs text-stone-500 mt-0.5 flex items-center gap-2">
                               <span>{entry.serviceName || 'Haircut & Styling'}</span>
                               {minsAgo !== null && (
-                                <span className="text-zinc-500 text-[11px] flex items-center gap-1">
-                                  <Clock className="w-3 h-3 text-zinc-500" />
+                                <span className="text-stone-400 text-[11px] flex items-center gap-1">
+                                  <Clock className="w-3 h-3 text-stone-400" />
                                   {minsAgo === 0 ? 'Just joined' : `${minsAgo}m waiting`}
                                 </span>
                               )}
                             </p>
                             <div className="mt-1 flex flex-wrap gap-1.5">
                               {entry.arrivalConfirmedAt && (
-                                <span className="text-[9px] font-bold rounded-full px-2 py-0.5 bg-emerald-500/10 text-emerald-300 border border-emerald-500/20">
+                                <span className="text-[9px] font-bold rounded-full px-2 py-0.5 bg-emerald-100 text-emerald-800 border border-emerald-200">
                                   {entry.checkInMethod === 'qr' ? 'QR check-in' : 'Arrived'}
                                 </span>
                               )}
                               {entry.departureDetectedAt && !isAbsent && (
-                                <span className="text-[9px] font-bold rounded-full px-2 py-0.5 bg-amber-500/10 text-amber-300 border border-amber-500/20">
+                                <span className="text-[9px] font-bold rounded-full px-2 py-0.5 bg-amber-100 text-amber-800 border border-amber-200">
                                   {entry.departureReviewRequired ? 'Staff review needed' : 'Departure pending'}
                                 </span>
                               )}
                               {(entry.partySize || 1) > 1 && (
-                                <span className="text-[9px] font-bold rounded-full px-2 py-0.5 bg-zinc-800 text-zinc-300 border border-zinc-700">
+                                <span className="text-[9px] font-bold rounded-full px-2 py-0.5 bg-stone-100 text-stone-700 border border-stone-200">
                                   Group of {entry.partySize}
                                 </span>
                               )}
@@ -1557,14 +1557,14 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
                         {entry.phone ? (
                           <a
                             href={`tel:${entry.phone}`}
-                            className="px-3 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 active:scale-95 text-black font-black text-xs flex items-center gap-1.5 shadow-md shadow-emerald-500/25 transition-all shrink-0 cursor-pointer"
+                            className="px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-bold text-xs flex items-center gap-1.5 shadow-xs transition-all shrink-0 cursor-pointer"
                             title={`Call ${entry.customerName} on ${entry.phone}`}
                           >
                             <PhoneCall className="w-3.5 h-3.5" />
                             <span>Call</span>
                           </a>
                         ) : (
-                          <span className="text-[10px] text-zinc-500 px-2 py-1 rounded-lg bg-zinc-900 border border-zinc-800 shrink-0">
+                          <span className="text-[10px] text-stone-500 px-2 py-1 rounded-lg bg-stone-100 border border-stone-200 shrink-0">
                             Walk-in
                           </span>
                         )}
@@ -1572,16 +1572,16 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
 
                       {/* Phone number display if available */}
                       {entry.phone && (
-                        <div className="mt-2.5 pt-2 border-t border-zinc-800/60 flex items-center justify-between text-xs text-zinc-400">
-                          <span className="flex items-center gap-1.5 text-zinc-300 font-medium">
-                            <Phone className="w-3 h-3 text-emerald-400" />
+                        <div className="mt-2.5 pt-2 border-t border-stone-100 flex items-center justify-between text-xs text-stone-500">
+                          <span className="flex items-center gap-1.5 text-stone-700 font-medium">
+                            <Phone className="w-3 h-3 text-emerald-600" />
                             {entry.phone}
                           </span>
                         </div>
                       )}
 
                       {/* Status Action Buttons */}
-                      <div className="mt-3 pt-2.5 border-t border-zinc-800/80 flex items-center justify-between gap-2">
+                      <div className="mt-3 pt-2.5 border-t border-stone-100 flex items-center justify-between gap-2">
                         <div className="flex items-center gap-1.5">
                           {isAbsent ? (
                             <button
@@ -1589,7 +1589,7 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
                               onClick={() => restoreQueueEntry(entry.id).catch((error) =>
                                 triggerNotification(error instanceof Error ? error.message : 'Could not restore ticket')
                               )}
-                              className="px-2.5 py-1.5 rounded-lg bg-zinc-900 border border-emerald-500/40 text-emerald-300 text-xs font-bold transition-all flex items-center gap-1 cursor-pointer"
+                              className="px-2.5 py-1.5 rounded-lg bg-emerald-50 border border-emerald-300 text-emerald-800 text-xs font-bold transition-all flex items-center gap-1 cursor-pointer"
                             >
                               <RefreshCw className="w-3 h-3" />
                               <span>Restore to Queue</span>
@@ -1598,9 +1598,9 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
                             <button
                               type="button"
                               onClick={() => updateCustomerStatus(entry.id, 'in_service')}
-                              className="px-2.5 py-1.5 rounded-lg bg-zinc-900 border border-zinc-700 hover:border-emerald-500/50 hover:bg-emerald-950/30 text-emerald-400 text-xs font-bold transition-all flex items-center gap-1 cursor-pointer"
+                              className="px-2.5 py-1.5 rounded-lg bg-[#FAF7F2] border border-stone-200 hover:border-emerald-500 hover:bg-emerald-50 text-stone-800 text-xs font-bold transition-all flex items-center gap-1 cursor-pointer"
                             >
-                              <Scissors className="w-3 h-3" />
+                              <Scissors className="w-3 h-3 text-[#E05326]" />
                               <span>Take to Chair</span>
                             </button>
                           )}
@@ -1608,7 +1608,7 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
                             <button
                               type="button"
                               onClick={() => updateCustomerStatus(entry.id, 'completed')}
-                              className="px-2.5 py-1.5 rounded-lg bg-emerald-500/15 border border-emerald-500/30 hover:bg-emerald-500 text-emerald-400 hover:text-black text-xs font-bold transition-all flex items-center gap-1 cursor-pointer"
+                              className="px-2.5 py-1.5 rounded-lg bg-emerald-50 border border-emerald-300 hover:bg-emerald-600 hover:text-white text-emerald-800 text-xs font-bold transition-all flex items-center gap-1 cursor-pointer"
                             >
                               <Check className="w-3 h-3 stroke-[3]" />
                               <span>Done / Served</span>
@@ -1620,7 +1620,7 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
                               onClick={() => confirmQueueDeparture(entry.id).catch((error) =>
                                 triggerNotification(error instanceof Error ? error.message : 'Could not confirm departure')
                               )}
-                              className="px-2.5 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-bold transition-all flex items-center gap-1 cursor-pointer"
+                              className="px-2.5 py-1.5 rounded-lg bg-amber-50 border border-amber-300 text-amber-800 text-xs font-bold transition-all flex items-center gap-1 cursor-pointer"
                             >
                               <UserCheck className="w-3 h-3" />
                               <span>Confirm left</span>
@@ -1631,7 +1631,7 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
                         {!isAbsent && <button
                           type="button"
                           onClick={() => updateCustomerStatus(entry.id, 'cancelled')}
-                          className="p-1.5 text-zinc-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors cursor-pointer"
+                          className="p-1.5 text-stone-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
                           title="Remove customer from queue"
                         >
                           <XCircle className="w-4 h-4" />
@@ -1651,96 +1651,96 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
         <div className="space-y-6">
           {/* Key Metric KPI Cards (Real-Time Dynamic Telemetry) */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
-            <div className="bg-[#14141c] border border-zinc-800 rounded-2xl p-4">
-              <div className="text-[10px] text-zinc-400 uppercase font-bold flex items-center gap-1">
-                <Users className="w-3.5 h-3.5 text-amber-400" /> Customers Today
+            <div className="bg-white border border-[#E8E2D8] rounded-2xl p-4 shadow-2xs">
+              <div className="text-[10px] text-stone-500 uppercase font-bold flex items-center gap-1">
+                <Users className="w-3.5 h-3.5 text-[#E05326]" /> Customers Today
               </div>
-              <div className="text-2xl sm:text-3xl font-black text-white mt-1">
+              <div className="text-2xl sm:text-3xl font-black text-stone-900 mt-1">
                 {realCustomersServed}
               </div>
               {realCustomersServed > 0 ? (
-                <div className="text-[10px] text-emerald-400 font-semibold mt-1 flex items-center gap-0.5">
-                  <TrendingUp className="w-3 h-3" /> {realCustomersServed} served today
+                <div className="text-[10px] text-emerald-700 font-semibold mt-1 flex items-center gap-0.5">
+                  <TrendingUp className="w-3 h-3 text-emerald-600" /> {realCustomersServed} served today
                 </div>
               ) : (
-                <div className="text-[10px] text-zinc-500 font-medium mt-1">
+                <div className="text-[10px] text-stone-400 font-medium mt-1">
                   Active tracking from start
                 </div>
               )}
             </div>
 
-            <div className="bg-[#14141c] border border-zinc-800 rounded-2xl p-4">
-              <div className="text-[10px] text-zinc-400 uppercase font-bold flex items-center gap-1">
-                <Clock className="w-3.5 h-3.5 text-blue-400" /> Waiting Now
+            <div className="bg-white border border-[#E8E2D8] rounded-2xl p-4 shadow-2xs">
+              <div className="text-[10px] text-stone-500 uppercase font-bold flex items-center gap-1">
+                <Clock className="w-3.5 h-3.5 text-blue-600" /> Waiting Now
               </div>
-              <div className="text-2xl sm:text-3xl font-black text-amber-400 mt-1">
+              <div className="text-2xl sm:text-3xl font-black text-[#E05326] mt-1 font-serif">
                 {activeSalon.currentQueue}
               </div>
-              <div className="text-[10px] text-zinc-400 mt-1">
+              <div className="text-[10px] text-stone-500 mt-1">
                 ~{waitTime} min wait time
               </div>
             </div>
 
-            <div className="bg-[#14141c] border border-zinc-800 rounded-2xl p-4">
-              <div className="text-[10px] text-zinc-400 uppercase font-bold flex items-center gap-1">
-                <DollarSign className="w-3.5 h-3.5 text-emerald-400" /> Today's Revenue
+            <div className="bg-white border border-[#E8E2D8] rounded-2xl p-4 shadow-2xs">
+              <div className="text-[10px] text-stone-500 uppercase font-bold flex items-center gap-1">
+                <DollarSign className="w-3.5 h-3.5 text-emerald-600" /> Today's Revenue
               </div>
-              <div className="text-2xl sm:text-3xl font-black text-white mt-1">
+              <div className="text-2xl sm:text-3xl font-black text-stone-900 mt-1">
                 ₹{realTodayRevenue.toLocaleString()}
               </div>
-              <div className="text-[10px] text-zinc-400 mt-1">
+              <div className="text-[10px] text-stone-500 mt-1">
                 Monthly: ₹{realMonthlyRevenue.toLocaleString()}
               </div>
             </div>
 
-            <div className="bg-[#14141c] border border-zinc-800 rounded-2xl p-4">
-              <div className="text-[10px] text-zinc-400 uppercase font-bold flex items-center gap-1">
-                <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" /> Average Rating
+            <div className="bg-white border border-[#E8E2D8] rounded-2xl p-4 shadow-2xs">
+              <div className="text-[10px] text-stone-500 uppercase font-bold flex items-center gap-1">
+                <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-400" /> Average Rating
               </div>
-              <div className="text-2xl sm:text-3xl font-black text-amber-400 mt-1">
+              <div className="text-2xl sm:text-3xl font-black text-amber-600 mt-1">
                 {activeSalon.rating}★
               </div>
-              <div className="text-[10px] text-zinc-400 mt-1">
+              <div className="text-[10px] text-stone-500 mt-1">
                 {activeSalon.reviewCount} customer reviews
               </div>
             </div>
           </div>
 
           {/* Peak Business Hours Visualization (Real-Time Dynamic Hourly Density) */}
-          <div className="bg-[#14141c] border border-zinc-800 rounded-3xl p-5 shadow-xl">
+          <div className="bg-white border border-[#E8E2D8] rounded-3xl p-5 shadow-xs">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                  <BarChart3 className="w-4 h-4 text-amber-400" />
+                <h3 className="text-sm font-bold text-stone-900 flex items-center gap-2">
+                  <BarChart3 className="w-4 h-4 text-[#E05326]" />
                   Peak Walk-In Rush Hours
                 </h3>
-                <p className="text-xs text-zinc-400">
+                <p className="text-xs text-stone-500">
                   Real-time hourly customer density recorded as walk-ins are served
                 </p>
               </div>
-              <span className="text-xs font-semibold text-amber-400 bg-amber-400/10 px-2.5 py-1 rounded-xl">
+              <span className="text-xs font-semibold text-[#E05326] bg-[#FFF3EC] border border-[#FED7CC] px-2.5 py-1 rounded-xl">
                 {hourlyStats.peakLabel}
               </span>
             </div>
 
             {/* Visual Bar Graph */}
-            <div className="h-44 flex items-end justify-between gap-1 sm:gap-2 pt-6 pb-2 border-b border-zinc-800">
+            <div className="h-44 flex items-end justify-between gap-1 sm:gap-2 pt-6 pb-2 border-b border-stone-100">
               {hourlyStats.bars.map((bar) => (
                 <div key={bar.time} className="flex-1 flex flex-col items-center h-full justify-end group">
-                  <span className="text-[10px] font-bold text-zinc-400 group-hover:text-amber-400 mb-1 opacity-80">
+                  <span className="text-[10px] font-bold text-stone-500 group-hover:text-[#E05326] mb-1 opacity-80">
                     {bar.count}
                   </span>
                   <div
                     style={{ height: bar.height }}
                     className={`w-full max-w-[36px] rounded-t-lg transition-all duration-500 ${
                       bar.peak
-                        ? 'bg-amber-400 shadow-lg shadow-amber-400/20 group-hover:bg-amber-300'
+                        ? 'bg-[#E05326] shadow-sm shadow-orange-500/20 group-hover:bg-[#D0481E]'
                         : bar.count > 0
-                        ? 'bg-amber-500/60 group-hover:bg-amber-500'
-                        : 'bg-zinc-800/80 group-hover:bg-zinc-700'
+                        ? 'bg-stone-300 group-hover:bg-[#E05326]'
+                        : 'bg-stone-100 group-hover:bg-stone-200'
                     }`}
                   />
-                  <span className="text-[10px] text-zinc-500 mt-2 font-medium">
+                  <span className="text-[10px] text-stone-500 mt-2 font-medium">
                     {bar.time}
                   </span>
                 </div>
@@ -1748,7 +1748,7 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
             </div>
 
             {!hourlyStats.hasData && (
-              <div className="mt-3 text-center text-[11px] text-zinc-500">
+              <div className="mt-3 text-center text-[11px] text-stone-500">
                 Density bars will dynamically record and spike as walk-in customers take tokens throughout the day.
               </div>
             )}
@@ -1761,17 +1761,17 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
         <div className="space-y-5">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-sm font-bold text-white">
+              <h2 className="text-base font-bold text-stone-900 font-serif">
                 Service Catalogue & Dynamic Pricing
               </h2>
-              <p className="text-xs text-zinc-400">
+              <p className="text-xs text-stone-500">
                 Update prices and service availability instantly for all walk-in customers
               </p>
             </div>
 
             <button
               onClick={() => setShowAddServiceModal(true)}
-              className="px-4 py-2 rounded-xl bg-amber-500 text-black font-bold text-xs hover:bg-amber-400 flex items-center gap-1.5 shadow"
+              className="px-4 py-2 rounded-xl bg-[#E05326] hover:bg-[#D0481E] text-white font-bold text-xs flex items-center gap-1.5 shadow-xs cursor-pointer"
             >
               <Plus className="w-4 h-4" />
               <span>Add New Service</span>
@@ -1780,51 +1780,51 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
 
           {/* Add Service Modal */}
           {showAddServiceModal && (
-            <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-              <div className="bg-[#14141c] border border-zinc-700 rounded-3xl max-w-md w-full p-5 shadow-2xl">
-                <h3 className="text-sm font-bold text-white mb-3">Add New Service</h3>
+            <div className="fixed inset-0 z-50 bg-stone-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+              <div className="bg-white border border-[#E8E2D8] rounded-3xl max-w-md w-full p-6 shadow-2xl text-stone-900">
+                <h3 className="text-base font-bold text-stone-900 font-serif mb-3">Add New Service</h3>
                 <form onSubmit={handleCreateService} className="space-y-3 text-xs">
                   <div>
-                    <label className="text-zinc-400 block mb-1">Service Name</label>
+                    <label className="text-stone-700 font-bold block mb-1">Service Name</label>
                     <input
                       type="text"
                       required
                       value={newServiceName}
                       onChange={(e) => setNewServiceName(e.target.value)}
                       placeholder="e.g. Skin Fade Haircut"
-                      className="w-full p-2.5 bg-zinc-900 border border-zinc-700 rounded-xl text-white"
+                      className="w-full p-2.5 bg-[#FAF7F2] border border-[#E8E2D8] rounded-xl text-stone-900 placeholder-stone-400 focus:outline-none focus:border-[#E05326]"
                     />
                   </div>
 
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <label className="text-zinc-400 block mb-1">Price (₹)</label>
+                      <label className="text-stone-700 font-bold block mb-1">Price (₹)</label>
                       <input
                         type="number"
                         required
                         value={newServicePrice}
                         onChange={(e) => setNewServicePrice(Number(e.target.value))}
-                        className="w-full p-2.5 bg-zinc-900 border border-zinc-700 rounded-xl text-white"
+                        className="w-full p-2.5 bg-[#FAF7F2] border border-[#E8E2D8] rounded-xl text-stone-900 focus:outline-none focus:border-[#E05326]"
                       />
                     </div>
                     <div>
-                      <label className="text-zinc-400 block mb-1">Duration (Mins)</label>
+                      <label className="text-stone-700 font-bold block mb-1">Duration (Mins)</label>
                       <input
                         type="number"
                         required
                         value={newServiceDuration}
                         onChange={(e) => setNewServiceDuration(Number(e.target.value))}
-                        className="w-full p-2.5 bg-zinc-900 border border-zinc-700 rounded-xl text-white"
+                        className="w-full p-2.5 bg-[#FAF7F2] border border-[#E8E2D8] rounded-xl text-stone-900 focus:outline-none focus:border-[#E05326]"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="text-zinc-400 block mb-1">Category</label>
+                    <label className="text-stone-700 font-bold block mb-1">Category</label>
                     <select
                       value={newServiceCategory}
                       onChange={(e) => setNewServiceCategory(e.target.value as any)}
-                      className="w-full p-2.5 bg-zinc-900 border border-zinc-700 rounded-xl text-white"
+                      className="w-full p-2.5 bg-[#FAF7F2] border border-[#E8E2D8] rounded-xl text-stone-900 focus:outline-none focus:border-[#E05326]"
                     >
                       <option value="Hair">Hair</option>
                       <option value="Beard">Beard</option>
@@ -1835,13 +1835,13 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
                   </div>
 
                   <div>
-                    <label className="text-zinc-400 block mb-1">Description</label>
+                    <label className="text-stone-700 font-bold block mb-1">Description</label>
                     <textarea
                       value={newServiceDesc}
                       onChange={(e) => setNewServiceDesc(e.target.value)}
                       placeholder="Brief details of service..."
                       rows={2}
-                      className="w-full p-2.5 bg-zinc-900 border border-zinc-700 rounded-xl text-white resize-none"
+                      className="w-full p-2.5 bg-[#FAF7F2] border border-[#E8E2D8] rounded-xl text-stone-900 placeholder-stone-400 resize-none focus:outline-none focus:border-[#E05326]"
                     />
                   </div>
 
@@ -1849,13 +1849,13 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
                     <button
                       type="button"
                       onClick={() => setShowAddServiceModal(false)}
-                      className="px-3 py-1.5 text-zinc-400"
+                      className="px-3 py-1.5 text-stone-500 hover:text-stone-800"
                     >
                       Cancel
                     </button>
                     <button
                       type="submit"
-                      className="px-4 py-1.5 bg-amber-500 text-black font-bold rounded-xl"
+                      className="px-4 py-2 bg-[#E05326] text-white font-bold rounded-xl hover:bg-[#D0481E] shadow-xs cursor-pointer"
                     >
                       Add Service
                     </button>
@@ -1870,43 +1870,43 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
             {(activeSalon.services || []).map((svc) => (
               <div
                 key={svc.id}
-                className="bg-[#14141c] border border-zinc-800 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
+                className="bg-white border border-[#E8E2D8] rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs shadow-2xs"
               >
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
-                    <span className="font-bold text-white text-sm">{svc.name}</span>
-                    <span className="text-[10px] px-2 py-0.5 rounded bg-zinc-900 text-zinc-400 border border-zinc-800">
+                    <span className="font-bold text-stone-900 text-sm">{svc.name}</span>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#FAF7F2] text-stone-600 border border-stone-200 font-medium">
                       {svc.category}
                     </span>
                     {!svc.isAvailable && (
-                      <span className="text-[10px] px-2 py-0.5 rounded bg-rose-500/20 text-rose-300">
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200">
                         Paused
                       </span>
                     )}
                   </div>
-                  <p className="text-zinc-400 mt-1">{svc.description}</p>
-                  <span className="text-zinc-500 text-[11px] mt-1 block">
+                  <p className="text-stone-500 mt-1">{svc.description}</p>
+                  <span className="text-stone-400 text-[11px] mt-1 block">
                     Duration: ~{svc.durationMinutes} mins
                   </span>
                 </div>
 
                 <div className="flex items-center gap-3 self-end sm:self-center">
                   <div className="text-right">
-                    <span className="text-zinc-500 text-[10px] block">Price</span>
+                    <span className="text-stone-400 text-[10px] block font-medium">Price</span>
                     <input
                       type="number"
                       value={svc.price}
                       onChange={(e) => updateService(activeSalon.id, svc.id, { price: Number(e.target.value) })}
-                      className="w-20 px-2 py-1 bg-zinc-900 border border-zinc-700 rounded-lg text-amber-400 font-extrabold text-sm text-right focus:outline-none focus:border-amber-400"
+                      className="w-20 px-2 py-1 bg-[#FAF7F2] border border-stone-300 rounded-lg text-[#E05326] font-extrabold text-sm text-right focus:outline-none focus:border-[#E05326]"
                     />
                   </div>
 
                   <button
                     onClick={() => updateService(activeSalon.id, svc.id, { isAvailable: !svc.isAvailable })}
-                    className={`px-3 py-1.5 rounded-xl font-bold text-xs border ${
+                    className={`px-3 py-1.5 rounded-xl font-bold text-xs border cursor-pointer ${
                       svc.isAvailable
-                        ? 'bg-zinc-900 text-zinc-300 border-zinc-700 hover:text-white'
-                        : 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                        ? 'bg-white text-stone-700 border-stone-200 hover:bg-stone-50'
+                        : 'bg-orange-50 text-[#E05326] border-orange-200'
                     }`}
                   >
                     {svc.isAvailable ? 'Pause' : 'Enable'}
@@ -1914,7 +1914,7 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
 
                   <button
                     onClick={() => deleteService(activeSalon.id, svc.id)}
-                    className="p-1.5 rounded-lg text-zinc-500 hover:text-rose-400"
+                    className="p-1.5 rounded-lg text-stone-400 hover:text-rose-600 hover:bg-rose-50 cursor-pointer"
                     title="Delete service"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -1931,17 +1931,17 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
         <div className="space-y-5">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-sm font-bold text-white">
+              <h2 className="text-base font-bold text-stone-900 font-serif">
                 Barber & Stylist Chairs ({(activeSalon.staff || []).length})
               </h2>
-              <p className="text-xs text-zinc-400">
+              <p className="text-xs text-stone-500">
                 Number of active chairs directly adjusts estimated wait times on the customer app
               </p>
             </div>
 
             <button
               onClick={() => setShowAddStaffModal(true)}
-              className="px-4 py-2 rounded-xl bg-amber-500 text-black font-bold text-xs hover:bg-amber-400 flex items-center gap-1.5"
+              className="px-4 py-2 rounded-xl bg-[#E05326] text-white font-bold text-xs hover:bg-[#D0481E] flex items-center gap-1.5 shadow-xs cursor-pointer"
             >
               <Plus className="w-4 h-4" />
               <span>Add Stylist</span>
@@ -1949,56 +1949,56 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
           </div>
 
           {showAddStaffModal && (
-            <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-              <div className="bg-[#14141c] border border-zinc-700 rounded-3xl max-w-md w-full p-5 shadow-2xl">
-                <h3 className="text-sm font-bold text-white mb-3">Add Stylist</h3>
+            <div className="fixed inset-0 z-50 bg-stone-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+              <div className="bg-white border border-[#E8E2D8] rounded-3xl max-w-md w-full p-6 shadow-2xl text-stone-900">
+                <h3 className="text-base font-bold text-stone-900 font-serif mb-3">Add Stylist</h3>
                 <form onSubmit={handleCreateStaff} className="space-y-3 text-xs">
                   <div>
-                    <label className="text-zinc-400 block mb-1">Stylist Name</label>
+                    <label className="text-stone-700 font-bold block mb-1">Stylist Name</label>
                     <input
                       type="text"
                       required
                       value={newStaffName}
                       onChange={(e) => setNewStaffName(e.target.value)}
                       placeholder="e.g. Rohan Sharma"
-                      className="w-full p-2.5 bg-zinc-900 border border-zinc-700 rounded-xl text-white"
+                      className="w-full p-2.5 bg-[#FAF7F2] border border-[#E8E2D8] rounded-xl text-stone-900 placeholder-stone-400 focus:outline-none focus:border-[#E05326]"
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <label className="text-zinc-400 block mb-1">Role</label>
+                      <label className="text-stone-700 font-bold block mb-1">Role</label>
                       <input
                         type="text"
                         value={newStaffRole}
                         onChange={(e) => setNewStaffRole(e.target.value)}
-                        className="w-full p-2.5 bg-zinc-900 border border-zinc-700 rounded-xl text-white"
+                        className="w-full p-2.5 bg-[#FAF7F2] border border-[#E8E2D8] rounded-xl text-stone-900 focus:outline-none focus:border-[#E05326]"
                       />
                     </div>
                     <div>
-                      <label className="text-zinc-400 block mb-1">Experience</label>
+                      <label className="text-stone-700 font-bold block mb-1">Experience</label>
                       <input
                         type="text"
                         value={newStaffExp}
                         onChange={(e) => setNewStaffExp(e.target.value)}
-                        className="w-full p-2.5 bg-zinc-900 border border-zinc-700 rounded-xl text-white"
+                        className="w-full p-2.5 bg-[#FAF7F2] border border-[#E8E2D8] rounded-xl text-stone-900 focus:outline-none focus:border-[#E05326]"
                       />
                     </div>
                   </div>
                   <div>
-                    <label className="text-zinc-400 block mb-1">Specialties (comma separated)</label>
+                    <label className="text-stone-700 font-bold block mb-1">Specialties (comma separated)</label>
                     <input
                       type="text"
                       value={newStaffSpec}
                       onChange={(e) => setNewStaffSpec(e.target.value)}
                       placeholder="Taper Fade, Beard Art"
-                      className="w-full p-2.5 bg-zinc-900 border border-zinc-700 rounded-xl text-white"
+                      className="w-full p-2.5 bg-[#FAF7F2] border border-[#E8E2D8] rounded-xl text-stone-900 focus:outline-none focus:border-[#E05326]"
                     />
                   </div>
                   <div className="flex justify-end gap-2 pt-2">
-                    <button type="button" onClick={() => setShowAddStaffModal(false)} className="px-3 py-1.5 text-zinc-400">
+                    <button type="button" onClick={() => setShowAddStaffModal(false)} className="px-3 py-1.5 text-stone-500 hover:text-stone-800 cursor-pointer">
                       Cancel
                     </button>
-                    <button type="submit" className="px-4 py-1.5 bg-amber-500 text-black font-bold rounded-xl">
+                    <button type="submit" className="px-4 py-2 bg-[#E05326] text-white font-bold rounded-xl hover:bg-[#D0481E] shadow-xs cursor-pointer">
                       Save Stylist
                     </button>
                   </div>
@@ -2009,7 +2009,7 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
             {(activeSalon.staff || []).map((member) => (
-              <div key={member.id} className="bg-[#14141c] border border-zinc-800 rounded-2xl p-4 flex items-center justify-between gap-3 text-xs">
+              <div key={member.id} className="bg-white border border-[#E8E2D8] rounded-2xl p-4 flex items-center justify-between gap-3 text-xs shadow-2xs">
                 <div className="flex items-center gap-3">
                   <img
                     src={member.photo || (member as any).avatarUrl || DEFAULT_AVATAR}
@@ -2020,13 +2020,13 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
                     }}
                   />
                   <div>
-                    <h4 className="font-bold text-white text-sm">{member.name}</h4>
-                    <p className="text-zinc-400">{member.role} • {member.experience}</p>
+                    <h4 className="font-bold text-stone-900 text-sm">{member.name}</h4>
+                    <p className="text-stone-500">{member.role} • {member.experience}</p>
                     <div className="flex items-center gap-1.5 mt-1">
                       <span className={`w-2 h-2 rounded-full ${
-                        member.status === 'active' ? 'bg-emerald-400' : 'bg-zinc-600'
+                        member.status === 'active' ? 'bg-emerald-500' : 'bg-stone-300'
                       }`} />
-                      <span className="capitalize text-zinc-300 font-semibold">{member.status}</span>
+                      <span className="capitalize text-stone-700 font-semibold">{member.status}</span>
                     </div>
                   </div>
                 </div>
@@ -2036,10 +2036,10 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
                     onClick={() => updateStaff(activeSalon.id, member.id, {
                       status: member.status === 'active' ? 'break' : 'active'
                     })}
-                    className={`px-3 py-1 rounded-xl text-xs font-semibold border ${
+                    className={`px-3 py-1.5 rounded-xl font-bold text-xs border cursor-pointer ${
                       member.status === 'active'
-                        ? 'bg-zinc-900 text-zinc-300 border-zinc-700'
-                        : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                        ? 'bg-white text-stone-700 border-stone-200 hover:bg-stone-50'
+                        : 'bg-emerald-50 text-emerald-700 border-emerald-200'
                     }`}
                   >
                     {member.status === 'active' ? 'Take Break' : 'On Chair'}
@@ -2047,7 +2047,7 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
 
                   <button
                     onClick={() => deleteStaff(activeSalon.id, member.id)}
-                    className="p-1.5 text-zinc-500 hover:text-rose-400"
+                    className="p-1.5 text-stone-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg cursor-pointer"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -2063,35 +2063,35 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-sm font-bold text-white">
+              <h2 className="text-base font-bold text-stone-900 font-serif">
                 Customer Feedback & Owner Replies
               </h2>
-              <p className="text-xs text-zinc-400">
+              <p className="text-xs text-stone-500">
                 Responding to reviews boosts salon trust and visibility score
               </p>
             </div>
             <button
               onClick={() => fetchSalonReviews(activeSalon.id)}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-xl text-xs font-semibold transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-stone-200 hover:bg-stone-50 text-stone-700 rounded-xl text-xs font-semibold transition-colors cursor-pointer shadow-2xs"
               title="Refresh reviews"
             >
-              <RotateCcw className="w-3.5 h-3.5" />
+              <RotateCcw className="w-3.5 h-3.5 text-[#E05326]" />
               <span>Refresh</span>
             </button>
           </div>
 
           <div className="space-y-3">
             {(activeSalon.reviews || []).length === 0 ? (
-              <div className="bg-[#14141c] border border-zinc-800 rounded-2xl p-8 text-center text-xs space-y-2">
-                <MessageSquare className="w-8 h-8 text-zinc-600 mx-auto" />
-                <p className="text-zinc-300 font-semibold">No reviews received yet</p>
-                <p className="text-zinc-500 max-w-sm mx-auto">
+              <div className="bg-white border border-[#E8E2D8] rounded-2xl p-8 text-center text-xs space-y-2 shadow-2xs">
+                <MessageSquare className="w-8 h-8 text-stone-400 mx-auto" />
+                <p className="text-stone-800 font-semibold">No reviews received yet</p>
+                <p className="text-stone-500 max-w-sm mx-auto">
                   When customers submit verified reviews for {activeSalon.name}, they will appear here instantly for you to read and reply.
                 </p>
               </div>
             ) : (
               (activeSalon.reviews || []).map((rev) => (
-              <div key={rev.id} className="bg-[#14141c] border border-zinc-800 rounded-2xl p-4 text-xs space-y-2">
+              <div key={rev.id} className="bg-white border border-[#E8E2D8] rounded-2xl p-4 text-xs space-y-2 shadow-2xs">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <img
@@ -2103,32 +2103,32 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
                       }}
                     />
                     <div>
-                      <span className="font-bold text-white">{rev.customerName}</span>
-                      <span className="text-[10px] text-zinc-500 ml-2">{(rev as any).date || (rev as any).createdAt || 'Recently'}</span>
+                      <span className="font-bold text-stone-900">{rev.customerName}</span>
+                      <span className="text-[10px] text-stone-400 ml-2">{(rev as any).date || (rev as any).createdAt || 'Recently'}</span>
                     </div>
                   </div>
-                  <div className="flex items-center gap-0.5 text-amber-400 font-bold">
-                    <Star className="w-3.5 h-3.5 fill-amber-400" /> {rev.rating}.0
+                  <div className="flex items-center gap-0.5 text-amber-500 font-bold">
+                    <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" /> {rev.rating}.0
                   </div>
                 </div>
 
-                <p className="text-zinc-300 italic">"{rev.comment}"</p>
+                <p className="text-stone-700 italic">"{rev.comment}"</p>
 
                 {/* Existing Reply */}
                 {rev.ownerReply ? (
-                  <div className="mt-2 bg-zinc-900/90 border-l-2 border-amber-400 p-2.5 rounded-r-xl">
-                    <div className="text-[11px] font-bold text-amber-400">Your Response:</div>
-                    <p className="text-zinc-300">{typeof rev.ownerReply === "string" ? rev.ownerReply : rev.ownerReply.comment}</p>
+                  <div className="mt-2 bg-[#FFF3EC] border-l-2 border-[#E05326] p-2.5 rounded-r-xl">
+                    <div className="text-[11px] font-bold text-[#E05326]">Your Response:</div>
+                    <p className="text-stone-800">{typeof rev.ownerReply === "string" ? rev.ownerReply : rev.ownerReply.comment}</p>
                   </div>
                 ) : (
                   /* Reply Input */
-                  <div className="mt-2 flex items-center gap-2 pt-2 border-t border-zinc-800">
+                  <div className="mt-2 flex items-center gap-2 pt-2 border-t border-stone-100">
                     <input
                       type="text"
                       placeholder="Write owner response..."
                       value={replyTextMap[rev.id] || ''}
                       onChange={(e) => setReplyTextMap({ ...replyTextMap, [rev.id]: e.target.value })}
-                      className="flex-1 px-3 py-1.5 bg-zinc-900 border border-zinc-700 rounded-xl text-white text-xs"
+                      className="flex-1 px-3 py-1.5 bg-[#FAF7F2] border border-[#E8E2D8] rounded-xl text-stone-900 text-xs focus:outline-none focus:border-[#E05326]"
                     />
                     <button
                       onClick={() => {
@@ -2138,7 +2138,7 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
                           setReplyTextMap({ ...replyTextMap, [rev.id]: '' });
                         }
                       }}
-                      className="px-3 py-1.5 bg-amber-500 text-black font-bold rounded-xl text-xs hover:bg-amber-400"
+                      className="px-3 py-1.5 bg-[#E05326] text-white font-bold rounded-xl text-xs hover:bg-[#D0481E] cursor-pointer"
                     >
                       Reply
                     </button>
@@ -2180,27 +2180,27 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
       {ownerTab === 'gallery' && (
         <div className="space-y-6 max-w-4xl">
           {/* Studio Header */}
-          <div className="bg-[#14141c] border border-zinc-800 rounded-3xl p-5 space-y-3">
+          <div className="bg-white border border-[#E8E2D8] rounded-3xl p-5 space-y-3 shadow-xs">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <div className="flex items-center gap-2">
-                  <Film className="w-5 h-5 text-amber-400" />
-                  <h2 className="text-base font-bold text-white">Media, Poster & Location Showcase</h2>
+                  <Film className="w-5 h-5 text-[#E05326]" />
+                  <h2 className="text-base font-bold text-stone-900 font-serif">Media, Poster & Location Showcase</h2>
                 </div>
-                <p className="text-xs text-zinc-400 mt-1">
+                <p className="text-xs text-stone-500 mt-1">
                   Upload high-res poster photos, background loop videos, physical salon location pictures, and haircut portfolio.
                 </p>
               </div>
 
               {/* Sub-tab Switcher */}
-              <div className="flex items-center gap-1 bg-zinc-900/90 border border-zinc-800 p-1 rounded-2xl text-xs shrink-0">
+              <div className="flex items-center gap-1 bg-[#FAF7F2] border border-[#E8E2D8] p-1 rounded-2xl text-xs shrink-0">
                 <button
                   type="button"
                   onClick={() => setMediaSubTab('poster-video')}
-                  className={`px-3 py-1.5 rounded-xl font-semibold transition-all ${
+                  className={`px-3 py-1.5 rounded-xl font-semibold transition-all cursor-pointer ${
                     mediaSubTab === 'poster-video'
-                      ? 'bg-amber-400 text-black shadow-sm font-bold'
-                      : 'text-zinc-400 hover:text-white'
+                      ? 'bg-[#E05326] text-white shadow-xs font-bold'
+                      : 'text-stone-600 hover:text-stone-900'
                   }`}
                 >
                   Poster & Loop Video
@@ -2208,10 +2208,10 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
                 <button
                   type="button"
                   onClick={() => setMediaSubTab('location')}
-                  className={`px-3 py-1.5 rounded-xl font-semibold transition-all ${
+                  className={`px-3 py-1.5 rounded-xl font-semibold transition-all cursor-pointer ${
                     mediaSubTab === 'location'
-                      ? 'bg-amber-400 text-black shadow-sm font-bold'
-                      : 'text-zinc-400 hover:text-white'
+                      ? 'bg-[#E05326] text-white shadow-xs font-bold'
+                      : 'text-stone-600 hover:text-stone-900'
                   }`}
                 >
                   Location ({locationPhotosList.length})
@@ -2219,10 +2219,10 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
                 <button
                   type="button"
                   onClick={() => setMediaSubTab('work')}
-                  className={`px-3 py-1.5 rounded-xl font-semibold transition-all ${
+                  className={`px-3 py-1.5 rounded-xl font-semibold transition-all cursor-pointer ${
                     mediaSubTab === 'work'
-                      ? 'bg-amber-400 text-black shadow-sm font-bold'
-                      : 'text-zinc-400 hover:text-white'
+                      ? 'bg-[#E05326] text-white shadow-xs font-bold'
+                      : 'text-stone-600 hover:text-stone-900'
                   }`}
                 >
                   Our Work ({workPhotosList.length})
@@ -2235,30 +2235,30 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
           {mediaSubTab === 'poster-video' && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               {/* Form Input */}
-              <form onSubmit={handleSaveHeroMedia} className="bg-[#14141c] border border-zinc-800 rounded-3xl p-5 space-y-4 text-xs">
+              <form onSubmit={handleSaveHeroMedia} className="bg-white border border-[#E8E2D8] rounded-3xl p-5 space-y-4 text-xs shadow-xs text-stone-900">
                 <div>
-                  <h3 className="text-sm font-bold text-white flex items-center gap-1.5 mb-1">
-                    <Video className="w-4 h-4 text-amber-400" />
+                  <h3 className="text-base font-bold text-stone-900 font-serif flex items-center gap-1.5 mb-1">
+                    <Video className="w-4 h-4 text-[#E05326]" />
                     Cover Poster & Loop Video
                   </h3>
-                  <p className="text-[11px] text-zinc-400">
+                  <p className="text-[11px] text-stone-500">
                     Set a cinematic looping video (MP4/WebM) or a high-res poster image for your salon's profile banner.
                   </p>
                 </div>
 
                 {/* Poster Image URL & File Upload */}
                 <div>
-                  <label className="text-zinc-300 font-semibold block mb-1">Poster Image URL (Hero Cover)</label>
+                  <label className="text-stone-700 font-bold block mb-1">Poster Image URL (Hero Cover)</label>
                   <div className="flex gap-2">
                     <input
                       type="url"
                       value={posterUrlInput}
                       onChange={(e) => setPosterUrlInput(e.target.value)}
                       placeholder="https://images.unsplash.com/..."
-                      className="flex-1 p-2.5 bg-zinc-900 border border-zinc-700 rounded-xl text-white text-xs"
+                      className="flex-1 p-2.5 bg-[#FAF7F2] border border-[#E8E2D8] rounded-xl text-stone-900 text-xs focus:outline-none focus:border-[#E05326]"
                     />
-                    <label className="px-3 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-semibold rounded-xl text-xs cursor-pointer flex items-center gap-1 shrink-0">
-                      <Upload className="w-3.5 h-3.5" />
+                    <label className="px-3 py-2 bg-stone-100 hover:bg-stone-200 text-stone-700 font-semibold rounded-xl text-xs cursor-pointer flex items-center gap-1 shrink-0 border border-stone-200">
+                      <Upload className="w-3.5 h-3.5 text-[#E05326]" />
                       <span>Upload</span>
                       <input
                         type="file"
@@ -2272,7 +2272,7 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
 
                 {/* Loop Video URL & File Upload */}
                 <div>
-                  <label className="text-zinc-300 font-semibold block mb-1">
+                  <label className="text-stone-700 font-bold block mb-1">
                     Loop Video URL (MP4 / WebM direct video link)
                   </label>
                   <div className="flex gap-2">
@@ -2281,10 +2281,10 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
                       value={loopVideoUrlInput}
                       onChange={(e) => setLoopVideoUrlInput(e.target.value)}
                       placeholder="https://assets.mixkit.co/videos/...mp4"
-                      className="flex-1 p-2.5 bg-zinc-900 border border-zinc-700 rounded-xl text-white text-xs"
+                      className="flex-1 p-2.5 bg-[#FAF7F2] border border-[#E8E2D8] rounded-xl text-stone-900 text-xs focus:outline-none focus:border-[#E05326]"
                     />
-                    <label className="px-3 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-semibold rounded-xl text-xs cursor-pointer flex items-center gap-1 shrink-0">
-                      <Upload className="w-3.5 h-3.5" />
+                    <label className="px-3 py-2 bg-stone-100 hover:bg-stone-200 text-stone-700 font-semibold rounded-xl text-xs cursor-pointer flex items-center gap-1 shrink-0 border border-stone-200">
+                      <Upload className="w-3.5 h-3.5 text-[#E05326]" />
                       <span>Upload</span>
                       <input
                         type="file"
@@ -2297,8 +2297,8 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
                 </div>
 
                 {/* Quick Presets for Barber Studios */}
-                <div className="p-3 bg-zinc-900/70 border border-zinc-800 rounded-2xl space-y-2">
-                  <span className="text-[10px] uppercase font-bold text-zinc-400 tracking-wider block">
+                <div className="p-3 bg-[#FAF7F2] border border-[#E8E2D8] rounded-2xl space-y-2">
+                  <span className="text-[10px] uppercase font-bold text-stone-500 tracking-wider block">
                     ⚡ Quick Sample Studio Loops:
                   </span>
                   <div className="flex flex-wrap gap-1.5">
@@ -2320,7 +2320,7 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
                         key={preset.label}
                         type="button"
                         onClick={() => setLoopVideoUrlInput(preset.url)}
-                        className="px-2.5 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-[11px] text-zinc-300 hover:text-amber-400 transition-colors"
+                        className="px-2.5 py-1 rounded-lg bg-white border border-stone-200 hover:border-orange-300 text-[11px] text-stone-700 hover:text-[#E05326] transition-colors shadow-2xs cursor-pointer"
                       >
                         {preset.label}
                       </button>
@@ -2331,7 +2331,7 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
                 <div className="pt-2 flex justify-end">
                   <button
                     type="submit"
-                    className="px-5 py-2.5 bg-amber-500 text-black font-bold rounded-xl text-xs hover:bg-amber-400 flex items-center gap-1.5 shadow-lg shadow-amber-500/20"
+                    className="px-5 py-2.5 bg-[#E05326] hover:bg-[#D0481E] text-white font-bold rounded-xl text-xs flex items-center gap-1.5 shadow-md shadow-orange-500/20 cursor-pointer"
                   >
                     <Save className="w-4 h-4" />
                     <span>Save Poster & Video</span>
@@ -2340,13 +2340,13 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
               </form>
 
               {/* Live Customer Preview */}
-              <div className="bg-[#14141c] border border-zinc-800 rounded-3xl p-5 space-y-3">
+              <div className="bg-white border border-[#E8E2D8] rounded-3xl p-5 space-y-3 shadow-xs">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-bold text-white flex items-center gap-1.5">
-                    <Eye className="w-4 h-4 text-amber-400" />
+                  <h3 className="text-base font-bold text-stone-900 font-serif flex items-center gap-1.5">
+                    <Eye className="w-4 h-4 text-[#E05326]" />
                     Customer Live View Preview
                   </h3>
-                  <span className="text-[10px] text-zinc-500">How customers see your salon</span>
+                  <span className="text-[10px] text-stone-400">How customers see your salon</span>
                 </div>
 
                 <div className="h-64 rounded-2xl overflow-hidden border border-zinc-700 relative bg-black shadow-inner">
@@ -2566,84 +2566,84 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
 
       {/* TAB 7: SALON SETTINGS */}
       {ownerTab === 'settings' && (
-        <form onSubmit={handleSaveSettings} className="bg-[#14141c] border border-zinc-800 rounded-3xl p-5 space-y-4 max-w-2xl text-xs">
-          <h2 className="text-sm font-bold text-white mb-2">Salon Profile Settings</h2>
+        <form onSubmit={handleSaveSettings} className="bg-white border border-[#E8E2D8] rounded-3xl p-6 space-y-4 max-w-2xl text-xs shadow-xs text-stone-900">
+          <h2 className="text-base font-bold text-stone-900 font-serif mb-2">Salon Profile Settings</h2>
 
           <div>
-            <label className="text-zinc-400 block mb-1">Salon Name</label>
+            <label className="text-stone-700 font-bold block mb-1">Salon Name</label>
             <input
               type="text"
               value={salonForm.name}
               onChange={(e) => setSalonForm({ ...salonForm, name: e.target.value })}
-              className="w-full p-2.5 bg-zinc-900 border border-zinc-700 rounded-xl text-white"
+              className="w-full p-2.5 bg-[#FAF7F2] border border-[#E8E2D8] rounded-xl text-stone-900 focus:outline-none focus:border-[#E05326] focus:bg-white"
             />
           </div>
 
           <div>
-            <label className="text-zinc-400 block mb-1">Tagline</label>
+            <label className="text-stone-700 font-bold block mb-1">Tagline</label>
             <input
               type="text"
               value={salonForm.tagline}
               onChange={(e) => setSalonForm({ ...salonForm, tagline: e.target.value })}
-              className="w-full p-2.5 bg-zinc-900 border border-zinc-700 rounded-xl text-white"
+              className="w-full p-2.5 bg-[#FAF7F2] border border-[#E8E2D8] rounded-xl text-stone-900 focus:outline-none focus:border-[#E05326] focus:bg-white"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-zinc-400 block mb-1">Phone Number</label>
+              <label className="text-stone-700 font-bold block mb-1">Phone Number</label>
               <input
                 type="text"
                 value={salonForm.phone}
                 onChange={(e) => setSalonForm({ ...salonForm, phone: e.target.value })}
-                className="w-full p-2.5 bg-zinc-900 border border-zinc-700 rounded-xl text-white"
+                className="w-full p-2.5 bg-[#FAF7F2] border border-[#E8E2D8] rounded-xl text-stone-900 focus:outline-none focus:border-[#E05326] focus:bg-white"
               />
             </div>
             <div>
-              <label className="text-zinc-400 block mb-1">Operating Hours</label>
+              <label className="text-stone-700 font-bold block mb-1">Operating Hours</label>
               <input
                 type="text"
                 value={salonForm.openingHours}
                 onChange={(e) => setSalonForm({ ...salonForm, openingHours: e.target.value })}
-                className="w-full p-2.5 bg-zinc-900 border border-zinc-700 rounded-xl text-white"
+                className="w-full p-2.5 bg-[#FAF7F2] border border-[#E8E2D8] rounded-xl text-stone-900 focus:outline-none focus:border-[#E05326] focus:bg-white"
               />
             </div>
           </div>
 
           <div>
-            <label className="text-zinc-400 block mb-1">Full Address</label>
+            <label className="text-stone-700 font-bold block mb-1">Full Address</label>
             <input
               type="text"
               value={salonForm.address}
               onChange={(e) => setSalonForm({ ...salonForm, address: e.target.value })}
-              className="w-full p-2.5 bg-zinc-900 border border-zinc-700 rounded-xl text-white"
+              className="w-full p-2.5 bg-[#FAF7F2] border border-[#E8E2D8] rounded-xl text-stone-900 focus:outline-none focus:border-[#E05326] focus:bg-white"
             />
           </div>
 
           <div>
-            <label className="text-zinc-400 block mb-1">Google Maps Place ID or Review URL (Optional)</label>
+            <label className="text-stone-700 font-bold block mb-1">Google Maps Place ID or Review URL (Optional)</label>
             <input
               type="text"
               value={salonForm.googlePlaceId}
               onChange={(e) => setSalonForm({ ...salonForm, googlePlaceId: e.target.value })}
               placeholder="e.g. ChIJN1t_tDeuEmsRUsoyG83frY4 or https://g.page/r/.../review"
-              className="w-full p-2.5 bg-zinc-900 border border-zinc-700 rounded-xl text-white"
+              className="w-full p-2.5 bg-[#FAF7F2] border border-[#E8E2D8] rounded-xl text-stone-900 placeholder-stone-400 focus:outline-none focus:border-[#E05326] focus:bg-white"
             />
-            <p className="text-[10px] text-zinc-500 mt-1">
+            <p className="text-[10px] text-stone-500 mt-1">
               Directs verified SLOON customers to your official Google Business Profile review dialog after leaving feedback.
             </p>
           </div>
 
           {activeSalon.coordinates && (
-            <div className="p-3 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-between text-xs">
+            <div className="p-3 rounded-xl bg-[#FAF7F2] border border-[#E8E2D8] flex items-center justify-between text-xs">
               <div>
-                <span className="text-zinc-500 block text-[10px] uppercase font-bold">GPS Coordinates</span>
-                <span className="text-zinc-300 font-mono">{activeSalon.coordinates.lat.toFixed(5)}, {activeSalon.coordinates.lng.toFixed(5)}</span>
+                <span className="text-stone-500 block text-[10px] uppercase font-bold">GPS Coordinates</span>
+                <span className="text-stone-800 font-mono font-semibold">{activeSalon.coordinates.lat.toFixed(5)}, {activeSalon.coordinates.lng.toFixed(5)}</span>
               </div>
               <button
                 type="button"
                 onClick={() => openGoogleMapsLocation(activeSalon.coordinates.lat, activeSalon.coordinates.lng)}
-                className="px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-amber-400 font-bold flex items-center gap-1 border border-zinc-700/80 transition-colors"
+                className="px-3 py-1.5 rounded-lg bg-white hover:bg-stone-50 text-[#E05326] font-bold flex items-center gap-1 border border-stone-200 transition-colors shadow-2xs cursor-pointer"
                 title="Open coordinates in Google Maps"
               >
                 <ExternalLink className="w-3.5 h-3.5" />
@@ -2652,18 +2652,18 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
             </div>
           )}
 
-          <div className="pt-3 border-t border-zinc-800 flex items-center justify-between">
+          <div className="pt-3 border-t border-stone-100 flex items-center justify-between">
             <button
               type="button"
               onClick={() => setPartnerView('register')}
-              className="px-4 py-2.5 bg-zinc-900 border border-zinc-700 hover:border-amber-400 text-zinc-200 font-bold rounded-xl text-xs flex items-center gap-2 transition-all hover:text-white"
+              className="px-4 py-2.5 bg-[#FAF7F2] border border-stone-200 hover:border-orange-300 text-stone-700 font-bold rounded-xl text-xs flex items-center gap-2 transition-all cursor-pointer"
             >
-              <Store className="w-4 h-4 text-amber-400" />
+              <Store className="w-4 h-4 text-[#E05326]" />
               <span>Add Another Branch / Studio</span>
             </button>
             <button
               type="submit"
-              className="px-5 py-2.5 bg-amber-500 text-black font-bold rounded-xl text-xs hover:bg-amber-400 flex items-center gap-1.5 shadow-lg shadow-amber-500/20"
+              className="px-5 py-2.5 bg-[#E05326] hover:bg-[#D0481E] text-white font-bold rounded-xl text-xs flex items-center gap-1.5 shadow-md shadow-orange-500/20 cursor-pointer"
             >
               <Save className="w-4 h-4" />
               <span>Save Salon Profile</span>
@@ -2673,9 +2673,9 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
       )}
 
       {/* Mobile Sticky Bottom Nav for Salon Owners on Smartphones (7 Primary Tabs with Home First) */}
-      <nav className="fixed bottom-0 left-0 right-0 z-40 md:hidden bg-gradient-to-t from-black via-[#0c0c10] to-transparent pt-3 pb-safe">
-        <div className="max-w-md mx-auto px-2 pb-2">
-          <div className="bg-[#121218]/95 backdrop-blur-xl border border-zinc-800/90 rounded-3xl shadow-2xl p-1.5 flex items-center justify-between ring-1 ring-white/5">
+      <nav className="fixed bottom-0 left-0 right-0 z-40 md:hidden bg-gradient-to-t from-[#FAF7F2] via-[#FAF7F2]/90 to-transparent pt-3 pb-safe pointer-events-none">
+        <div className="max-w-md mx-auto px-2 pb-2 pointer-events-auto">
+          <div className="bg-white/95 backdrop-blur-xl border border-[#E8E2D8] rounded-3xl shadow-lg p-1.5 flex items-center justify-between ring-1 ring-black/5">
             {[
               { id: 'home' as const, label: 'Home', icon: Home },
               { id: 'live-queue' as const, label: 'Queue', icon: Users },
@@ -2691,17 +2691,17 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
                 <button
                   key={item.id}
                   onClick={() => setOwnerTab(item.id)}
-                  className={`relative flex flex-col items-center justify-center py-1 px-1 sm:px-1.5 rounded-2xl transition-all flex-1 min-w-0 ${
+                  className={`relative flex flex-col items-center justify-center py-1 px-1 sm:px-1.5 rounded-2xl transition-all flex-1 min-w-0 cursor-pointer ${
                     isActive
-                      ? 'text-amber-400 font-bold bg-amber-500/15'
-                      : 'text-zinc-400 hover:text-zinc-200'
+                      ? 'text-[#E05326] font-bold bg-[#FFF3EC]'
+                      : 'text-stone-500 hover:text-stone-900'
                   }`}
                 >
-                  <Icon className={`w-4 h-4 transition-transform shrink-0 ${isActive ? 'scale-110 text-amber-400' : ''}`} />
-                  <span className={`text-[9px] mt-0.5 truncate max-w-full leading-tight ${isActive ? 'text-amber-400 font-bold' : 'text-zinc-400'}`}>
+                  <Icon className={`w-4 h-4 transition-transform shrink-0 ${isActive ? 'scale-110 text-[#E05326]' : ''}`} />
+                  <span className={`text-[9px] mt-0.5 truncate max-w-full leading-tight ${isActive ? 'text-[#E05326] font-bold' : 'text-stone-500'}`}>
                     {item.label}
                   </span>
-                  {isActive && <span className="absolute -bottom-1 w-1.5 h-1.5 rounded-full bg-amber-400" />}
+                  {isActive && <span className="absolute -bottom-0.5 w-1.5 h-1.5 rounded-full bg-[#E05326]" />}
                 </button>
               );
             })}
@@ -2711,19 +2711,19 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
 
       {/* Modal: Add Customer with Details (Name & Phone for Calling) */}
       {showAddCustomerModal && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-[#14141d] border border-zinc-800 rounded-3xl p-6 sm:p-7 max-w-md w-full shadow-2xl animate-in fade-in zoom-in-95">
-            <div className="flex items-center justify-between pb-4 border-b border-zinc-800">
+        <div className="fixed inset-0 z-50 bg-stone-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white border border-[#E8E2D8] rounded-3xl p-6 sm:p-7 max-w-md w-full shadow-2xl animate-in fade-in zoom-in-95 text-stone-900">
+            <div className="flex items-center justify-between pb-4 border-b border-stone-100">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center">
+                <div className="w-8 h-8 rounded-xl bg-[#FFF3EC] text-[#E05326] border border-[#FED7CC] flex items-center justify-center">
                   <UserPlus className="w-4 h-4" />
                 </div>
-                <h3 className="text-base font-black text-white">Add Customer to Live Queue</h3>
+                <h3 className="text-base font-black text-stone-900 font-serif">Add Customer to Live Queue</h3>
               </div>
               <button
                 type="button"
                 onClick={() => setShowAddCustomerModal(false)}
-                className="text-zinc-400 hover:text-white p-1 rounded-lg"
+                className="text-stone-400 hover:text-stone-700 bg-stone-100 hover:bg-stone-200 p-1.5 rounded-xl transition-colors cursor-pointer"
               >
                 ✕
               </button>
@@ -2731,8 +2731,8 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
 
             <form onSubmit={handleAddCustomerSubmit} className="space-y-4 mt-4">
               <div>
-                <label className="block text-xs font-bold text-zinc-300 mb-1">
-                  Customer Name <span className="text-amber-400">*</span>
+                <label className="block text-xs font-bold text-stone-700 mb-1">
+                  Customer Name <span className="text-[#E05326]">*</span>
                 </label>
                 <input
                   type="text"
@@ -2740,25 +2740,25 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
                   placeholder="e.g. Rahul Sharma"
                   value={customerNameInput}
                   onChange={(e) => setCustomerNameInput(e.target.value)}
-                  className="w-full px-3.5 py-2.5 bg-zinc-900 border border-zinc-700 rounded-xl text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-amber-400"
+                  className="w-full px-3.5 py-2.5 bg-[#FAF7F2] border border-[#E8E2D8] rounded-xl text-sm text-stone-900 placeholder-stone-400 focus:outline-none focus:border-[#E05326] focus:bg-white"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-zinc-300 mb-1">
-                  Mobile / Phone Number <span className="text-zinc-500">(For 1-tap calling)</span>
+                <label className="block text-xs font-bold text-stone-700 mb-1">
+                  Mobile / Phone Number <span className="text-stone-400 font-normal">(For 1-tap calling)</span>
                 </label>
                 <input
                   type="tel"
                   placeholder="e.g. 9876543210"
                   value={customerPhoneInput}
                   onChange={(e) => setCustomerPhoneInput(e.target.value)}
-                  className="w-full px-3.5 py-2.5 bg-zinc-900 border border-zinc-700 rounded-xl text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-amber-400"
+                  className="w-full px-3.5 py-2.5 bg-[#FAF7F2] border border-[#E8E2D8] rounded-xl text-sm text-stone-900 placeholder-stone-400 focus:outline-none focus:border-[#E05326] focus:bg-white"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-zinc-300 mb-1">
+                <label className="block text-xs font-bold text-stone-700 mb-1">
                   Service Requested
                 </label>
                 <input
@@ -2766,7 +2766,7 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
                   placeholder="e.g. Haircut & Beard Grooming"
                   value={customerServiceInput}
                   onChange={(e) => setCustomerServiceInput(e.target.value)}
-                  className="w-full px-3.5 py-2.5 bg-zinc-900 border border-zinc-700 rounded-xl text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-amber-400"
+                  className="w-full px-3.5 py-2.5 bg-[#FAF7F2] border border-[#E8E2D8] rounded-xl text-sm text-stone-900 placeholder-stone-400 focus:outline-none focus:border-[#E05326] focus:bg-white"
                 />
               </div>
 
@@ -2774,14 +2774,14 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
                 <button
                   type="button"
                   onClick={() => setShowAddCustomerModal(false)}
-                  className="px-4 py-2 rounded-xl text-xs font-bold text-zinc-400 hover:text-white"
+                  className="px-4 py-2 rounded-xl text-xs font-bold text-stone-500 hover:text-stone-800 cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmittingCustomer}
-                  className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-extrabold text-xs shadow-lg shadow-amber-500/25 active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                  className="px-5 py-2.5 rounded-xl bg-[#E05326] hover:bg-[#D0481E] text-white font-bold text-xs shadow-md shadow-orange-500/20 active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
                 >
                   {isSubmittingCustomer ? (
                     <>
@@ -2803,19 +2803,19 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
 
       {/* COUNTER QR STANDEE PREVIEW & PRINT MODAL */}
       {showStandeeModal && (
-        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-[#12121a] border border-zinc-800 rounded-3xl p-6 sm:p-7 max-w-lg w-full shadow-2xl animate-in fade-in zoom-in-95 my-auto">
+        <div className="fixed inset-0 z-50 bg-stone-900/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white border border-[#E8E2D8] rounded-3xl p-6 sm:p-7 max-w-lg w-full shadow-2xl animate-in fade-in zoom-in-95 my-auto text-stone-900">
             {/* Modal Header */}
-            <div className="flex items-center justify-between pb-4 border-b border-zinc-800">
+            <div className="flex items-center justify-between pb-4 border-b border-stone-100">
               <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-2xl bg-amber-500/20 text-amber-400 flex items-center justify-center border border-amber-500/30">
+                <div className="w-9 h-9 rounded-2xl bg-[#FFF3EC] text-[#E05326] flex items-center justify-center border border-[#FED7CC]">
                   <QrCode className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-base font-black text-white font-['Syne',sans-serif]">
+                  <h3 className="text-base font-black text-stone-900 font-serif">
                     Counter QR Standee
                   </h3>
-                  <p className="text-[11px] text-zinc-400">
+                  <p className="text-[11px] text-stone-500">
                     Tabletop poster with your salon photo background
                   </p>
                 </div>
@@ -2823,20 +2823,20 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
               <button
                 type="button"
                 onClick={() => setShowStandeeModal(false)}
-                className="text-zinc-400 hover:text-white p-1.5 rounded-full hover:bg-zinc-800 transition-colors cursor-pointer"
+                className="text-stone-400 hover:text-stone-700 p-1.5 rounded-full hover:bg-stone-100 transition-colors cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             {partnerQrError && (
-              <div className="my-3 rounded-xl border border-rose-500/30 bg-rose-950/30 p-3 text-xs text-rose-300">
+              <div className="my-3 rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700">
                 {partnerQrError}. Apply the SmartQueue database migration and reload this page.
               </div>
             )}
 
             {/* Standee Live Card Preview with Salon Background & White Padded Rounded QR Container */}
-            <div className="relative rounded-3xl overflow-hidden border-2 border-amber-500/40 shadow-2xl p-5 text-center my-4 group">
+            <div className="relative rounded-3xl overflow-hidden border-2 border-[#E8E2D8] shadow-xl p-5 text-center my-4 group">
               {/* Salon Shop Photo in Background */}
               <div
                 className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
@@ -2852,10 +2852,10 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
               <div className="absolute inset-0 bg-gradient-to-b from-stone-900/50 via-stone-950/75 to-black/95" />
 
               <div className="relative z-10 flex flex-col items-center">
-                <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300 text-[10px] font-black uppercase tracking-wider mb-1.5">
+                <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-[#FFF3EC] border border-[#FED7CC] text-[#E05326] text-[10px] font-black uppercase tracking-wider mb-1.5">
                   <span>⚡ Official Walk-In Partner</span>
                 </div>
-                <h3 className="text-base font-black text-white font-['Syne',sans-serif] drop-shadow-md">
+                <h3 className="text-base font-black text-white font-serif drop-shadow-md">
                   {activeSalon.name}
                 </h3>
                 <p className="text-[11px] text-zinc-300 mb-2 drop-shadow">
@@ -2863,7 +2863,7 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
                 </p>
 
                 {/* Solid White Padded Container with Rounded Borders for 100% Camera Scannability */}
-                <div className="bg-white p-3.5 pb-2.5 rounded-3xl border-3 border-amber-500 shadow-2xl shadow-black/80 my-1">
+                <div className="bg-white p-3.5 pb-2.5 rounded-3xl border-3 border-orange-400 shadow-2xl shadow-black/80 my-1">
                   {partnerQrDataUrl ? (
                     <img
                       src={partnerQrDataUrl}
@@ -2875,12 +2875,12 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
                       Generating QR...
                     </div>
                   )}
-                  <div className="mt-1.5 px-2 py-0.5 rounded-full bg-zinc-900 text-amber-400 text-[9px] font-black tracking-wider uppercase inline-block">
+                  <div className="mt-1.5 px-2 py-0.5 rounded-full bg-[#18181B] text-white text-[9px] font-bold tracking-wider uppercase inline-block">
                     📸 Scan with phone camera
                   </div>
                 </div>
 
-                <div className="text-xs font-black text-amber-300 mt-2 drop-shadow">
+                <div className="text-xs font-bold text-orange-200 mt-2 drop-shadow">
                   Scan to Check Wait & Join Queue
                 </div>
                 <div className="text-[10px] text-zinc-300 mt-0.5 max-w-xs drop-shadow">
@@ -2889,8 +2889,8 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
               </div>
             </div>
 
-            <div className="flex items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-900/70 p-3 my-3">
-              <label htmlFor="smart-queue-radius" className="flex-1 text-[11px] font-semibold text-zinc-300">
+            <div className="flex items-center gap-3 rounded-xl border border-[#E8E2D8] bg-[#FAF7F2] p-3 my-3">
+              <label htmlFor="smart-queue-radius" className="flex-1 text-[11px] font-semibold text-stone-700">
                 Location assistance radius (50–500 m)
               </label>
               <input
@@ -2900,7 +2900,7 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
                 max={500}
                 value={geofenceRadius}
                 onChange={(event) => setGeofenceRadius(Number(event.target.value))}
-                className="w-20 rounded-lg border border-zinc-700 bg-zinc-950 px-2 py-1.5 text-xs text-white"
+                className="w-20 rounded-lg border border-stone-300 bg-white px-2 py-1.5 text-xs text-stone-900 focus:outline-none focus:border-[#E05326]"
               />
               <button
                 type="button"
@@ -2911,7 +2911,7 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
                     triggerNotification(error instanceof Error ? error.message : 'Could not save SmartQueue radius');
                   }
                 }}
-                className="rounded-lg bg-amber-500 px-3 py-1.5 text-[11px] font-bold text-black"
+                className="rounded-lg bg-[#E05326] px-3 py-1.5 text-[11px] font-bold text-white hover:bg-[#D0481E] cursor-pointer"
               >
                 Save
               </button>
@@ -2919,8 +2919,8 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
 
             {/* Direct URL input with copy */}
             <div className="space-y-1.5 my-3">
-              <label className="text-[11px] font-semibold text-zinc-300 flex items-center gap-1.5">
-                <Store className="w-3.5 h-3.5 text-amber-400" />
+              <label className="text-[11px] font-semibold text-stone-700 flex items-center gap-1.5">
+                <Store className="w-3.5 h-3.5 text-[#E05326]" />
                 <span>Your Customer Direct Queue Link</span>
               </label>
               <div className="flex items-center gap-2">
@@ -2928,7 +2928,7 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
                   type="text"
                   readOnly
                   value={getCustomerQueueUrl(activeSalon.id)}
-                  className="flex-1 px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-xl text-xs font-mono text-zinc-200 select-all focus:outline-none"
+                  className="flex-1 px-3 py-2 bg-[#FAF7F2] border border-stone-200 rounded-xl text-xs font-mono text-stone-800 select-all focus:outline-none"
                 />
                 <button
                   type="button"
@@ -2938,10 +2938,10 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
                     setCopiedQueueLink(true);
                     setTimeout(() => setCopiedQueueLink(false), 2500);
                   }}
-                  className={`px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                  className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
                     copiedQueueLink
-                      ? 'bg-emerald-500 text-white'
-                      : 'bg-amber-500 hover:bg-amber-400 text-black shadow-md shadow-amber-500/20'
+                      ? 'bg-emerald-600 text-white'
+                      : 'bg-[#E05326] hover:bg-[#D0481E] text-white shadow-xs'
                   }`}
                 >
                   {copiedQueueLink ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
@@ -2955,7 +2955,7 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
               <button
                 type="button"
                 onClick={handlePrintDeskStandee}
-                className="py-2.5 px-4 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-black text-xs font-extrabold flex items-center justify-center gap-1.5 shadow-lg shadow-amber-500/25 transition-all cursor-pointer active:scale-95"
+                className="py-2.5 px-4 rounded-xl bg-[#E05326] hover:bg-[#D0481E] text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-md shadow-orange-500/20 transition-all cursor-pointer active:scale-95"
               >
                 <Printer className="w-4 h-4" />
                 <span>Print Standee (A4)</span>
@@ -2970,7 +2970,7 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
                   a.download = `${activeSalon.name.toLowerCase().replace(/[^a-z0-9]/g, '_')}_qr.png`;
                   a.click();
                 }}
-                className="py-2.5 px-4 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                className="py-2.5 px-4 rounded-xl bg-[#18181B] hover:bg-black text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
               >
                 <Download className="w-4 h-4 text-emerald-400" />
                 <span>Download QR PNG</span>

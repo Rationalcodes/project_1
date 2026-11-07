@@ -2,12 +2,15 @@
 
 @layer base {
   :root {
-    --bg-main: #0a0a0d;
-    --bg-card: #141419;
-    --bg-card-hover: #1c1c24;
-    --accent: #f59e0b;
-    --accent-gold: #fbbf24;
-    --border-subtle: #24242e;
+    --bg-main: #FAF7F2;
+    --bg-card: #FFFFFF;
+    --bg-card-hover: #F8F5EE;
+    --accent: #E05326;
+    --accent-light: #FFF3EC;
+    --accent-border: #FED7CC;
+    --border-subtle: #E8E2D8;
+    --text-primary: #1C1917;
+    --text-muted: #78716C;
   }
 
   *, *::before, *::after {
@@ -20,6 +23,7 @@
     overflow-x: hidden;
     -webkit-text-size-adjust: 100%;
     text-size-adjust: 100%;
+    background-color: #FAF7F2;
   }
 
   body {
@@ -27,8 +31,8 @@
     min-height: 100%;
     overflow-x: hidden;
     position: relative;
-    background-color: #0a0a0d;
-    color: #f3f4f6;
+    background-color: #FAF7F2;
+    color: #1C1917;
     font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -54,16 +58,16 @@
 }
 
 ::-webkit-scrollbar-track {
-  background: #0a0a0d;
+  background: #FAF7F2;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #272732;
+  background: #D6CEC3;
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #3f3f50;
+  background: #B8ADA0;
 }
 
 /* OpenStreetMap Dark Mode Tile Filter (Zero Watermark, Zero API Key) */

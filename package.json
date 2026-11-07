@@ -20,7 +20,7 @@
     "start": "node backend/dist/main.js",
     "start:dev": "pnpm --filter @kumbhakaran/backend start:dev",
     "start:prod": "node backend/dist/main.js",
-    "build": "vite build"
+    "build": "pnpm run build:backend && vite build"
   },
   "dependencies": {
     "lucide-react": "1.61.0",

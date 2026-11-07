@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useSalon } from '../../context/PartnerContext';
 import { useLanguage } from '../../i18n/LanguageContext';
 import { SalonLocationPicker } from './SalonLocationPicker';
-// Address & Location step
 import {
   Store,
   MapPin,
@@ -58,11 +57,9 @@ export const SalonRegistrationWizard: React.FC<SalonRegistrationWizardProps> = (
     { name: 'Beard Sculpt & Shave', category: 'Beard' as const, price: 80, durationMinutes: 15, description: 'Razor edging, beard butter massage, steam towel.' },
     { name: 'Haircut + Beard Styling Combo', category: 'Combos' as const, price: 220, durationMinutes: 35, description: 'Complete gentleman makeover package.' },
     { name: 'Scalp Detox Hair Spa', category: 'Spa' as const, price: 400, durationMinutes: 40, description: 'Anti-dandruff massage and keratin restoration.' },
-    { name: 'Activated Charcoal Facial', category: 'Facial' as const, price: 350, durationMinutes: 30, description: 'Deep pore cleanse and radiant glow treatment.' }
   ]);
 
-  // Photo
-  const [coverImage, setCoverImage] = useState('');
+  const [coverImage, setCoverImage] = useState(activeSalon?.coverImage || 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=1200&q=80');
 
   const handleServicePriceChange = (index: number, newPrice: number) => {
     const updated = [...services];
@@ -70,20 +67,8 @@ export const SalonRegistrationWizard: React.FC<SalonRegistrationWizardProps> = (
     setServices(updated);
   };
 
-  const handleCoordinatesChange = (coords: { lat: number; lng: number; locality?: string }) => {
-    setCoordinates({ lat: coords.lat, lng: coords.lng });
-    if (coords.locality) {
-      setLocality(coords.locality);
-    }
-  };
-
   const handleSubmitRegistration = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!salonName.trim() || !ownerName.trim()) {
-      alert("Please fill in Salon Name and Owner Name.");
-      return;
-    }
-
     setIsSubmitting(true);
     setSubmissionError(null);
 
@@ -122,30 +107,30 @@ export const SalonRegistrationWizard: React.FC<SalonRegistrationWizardProps> = (
   };
 
   return (
-    <div className="max-w-3xl mx-auto bg-[#13131b] border border-zinc-800 rounded-3xl p-6 sm:p-8 shadow-2xl">
+    <div className="max-w-3xl mx-auto bg-white border border-[#E8E2D8] rounded-3xl p-6 sm:p-8 shadow-xs text-stone-900">
       {/* Wizard Header */}
       <div className="text-center mb-6">
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-400 text-xs font-bold mb-2">
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#FFF3EC] border border-[#FED7CC] text-[#E05326] text-xs font-bold mb-2">
           <Store className="w-3.5 h-3.5" />
           <span>SLOON Partner Onboarding</span>
         </div>
-        <h2 className="text-xl sm:text-2xl font-black text-white font-['Syne',sans-serif]">
+        <h2 className="text-xl sm:text-2xl font-black text-stone-900 font-serif">
           Register Your Salon
         </h2>
-        <p className="text-xs text-zinc-400 max-w-md mx-auto mt-1">
+        <p className="text-xs text-stone-500 max-w-md mx-auto mt-1">
           Join the walk-in transparency network. Pin your exact location, set prices, and let customers see your live waiting count.
         </p>
       </div>
 
       {activeSalon && (
-        <div className="mb-6 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-left">
+        <div className="mb-6 p-4 rounded-2xl bg-[#FFF3EC] border border-[#FED7CC] flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-left">
           <div>
-            <div className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
-              <CheckCircle2 className="w-4 h-4 text-amber-400" />
+            <div className="text-xs font-bold text-[#E05326] flex items-center gap-1.5">
+              <CheckCircle2 className="w-4 h-4 text-[#E05326]" />
               <span>Studio Already Registered for {email}</span>
             </div>
-            <div className="text-xs text-zinc-300 font-semibold mt-0.5">{activeSalon.name} • {activeSalon.city}</div>
-            <p className="text-[11px] text-zinc-400">
+            <div className="text-xs text-stone-800 font-semibold mt-0.5">{activeSalon.name} • {activeSalon.city}</div>
+            <p className="text-[11px] text-stone-500">
               Your salon is already live on SLOON. Submitting will update your studio profile.
             </p>
           </div>
@@ -155,7 +140,7 @@ export const SalonRegistrationWizard: React.FC<SalonRegistrationWizardProps> = (
               setPartnerView('live-queue');
               if (onSuccess) onSuccess();
             }}
-            className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-black text-xs font-bold shrink-0 transition-colors"
+            className="px-4 py-2 rounded-xl bg-[#E05326] hover:bg-[#D0481E] text-white text-xs font-bold shrink-0 transition-colors shadow-xs cursor-pointer"
           >
             Open Live Studio Dashboard →
           </button>
@@ -174,15 +159,15 @@ export const SalonRegistrationWizard: React.FC<SalonRegistrationWizardProps> = (
             <div
               className={`w-7 h-7 rounded-full flex items-center justify-center transition-all ${
                 currentStep === s.step
-                  ? 'bg-amber-500 text-black shadow-lg shadow-amber-500/30 font-black'
+                  ? 'bg-[#E05326] text-white shadow-xs font-bold'
                   : currentStep > s.step
-                  ? 'bg-emerald-500 text-white font-bold'
-                  : 'bg-zinc-800 text-zinc-500'
+                  ? 'bg-emerald-600 text-white font-bold'
+                  : 'bg-stone-100 text-stone-400'
               }`}
             >
               {currentStep > s.step ? '✓' : s.step}
             </div>
-            <span className={`text-[10px] mt-1 ${currentStep === s.step ? 'text-amber-400' : 'text-zinc-500'}`}>
+            <span className={`text-[10px] mt-1 ${currentStep === s.step ? 'text-[#E05326] font-bold' : 'text-stone-400'}`}>
               {s.label}
             </span>
           </div>
@@ -193,12 +178,12 @@ export const SalonRegistrationWizard: React.FC<SalonRegistrationWizardProps> = (
         {/* STEP 1: BUSINESS IDENTITY */}
         {currentStep === 1 && (
           <div className="space-y-4 animate-in fade-in">
-            <h3 className="text-sm font-bold text-white flex items-center gap-2">
-              <Store className="w-4 h-4 text-amber-400" /> {t.step1Title}
+            <h3 className="text-sm font-bold text-stone-900 flex items-center gap-2 font-serif">
+              <Store className="w-4 h-4 text-[#E05326]" /> {t.step1Title}
             </h3>
 
             <div>
-              <label className="text-xs font-semibold text-zinc-300 block mb-1">
+              <label className="text-xs font-bold text-stone-700 block mb-1">
                 Salon / Studio Name *
               </label>
               <input
@@ -207,12 +192,12 @@ export const SalonRegistrationWizard: React.FC<SalonRegistrationWizardProps> = (
                 value={salonName}
                 onChange={(e) => setSalonName(e.target.value)}
                 placeholder="e.g. Blade & Timber Grooming Co."
-                className="w-full p-3 bg-zinc-900 border border-zinc-700 rounded-2xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-amber-400"
+                className="w-full p-3 bg-[#FAF7F2] border border-[#E8E2D8] rounded-2xl text-xs text-stone-900 placeholder-stone-400 focus:outline-none focus:border-[#E05326] focus:bg-white"
               />
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-zinc-300 block mb-1.5">
+              <label className="text-xs font-bold text-stone-700 block mb-1.5">
                 Studio Category / Client Type *
               </label>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
@@ -220,31 +205,31 @@ export const SalonRegistrationWizard: React.FC<SalonRegistrationWizardProps> = (
                   { id: 'unisex', label: 'Unisex', desc: 'Serves both Men & Women' },
                   { id: 'men', label: 'Men Only', desc: 'Gents grooming & barbershop' },
                   { id: 'women', label: 'Women Only', desc: 'Ladies beauty & styling' },
-                ].map((t) => (
+                ].map((item) => (
                   <button
-                    key={t.id}
+                    key={item.id}
                     type="button"
-                    onClick={() => setSalonType(t.id as SalonType)}
-                    className={`p-3 rounded-2xl border text-left transition-all ${
-                      salonType === t.id
-                        ? 'bg-amber-500/15 border-amber-500 text-white shadow-md shadow-amber-500/10'
-                        : 'bg-zinc-900 border-zinc-700/80 text-zinc-400 hover:border-zinc-600'
+                    onClick={() => setSalonType(item.id as SalonType)}
+                    className={`p-3 rounded-2xl border text-left transition-all cursor-pointer ${
+                      salonType === item.id
+                        ? 'bg-[#FFF3EC] border-[#E05326] text-stone-900 shadow-2xs'
+                        : 'bg-[#FAF7F2] border-[#E8E2D8] text-stone-600 hover:border-stone-300'
                     }`}
                   >
                     <div className="flex items-center justify-between">
-                      <span className={`text-xs font-bold ${salonType === t.id ? 'text-amber-400' : 'text-zinc-300'}`}>
-                        {t.label}
+                      <span className={`text-xs font-bold ${salonType === item.id ? 'text-[#E05326]' : 'text-stone-800'}`}>
+                        {item.label}
                       </span>
-                      {salonType === t.id && <span className="text-amber-400 text-xs">✓</span>}
+                      {salonType === item.id && <span className="text-[#E05326] text-xs font-bold">✓</span>}
                     </div>
-                    <p className="text-[10px] text-zinc-400 mt-0.5 line-clamp-1">{t.desc}</p>
+                    <p className="text-[10px] text-stone-500 mt-0.5 line-clamp-1">{item.desc}</p>
                   </button>
                 ))}
               </div>
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-zinc-300 block mb-1">
+              <label className="text-xs font-bold text-stone-700 block mb-1">
                 Salon Tagline
               </label>
               <input
@@ -252,13 +237,13 @@ export const SalonRegistrationWizard: React.FC<SalonRegistrationWizardProps> = (
                 value={tagline}
                 onChange={(e) => setTagline(e.target.value)}
                 placeholder="e.g. Master cuts, beard sculpting & premium lounge"
-                className="w-full p-3 bg-zinc-900 border border-zinc-700 rounded-2xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-amber-400"
+                className="w-full p-3 bg-[#FAF7F2] border border-[#E8E2D8] rounded-2xl text-xs text-stone-900 placeholder-stone-400 focus:outline-none focus:border-[#E05326] focus:bg-white"
               />
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="text-xs font-semibold text-zinc-300 block mb-1">
+                <label className="text-xs font-bold text-stone-700 block mb-1">
                   Owner Full Name *
                 </label>
                 <input
@@ -267,12 +252,12 @@ export const SalonRegistrationWizard: React.FC<SalonRegistrationWizardProps> = (
                   value={ownerName}
                   onChange={(e) => setOwnerName(e.target.value)}
                   placeholder="e.g. Raghav Sharma"
-                  className="w-full p-3 bg-zinc-900 border border-zinc-700 rounded-2xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-amber-400"
+                  className="w-full p-3 bg-[#FAF7F2] border border-[#E8E2D8] rounded-2xl text-xs text-stone-900 placeholder-stone-400 focus:outline-none focus:border-[#E05326] focus:bg-white"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-zinc-300 block mb-1">
+                <label className="text-xs font-bold text-stone-700 block mb-1">
                   Owner Contact Phone *
                 </label>
                 <input
@@ -281,13 +266,13 @@ export const SalonRegistrationWizard: React.FC<SalonRegistrationWizardProps> = (
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   placeholder="+91 98450 00000"
-                  className="w-full p-3 bg-zinc-900 border border-zinc-700 rounded-2xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-amber-400"
+                  className="w-full p-3 bg-[#FAF7F2] border border-[#E8E2D8] rounded-2xl text-xs text-stone-900 placeholder-stone-400 focus:outline-none focus:border-[#E05326] focus:bg-white"
                 />
               </div>
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-zinc-300 block mb-1">
+              <label className="text-xs font-bold text-stone-700 block mb-1">
                 Business Email Address
               </label>
               <input
@@ -295,7 +280,7 @@ export const SalonRegistrationWizard: React.FC<SalonRegistrationWizardProps> = (
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="contact@yourstudio.com"
-                className="w-full p-3 bg-zinc-900 border border-zinc-700 rounded-2xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-amber-400"
+                className="w-full p-3 bg-[#FAF7F2] border border-[#E8E2D8] rounded-2xl text-xs text-stone-900 placeholder-stone-400 focus:outline-none focus:border-[#E05326] focus:bg-white"
               />
             </div>
 
@@ -309,7 +294,7 @@ export const SalonRegistrationWizard: React.FC<SalonRegistrationWizardProps> = (
                   }
                   setCurrentStep(2);
                 }}
-                className="px-6 py-2.5 rounded-xl bg-amber-500 text-black font-bold text-xs hover:bg-amber-400 flex items-center gap-2 shadow-lg shadow-amber-500/20"
+                className="px-6 py-2.5 rounded-xl bg-[#E05326] text-white font-bold text-xs hover:bg-[#D0481E] flex items-center gap-2 shadow-xs cursor-pointer"
               >
                 <span>Next: Salon Address & Location</span>
                 <ArrowRight className="w-4 h-4" />
@@ -322,10 +307,10 @@ export const SalonRegistrationWizard: React.FC<SalonRegistrationWizardProps> = (
         {currentStep === 2 && (
           <div className="space-y-4 animate-in fade-in">
             <div>
-              <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                <MapPin className="w-4 h-4 text-amber-400" /> {t.step2Title}
+              <h3 className="text-sm font-bold text-stone-900 flex items-center gap-2 font-serif">
+                <MapPin className="w-4 h-4 text-[#E05326]" /> {t.step2Title}
               </h3>
-              <p className="text-xs text-zinc-400 mt-0.5">
+              <p className="text-xs text-stone-500 mt-0.5">
                 Search your address or click directly on the interactive map to position your salon marker.
               </p>
             </div>
@@ -355,7 +340,7 @@ export const SalonRegistrationWizard: React.FC<SalonRegistrationWizardProps> = (
               <button
                 type="button"
                 onClick={() => setCurrentStep(1)}
-                className="px-4 py-2 rounded-xl text-zinc-400 hover:text-white text-xs flex items-center gap-1.5"
+                className="px-4 py-2 rounded-xl text-stone-500 hover:text-stone-900 text-xs flex items-center gap-1.5 cursor-pointer"
               >
                 <ArrowLeft className="w-4 h-4" /> Back
               </button>
@@ -368,7 +353,7 @@ export const SalonRegistrationWizard: React.FC<SalonRegistrationWizardProps> = (
                   }
                   setCurrentStep(3);
                 }}
-                className="px-6 py-2.5 rounded-xl bg-amber-500 text-black font-bold text-xs hover:bg-amber-400 flex items-center gap-2 shadow-lg shadow-amber-500/20"
+                className="px-6 py-2.5 rounded-xl bg-[#E05326] text-white font-bold text-xs hover:bg-[#D0481E] flex items-center gap-2 shadow-xs cursor-pointer"
               >
                 <span>Next: Hours & Chairs</span>
                 <ArrowRight className="w-4 h-4" />
@@ -380,13 +365,13 @@ export const SalonRegistrationWizard: React.FC<SalonRegistrationWizardProps> = (
         {/* STEP 3: OPERATING HOURS & CHAIRS */}
         {currentStep === 3 && (
           <div className="space-y-4 animate-in fade-in">
-            <h3 className="text-sm font-bold text-white flex items-center gap-2">
-              <Clock className="w-4 h-4 text-amber-400" /> {t.step3Title}
+            <h3 className="text-sm font-bold text-stone-900 flex items-center gap-2 font-serif">
+              <Clock className="w-4 h-4 text-[#E05326]" /> {t.step3Title}
             </h3>
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-xs font-semibold text-zinc-300 block mb-1">
+                <label className="text-xs font-bold text-stone-700 block mb-1">
                   Opening Time
                 </label>
                 <input
@@ -394,12 +379,12 @@ export const SalonRegistrationWizard: React.FC<SalonRegistrationWizardProps> = (
                   value={openTime}
                   onChange={(e) => setOpenTime(e.target.value)}
                   placeholder="09:00 AM"
-                  className="w-full p-3 bg-zinc-900 border border-zinc-700 rounded-2xl text-xs text-white"
+                  className="w-full p-3 bg-[#FAF7F2] border border-[#E8E2D8] rounded-2xl text-xs text-stone-900 focus:outline-none focus:border-[#E05326] focus:bg-white"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-zinc-300 block mb-1">
+                <label className="text-xs font-bold text-stone-700 block mb-1">
                   Closing Time
                 </label>
                 <input
@@ -407,13 +392,13 @@ export const SalonRegistrationWizard: React.FC<SalonRegistrationWizardProps> = (
                   value={closeTime}
                   onChange={(e) => setCloseTime(e.target.value)}
                   placeholder="09:30 PM"
-                  className="w-full p-3 bg-zinc-900 border border-zinc-700 rounded-2xl text-xs text-white"
+                  className="w-full p-3 bg-[#FAF7F2] border border-[#E8E2D8] rounded-2xl text-xs text-stone-900 focus:outline-none focus:border-[#E05326] focus:bg-white"
                 />
               </div>
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-zinc-300 block mb-1">
+              <label className="text-xs font-bold text-stone-700 block mb-1">
                 Active Barber Chairs / Stations
               </label>
               <div className="flex items-center gap-3">
@@ -422,23 +407,23 @@ export const SalonRegistrationWizard: React.FC<SalonRegistrationWizardProps> = (
                     key={num}
                     type="button"
                     onClick={() => setActiveBarbers(num)}
-                    className={`w-10 h-10 rounded-xl font-bold text-xs border transition-all ${
+                    className={`w-10 h-10 rounded-xl font-bold text-xs border transition-all cursor-pointer ${
                       activeBarbers === num
-                        ? 'bg-amber-400 text-black border-amber-300 shadow-md shadow-amber-500/20'
-                        : 'bg-zinc-900 text-zinc-400 border-zinc-700 hover:text-white'
+                        ? 'bg-[#E05326] text-white border-[#E05326] shadow-xs'
+                        : 'bg-[#FAF7F2] text-stone-600 border-[#E8E2D8] hover:border-stone-300'
                     }`}
                   >
                     {num}
                   </button>
                 ))}
               </div>
-              <p className="text-[11px] text-zinc-500 mt-1">
+              <p className="text-[11px] text-stone-500 mt-1">
                 The more active chairs, the faster wait times decrease on the customer application.
               </p>
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-zinc-300 block mb-1">
+              <label className="text-xs font-bold text-stone-700 block mb-1">
                 Head Stylist / Master Barber Name
               </label>
               <input
@@ -446,14 +431,14 @@ export const SalonRegistrationWizard: React.FC<SalonRegistrationWizardProps> = (
                 value={masterBarber}
                 onChange={(e) => setMasterBarber(e.target.value)}
                 placeholder="e.g. Master Arjun"
-                className="w-full p-3 bg-zinc-900 border border-zinc-700 rounded-2xl text-xs text-white"
+                className="w-full p-3 bg-[#FAF7F2] border border-[#E8E2D8] rounded-2xl text-xs text-stone-900 focus:outline-none focus:border-[#E05326] focus:bg-white"
               />
             </div>
 
             {/* Salon Photograph Presets */}
             <div>
-              <label className="text-xs font-semibold text-zinc-300 flex items-center gap-1.5 mb-1.5">
-                <Camera className="w-3.5 h-3.5 text-amber-400" /> Studio Cover Photograph
+              <label className="text-xs font-bold text-stone-700 flex items-center gap-1.5 mb-1.5">
+                <Camera className="w-3.5 h-3.5 text-[#E05326]" /> Studio Cover Photograph
               </label>
               <div className="flex gap-2 mb-2">
                 <input
@@ -461,9 +446,9 @@ export const SalonRegistrationWizard: React.FC<SalonRegistrationWizardProps> = (
                   value={coverImage}
                   onChange={(e) => setCoverImage(e.target.value)}
                   placeholder="Paste image URL or click Upload"
-                  className="flex-1 p-2.5 bg-zinc-900 border border-zinc-700 rounded-xl text-xs text-white"
+                  className="flex-1 p-2.5 bg-[#FAF7F2] border border-[#E8E2D8] rounded-xl text-xs text-stone-900 focus:outline-none focus:border-[#E05326] focus:bg-white"
                 />
-                <label className="px-3 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-semibold rounded-xl text-xs cursor-pointer flex items-center gap-1 shrink-0">
+                <label className="px-3 py-2 bg-stone-100 hover:bg-stone-200 text-stone-700 font-semibold rounded-xl text-xs cursor-pointer flex items-center gap-1 shrink-0 border border-stone-200">
                   <Upload className="w-3.5 h-3.5" />
                   <span>Upload</span>
                   <input
@@ -510,18 +495,18 @@ export const SalonRegistrationWizard: React.FC<SalonRegistrationWizardProps> = (
                 </label>
               </div>
               {coverImage ? (
-                <div className="h-32 rounded-xl overflow-hidden border border-zinc-700 relative">
+                <div className="h-32 rounded-xl overflow-hidden border border-[#E8E2D8] relative">
                   <img src={coverImage} alt="Cover Preview" className="w-full h-full object-cover" />
                   <button
                     type="button"
                     onClick={() => setCoverImage('')}
-                    className="absolute top-2 right-2 px-2 py-0.5 bg-black/70 hover:bg-rose-600 text-white text-[10px] rounded-lg font-bold"
+                    className="absolute top-2 right-2 px-2 py-0.5 bg-black/70 hover:bg-rose-600 text-white text-[10px] rounded-lg font-bold cursor-pointer"
                   >
                     Remove
                   </button>
                 </div>
               ) : (
-                <div className="p-3 bg-zinc-900/50 border border-dashed border-zinc-700 rounded-xl text-center text-xs text-zinc-500">
+                <div className="p-3 bg-[#FAF7F2] border border-dashed border-[#E8E2D8] rounded-xl text-center text-xs text-stone-500">
                   Optional: Upload now or set your cover photo & loop video anytime in your studio dashboard.
                 </div>
               )}
@@ -531,14 +516,14 @@ export const SalonRegistrationWizard: React.FC<SalonRegistrationWizardProps> = (
               <button
                 type="button"
                 onClick={() => setCurrentStep(2)}
-                className="px-4 py-2 rounded-xl text-zinc-400 hover:text-white text-xs flex items-center gap-1.5"
+                className="px-4 py-2 rounded-xl text-stone-500 hover:text-stone-900 text-xs flex items-center gap-1.5 cursor-pointer"
               >
                 <ArrowLeft className="w-4 h-4" /> Back
               </button>
               <button
                 type="button"
                 onClick={() => setCurrentStep(4)}
-                className="px-6 py-2.5 rounded-xl bg-amber-500 text-black font-bold text-xs hover:bg-amber-400 flex items-center gap-2 shadow-lg shadow-amber-500/20"
+                className="px-6 py-2.5 rounded-xl bg-[#E05326] text-white font-bold text-xs hover:bg-[#D0481E] flex items-center gap-2 shadow-xs cursor-pointer"
               >
                 <span>Next: Services & Launch</span>
                 <ArrowRight className="w-4 h-4" />
@@ -551,10 +536,10 @@ export const SalonRegistrationWizard: React.FC<SalonRegistrationWizardProps> = (
         {currentStep === 4 && (
           <div className="space-y-4 animate-in fade-in">
             <div>
-              <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                <Scissors className="w-4 h-4 text-amber-400" /> {t.step4Title}
+              <h3 className="text-sm font-bold text-stone-900 flex items-center gap-2 font-serif">
+                <Scissors className="w-4 h-4 text-[#E05326]" /> {t.step4Title}
               </h3>
-              <p className="text-xs text-zinc-400 mt-0.5">
+              <p className="text-xs text-stone-500 mt-0.5">
                 Customize your starting prices. You can edit or add more anytime in your partner dashboard.
               </p>
             </div>
@@ -563,21 +548,21 @@ export const SalonRegistrationWizard: React.FC<SalonRegistrationWizardProps> = (
               {services.map((svc, idx) => (
                 <div
                   key={idx}
-                  className="bg-zinc-900/90 border border-zinc-700/80 rounded-2xl p-3 flex items-center justify-between gap-3 text-xs"
+                  className="bg-[#FAF7F2] border border-[#E8E2D8] rounded-2xl p-3 flex items-center justify-between gap-3 text-xs shadow-2xs"
                 >
                   <div>
-                    <span className="font-bold text-white">{svc.name}</span>
-                    <span className="text-[10px] text-zinc-400 ml-2">~{svc.durationMinutes} mins</span>
-                    <p className="text-[11px] text-zinc-500 line-clamp-1">{svc.description}</p>
+                    <span className="font-bold text-stone-900">{svc.name}</span>
+                    <span className="text-[10px] text-stone-400 ml-2">~{svc.durationMinutes} mins</span>
+                    <p className="text-[11px] text-stone-500 line-clamp-1">{svc.description}</p>
                   </div>
 
                   <div className="flex items-center gap-1.5 shrink-0">
-                    <span className="text-xs text-zinc-400 font-semibold">₹</span>
+                    <span className="text-xs text-stone-400 font-semibold">₹</span>
                     <input
                       type="number"
                       value={svc.price}
                       onChange={(e) => handleServicePriceChange(idx, Number(e.target.value))}
-                      className="w-20 px-2 py-1 bg-zinc-800 border border-zinc-600 rounded-xl text-amber-400 font-bold text-sm text-right focus:outline-none focus:border-amber-400"
+                      className="w-20 px-2 py-1 bg-white border border-stone-300 rounded-xl text-[#E05326] font-bold text-sm text-right focus:outline-none focus:border-[#E05326]"
                     />
                   </div>
                 </div>
@@ -585,15 +570,15 @@ export const SalonRegistrationWizard: React.FC<SalonRegistrationWizardProps> = (
             </div>
 
             {/* Launch Guarantee */}
-            <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-3.5 flex items-start gap-2.5 text-xs text-zinc-300">
-              <ShieldCheck className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+            <div className="bg-[#FFF3EC] border border-[#FED7CC] rounded-2xl p-3.5 flex items-start gap-2.5 text-xs text-stone-700">
+              <ShieldCheck className="w-5 h-5 text-[#E05326] shrink-0 mt-0.5" />
               <div>
-                <strong className="text-white">Walk-in Transparency Activation:</strong> Upon registering, your studio will immediately appear on the SLOON Discovery Map with coordinates ({coordinates.lat.toFixed(4)}°, {coordinates.lng.toFixed(4)}°). Customers will see your live waiting count!
+                <strong className="text-stone-900">Walk-in Transparency Activation:</strong> Upon registering, your studio will immediately appear on the SLOON Discovery Map with coordinates ({coordinates.lat.toFixed(4)}°, {coordinates.lng.toFixed(4)}°). Customers will see your live waiting count!
               </div>
             </div>
 
             {submissionError && (
-              <div className="p-3.5 rounded-2xl bg-red-500/10 border border-red-500/30 text-red-400 text-xs">
+              <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs">
                 <strong>Registration Error:</strong> {submissionError}
               </div>
             )}
@@ -603,7 +588,7 @@ export const SalonRegistrationWizard: React.FC<SalonRegistrationWizardProps> = (
                 type="button"
                 onClick={() => setCurrentStep(3)}
                 disabled={isSubmitting}
-                className="px-4 py-2 rounded-xl text-zinc-400 hover:text-white text-xs flex items-center gap-1.5 disabled:opacity-50"
+                className="px-4 py-2 rounded-xl text-stone-500 hover:text-stone-900 text-xs flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
               >
                 <ArrowLeft className="w-4 h-4" /> Back
               </button>
@@ -611,7 +596,7 @@ export const SalonRegistrationWizard: React.FC<SalonRegistrationWizardProps> = (
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="px-8 py-3 rounded-2xl bg-gradient-to-r from-amber-400 to-amber-500 text-black font-extrabold text-sm hover:from-amber-300 hover:to-amber-400 shadow-xl shadow-amber-500/30 flex items-center gap-2 cursor-pointer transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                className="px-8 py-3 rounded-2xl bg-[#E05326] text-white font-bold text-sm hover:bg-[#D0481E] shadow-md shadow-orange-500/20 flex items-center gap-2 cursor-pointer transition-all disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 <CheckCircle2 className="w-4 h-4" />
                 <span>{isSubmitting ? 'Registering Studio...' : t.launchStudio}</span>
@@ -623,4 +608,3 @@ export const SalonRegistrationWizard: React.FC<SalonRegistrationWizardProps> = (
     </div>
   );
 };
-

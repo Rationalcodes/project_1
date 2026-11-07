@@ -69,13 +69,13 @@ export const PartnerPortal: React.FC = () => {
 
         {/* Elegant Sign-In Modal */}
         {showSignInModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
-            <div className="relative w-full max-w-md p-6 sm:p-8 bg-[#121218] border border-amber-500/40 rounded-3xl shadow-2xl space-y-6 text-center">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+            <div className="relative w-full max-w-md p-6 sm:p-8 bg-white border border-[#E8E2D8] rounded-3xl shadow-2xl space-y-6 text-center text-stone-900">
               {/* Close Button */}
               <button
                 type="button"
                 onClick={() => setShowSignInModal(false)}
-                className="absolute top-4 right-4 p-2 rounded-xl text-zinc-400 hover:text-white bg-zinc-900 border border-zinc-800 transition-colors cursor-pointer"
+                className="absolute top-4 right-4 p-2 rounded-xl text-stone-400 hover:text-stone-900 bg-stone-100 hover:bg-stone-200 border border-stone-200 transition-colors cursor-pointer"
                 title="Close"
               >
                 <X className="w-4 h-4" />
@@ -83,23 +83,20 @@ export const PartnerPortal: React.FC = () => {
 
               <div className="flex flex-col items-center justify-center gap-2 pt-2">
                 <img
-                  src={logoWhite}
+                  src={logoFallback}
                   alt="SLOON Partner"
                   className="h-10 sm:h-12 w-auto object-contain"
-                  onError={(e) => {
-                    (e.currentTarget as HTMLImageElement).src = logoFallback;
-                  }}
                 />
-                <span className="text-[10px] uppercase tracking-widest font-extrabold px-2.5 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                <span className="text-[10px] uppercase tracking-widest font-extrabold px-3 py-1 rounded-full bg-[#FFF3EC] text-[#E05326] border border-[#FED7CC]">
                   Partner Sign In
                 </span>
               </div>
 
               <div className="space-y-1.5">
-                <h3 className="text-xl font-black text-white font-['Syne',sans-serif]">
+                <h3 className="text-xl font-black text-stone-900 font-serif">
                   Welcome to SLOON Partner
                 </h3>
-                <p className="text-xs text-zinc-400 max-w-xs mx-auto leading-relaxed">
+                <p className="text-xs text-stone-500 max-w-xs mx-auto leading-relaxed">
                   Sign in with your Google account to access your live queue counter and salon management dashboard.
                 </p>
               </div>
@@ -109,9 +106,9 @@ export const PartnerPortal: React.FC = () => {
                 <button
                   type="button"
                   onClick={openLanguageModal}
-                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-zinc-900 border border-zinc-800 text-zinc-300 text-[11px] font-bold hover:border-amber-400 transition-all cursor-pointer"
+                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-stone-50 border border-stone-200 text-stone-700 text-[11px] font-bold hover:border-[#E05326] transition-all cursor-pointer"
                 >
-                  <Languages className="w-3.5 h-3.5 text-amber-400" />
+                  <Languages className="w-3.5 h-3.5 text-[#E05326]" />
                   <span>{languageInfo.nativeName} ({languageInfo.name})</span>
                 </button>
               </div>
@@ -129,7 +126,7 @@ export const PartnerPortal: React.FC = () => {
                 />
               </div>
 
-              <div className="pt-4 border-t border-zinc-800/80 text-[11px] text-zinc-500 flex flex-wrap items-center justify-center gap-2">
+              <div className="pt-4 border-t border-stone-100 text-[11px] text-stone-500 flex flex-wrap items-center justify-center gap-2 font-medium">
                 <span>✓ 0% Commission on Cash</span>
                 <span>•</span>
                 <span>✓ Live Queue Controls</span>
@@ -144,20 +141,20 @@ export const PartnerPortal: React.FC = () => {
   // Interactive Demo Mode Banner (when unauthenticated user explores the dashboard)
   if (!isAuthenticated && isDemoMode) {
     return (
-      <div className="space-y-6 pb-28 text-slate-100">
-        <div className="p-4 sm:p-5 rounded-3xl bg-gradient-to-r from-amber-500/20 via-zinc-900 to-zinc-900 border border-amber-500/40 shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div className="space-y-6 pb-28 text-stone-900">
+        <div className="p-4 sm:p-5 rounded-3xl bg-white border border-[#E8E2D8] shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-amber-500 text-black font-black flex items-center justify-center shrink-0">
-              <Play className="w-5 h-5 fill-black" />
+            <div className="w-10 h-10 rounded-2xl bg-[#FFF3EC] text-[#E05326] font-black flex items-center justify-center shrink-0">
+              <Play className="w-5 h-5 fill-[#E05326]" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-[10px] uppercase font-black px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                <span className="text-[10px] uppercase font-black px-2.5 py-0.5 rounded-full bg-[#FFF3EC] text-[#E05326] border border-[#FED7CC]">
                   Interactive Demo Mode
                 </span>
-                <span className="text-xs text-zinc-400 hidden sm:inline">Explore all live owner controls</span>
+                <span className="text-xs text-stone-500 hidden sm:inline">Explore all live owner controls</span>
               </div>
-              <h2 className="text-sm sm:text-base font-extrabold text-white mt-0.5">
+              <h2 className="text-sm sm:text-base font-extrabold text-stone-900 mt-0.5">
                 You are test-driving the SLOON Partner Dashboard
               </h2>
             </div>
@@ -167,14 +164,14 @@ export const PartnerPortal: React.FC = () => {
             <button
               type="button"
               onClick={() => setIsDemoMode(false)}
-              className="flex-1 sm:flex-none px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-xs font-bold text-zinc-200 transition-colors cursor-pointer"
+              className="flex-1 sm:flex-none px-4 py-2 rounded-xl bg-stone-100 hover:bg-stone-200 text-xs font-bold text-stone-700 transition-colors cursor-pointer"
             >
               Exit Demo
             </button>
             <button
               type="button"
               onClick={() => setShowSignInModal(true)}
-              className="flex-1 sm:flex-none px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-black text-xs font-black shadow-lg shadow-amber-500/20 transition-all cursor-pointer flex items-center justify-center gap-1.5"
+              className="flex-1 sm:flex-none px-4 py-2 rounded-xl bg-[#E05326] hover:bg-[#D0481E] text-white text-xs font-black shadow-md shadow-orange-500/20 transition-all cursor-pointer flex items-center justify-center gap-1.5"
             >
               <span>Register Real Salon</span>
               <ArrowRight className="w-3.5 h-3.5" />
@@ -187,21 +184,21 @@ export const PartnerPortal: React.FC = () => {
 
         {/* Sign In Modal */}
         {showSignInModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
-            <div className="relative w-full max-w-md p-6 sm:p-8 bg-[#121218] border border-amber-500/40 rounded-3xl shadow-2xl space-y-6 text-center">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+            <div className="relative w-full max-w-md p-6 sm:p-8 bg-white border border-[#E8E2D8] rounded-3xl shadow-2xl space-y-6 text-center text-stone-900">
               <button
                 type="button"
                 onClick={() => setShowSignInModal(false)}
-                className="absolute top-4 right-4 p-2 rounded-xl text-zinc-400 hover:text-white bg-zinc-900 border border-zinc-800 transition-colors cursor-pointer"
+                className="absolute top-4 right-4 p-2 rounded-xl text-stone-400 hover:text-stone-900 bg-stone-100 hover:bg-stone-200 border border-stone-200 transition-colors cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
 
               <div className="space-y-1.5">
-                <h3 className="text-xl font-black text-white font-['Syne',sans-serif]">
+                <h3 className="text-xl font-black text-stone-900 font-serif">
                   Ready to Register Your Salon?
                 </h3>
-                <p className="text-xs text-zinc-400 max-w-xs mx-auto leading-relaxed">
+                <p className="text-xs text-stone-500 max-w-xs mx-auto leading-relaxed">
                   Sign in with Google to save your salon, get verified, and print your counter QR standee.
                 </p>
               </div>
