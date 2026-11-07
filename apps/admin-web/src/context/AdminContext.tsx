@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Salon, AdminTab } from '@kumbhakaran/shared-types';
+import { Salon, AdminTab, HomeBanner, DEFAULT_HOME_BANNERS } from '@kumbhakaran/shared-types';
 import { defaultApiClient, AuthUser } from '@kumbhakaran/api-client';
 import { safeStorage } from '../utils/safeStorage';
 import { INITIAL_SALONS } from '../data/mockSalons';
@@ -29,12 +29,32 @@ interface AdminContextType {
   refreshSalons: () => Promise<void>;
   notificationMessage: string | null;
   triggerNotification: (msg: string) => void;
+  banners: HomeBanner[];
+  updateBanner: (slot: number, updates: Partial<HomeBanner>) => void;
+  saveBanners: (newBanners: HomeBanner[]) => void;
+  resetBanners: () => void;
 }
+
+const BANNER_STORAGE_KEY = 'sloon_home_banners';
+
+const getInitialBanners = (): HomeBanner[] => {
+  try {
+    const saved = safeStorage.getItem(BANNER_STORAGE_KEY);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed;
+      }
+    }
+  } catch {}
+  return DEFAULT_HOME_BANNERS;
+};
 
 const AdminContext = createContext<AdminContextType | undefined>(undefined);
 
 export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [salons, setSalons] = useState<Salon[]>(INITIAL_SALONS);
+  const [banners, setBanners] = useState<HomeBanner[]>(getInitialBanners);
   const [adminTab, setAdminTabState] = useState<AdminTab>(() => {
     try {
       const saved = safeStorage.getItem('kumbhakaran_admin_tab') as AdminTab;
@@ -300,6 +320,35 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     );
   };
 
+  const updateBanner = (slot: number, updates: Partial<HomeBanner>) => {
+    setBanners((prev) => {
+      const updated = prev.map((b) => (b.slot === slot ? { ...b, ...updates } : b));
+      safeStorage.setItem(BANNER_STORAGE_KEY, JSON.stringify(updated));
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('sloon_banners_updated', { detail: updated }));
+      }
+      return updated;
+    });
+  };
+
+  const saveBanners = (newBanners: HomeBanner[]) => {
+    setBanners(newBanners);
+    safeStorage.setItem(BANNER_STORAGE_KEY, JSON.stringify(newBanners));
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('sloon_banners_updated', { detail: newBanners }));
+    }
+    triggerNotification('Home banners & posters updated successfully!');
+  };
+
+  const resetBanners = () => {
+    setBanners(DEFAULT_HOME_BANNERS);
+    safeStorage.setItem(BANNER_STORAGE_KEY, JSON.stringify(DEFAULT_HOME_BANNERS));
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('sloon_banners_updated', { detail: DEFAULT_HOME_BANNERS }));
+    }
+    triggerNotification('Reset to 4 blank poster spaces.');
+  };
+
   return (
     <AdminContext.Provider
       value={{
@@ -318,6 +367,10 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         refreshSalons,
         notificationMessage,
         triggerNotification,
+        banners,
+        updateBanner,
+        saveBanners,
+        resetBanners,
       }}
     >
       {children}

@@ -19,10 +19,12 @@ import {
   ChevronRight,
   Store,
   Info,
+  Image as ImageIcon,
 } from 'lucide-react';
 import { useSalon, getEstimatedWaitMinutes, getQueueDisplay, getQueueFreshness, matchesGenderFilter, getSalonType } from '../../context/SalonContext';
 import { LazyModeSelector } from '../common/LazyModeSelector';
 import { Salon } from '../../types';
+import { HomeBanner, DEFAULT_HOME_BANNERS } from '@kumbhakaran/shared-types';
 
 export const HomeScreen: React.FC = () => {
   const {
@@ -46,37 +48,47 @@ export const HomeScreen: React.FC = () => {
 
   const isWomen = genderFilter === 'women';
 
+  const BANNER_STORAGE_KEY = 'sloon_home_banners';
+
+  // 4 Home Poster Spaces (Admin controllable & persistent)
+  const [homeBanners, setHomeBanners] = useState<HomeBanner[]>(() => {
+    try {
+      const saved = localStorage.getItem(BANNER_STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {}
+    return DEFAULT_HOME_BANNERS;
+  });
+
+  useEffect(() => {
+    const handleUpdate = (e: any) => {
+      if (e.detail && Array.isArray(e.detail)) setHomeBanners(e.detail);
+    };
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === BANNER_STORAGE_KEY && e.newValue) {
+        try {
+          const parsed = JSON.parse(e.newValue);
+          if (Array.isArray(parsed)) setHomeBanners(parsed);
+        } catch {}
+      }
+    };
+    window.addEventListener('sloon_banners_updated', handleUpdate);
+    window.addEventListener('storage', handleStorage);
+    return () => {
+      window.removeEventListener('sloon_banners_updated', handleUpdate);
+      window.removeEventListener('storage', handleStorage);
+    };
+  }, []);
+
   // Banner carousel state & touch/swipe handlers
   const [currentSlide, setCurrentSlide] = useState(0);
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
   const [touchDeltaX, setTouchDeltaX] = useState<number>(0);
   const [isSwiping, setIsSwiping] = useState(false);
 
-  // Banner slides content tailored for SLOON
-  const bannerSlides = [
-    {
-      badge: 'HOW IT WORKS',
-      title: 'Book now, pay at the salon',
-      subtitle: 'No card needed — cash or card at the counter.',
-    },
-    {
-      badge: 'LIVE QUEUE ENGINE',
-      title: 'Know the wait before you step out',
-      subtitle: 'Real-time chair counts updated directly by your barber.',
-    },
-    {
-      badge: 'A QUICK UPDATE FROM YOU',
-      title: 'Help keep wait times up to date',
-      subtitle: 'At the salon? Share what the queue looks like for others.',
-    },
-    {
-      badge: 'DIGITAL WALK-IN TOKEN',
-      title: 'Grab your token from home',
-      subtitle: 'Take token #01, #02... and walk right into your chair.',
-    },
-  ];
-
-  const totalSlides = bannerSlides.length;
+  const totalSlides = homeBanners.length || 4;
   const nextSlide = () => setCurrentSlide((prev) => (prev + 1) % totalSlides);
   const prevSlide = () => setCurrentSlide((prev) => (prev - 1 + totalSlides) % totalSlides);
 
@@ -185,83 +197,110 @@ export const HomeScreen: React.FC = () => {
 
   return (
     <div className="space-y-6 pb-24 text-stone-900">
-      {/* 1. TOP PROMOTIONAL / HOW IT WORKS BANNER CAROUSEL */}
+      {/* 1. TOP POSTER CAROUSEL (4 Blank Poster Spaces with Admin Update Access) */}
       <section className="relative">
         <div
-          className={`relative overflow-hidden rounded-3xl p-6 sm:p-7 text-white shadow-lg transition-all duration-500 ${
-            isWomen
-              ? 'bg-gradient-to-br from-[#E11D48] via-[#BE123C] to-[#9F1239]'
-              : 'bg-gradient-to-br from-[#1E40AF] via-[#2563EB] to-[#1D4ED8]'
-          }`}
+          className="relative overflow-hidden rounded-3xl group select-none shadow-xs border border-stone-200/80"
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
         >
-          {/* Subtle Store Awning Watermark Illustration in Corner */}
-          <div className="absolute -right-4 -bottom-6 w-44 h-44 text-white/10 pointer-events-none transform rotate-3">
-            <svg viewBox="0 0 100 100" fill="none" stroke="currentColor" strokeWidth="3" className="w-full h-full">
-              <path d="M10 30 Q 30 10 50 30 T 90 30 L 90 70 L 10 70 Z" fill="currentColor" fillOpacity="0.08" />
-              <path d="M15 30 L 15 70 M 35 30 L 35 70 M 55 30 L 55 70 M 75 30 L 75 70" stroke="currentColor" strokeWidth="4" />
-              <rect x="25" y="45" width="20" height="25" rx="3" stroke="currentColor" strokeWidth="3" />
-              <rect x="55" y="45" width="20" height="25" rx="3" stroke="currentColor" strokeWidth="3" />
-              <path d="M10 70 L 90 70 L 85 90 L 15 90 Z" fill="currentColor" fillOpacity="0.15" />
-            </svg>
-          </div>
+          {/* Sliding Track */}
+          <div
+            className="flex transition-transform duration-500 ease-out"
+            style={{ transform: `translateX(-${currentSlide * 100}%)` }}
+          >
+            {homeBanners.map((banner, idx) => {
+              const hasImage = Boolean(banner.imageUrl && banner.imageUrl.trim());
 
-          <div className="relative z-10 max-w-lg">
-            {/* Top Pill: HOW IT WORKS */}
-            <div className="mb-4">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 hover:bg-white/30 backdrop-blur-xs text-[11px] font-bold tracking-wider uppercase text-white shadow-xs transition-all cursor-pointer">
-                <span>{bannerSlides[currentSlide].badge}</span>
-                <Info className="w-3.5 h-3.5" />
-              </div>
-            </div>
+              if (hasImage) {
+                return (
+                  <div
+                    key={banner.id || idx}
+                    onClick={() => {
+                      if (banner.targetUrl) {
+                        window.open(banner.targetUrl, '_blank');
+                      } else {
+                        setCustomerTab('explore');
+                      }
+                    }}
+                    className="w-full shrink-0 flex-none aspect-[3/1] min-h-[160px] sm:min-h-[220px] md:min-h-[260px] relative overflow-hidden rounded-3xl bg-stone-900 cursor-pointer"
+                  >
+                    <img
+                      src={banner.imageUrl}
+                      alt={banner.title || `Poster #${banner.slot}`}
+                      className="w-full h-full object-cover"
+                    />
+                    {(banner.title || banner.subtitle) && (
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-transparent p-5 sm:p-7 flex flex-col justify-end text-white">
+                        {banner.title && (
+                          <h3 className="text-base sm:text-2xl font-black tracking-tight leading-snug drop-shadow-sm">
+                            {banner.title}
+                          </h3>
+                        )}
+                        {banner.subtitle && (
+                          <p className="text-xs sm:text-sm text-stone-200 font-medium mt-0.5 leading-snug drop-shadow-sm">
+                            {banner.subtitle}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              }
 
-            {/* Bold Headline */}
-            <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight leading-snug drop-shadow-sm min-h-[64px] sm:min-h-[72px] flex items-center">
-              {bannerSlides[currentSlide].title}
-            </h1>
-
-            {/* Subtitle */}
-            <p className="text-xs sm:text-sm text-white/85 font-medium mt-1 leading-relaxed">
-              {bannerSlides[currentSlide].subtitle}
-            </p>
+              // BLANK POSTER SPACE OF THE SAME LENGTH AND WIDTH
+              return (
+                <div
+                  key={banner.id || idx}
+                  className="w-full shrink-0 flex-none aspect-[3/1] min-h-[160px] sm:min-h-[220px] md:min-h-[260px] rounded-3xl border-2 border-dashed border-stone-300/80 bg-stone-100/70 p-5 sm:p-6 flex flex-col items-center justify-center text-center relative overflow-hidden transition-all"
+                >
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-stone-200/80 flex items-center justify-center text-stone-400 mb-2 shadow-2xs">
+                    <ImageIcon className="w-5 h-5 sm:w-6 sm:h-6" />
+                  </div>
+                  <span className="text-[11px] font-extrabold uppercase tracking-wider text-stone-600 px-3 py-1 rounded-full bg-stone-200/70 mb-1">
+                    Poster Space #{banner.slot}
+                  </span>
+                  <p className="text-xs text-stone-400 font-medium">
+                    1200 × 400 px
+                  </p>
+                </div>
+              );
+            })}
           </div>
 
           {/* Prev / Next Slide Arrows (Hover/Tap) */}
           <button
             type="button"
             onClick={prevSlide}
-            aria-label="Previous slide"
-            className="absolute left-2 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-black/20 hover:bg-black/40 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-xs cursor-pointer"
+            aria-label="Previous poster"
+            className="absolute left-2.5 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-black/30 hover:bg-black/50 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-xs cursor-pointer shadow-md"
           >
             <ChevronLeft className="w-4 h-4" />
           </button>
           <button
             type="button"
             onClick={nextSlide}
-            aria-label="Next slide"
-            className="absolute right-2 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-black/20 hover:bg-black/40 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-xs cursor-pointer"
+            aria-label="Next poster"
+            className="absolute right-2.5 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-black/30 hover:bg-black/50 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-xs cursor-pointer shadow-md"
           >
             <ChevronRight className="w-4 h-4" />
           </button>
         </div>
 
         {/* Carousel Indicator Dots */}
-        <div className="flex items-center justify-center gap-1.5 mt-3">
-          {bannerSlides.map((_, idx) => (
+        <div className="flex items-center justify-center gap-1.5 mt-2.5">
+          {homeBanners.map((_, idx) => (
             <button
               key={idx}
               type="button"
               onClick={() => setCurrentSlide(idx)}
               className={`h-1.5 rounded-full transition-all cursor-pointer ${
                 currentSlide === idx
-                  ? isWomen
-                    ? 'w-6 bg-rose-600'
-                    : 'w-6 bg-blue-600'
+                  ? 'w-6 bg-stone-800'
                   : 'w-1.5 bg-stone-300 hover:bg-stone-400'
               }`}
-              aria-label={`Slide ${idx + 1}`}
+              aria-label={`Poster ${idx + 1}`}
             />
           ))}
         </div>

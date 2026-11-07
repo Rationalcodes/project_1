@@ -168,7 +168,24 @@ export type CustomerTab = 'home' | 'explore' | 'map' | 'favourites' | 'offers' |
 export type PartnerView = 'home' | 'dashboard' | 'register' | 'live-queue' | 'services' | 'staff' | 'reviews' | 'analytics' | 'settings' | 'gallery';
 export type OwnerTab = PartnerView;
 
-export type AdminTab = 'overview' | 'salons' | 'customers' | 'verification' | 'reviews' | 'subscriptions' | 'analytics' | 'settings';
+export type AdminTab = 'overview' | 'salons' | 'customers' | 'verification' | 'reviews' | 'subscriptions' | 'analytics' | 'banners' | 'settings';
+
+export interface HomeBanner {
+  id: string;
+  slot: number;
+  imageUrl?: string;
+  title?: string;
+  subtitle?: string;
+  targetUrl?: string;
+  isActive: boolean;
+}
+
+export const DEFAULT_HOME_BANNERS: HomeBanner[] = [
+  { id: 'slot-1', slot: 1, imageUrl: '', title: '', subtitle: '', targetUrl: '', isActive: true },
+  { id: 'slot-2', slot: 2, imageUrl: '', title: '', subtitle: '', targetUrl: '', isActive: true },
+  { id: 'slot-3', slot: 3, imageUrl: '', title: '', subtitle: '', targetUrl: '', isActive: true },
+  { id: 'slot-4', slot: 4, imageUrl: '', title: '', subtitle: '', targetUrl: '', isActive: true },
+];
 
 export interface QueueEntry {
   id: string;
