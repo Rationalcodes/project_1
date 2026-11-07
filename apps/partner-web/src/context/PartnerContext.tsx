@@ -301,21 +301,44 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   };
 
-  // Socket updates are immediate; poll periodically as a resilient fallback.
+  // Realtime queue synchronization and adaptive resilient fallback (Phase 3 Optimization)
   useEffect(() => {
     if (!activeSalonId) return;
-    refreshQueueEntries(activeSalonId);
-    const interval = setInterval(() => {
+
+    let inFlight = false;
+
+    const safeRefresh = async () => {
       if (typeof navigator !== 'undefined' && typeof navigator.onLine === 'boolean' && !navigator.onLine) {
         return;
       }
-      refreshQueueEntries(activeSalonId);
-    }, 8000);
+      if (typeof document !== 'undefined' && document.hidden) {
+        return; // Tab is in background: pause polling
+      }
+      if (inFlight) {
+        return; // Prevent overlapping requests
+      }
+      inFlight = true;
+      try {
+        await refreshQueueEntries(activeSalonId);
+      } finally {
+        inFlight = false;
+      }
+    };
 
-    const onOnline = () => refreshQueueEntries(activeSalonId);
-    const onFocus = () => refreshQueueEntries(activeSalonId);
+    safeRefresh();
+
+    // Subscribe to salon-specific WebSocket room for immediate live queue updates
+    const unsubscribe = defaultApiClient.subscribeToSalonQueue(activeSalonId, () => {
+      safeRefresh();
+    });
+
+    // Adaptive fallback polling (25s when active, 0s when hidden)
+    const interval = setInterval(safeRefresh, 25000);
+
+    const onOnline = () => safeRefresh();
+    const onFocus = () => safeRefresh();
     const onVisibility = () => {
-      if (document.visibilityState === 'visible') refreshQueueEntries(activeSalonId);
+      if (document.visibilityState === 'visible') safeRefresh();
     };
     window.addEventListener('online', onOnline);
     window.addEventListener('focus', onFocus);
@@ -326,12 +349,13 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
       bc = new BroadcastChannel('kumbhakaran_telemetry');
       bc.onmessage = (ev) => {
         if (ev?.data?.type === 'QUEUE_UPDATE' && (!ev.data.salonId || ev.data.salonId === activeSalonId)) {
-          refreshQueueEntries(activeSalonId);
+          safeRefresh();
         }
       };
     } catch {}
 
     return () => {
+      unsubscribe();
       clearInterval(interval);
       window.removeEventListener('online', onOnline);
       window.removeEventListener('focus', onFocus);

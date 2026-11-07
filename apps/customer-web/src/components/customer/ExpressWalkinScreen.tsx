@@ -74,23 +74,42 @@ export const ExpressWalkinScreen: React.FC<ExpressWalkinScreenProps> = ({
     }
   }, [salon?.id]);
 
-  // Polling queue for this salon while on express screen
+  // Realtime queue synchronization for this salon while on express screen (Phase 3 Optimization)
   useEffect(() => {
     if (salon?.id) {
       const sId = salon.id;
-      fetchSalonQueue(sId);
-      const interval = setInterval(() => {
-        fetchSalonQueue(sId);
-      }, 1500);
+      let inFlight = false;
 
-      const onFocus = () => fetchSalonQueue(sId);
+      const refresh = async () => {
+        if (typeof document !== 'undefined' && document.hidden) return;
+        if (inFlight) return;
+        inFlight = true;
+        try {
+          await fetchSalonQueue(sId);
+        } finally {
+          inFlight = false;
+        }
+      };
+
+      refresh();
+
+      // Realtime WebSocket subscription for immediate updates
+      const unsubscribe = defaultApiClient.subscribeToSalonQueue(sId, () => {
+        refresh();
+      });
+
+      // Adaptive resilient fallback
+      const interval = setInterval(refresh, 20000);
+
+      const onFocus = () => refresh();
       const onVisibility = () => {
-        if (document.visibilityState === 'visible') fetchSalonQueue(sId);
+        if (document.visibilityState === 'visible') refresh();
       };
       window.addEventListener('focus', onFocus);
       document.addEventListener('visibilitychange', onVisibility);
 
       return () => {
+        unsubscribe();
         clearInterval(interval);
         window.removeEventListener('focus', onFocus);
         document.removeEventListener('visibilitychange', onVisibility);

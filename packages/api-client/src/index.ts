@@ -1,4 +1,18 @@
 import { Salon, SalonRegistrationInput, HomeBanner } from '@kumbhakaran/shared-types';
+import { io, Socket } from 'socket.io-client';
+
+export interface QueueRealtimeEvent {
+  salonId: string;
+  eventName: string;
+  sequence: number;
+  timestamp: string;
+  entry?: any;
+  overview?: any;
+  entries?: any[];
+  [key: string]: any;
+}
+
+export type QueueEventListener = (event: QueueRealtimeEvent) => void;
 
 export interface NearbySalonsApiResponse {
   totalFound: number;
@@ -121,6 +135,12 @@ export class KumbhakaranApiClient {
   private isBackendHealthy = true;
   private nextHealthRetry = 0;
 
+  // Realtime WebSocket state (Phase 3 Optimization)
+  private socket: Socket | null = null;
+  private socketConnected = false;
+  private activeSalonSubscriptions = new Map<string, Set<QueueEventListener>>();
+  private salonLatestSequence = new Map<string, number>();
+
   constructor(baseUrl?: string) {
     this.baseUrl = baseUrl || getDefaultApiBaseUrl();
 
@@ -130,6 +150,151 @@ export class KumbhakaranApiClient {
         this.nextHealthRetry = 0;
       });
     }
+  }
+
+  /**
+   * Computes the base server origin for WebSocket connections (strips /api/v1)
+   */
+  public getSocketOrigin(): string {
+    try {
+      const parsed = new URL(this.baseUrl);
+      return parsed.origin;
+    } catch {
+      return this.baseUrl.replace(/\/api\/v1\/?$/, '').replace(/\/+$/, '');
+    }
+  }
+
+  /**
+   * Initializes or returns the shared Socket.io client instance connected to /queue namespace
+   */
+  public getSocket(): Socket | null {
+    if (typeof window === 'undefined') {
+      return null;
+    }
+
+    if (!this.socket) {
+      const origin = this.getSocketOrigin();
+      this.socket = io(`${origin}/queue`, {
+        transports: ['websocket', 'polling'],
+        autoConnect: true,
+        reconnection: true,
+        reconnectionAttempts: Infinity,
+        reconnectionDelay: 1000,
+        reconnectionDelayMax: 5000,
+      });
+
+      this.socket.on('connect', () => {
+        this.socketConnected = true;
+        // Automatically re-join all currently active salon rooms on reconnect
+        for (const salonId of this.activeSalonSubscriptions.keys()) {
+          this.socket?.emit('joinSalon', { salonId });
+        }
+      });
+
+      this.socket.on('disconnect', () => {
+        this.socketConnected = false;
+      });
+
+      // Register listener for all known queue event types
+      const queueEvents = [
+        'queue.entry.created',
+        'queue.entry.updated',
+        'queue.service.started',
+        'queue.service.completed',
+        'queue.entry.called',
+        'queue.status.updated',
+        'queue.cleared',
+        'queue.eta.updated',
+        'staff.availability.updated',
+        'queue.crowd_report',
+        'queue.entry.arrival_confirmed',
+        'queue.entry.departure_candidate',
+      ];
+
+      for (const eventName of queueEvents) {
+        this.socket.on(eventName, (payload: any) => {
+          this.handleIncomingQueueEvent(eventName, payload);
+        });
+      }
+    }
+
+    return this.socket;
+  }
+
+  /**
+   * Internal dispatcher for incoming WebSocket queue events.
+   * Enforces monotonic sequence checking to prevent stale updates from overwriting fresh state.
+   */
+  private handleIncomingQueueEvent(eventName: string, payload: any) {
+    const salonId = payload?.salonId;
+    if (!salonId) return;
+
+    // Check monotonic sequence number
+    if (typeof payload.sequence === 'number') {
+      const lastSeq = this.salonLatestSequence.get(salonId) || 0;
+      if (payload.sequence < lastSeq) {
+        // Out-of-order or stale event dropped
+        return;
+      }
+      this.salonLatestSequence.set(salonId, payload.sequence);
+    }
+
+    const listeners = this.activeSalonSubscriptions.get(salonId);
+    if (listeners && listeners.size > 0) {
+      for (const listener of listeners) {
+        try {
+          listener(payload);
+        } catch (err) {
+          console.warn(`[KumbhakaranApiClient] Error in queue event listener for ${salonId}:`, err);
+        }
+      }
+    }
+  }
+
+  /**
+   * Subscribes a listener to live queue events for a specific salon.
+   * Reference-counted: joins the WebSocket room on first subscriber, leaves on last subscriber unmount.
+   * Returns an unsubscribe function for React useEffect cleanup.
+   */
+  public subscribeToSalonQueue(salonId: string, listener: QueueEventListener): () => void {
+    if (!salonId) return () => {};
+
+    let listeners = this.activeSalonSubscriptions.get(salonId);
+    const isFirstSubscriber = !listeners || listeners.size === 0;
+
+    if (!listeners) {
+      listeners = new Set();
+      this.activeSalonSubscriptions.set(salonId, listeners);
+    }
+    listeners.add(listener);
+
+    const s = this.getSocket();
+    if (isFirstSubscriber && s) {
+      if (s.connected) {
+        s.emit('joinSalon', { salonId });
+      } else {
+        s.once('connect', () => {
+          s.emit('joinSalon', { salonId });
+        });
+      }
+    }
+
+    return () => {
+      const currentListeners = this.activeSalonSubscriptions.get(salonId);
+      if (currentListeners) {
+        currentListeners.delete(listener);
+        if (currentListeners.size === 0) {
+          this.activeSalonSubscriptions.delete(salonId);
+          if (this.socket && this.socket.connected) {
+            this.socket.emit('leaveSalon', { salonId });
+          }
+        }
+      }
+    };
+  }
+
+  public isSocketConnected(): boolean {
+    return this.socketConnected;
   }
 
   private isNetworkOnline(): boolean {

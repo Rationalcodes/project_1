@@ -1135,21 +1135,42 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     // Initial fetch
     fetchSalons(true);
 
-    // Socket updates are immediate; five-second polling is a resilient fallback.
-    const intervalId = setInterval(() => {
-      fetchSalons(false);
-      // Auto-poll active queue ticket in real-time
-      if (activeTicketRef.current?.salonId) {
-        fetchSalonQueue(activeTicketRef.current.salonId);
-      } else if (selectedSalonRef.current?.id) {
-        fetchSalonQueue(selectedSalonRef.current.id);
+    // Adaptive Polling Strategy (Phase 3 Optimization):
+    // 1. Pauses completely when tab is hidden (saves client battery and server egress)
+    // 2. In-flight guard prevents query pileups
+    // 3. Relaxed interval (30s) when WebSocket is connected; adaptive fallback (10s) when disconnected
+    let isPollingInFlight = false;
+
+    const tick = async () => {
+      if (typeof document !== 'undefined' && document.hidden) {
+        return; // Tab is in background: pause polling
       }
-    }, 5000);
+      if (isPollingInFlight) {
+        return; // Previous request still in flight: prevent overlapping requests
+      }
+
+      isPollingInFlight = true;
+      try {
+        await fetchSalons(false);
+        const curSalonId = activeTicketRef.current?.salonId || selectedSalonRef.current?.id;
+        if (curSalonId) {
+          await fetchSalonQueue(curSalonId);
+        }
+      } finally {
+        isPollingInFlight = false;
+      }
+    };
+
+    const intervalId = setInterval(tick, 20000);
 
     // Immediate sync on tab focus or screen unlock
-    const onFocus = () => fetchSalons(false);
+    const onFocus = () => {
+      if (!isPollingInFlight) tick();
+    };
     const onVisibility = () => {
-      if (document.visibilityState === 'visible') fetchSalons(false);
+      if (document.visibilityState === 'visible' && !isPollingInFlight) {
+        tick();
+      }
     };
     window.addEventListener('focus', onFocus);
     document.addEventListener('visibilitychange', onVisibility);
@@ -1180,6 +1201,34 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       }
     };
   }, [userLocation, lazyFilter]);
+
+  // Realtime WebSocket Subscription for Active Ticket & Selected Salon (Phase 3 Optimization)
+  useEffect(() => {
+    const targetSalonId = activeTicket?.salonId || selectedSalonForDetail?.id;
+    if (!targetSalonId) return;
+
+    const unsubscribe = defaultApiClient.subscribeToSalonQueue(targetSalonId, (event) => {
+      // Immediate synchronization on live WebSocket events
+      fetchSalonQueue(targetSalonId);
+      if (event?.overview?.totalWaiting !== undefined) {
+        setSalons((prev) =>
+          prev.map((s) =>
+            s.id === targetSalonId
+              ? {
+                  ...s,
+                  currentQueue: event.overview.totalWaiting,
+                  estimatedWaitMinutes: event.overview.estimatedWaitMinutes ?? s.estimatedWaitMinutes,
+                }
+              : s,
+          ),
+        );
+      }
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, [activeTicket?.salonId, selectedSalonForDetail?.id]);
 
   // Synchronize salon profile and public reviews from PostgreSQL database
   useEffect(() => {

@@ -216,15 +216,27 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
   useEffect(() => {
     if (selectedSalonForDetail?.id) {
       const sId = selectedSalonForDetail.id;
-      fetchSalonQueue(sId);
-      // Socket updates are immediate; poll periodically as a resilient fallback.
-      const interval = setInterval(() => {
-        fetchSalonQueue(sId);
-      }, 5000);
+      let inFlight = false;
 
-      const onFocus = () => fetchSalonQueue(sId);
+      const refresh = async () => {
+        if (typeof document !== 'undefined' && document.hidden) return;
+        if (inFlight) return;
+        inFlight = true;
+        try {
+          await fetchSalonQueue(sId);
+        } finally {
+          inFlight = false;
+        }
+      };
+
+      refresh();
+
+      // Adaptive resilient fallback (Phase 3 Optimization: avoids overlapping & pauses on hidden tabs)
+      const interval = setInterval(refresh, 25000);
+
+      const onFocus = () => refresh();
       const onVisibility = () => {
-        if (document.visibilityState === 'visible') fetchSalonQueue(sId);
+        if (document.visibilityState === 'visible') refresh();
       };
       window.addEventListener('focus', onFocus);
       document.addEventListener('visibilitychange', onVisibility);

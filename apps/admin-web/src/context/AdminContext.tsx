@@ -195,14 +195,25 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       });
     }
 
-    // Live telemetry interval: Poll every 2.5 seconds so admin sees all salon queues update instantly
-    const interval = setInterval(() => {
-      refreshSalons();
-    }, 2500);
+    // Live telemetry interval (Phase 3 Optimization: in-flight guard, visibility check, relaxed interval)
+    let inFlight = false;
 
-    const onFocus = () => refreshSalons();
+    const safeRefreshSalons = async () => {
+      if (typeof document !== 'undefined' && document.hidden) return; // Tab in background
+      if (inFlight) return; // Prevent overlapping queries
+      inFlight = true;
+      try {
+        await refreshSalons();
+      } finally {
+        inFlight = false;
+      }
+    };
+
+    const interval = setInterval(safeRefreshSalons, 15000);
+
+    const onFocus = () => safeRefreshSalons();
     const onVisibility = () => {
-      if (document.visibilityState === 'visible') refreshSalons();
+      if (document.visibilityState === 'visible') safeRefreshSalons();
     };
     window.addEventListener('focus', onFocus);
     document.addEventListener('visibilitychange', onVisibility);
