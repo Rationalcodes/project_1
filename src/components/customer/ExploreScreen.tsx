@@ -19,7 +19,7 @@ import {
   getQueueDisplay,
   matchesGenderFilter,
   getSalonType,
-} from '../../context/CustomerContext';
+} from '../../context/SalonContext';
 import { Salon } from '@kumbhakaran/shared-types';
 
 type SortOption = 'all' | 'queue' | 'distance' | 'rating' | 'open';

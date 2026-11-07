@@ -241,7 +241,7 @@ export const HomeScreen: React.FC = () => {
                   </h2>
                 </div>
                 <p className="text-[11px] sm:text-xs text-stone-600 font-medium leading-snug line-clamp-2">
-                  See live queues near you, grab your token from home, and walk straight into your chair.
+                  Know the waiting crowd before stepping out, and walk straight into your chair.
                 </p>
                 <div className="pt-0.5">
                   <button
@@ -256,7 +256,7 @@ export const HomeScreen: React.FC = () => {
                     }}
                     className="px-3.5 py-1.5 rounded-full bg-[#18181b] hover:bg-black text-white text-[11px] sm:text-xs font-bold shadow-xs hover:shadow transition-all active:scale-95 cursor-pointer flex items-center gap-1.5"
                   >
-                    <span>Get your token</span>
+                    <span>Get your pass</span>
                     <ArrowRight className="w-3 h-3" />
                   </button>
                 </div>
@@ -313,7 +313,7 @@ export const HomeScreen: React.FC = () => {
               </div>
             </div>
 
-            {/* SLIDE 2: Live Queue Engine */}
+            {/* SLIDE 2: Chair-Side Real-Time Tracker (Removed "LIVE QUEUE") */}
             <div
               className={`w-full shrink-0 flex-none min-h-[135px] sm:min-h-[150px] p-4 sm:p-5 text-white relative overflow-hidden flex items-center justify-between ${
                 isWomen
@@ -323,36 +323,36 @@ export const HomeScreen: React.FC = () => {
             >
               <div className="relative z-10 max-w-sm sm:max-w-md space-y-1.5">
                 <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-white/20 backdrop-blur-xs text-[10px] font-bold tracking-wider uppercase text-white">
-                  <span>LIVE QUEUE ENGINE</span>
+                  <span>REAL-TIME TRACKER</span>
                 </div>
                 <h3 className="text-base sm:text-xl font-black text-white tracking-tight leading-snug">
                   Know the wait before you step out
                 </h3>
                 <p className="text-[11px] sm:text-xs text-white/90 font-medium leading-snug">
-                  Real-time chair counts updated directly by your barber.
+                  Chair counts updated directly by your barber.
                 </p>
                 <button
                   type="button"
                   onClick={() => setCustomerTab('explore')}
                   className="inline-flex items-center gap-1 text-[11px] font-bold text-white underline hover:text-white/80 transition-colors pt-0.5 cursor-pointer"
                 >
-                  <span>Browse salons nearby</span>
+                  <span>Browse studios nearby</span>
                   <ArrowRight className="w-3 h-3" />
                 </button>
               </div>
             </div>
 
-            {/* SLIDE 3: Digital Walk-In Token */}
+            {/* SLIDE 3: Instant Walk-In Pass (Removed "DIGITAL TOKEN") */}
             <div className="w-full shrink-0 flex-none min-h-[135px] sm:min-h-[150px] p-4 sm:p-5 text-white relative overflow-hidden flex items-center justify-between bg-gradient-to-br from-stone-900 via-stone-800 to-stone-900">
               <div className="relative z-10 max-w-sm sm:max-w-md space-y-1.5">
                 <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-white/20 backdrop-blur-xs text-[10px] font-bold tracking-wider uppercase text-white">
-                  <span>DIGITAL WALK-IN TOKEN</span>
+                  <span>INSTANT PASS</span>
                 </div>
                 <h3 className="text-base sm:text-xl font-black text-white tracking-tight leading-snug">
-                  Grab your token from home
+                  Grab your pass from home
                 </h3>
                 <p className="text-[11px] sm:text-xs text-stone-300 font-medium leading-snug">
-                  Take token #01, #02... and walk right into your chair.
+                  Take pass #01, #02... and walk right into your chair.
                 </p>
                 <button
                   type="button"

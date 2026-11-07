@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Search,
   MapPin,
@@ -13,7 +13,12 @@ import {
   CheckCircle2,
   AlertTriangle,
   Heart,
-  SlidersHorizontal
+  SlidersHorizontal,
+  PhoneOff,
+  ChevronLeft,
+  ChevronRight,
+  Store,
+  Info,
 } from 'lucide-react';
 import { useSalon, getEstimatedWaitMinutes, getQueueDisplay, getQueueFreshness, matchesGenderFilter, getSalonType } from '../../context/SalonContext';
 import { LazyModeSelector } from '../common/LazyModeSelector';
@@ -40,6 +45,49 @@ export const HomeScreen: React.FC = () => {
   } = useSalon();
 
   const isWomen = genderFilter === 'women';
+
+  // Banner carousel state & touch/swipe handlers
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [touchStartX, setTouchStartX] = useState<number | null>(null);
+  const [touchDeltaX, setTouchDeltaX] = useState<number>(0);
+  const [isSwiping, setIsSwiping] = useState(false);
+
+  const totalSlides = 4;
+  const nextSlide = () => setCurrentSlide((prev) => (prev + 1) % totalSlides);
+  const prevSlide = () => setCurrentSlide((prev) => (prev - 1 + totalSlides) % totalSlides);
+
+  // Auto-switch carousel every 4.5s
+  useEffect(() => {
+    if (isSwiping) return;
+    const timer = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % totalSlides);
+    }, 4500);
+    return () => clearInterval(timer);
+  }, [isSwiping, totalSlides]);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchStartX(e.touches[0].clientX);
+    setIsSwiping(true);
+    setTouchDeltaX(0);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (touchStartX === null) return;
+    setTouchDeltaX(e.touches[0].clientX - touchStartX);
+  };
+
+  const handleTouchEnd = () => {
+    if (touchStartX !== null) {
+      if (touchDeltaX < -40) {
+        nextSlide();
+      } else if (touchDeltaX > 40) {
+        prevSlide();
+      }
+    }
+    setTouchStartX(null);
+    setTouchDeltaX(0);
+    setIsSwiping(false);
+  };
 
   const groomingCategories = isWomen
     ? [
@@ -113,58 +161,198 @@ export const HomeScreen: React.FC = () => {
 
   return (
     <div className="space-y-6 pb-24 text-stone-900">
-      {/* Hero Branding & Greeting Section - Dynamic Dual Visual Experience */}
-      <section
-        className={`relative overflow-hidden rounded-3xl p-5 sm:p-6 transition-all duration-300 ${
-          isWomen
-            ? 'bg-gradient-to-br from-[#FFF0EA] via-[#FFF8F5] to-[#FFEBE5] border border-[#FED7CC] shadow-[0_4px_24px_rgba(225,29,72,0.06)]'
-            : 'bg-white border border-[#E8E2D8] shadow-[0_4px_24px_rgba(40,20,10,0.04)]'
-        }`}
-      >
+      {/* 1. TOP PROMOTIONAL CAROUSEL (Auto-switching & Swipeable) */}
+      <section className="relative">
         <div
-          className={`absolute top-0 right-0 -mr-16 -mt-16 w-52 h-52 rounded-full blur-3xl pointer-events-none ${
-            isWomen ? 'bg-rose-400/15' : 'bg-orange-400/10'
-          }`}
-        />
+          className="relative overflow-hidden rounded-2xl sm:rounded-3xl shadow-xs border border-stone-200/70 group select-none"
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+        >
+          {/* Sliding Track */}
+          <div
+            className="flex transition-transform duration-500 ease-out"
+            style={{ transform: `translateX(-${currentSlide * 100}%)` }}
+          >
+            {/* SLIDE 0: Compact "Too lazy to call. Too smart to wait." */}
+            <div className="w-full shrink-0 flex-none min-h-[135px] sm:min-h-[150px] bg-[#FAF6EF] p-4 sm:p-5 flex items-center justify-between gap-4">
+              <div className="space-y-1.5 sm:space-y-2 max-w-sm sm:max-w-md z-10">
+                <div className="space-y-0.5 leading-tight">
+                  <h1 className="text-base sm:text-xl md:text-2xl font-serif font-black text-stone-900 tracking-tight leading-tight">
+                    Too lazy to call.
+                  </h1>
+                  <h2 className="text-base sm:text-xl md:text-2xl font-serif italic font-bold text-[#E05326] tracking-tight leading-tight">
+                    Too smart to wait.
+                  </h2>
+                </div>
+                <p className="text-[11px] sm:text-xs text-stone-600 font-medium leading-snug line-clamp-2">
+                  Know the waiting crowd before stepping out, and walk straight into your chair.
+                </p>
+                <div className="pt-0.5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const targetSalon = shortestQueueSalons[0] || salons[0];
+                      if (targetSalon) {
+                        handleSalonCardClick(targetSalon);
+                      } else {
+                        setCustomerTab('explore');
+                      }
+                    }}
+                    className="px-3.5 py-1.5 rounded-full bg-[#18181b] hover:bg-black text-white text-[11px] sm:text-xs font-bold shadow-xs hover:shadow transition-all active:scale-95 cursor-pointer flex items-center gap-1.5"
+                  >
+                    <span>Get your pass</span>
+                    <ArrowRight className="w-3 h-3" />
+                  </button>
+                </div>
+              </div>
 
-        <div className="flex items-start justify-between">
-          <div>
+              {/* Orbit Rings & Phone-Off Badge */}
+              <div className="shrink-0 flex items-center justify-center">
+                <div className="relative w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 flex items-center justify-center">
+                  <div className="absolute inset-0 rounded-full border border-[#EBDCCB]/90" />
+                  <div className="absolute inset-2 sm:inset-2.5 rounded-full border border-[#F0E6D8]" />
+                  <div className="absolute top-2 left-2.5 sm:top-2.5 sm:left-3 w-1.5 h-1.5 rounded-full bg-stone-900 shadow-2xs" />
+                  <div className="absolute bottom-2 right-2.5 sm:bottom-2.5 sm:right-3 w-2 h-2 rounded-full border border-stone-800" />
+                  <div className="relative w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-full bg-[#E05326] flex items-center justify-center shadow-md shadow-orange-500/25">
+                    <PhoneOff className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 text-white stroke-[2.2]" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* SLIDE 1: Book now, pay at the salon */}
             <div
-              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold mb-2 ${
+              className={`w-full shrink-0 flex-none min-h-[135px] sm:min-h-[150px] p-4 sm:p-5 text-white relative overflow-hidden flex items-center justify-between ${
                 isWomen
-                  ? 'bg-rose-100/80 border border-rose-200 text-[#E11D48]'
-                  : 'bg-orange-50 border border-orange-200 text-[#FF6422]'
+                  ? 'bg-gradient-to-br from-[#E11D48] via-[#BE123C] to-[#9F1239]'
+                  : 'bg-gradient-to-br from-[#1E40AF] via-[#2563EB] to-[#1D4ED8]'
               }`}
             >
-              <Sparkles className={`w-3 h-3 ${isWomen ? 'text-[#E11D48]' : 'text-[#FF6422]'}`} />
-              <span>{isWomen ? 'Glow & Glamour. Without the wait.' : 'Too lazy to call. Too smart to wait.'}</span>
+              <div className="absolute -right-4 -bottom-6 w-36 h-36 text-white/10 pointer-events-none transform rotate-3">
+                <Store className="w-full h-full stroke-1" />
+              </div>
+              <div className="relative z-10 max-w-sm sm:max-w-md space-y-1.5">
+                <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-white/20 backdrop-blur-xs text-[10px] font-bold tracking-wider uppercase text-white">
+                  <span>HOW IT WORKS</span>
+                  <Info className="w-2.5 h-2.5" />
+                </div>
+                <h3 className="text-base sm:text-xl font-black text-white tracking-tight leading-snug">
+                  Book now, pay at the salon
+                </h3>
+                <p className="text-[11px] sm:text-xs text-white/90 font-medium leading-snug">
+                  No card needed — cash or card at the counter.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setCustomerTab('explore')}
+                  className="inline-flex items-center gap-1 text-[11px] font-bold text-white underline hover:text-white/80 transition-colors pt-0.5 cursor-pointer"
+                >
+                  <span>Explore nearby</span>
+                  <ArrowRight className="w-3 h-3" />
+                </button>
+              </div>
             </div>
-            <h1 className="text-xl sm:text-2xl font-black text-stone-900 tracking-tight">
-              {isWomen ? 'Discover beauty & salon suites today.' : 'Skip the salon crowd today.'}
-            </h1>
-            <p className="text-xs text-stone-600 mt-1 max-w-sm">
-              {isWomen
-                ? 'Check live walk-in waiting counts at top salons, hair styling lounges & spas near you.'
-                : 'Check live waiting counts at nearby grooming studios. Zero phone calls, 100% walk-in clarity.'}
-            </p>
+
+            {/* SLIDE 2: Chair-Side Real-Time Tracker */}
+            <div
+              className={`w-full shrink-0 flex-none min-h-[135px] sm:min-h-[150px] p-4 sm:p-5 text-white relative overflow-hidden flex items-center justify-between ${
+                isWomen
+                  ? 'bg-gradient-to-br from-[#BE123C] via-[#9F1239] to-[#881337]'
+                  : 'bg-gradient-to-br from-[#1D4ED8] via-[#1E40AF] to-[#1E3A8A]'
+              }`}
+            >
+              <div className="relative z-10 max-w-sm sm:max-w-md space-y-1.5">
+                <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-white/20 backdrop-blur-xs text-[10px] font-bold tracking-wider uppercase text-white">
+                  <span>REAL-TIME TRACKER</span>
+                </div>
+                <h3 className="text-base sm:text-xl font-black text-white tracking-tight leading-snug">
+                  Know the wait before you step out
+                </h3>
+                <p className="text-[11px] sm:text-xs text-white/90 font-medium leading-snug">
+                  Chair counts updated directly by your barber.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setCustomerTab('explore')}
+                  className="inline-flex items-center gap-1 text-[11px] font-bold text-white underline hover:text-white/80 transition-colors pt-0.5 cursor-pointer"
+                >
+                  <span>Browse studios nearby</span>
+                  <ArrowRight className="w-3 h-3" />
+                </button>
+              </div>
+            </div>
+
+            {/* SLIDE 3: Instant Walk-In Pass */}
+            <div className="w-full shrink-0 flex-none min-h-[135px] sm:min-h-[150px] p-4 sm:p-5 text-white relative overflow-hidden flex items-center justify-between bg-gradient-to-br from-stone-900 via-stone-800 to-stone-900">
+              <div className="relative z-10 max-w-sm sm:max-w-md space-y-1.5">
+                <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-white/20 backdrop-blur-xs text-[10px] font-bold tracking-wider uppercase text-white">
+                  <span>INSTANT PASS</span>
+                </div>
+                <h3 className="text-base sm:text-xl font-black text-white tracking-tight leading-snug">
+                  Grab your pass from home
+                </h3>
+                <p className="text-[11px] sm:text-xs text-stone-300 font-medium leading-snug">
+                  Take pass #01, #02... and walk right into your chair.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const targetSalon = shortestQueueSalons[0] || salons[0];
+                    if (targetSalon) {
+                      handleSalonCardClick(targetSalon);
+                    } else {
+                      setCustomerTab('explore');
+                    }
+                  }}
+                  className="inline-flex items-center gap-1 text-[11px] font-bold text-orange-400 underline hover:text-orange-300 transition-colors pt-0.5 cursor-pointer"
+                >
+                  <span>Get in line now</span>
+                  <ArrowRight className="w-3 h-3" />
+                </button>
+              </div>
+            </div>
           </div>
+
+          {/* Prev / Next Slide Arrows (Hover/Tap) */}
+          <button
+            type="button"
+            onClick={prevSlide}
+            aria-label="Previous poster"
+            className="absolute left-2 top-1/2 -translate-y-1/2 z-20 w-7 h-7 rounded-full bg-stone-900/40 hover:bg-stone-900/70 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-xs cursor-pointer"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+          <button
+            type="button"
+            onClick={nextSlide}
+            aria-label="Next poster"
+            className="absolute right-2 top-1/2 -translate-y-1/2 z-20 w-7 h-7 rounded-full bg-stone-900/40 hover:bg-stone-900/70 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-xs cursor-pointer"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
         </div>
 
-        {/* Comparison Bar Trigger (if items selected) */}
-        {comparisonList.length > 0 && (
-          <div className="mt-3 bg-orange-50 border border-orange-200 rounded-xl p-2.5 flex items-center justify-between text-xs">
-            <div className="flex items-center gap-2 text-orange-900 font-semibold">
-              <SlidersHorizontal className="w-3.5 h-3.5 text-[#FF6422]" />
-              <span>{comparisonList.length} salons in compare list</span>
-            </div>
+        {/* Carousel Indicator Dots */}
+        <div className="flex items-center justify-center gap-1.5 mt-2.5">
+          {[0, 1, 2, 3].map((idx) => (
             <button
-              onClick={() => setIsCompareOpen(true)}
-              className="px-3 py-1 rounded-lg bg-[#FF6422] text-white font-bold text-[11px] hover:bg-orange-600 transition-colors shadow-xs"
-            >
-              Compare Now
-            </button>
-          </div>
-        )}
+              key={idx}
+              type="button"
+              onClick={() => setCurrentSlide(idx)}
+              className={`h-1.5 rounded-full transition-all cursor-pointer ${
+                currentSlide === idx
+                  ? idx === 0
+                    ? 'w-6 bg-[#E05326]'
+                    : isWomen
+                    ? 'w-6 bg-rose-600'
+                    : 'w-6 bg-blue-600'
+                  : 'w-1.5 bg-stone-300 hover:bg-stone-400'
+              }`}
+              aria-label={`Slide ${idx + 1}`}
+            />
+          ))}
+        </div>
       </section>
 
       {/* Lazy Mode Filter Bar */}
