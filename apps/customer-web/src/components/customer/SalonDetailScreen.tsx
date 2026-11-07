@@ -260,7 +260,7 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
     }
   };
 
-  const [activeTab, setActiveTab] = useState<'services' | 'staff' | 'map' | 'reviews' | 'gallery'>('services');
+  const [activeTab, setActiveTab] = useState<'queue' | 'services' | 'staff' | 'map' | 'reviews' | 'gallery' | null>(null);
   const [selectedServiceCategory, setSelectedServiceCategory] = useState<string>('All');
   const [activeGalleryIndex, setActiveGalleryIndex] = useState(0);
   const [showVideoInHero, setShowVideoInHero] = useState(true);
@@ -380,14 +380,27 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
       </div>
 
       {/* TOP NAVIGATION TABS (DIAGRAM MATCH: Live Queue | Services | Showcase) */}
-      <div className="bg-white border-y border-[#E8E2D8] sticky top-0 z-20">
+      <div className="bg-white border-y border-[#E8E2D8] sticky top-0 z-20 shadow-2xs">
         <div className="flex divide-x divide-[#E8E2D8] text-xs font-bold text-center">
           <button
             type="button"
-            onClick={() => setActiveTab('services')}
+            onClick={() => setActiveTab(activeTab === 'queue' ? null : 'queue')}
+            className={`flex-1 py-3 px-2 transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+              activeTab === 'queue'
+                ? 'bg-orange-50/80 text-[#FF6422] font-black border-b-2 border-[#FF6422]'
+                : 'text-stone-600 hover:text-stone-900 hover:bg-stone-50'
+            }`}
+          >
+            <span className={`w-2 h-2 rounded-full ${queueInfo.dotClass}`} />
+            <span>Live Queue ({salon.currentQueue})</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab(activeTab === 'services' ? null : 'services')}
             className={`flex-1 py-3 px-2 transition-all cursor-pointer ${
               activeTab === 'services'
-                ? 'bg-orange-50/70 text-[#FF6422] font-black border-b-2 border-[#FF6422]'
+                ? 'bg-orange-50/80 text-[#FF6422] font-black border-b-2 border-[#FF6422]'
                 : 'text-stone-600 hover:text-stone-900 hover:bg-stone-50'
             }`}
           >
@@ -396,10 +409,10 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
 
           <button
             type="button"
-            onClick={() => setActiveTab('gallery')}
+            onClick={() => setActiveTab(activeTab === 'gallery' ? null : 'gallery')}
             className={`flex-1 py-3 px-2 transition-all cursor-pointer ${
               activeTab === 'gallery'
-                ? 'bg-orange-50/70 text-[#FF6422] font-black border-b-2 border-[#FF6422]'
+                ? 'bg-orange-50/80 text-[#FF6422] font-black border-b-2 border-[#FF6422]'
                 : 'text-stone-600 hover:text-stone-900 hover:bg-stone-50'
             }`}
           >
@@ -407,6 +420,118 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
           </button>
         </div>
       </div>
+
+      {/* TAB CONTENT: LIVE QUEUE (ABOVE SALON CARD) */}
+      {activeTab === 'queue' && (
+        <section className="bg-white border-2 border-orange-200 rounded-3xl p-5 shadow-[0_4px_20px_rgba(255,100,34,0.06)] relative overflow-hidden space-y-4 animate-in fade-in duration-150">
+          <div className="absolute top-0 right-0 -mr-10 -mt-10 w-44 h-44 rounded-full bg-orange-400/10 blur-3xl pointer-events-none" />
+
+          <div className="flex items-center justify-between pb-2 border-b border-[#E8E2D8]">
+            <div className="flex items-center gap-2">
+              <span className={`w-3 h-3 rounded-full ${queueInfo.dotClass}`} />
+              <span className="text-xs font-black uppercase tracking-wider text-[#FF6422]">
+                Live Queue Status
+              </span>
+            </div>
+            <span className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-full ${freshness.badgeClass}`}>
+              {freshness.text}
+            </span>
+          </div>
+
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <div className="text-[11px] uppercase tracking-widest text-stone-500 font-semibold mb-1">Current Queue</div>
+              <div className="text-5xl font-black text-stone-900 tracking-tight leading-none">
+                {String(salon.currentQueue).padStart(2, '0')}
+              </div>
+              <div className="text-xs font-bold text-stone-500 mt-1 uppercase tracking-wide">People in Queue</div>
+              <div className={`mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${queueInfo.pillClass}`}>
+                <Users className="w-3.5 h-3.5" />
+                {queueInfo.label}
+              </div>
+            </div>
+            <div className="text-right bg-[#FAF7F2] border border-[#E8E2D8] rounded-2xl p-3 min-w-[120px]">
+              <div className="flex items-center gap-1 justify-end text-[10px] text-stone-500 uppercase tracking-wider font-semibold">
+                <Clock className="w-3 h-3" />
+                Estimated Wait
+              </div>
+              <div className="text-3xl font-black text-stone-900 mt-1 flex items-baseline justify-end gap-1">
+                ~{waitTime} <span className="text-xs font-normal text-stone-500">mins</span>
+              </div>
+              <p className="text-[10px] text-stone-500 mt-1 leading-snug">
+                Direct walk-in counter synced live.
+              </p>
+            </div>
+          </div>
+
+          {/* Customer's Active Ticket (if in queue) */}
+          {activeTicket && (activeTicket.salonId === salon.id || !activeTicket.salonId) ? (
+            <div className="mt-3 pt-3 border-t border-orange-200 bg-gradient-to-br from-amber-500/10 via-orange-500/5 to-amber-500/10 rounded-2xl p-4 border border-amber-300">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className="text-xs font-black uppercase tracking-wider text-amber-900">
+                    Your Live Walk-In Token
+                  </span>
+                </div>
+                <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
+                  {activeTicket.status === 'in_service' ? 'At Chair · In Service' : 'Waiting in Queue'}
+                </span>
+              </div>
+
+              <div className="mt-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <div className="text-3xl font-black text-stone-900 tracking-tight flex items-baseline gap-1">
+                    <span className="text-[#FF6422]">#</span>
+                    <span>{(activeTicket.ticketNumber || String(activeTicket.position || '')).replace(/^#+/, '')}</span>
+                  </div>
+                  <p className="text-xs text-stone-700 font-semibold mt-0.5">
+                    {activeTicket.customerName} · {activeTicket.serviceName || 'Haircut & Styling'}
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2 flex-wrap">
+                  <SmartQueueAssist salon={salon} ticket={activeTicket} />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (window.confirm('Leave the queue and give up your ticket?')) {
+                        leaveLiveQueue(salon.id, activeTicket.id);
+                      }
+                    }}
+                    className="text-xs text-stone-500 hover:text-rose-600 font-bold px-2.5 py-1.5 rounded-xl hover:bg-stone-100 transition-colors cursor-pointer"
+                  >
+                    Leave
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : salon.isOpen && salon.queueStatus !== 'paused' ? (
+            <div className="pt-2 flex flex-wrap items-center justify-between gap-3">
+              <button
+                type="button"
+                onClick={() => setShowJoinQueueModal(true)}
+                className="w-full sm:w-auto flex-1 py-3 px-5 rounded-2xl bg-gradient-to-r from-[#FF6422] to-orange-600 text-white font-extrabold text-sm shadow-md shadow-orange-500/25 hover:from-orange-600 hover:to-orange-700 transition-all active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <Ticket className="w-4 h-4" />
+                <span>Join Live Walk-In Queue</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowCrowdModal(true)}
+                className="text-xs font-bold text-stone-600 hover:text-[#FF6422] px-3 py-2 rounded-xl bg-stone-50 border border-[#E2DDD5] hover:bg-orange-50 transition-colors flex items-center gap-1.5 cursor-pointer"
+              >
+                <Users className="w-3.5 h-3.5 text-stone-500" />
+                <span>Report Live Crowd</span>
+              </button>
+            </div>
+          ) : (
+            <div className="p-3 bg-stone-50 rounded-2xl text-center text-xs text-stone-500 font-semibold">
+              Queue is currently paused or studio is closed.
+            </div>
+          )}
+        </section>
+      )}
 
       {/* TAB CONTENT: SERVICES & PRICING */}
       {activeTab === 'services' && (
@@ -746,28 +871,30 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
             </div>
           )}
 
-          {/* Location & Quick Actions */}
-          <div className="mt-4 pt-3 border-t border-[#E8E2D8] flex flex-wrap items-center justify-between gap-3 text-xs">
+          {/* Location & Quick Actions (Diagram Match: Location on Salon Card) */}
+          <div className="mt-4 pt-3 border-t border-[#E8E2D8] flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
             <button
               type="button"
               onClick={() => setShowInAppMap(true)}
-              className="flex items-center gap-2.5 text-stone-700 hover:text-[#FF6422] transition-colors cursor-pointer group text-left max-w-full sm:max-w-xs"
+              className="flex items-center gap-3 p-2.5 rounded-2xl bg-orange-50/70 hover:bg-orange-100/80 border border-orange-200 transition-all cursor-pointer group text-left max-w-full sm:max-w-md shadow-2xs hover:shadow-xs"
               title="Click to view salon pinned on our in-app map"
             >
-              <div className="w-8 h-8 rounded-xl bg-orange-50 border border-orange-200 flex items-center justify-center text-[#FF6422] group-hover:bg-[#FF6422] group-hover:text-white transition-colors shrink-0 shadow-2xs">
-                <MapPin className="w-4 h-4" />
+              <div className="w-9 h-9 rounded-xl bg-[#FF6422] text-white flex items-center justify-center shrink-0 shadow-xs group-hover:scale-105 transition-transform">
+                <MapPin className="w-5 h-5 fill-white" />
               </div>
-              <div className="min-w-0">
-                <div className="flex items-center gap-1.5 font-bold text-stone-900 group-hover:text-[#FF6422]">
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-1.5 font-bold text-stone-900 group-hover:text-[#FF6422] transition-colors">
                   <span className="truncate">{salon.address}</span>
-                  <span className="text-[10px] bg-orange-100 text-[#FF6422] font-black px-1.5 py-0.5 rounded-full shrink-0">
-                    PIN
+                  <span className="text-[10px] bg-[#FF6422] text-white font-black px-1.5 py-0.2 rounded-full shrink-0">
+                    PINNED
                   </span>
                 </div>
-                <div className="text-[11px] text-[#FF6422] font-semibold flex items-center gap-1 mt-0.5">
+                <div className="text-[11px] text-[#FF6422] font-semibold flex items-center gap-1.5 mt-0.5">
                   <span>{salon.locality}</span>
                   <span>·</span>
-                  <span className="underline underline-offset-2">Open Pinned Map ↗</span>
+                  <span>{salon.distanceKm} km away</span>
+                  <span>·</span>
+                  <span className="underline underline-offset-2 font-bold">Open Pinned Map ↗</span>
                 </div>
               </div>
             </button>
@@ -776,7 +903,7 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
               <button
                 type="button"
                 onClick={() => setShowInAppMap(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-orange-50 border border-orange-200 text-[#FF6422] hover:bg-orange-100 text-xs font-bold shadow-xs transition-colors cursor-pointer"
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#FF6422] text-white text-xs font-bold shadow-xs hover:bg-orange-600 transition-all cursor-pointer"
                 title="View salon pinned on map on our website"
               >
                 <MapIcon className="w-3.5 h-3.5" />
@@ -785,7 +912,7 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
 
               <a
                 href={`tel:${salon.phone}`}
-                className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-white border border-[#E2DDD5] text-stone-700 hover:text-stone-900 shadow-xs"
+                className="flex items-center gap-1 px-3 py-2 rounded-xl bg-white border border-[#E2DDD5] text-stone-700 hover:text-stone-900 shadow-xs text-xs font-semibold"
               >
                 <Phone className="w-3.5 h-3.5 text-stone-500" />
                 <span>Call Studio</span>
@@ -798,11 +925,11 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
                   name: salon.name,
                   address: salon.address
                 }, userLocation || undefined)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#FF6422] text-white font-bold hover:bg-orange-600 transition-all shadow-md shadow-orange-500/20 active:scale-95"
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-stone-900 text-white font-bold hover:bg-stone-800 transition-all shadow-xs text-xs"
                 title="Navigate in Google Maps"
               >
                 <Navigation className="w-3.5 h-3.5 fill-white" />
-                <span>{salon.distanceKm} km · Directions ↗</span>
+                <span>Directions ↗</span>
               </button>
             </div>
           </div>
@@ -810,14 +937,14 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
       </div>
 
       {/* BOTTOM NAVIGATION TABS (DIAGRAM MATCH: Stylists | Reviews) */}
-      <div className="bg-white border-y border-[#E8E2D8] mt-6">
+      <div className="bg-white border-y border-[#E8E2D8] mt-6 shadow-2xs">
         <div className="flex divide-x divide-[#E8E2D8] text-xs font-bold text-center">
           <button
             type="button"
-            onClick={() => setActiveTab('staff')}
+            onClick={() => setActiveTab(activeTab === 'staff' ? null : 'staff')}
             className={`flex-1 py-3 px-2 transition-all cursor-pointer ${
               activeTab === 'staff'
-                ? 'bg-orange-50/70 text-[#FF6422] font-black border-b-2 border-[#FF6422]'
+                ? 'bg-orange-50/80 text-[#FF6422] font-black border-b-2 border-[#FF6422]'
                 : 'text-stone-600 hover:text-stone-900 hover:bg-stone-50'
             }`}
           >
@@ -826,10 +953,10 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
 
           <button
             type="button"
-            onClick={() => setActiveTab('reviews')}
+            onClick={() => setActiveTab(activeTab === 'reviews' ? null : 'reviews')}
             className={`flex-1 py-3 px-2 transition-all cursor-pointer ${
               activeTab === 'reviews'
-                ? 'bg-orange-50/70 text-[#FF6422] font-black border-b-2 border-[#FF6422]'
+                ? 'bg-orange-50/80 text-[#FF6422] font-black border-b-2 border-[#FF6422]'
                 : 'text-stone-600 hover:text-stone-900 hover:bg-stone-50'
             }`}
           >

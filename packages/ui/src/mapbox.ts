@@ -55,8 +55,13 @@ export function loadMapboxScript(): Promise<boolean> {
     // 2. Inject Mapbox GL JS
     const existing = document.querySelector('script[src*="mapbox-gl"]');
     if (existing) {
-      existing.addEventListener('load', () => resolve(true));
+      if ((window as any).mapboxgl) {
+        resolve(true);
+        return;
+      }
+      existing.addEventListener('load', () => resolve(Boolean((window as any).mapboxgl)));
       existing.addEventListener('error', () => resolve(false));
+      setTimeout(() => resolve(Boolean((window as any).mapboxgl)), 800);
       return;
     }
 

@@ -1,23 +1,33 @@
 import { calculateHaversineDistance } from './googleMaps';
 
 export interface DrivingRouteResult {
-  /** Array of [latitude, longitude] coordinates along actual roads */
+  /** Array of [latitude, longitude] coordinates along the complete journey */
   coordinates: [number, number][];
+  /** Off-road displacement from user GPS to the nearest road entry point (if user is off-road) */
+  userDisplacement: [number, number][] | null;
+  /** Road driving coordinates along actual streets and turns */
+  roadCoordinates: [number, number][];
+  /** Off-road displacement from the road exit point to the shop pin (if shop is off-road) */
+  shopDisplacement: [number, number][] | null;
   distanceMeters: number;
   distanceKm: number;
   distanceFormatted: string;
   durationMinutes: number;
   durationFormatted: string;
   isRoadRoute: boolean;
+  hasUserDisplacement: boolean;
+  hasShopDisplacement: boolean;
+  routeSummaryLabel: string;
 }
 
 const routeCache = new Map<string, DrivingRouteResult>();
 
 /**
- * Fetches accurate driving road route and distance (like Google Maps)
- * 1. Tries Google Maps DirectionsService if client has Google Maps loaded
- * 2. Falls back to OSRM Open Routing API (zero-key, free, instant turn-by-turn road geometry)
- * 3. Gracefully falls back to geodesic displacement if offline/unreachable
+ * Fetches accurate Google Maps-style navigation routing:
+ * 1. If user is off-road (e.g. inside building/park), takes direct displacement from user -> nearest road
+ * 2. Follows proper road travel (turn-by-turn road network) along actual streets to reach the shop
+ * 3. If shop is set back off-road, takes displacement from road -> exact shop pin
+ * 4. If no road route exists at all between points, falls back to direct displacement
  */
 export async function fetchDrivingRoute(
   origin: { lat: number; lng: number },
@@ -31,12 +41,18 @@ export async function fetchDrivingRoute(
   if (!Number.isFinite(oLat) || !Number.isFinite(oLng) || !Number.isFinite(dLat) || !Number.isFinite(dLng)) {
     return {
       coordinates: [],
+      userDisplacement: null,
+      roadCoordinates: [],
+      shopDisplacement: null,
       distanceMeters: 0,
       distanceKm: 0,
       distanceFormatted: '0 km',
       durationMinutes: 0,
       durationFormatted: '0 min',
       isRoadRoute: false,
+      hasUserDisplacement: false,
+      hasShopDisplacement: false,
+      routeSummaryLabel: 'Direct',
     };
   }
 
@@ -46,26 +62,79 @@ export async function fetchDrivingRoute(
     return cached;
   }
 
-  // Helper formatters
+  // Helper formatters with user displacement + road travel
   const formatResult = (
-    coords: [number, number][],
-    distMeters: number,
-    durSeconds: number,
+    rawRoadCoords: [number, number][],
+    roadDistMeters: number,
+    roadDurSeconds: number,
     isRoad: boolean
   ): DrivingRouteResult => {
-    const distKm = Math.round((distMeters / 1000) * 10) / 10;
-    const distFormatted = distKm < 1 ? `${Math.round(distMeters)} m` : `${distKm.toFixed(1)} km`;
-    const durMins = Math.max(1, Math.round(durSeconds / 60));
+    let userDisplacement: [number, number][] | null = null;
+    let shopDisplacement: [number, number][] | null = null;
+    let extraDistMeters = 0;
+    let extraDurSeconds = 0;
+
+    let fullCoordinates: [number, number][] = [];
+
+    if (isRoad && rawRoadCoords.length > 0) {
+      const roadStart = rawRoadCoords[0];
+      const roadEnd = rawRoadCoords[rawRoadCoords.length - 1];
+
+      // Displacement from user location to road entrance (if off-road > 8m)
+      const userToRoadM = calculateHaversineDistance(oLat, oLng, roadStart[0], roadStart[1]) * 1000;
+      if (userToRoadM > 8) {
+        userDisplacement = [[oLat, oLng], roadStart];
+        extraDistMeters += userToRoadM;
+        extraDurSeconds += Math.round(userToRoadM / 1.3); // ~4.7 km/h walking to road
+      }
+
+      // Displacement from road exit to shop pin (if off-road > 8m)
+      const roadToShopM = calculateHaversineDistance(roadEnd[0], roadEnd[1], dLat, dLng) * 1000;
+      if (roadToShopM > 8) {
+        shopDisplacement = [roadEnd, [dLat, dLng]];
+        extraDistMeters += roadToShopM;
+        extraDurSeconds += Math.round(roadToShopM / 1.3); // ~4.7 km/h walking to shop
+      }
+
+      // Build complete unbroken path: User GPS -> Road Entry -> Road Route -> Shop Pin
+      fullCoordinates = [
+        ...(userDisplacement ? [[oLat, oLng] as [number, number]] : []),
+        ...rawRoadCoords,
+        ...(shopDisplacement ? [[dLat, dLng] as [number, number]] : []),
+      ];
+    } else {
+      fullCoordinates = [[oLat, oLng], [dLat, dLng]];
+      userDisplacement = [[oLat, oLng], [dLat, dLng]];
+    }
+
+    const totalDistMeters = Math.round(roadDistMeters + extraDistMeters);
+    const distKm = Math.round((totalDistMeters / 1000) * 10) / 10;
+    const distFormatted = distKm < 1 ? `${totalDistMeters} m` : `${distKm.toFixed(1)} km`;
+    const totalDurSeconds = Math.round(roadDurSeconds + extraDurSeconds);
+    const durMins = Math.max(1, Math.round(totalDurSeconds / 60));
     const durFormatted = durMins >= 60 ? `${Math.floor(durMins / 60)}h ${durMins % 60}m` : `~${durMins} min`;
 
+    let summaryLabel = 'Via Road';
+    if (userDisplacement && isRoad) {
+      summaryLabel = 'Walk to road + Drive';
+    } else if (!isRoad) {
+      summaryLabel = 'Direct';
+    }
+
     const res: DrivingRouteResult = {
-      coordinates: coords,
-      distanceMeters: Math.round(distMeters),
+      coordinates: fullCoordinates,
+      userDisplacement,
+      roadCoordinates: isRoad ? rawRoadCoords : [],
+      shopDisplacement,
+      distanceMeters: totalDistMeters,
       distanceKm: distKm,
       distanceFormatted: distFormatted,
       durationMinutes: durMins,
       durationFormatted: durFormatted,
       isRoadRoute: isRoad,
+      hasUserDisplacement: Boolean(userDisplacement),
+      hasShopDisplacement: Boolean(shopDisplacement),
+      routeSummaryLabel: summaryLabel,
     };
     routeCache.set(cacheKey, res);
     return res;
@@ -134,17 +203,15 @@ export async function fetchDrivingRoute(
     // Fall through to fallback
   }
 
-  // 3. Fallback: Haversine displacement distance with straight line
+  // 3. Fallback: If no road on map at all, take direct displacement
   const directKm = calculateHaversineDistance(oLat, oLng, dLat, dLng);
-  // Real driving distance in urban areas is roughly 1.3x - 1.4x straight air displacement
-  const estimatedDrivingKm = Math.round(directKm * 1.35 * 10) / 10;
-  const estimatedMeters = estimatedDrivingKm * 1000;
-  const estimatedMinutes = Math.max(1, Math.round(estimatedDrivingKm * 2.5));
+  const directMeters = Math.round(directKm * 1000);
+  const directMinutes = Math.max(1, Math.round(directKm * 3));
 
   return formatResult(
     [[oLat, oLng], [dLat, dLng]],
-    estimatedMeters,
-    estimatedMinutes * 60,
+    directMeters,
+    directMinutes * 60,
     false
   );
 }

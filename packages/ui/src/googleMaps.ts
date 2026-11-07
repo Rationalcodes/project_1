@@ -93,15 +93,21 @@ export function loadLeafletScript(): Promise<boolean> {
     // 2. Add Leaflet JS
     const existing = document.querySelector('script[src*="leaflet.js"]');
     if (existing) {
-      existing.addEventListener('load', () => resolve(true));
+      if ((window as any).L) {
+        resolve(true);
+        return;
+      }
+      existing.addEventListener('load', () => resolve(Boolean((window as any).L)));
       existing.addEventListener('error', () => resolve(false));
+      // Fallback check in case load event already fired
+      setTimeout(() => resolve(Boolean((window as any).L)), 800);
       return;
     }
 
     const script = document.createElement('script');
     script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
     script.async = true;
-    script.onload = () => resolve(true);
+    script.onload = () => resolve(Boolean((window as any).L));
     script.onerror = () => {
       console.warn('Leaflet OpenStreetMap script failed to load.');
       resolve(false);

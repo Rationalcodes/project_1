@@ -106,6 +106,8 @@ export const MapScreen: React.FC = () => {
   const googleMarkersRef = useRef<any[]>([]);
   const googleUserMarkerRef = useRef<any>(null);
   const googlePolylineRef = useRef<any>(null);
+  const googleUserDispRef = useRef<any>(null);
+  const googleShopDispRef = useRef<any>(null);
   const googleMidpointMarkerRef = useRef<any>(null);
 
   // Leaflet references
@@ -299,6 +301,14 @@ export const MapScreen: React.FC = () => {
       googlePolylineRef.current.setMap(null);
       googlePolylineRef.current = null;
     }
+    if (googleUserDispRef.current) {
+      googleUserDispRef.current.setMap(null);
+      googleUserDispRef.current = null;
+    }
+    if (googleShopDispRef.current) {
+      googleShopDispRef.current.setMap(null);
+      googleShopDispRef.current = null;
+    }
     if (googleMidpointMarkerRef.current) {
       googleMidpointMarkerRef.current.setMap(null);
       googleMidpointMarkerRef.current = null;
@@ -309,21 +319,64 @@ export const MapScreen: React.FC = () => {
       const sLng = selectedMarkerSalon.coordinates?.lng ?? (selectedMarkerSalon as any)?.longitude;
       const destCoords = { lat: Number(sLat) || 12.9716, lng: Number(sLng) || 77.5946 };
 
-      const routePath = (drivingRoute && drivingRoute.coordinates.length > 0)
-        ? drivingRoute.coordinates.map(([lat, lng]) => ({ lat, lng }))
-        : [
+      if (drivingRoute?.isRoadRoute && drivingRoute.roadCoordinates.length > 0) {
+        // 1. Off-road displacement from user -> road start (dashed connector line)
+        if (drivingRoute.userDisplacement && drivingRoute.userDisplacement.length > 1) {
+          googleUserDispRef.current = new gmaps.Polyline({
+            path: drivingRoute.userDisplacement.map(([lat, lng]) => ({ lat, lng })),
+            geodesic: true,
+            strokeColor: primaryHex,
+            strokeOpacity: 0.8,
+            strokeWeight: 3.5,
+            icons: [{
+              icon: { path: 'M 0,-1 0,1', strokeOpacity: 1, scale: 2 },
+              offset: '0',
+              repeat: '8px',
+            }],
+            map: googleMapRef.current,
+          });
+        }
+
+        // 2. Road route along actual streets (solid travel line)
+        googlePolylineRef.current = new gmaps.Polyline({
+          path: drivingRoute.roadCoordinates.map(([lat, lng]) => ({ lat, lng })),
+          geodesic: true,
+          strokeColor: primaryHex,
+          strokeOpacity: 0.95,
+          strokeWeight: 5,
+          map: googleMapRef.current,
+        });
+
+        // 3. Off-road displacement from road exit -> shop pin (dashed connector line)
+        if (drivingRoute.shopDisplacement && drivingRoute.shopDisplacement.length > 1) {
+          googleShopDispRef.current = new gmaps.Polyline({
+            path: drivingRoute.shopDisplacement.map(([lat, lng]) => ({ lat, lng })),
+            geodesic: true,
+            strokeColor: primaryHex,
+            strokeOpacity: 0.8,
+            strokeWeight: 3.5,
+            icons: [{
+              icon: { path: 'M 0,-1 0,1', strokeOpacity: 1, scale: 2 },
+              offset: '0',
+              repeat: '8px',
+            }],
+            map: googleMapRef.current,
+          });
+        }
+      } else {
+        // Direct displacement fallback when no road exists on map
+        googlePolylineRef.current = new gmaps.Polyline({
+          path: [
             { lat: userLocation.lat, lng: userLocation.lng },
             destCoords,
-          ];
-
-      googlePolylineRef.current = new gmaps.Polyline({
-        path: routePath,
-        geodesic: true,
-        strokeColor: primaryHex,
-        strokeOpacity: 0.95,
-        strokeWeight: 5,
-        map: googleMapRef.current,
-      });
+          ],
+          geodesic: true,
+          strokeColor: primaryHex,
+          strokeOpacity: 0.9,
+          strokeWeight: 4,
+          map: googleMapRef.current,
+        });
+      }
 
       const distFormatted = drivingRoute?.distanceFormatted || `${calculateHaversineDistance(
         userLocation.lat,
@@ -332,7 +385,11 @@ export const MapScreen: React.FC = () => {
         destCoords.lng,
       ).toFixed(1)} km`;
 
-      const durText = drivingRoute?.durationFormatted ? ` (${drivingRoute.durationFormatted} drive)` : '';
+      const durText = drivingRoute?.durationFormatted ? ` (${drivingRoute.durationFormatted})` : '';
+
+      const routePath = (drivingRoute && drivingRoute.coordinates.length > 0)
+        ? drivingRoute.coordinates.map(([lat, lng]) => ({ lat, lng }))
+        : [{ lat: userLocation.lat, lng: userLocation.lng }, destCoords];
 
       const midIdx = Math.floor(routePath.length / 2);
       const midPoint = routePath[midIdx] || {
@@ -445,24 +502,56 @@ export const MapScreen: React.FC = () => {
         ? drivingRoute.coordinates
         : [startPoint, destPoint];
 
-      // White outline casing for crisp contrast on any map background
-      L.polyline(routePoints, {
-        color: '#FFFFFF',
-        weight: 7,
-        opacity: 0.95,
-        lineCap: 'round',
-        lineJoin: 'round',
-      }).addTo(layer);
+      if (drivingRoute?.isRoadRoute && drivingRoute.roadCoordinates.length > 0) {
+        // 1. Off-road displacement from user -> road network entry (dashed connector)
+        if (drivingRoute.userDisplacement && drivingRoute.userDisplacement.length > 1) {
+          L.polyline(drivingRoute.userDisplacement, {
+            color: primaryHex,
+            weight: 3.5,
+            dashArray: '5, 7',
+            opacity: 0.9,
+            lineCap: 'round',
+          }).addTo(layer);
+        }
 
-      // Main driving route in primary brand color along actual streets
-      L.polyline(routePoints, {
-        color: primaryHex,
-        weight: 4.5,
-        opacity: 0.95,
-        lineCap: 'round',
-        lineJoin: 'round',
-        className: 'animated-route-line',
-      }).addTo(layer);
+        // 2. Road route along actual streets (white casing + solid brand color route)
+        L.polyline(drivingRoute.roadCoordinates, {
+          color: '#FFFFFF',
+          weight: 7,
+          opacity: 0.95,
+          lineCap: 'round',
+          lineJoin: 'round',
+        }).addTo(layer);
+
+        L.polyline(drivingRoute.roadCoordinates, {
+          color: primaryHex,
+          weight: 4.5,
+          opacity: 0.95,
+          lineCap: 'round',
+          lineJoin: 'round',
+          className: 'animated-route-line',
+        }).addTo(layer);
+
+        // 3. Off-road displacement from road exit -> shop pin (dashed connector)
+        if (drivingRoute.shopDisplacement && drivingRoute.shopDisplacement.length > 1) {
+          L.polyline(drivingRoute.shopDisplacement, {
+            color: primaryHex,
+            weight: 3.5,
+            dashArray: '5, 7',
+            opacity: 0.9,
+            lineCap: 'round',
+          }).addTo(layer);
+        }
+      } else {
+        // Direct displacement fallback when no road exists on map
+        L.polyline(routePoints, {
+          color: primaryHex,
+          weight: 3.5,
+          dashArray: '8, 8',
+          opacity: 0.95,
+          lineCap: 'round',
+        }).addTo(layer);
+      }
 
       // Midpoint distance and duration pill badge
       const distFormatted = drivingRoute?.distanceFormatted || `${calculateHaversineDistance(

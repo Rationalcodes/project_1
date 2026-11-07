@@ -70,14 +70,27 @@ export const SalonMapboxView: React.FC<SalonMapboxViewProps> = ({
 
   useEffect(() => {
     let isMounted = true;
+    const token = getMapboxToken();
+    const hasValidToken = token && !token.includes('dummy_fallback');
 
-    // First attempt to load Mapbox GL JS
+    if (!hasValidToken) {
+      // Leaflet is the primary high-speed engine when mapbox token is absent
+      loadLeafletScript().then((leafletSuccess) => {
+        if (!isMounted) return;
+        if (leafletSuccess || Boolean((window as any).L)) {
+          setMapEngine('leaflet');
+        }
+      });
+      return () => {
+        isMounted = false;
+      };
+    }
+
+    // First attempt to load Mapbox GL JS if token is configured
     loadMapboxScript().then((mapboxSuccess) => {
       if (!isMounted) return;
-      const token = getMapboxToken();
-      const hasValidToken = token && !token.includes('dummy_fallback');
 
-      if (mapboxSuccess && hasValidToken && isMapboxLoaded()) {
+      if (mapboxSuccess && isMapboxLoaded()) {
         setMapEngine('mapbox');
       } else {
         // Fallback to high-contrast Leaflet tiles
@@ -85,8 +98,6 @@ export const SalonMapboxView: React.FC<SalonMapboxViewProps> = ({
           if (!isMounted) return;
           if (leafletSuccess || Boolean((window as any).L)) {
             setMapEngine('leaflet');
-          } else if (mapboxSuccess && isMapboxLoaded()) {
-            setMapEngine('mapbox');
           }
         });
       }
@@ -208,18 +219,27 @@ export const SalonMapboxView: React.FC<SalonMapboxViewProps> = ({
 
       leafletInstanceRef.current = map;
 
-      setTimeout(() => {
+      const triggerResize = () => {
         try { map.invalidateSize(); } catch (_) {}
-      }, 100);
-      setTimeout(() => {
-        try { map.invalidateSize(); } catch (_) {}
-      }, 350);
+      };
+      setTimeout(triggerResize, 60);
+      setTimeout(triggerResize, 200);
+      setTimeout(triggerResize, 500);
+
+      if (typeof ResizeObserver !== 'undefined' && mapContainerRef.current) {
+        const ro = new ResizeObserver(() => triggerResize());
+        ro.observe(mapContainerRef.current);
+        (map as any)._customResizeObserver = ro;
+      }
     } else {
       leafletInstanceRef.current.setView([lat, lng], 15);
     }
 
     return () => {
       if (leafletInstanceRef.current) {
+        if ((leafletInstanceRef.current as any)._customResizeObserver) {
+          (leafletInstanceRef.current as any)._customResizeObserver.disconnect();
+        }
         leafletInstanceRef.current.remove();
         leafletInstanceRef.current = null;
       }
@@ -243,23 +263,55 @@ export const SalonMapboxView: React.FC<SalonMapboxViewProps> = ({
     if (userLocation && drivingRoute && drivingRoute.coordinates.length > 0) {
       const routeGroup = L.layerGroup();
 
-      // White outline casing for high contrast on roads
-      L.polyline(drivingRoute.coordinates, {
-        color: '#FFFFFF',
-        weight: 6.5,
-        opacity: 0.95,
-        lineCap: 'round',
-        lineJoin: 'round',
-      }).addTo(routeGroup);
+      if (drivingRoute.isRoadRoute && drivingRoute.roadCoordinates.length > 0) {
+        // 1. Off-road displacement from user -> road entrance (if user is off-road)
+        if (drivingRoute.userDisplacement && drivingRoute.userDisplacement.length > 1) {
+          L.polyline(drivingRoute.userDisplacement, {
+            color: '#FF6422',
+            weight: 3.5,
+            dashArray: '5, 7',
+            opacity: 0.9,
+            lineCap: 'round',
+          }).addTo(routeGroup);
+        }
 
-      // Main primary orange road path
-      L.polyline(drivingRoute.coordinates, {
-        color: '#FF6422',
-        weight: 4,
-        opacity: 0.95,
-        lineCap: 'round',
-        lineJoin: 'round',
-      }).addTo(routeGroup);
+        // 2. Road route along actual streets (white casing + solid orange route)
+        L.polyline(drivingRoute.roadCoordinates, {
+          color: '#FFFFFF',
+          weight: 7,
+          opacity: 0.95,
+          lineCap: 'round',
+          lineJoin: 'round',
+        }).addTo(routeGroup);
+
+        L.polyline(drivingRoute.roadCoordinates, {
+          color: '#FF6422',
+          weight: 4.5,
+          opacity: 0.95,
+          lineCap: 'round',
+          lineJoin: 'round',
+        }).addTo(routeGroup);
+
+        // 3. Off-road displacement from road exit -> shop pin (if shop is set back)
+        if (drivingRoute.shopDisplacement && drivingRoute.shopDisplacement.length > 1) {
+          L.polyline(drivingRoute.shopDisplacement, {
+            color: '#FF6422',
+            weight: 3.5,
+            dashArray: '5, 7',
+            opacity: 0.9,
+            lineCap: 'round',
+          }).addTo(routeGroup);
+        }
+      } else {
+        // Direct displacement fallback when no road exists on map
+        L.polyline(drivingRoute.coordinates, {
+          color: '#FF6422',
+          weight: 3.5,
+          dashArray: '8, 8',
+          opacity: 0.95,
+          lineCap: 'round',
+        }).addTo(routeGroup);
+      }
 
       // Route midpoint driving distance pill
       const midIdx = Math.floor(drivingRoute.coordinates.length / 2);
@@ -354,6 +406,14 @@ export const SalonMapboxView: React.FC<SalonMapboxViewProps> = ({
       `}</style>
       {/* Map Canvas */}
       <div ref={mapContainerRef} className="w-full flex-1 min-h-[300px]" style={{ width: '100%', height: '100%', minHeight: '300px' }} />
+
+      {/* Loading Indicator */}
+      {mapEngine === 'loading' && (
+        <div className="absolute inset-0 bg-[#FAF7F2]/80 backdrop-blur-xs flex flex-col items-center justify-center gap-2 z-20">
+          <div className="w-7 h-7 border-3 border-orange-200 border-t-[#FF6422] rounded-full animate-spin" />
+          <span className="text-xs font-bold text-stone-600">Loading interactive map...</span>
+        </div>
+      )}
 
       {/* Top Header Badge */}
       <div className="absolute top-3 left-3 z-10 flex items-center gap-2">
