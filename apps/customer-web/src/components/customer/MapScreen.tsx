@@ -33,6 +33,8 @@ import {
   loadLeafletScript,
   KUMBHAKARAN_MAP_STYLES,
   isGoogleMapsLoaded,
+  fetchDrivingRoute,
+  DrivingRouteResult,
 } from '@kumbhakaran/ui';
 
 export const MapScreen: React.FC = () => {
@@ -50,6 +52,32 @@ export const MapScreen: React.FC = () => {
   const primaryHoverHex = isWomen ? '#BE123C' : '#E55215';
 
   const [selectedMarkerSalon, setSelectedMarkerSalon] = useState<Salon | null>(salons[0] || null);
+  const [drivingRoute, setDrivingRoute] = useState<DrivingRouteResult | null>(null);
+
+  // Fetch real Google Maps / OSRM turn-by-turn road route
+  useEffect(() => {
+    let isCancelled = false;
+    if (userLocation && selectedMarkerSalon) {
+      const sLat = selectedMarkerSalon.coordinates?.lat ?? (selectedMarkerSalon as any)?.latitude;
+      const sLng = selectedMarkerSalon.coordinates?.lng ?? (selectedMarkerSalon as any)?.longitude;
+      if (Number.isFinite(sLat) && Number.isFinite(sLng)) {
+        fetchDrivingRoute(
+          { lat: userLocation.lat, lng: userLocation.lng },
+          { lat: Number(sLat), lng: Number(sLng) }
+        ).then((route) => {
+          if (!isCancelled) {
+            setDrivingRoute(route);
+          }
+        });
+      }
+    } else {
+      setDrivingRoute(null);
+    }
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [userLocation?.lat, userLocation?.lng, selectedMarkerSalon?.id]);
   const [mapSearch, setMapSearch] = useState('');
   const [customDistanceInput, setCustomDistanceInput] = useState<string>('10');
   const [radiusKm, setRadiusKm] = useState<number>(10);
@@ -266,7 +294,7 @@ export const MapScreen: React.FC = () => {
       googleMarkersRef.current.push(marker);
     });
 
-    // Distance route line from Customer Location -> Selected Shop Location
+    // Real road driving route line (like Google Maps) from Customer Location -> Selected Shop Location
     if (googlePolylineRef.current) {
       googlePolylineRef.current.setMap(null);
       googlePolylineRef.current = null;
@@ -277,33 +305,46 @@ export const MapScreen: React.FC = () => {
     }
 
     if (userLocation && selectedMarkerSalon) {
+      const sLat = selectedMarkerSalon.coordinates?.lat ?? (selectedMarkerSalon as any)?.latitude;
+      const sLng = selectedMarkerSalon.coordinates?.lng ?? (selectedMarkerSalon as any)?.longitude;
+      const destCoords = { lat: Number(sLat) || 12.9716, lng: Number(sLng) || 77.5946 };
+
+      const routePath = (drivingRoute && drivingRoute.coordinates.length > 0)
+        ? drivingRoute.coordinates.map(([lat, lng]) => ({ lat, lng }))
+        : [
+            { lat: userLocation.lat, lng: userLocation.lng },
+            destCoords,
+          ];
+
       googlePolylineRef.current = new gmaps.Polyline({
-        path: [
-          { lat: userLocation.lat, lng: userLocation.lng },
-          { lat: selectedMarkerSalon.coordinates.lat, lng: selectedMarkerSalon.coordinates.lng },
-        ],
+        path: routePath,
         geodesic: true,
         strokeColor: primaryHex,
-        strokeOpacity: 0.9,
-        strokeWeight: 4,
+        strokeOpacity: 0.95,
+        strokeWeight: 5,
         map: googleMapRef.current,
       });
 
-      const distKm = calculateHaversineDistance(
+      const distFormatted = drivingRoute?.distanceFormatted || `${calculateHaversineDistance(
         userLocation.lat,
         userLocation.lng,
-        selectedMarkerSalon.coordinates.lat,
-        selectedMarkerSalon.coordinates.lng,
-      );
-      const distFormatted = distKm < 1 ? `${Math.round(distKm * 1000)} m` : `${distKm.toFixed(1)} km`;
-      const midLat = (userLocation.lat + selectedMarkerSalon.coordinates.lat) / 2;
-      const midLng = (userLocation.lng + selectedMarkerSalon.coordinates.lng) / 2;
+        destCoords.lat,
+        destCoords.lng,
+      ).toFixed(1)} km`;
+
+      const durText = drivingRoute?.durationFormatted ? ` (${drivingRoute.durationFormatted} drive)` : '';
+
+      const midIdx = Math.floor(routePath.length / 2);
+      const midPoint = routePath[midIdx] || {
+        lat: (userLocation.lat + destCoords.lat) / 2,
+        lng: (userLocation.lng + destCoords.lng) / 2,
+      };
 
       googleMidpointMarkerRef.current = new gmaps.Marker({
-        position: { lat: midLat, lng: midLng },
+        position: midPoint,
         map: googleMapRef.current,
         label: {
-          text: `● ${distFormatted}`,
+          text: `🚗 ${distFormatted}${durText}`,
           color: '#1F1F1F',
           fontSize: '11px',
           fontWeight: '800',
@@ -316,7 +357,7 @@ export const MapScreen: React.FC = () => {
         zIndex: 500,
       });
     }
-  }, [mapEngine, visibleSalons, selectedMarkerSalon, userLocation, genderFilter]);
+  }, [mapEngine, visibleSalons, selectedMarkerSalon, userLocation, genderFilter, drivingRoute]);
 
   // 3A. Mount Leaflet fallback when Google Maps SDK key is not configured
   useEffect(() => {
@@ -393,45 +434,50 @@ export const MapScreen: React.FC = () => {
       L.marker([userLocation.lat, userLocation.lng], { icon: userIcon, title: 'Your Location', zIndexOffset: 900 }).addTo(layer);
     }
 
-    // 2. Draw Distance Line connecting Customer Location -> Selected Shop Location
+    // 2. Draw Real Road Driving Route connecting Customer Location -> Selected Shop Location
     if (userLocation && selectedMarkerSalon) {
+      const sLat = selectedMarkerSalon.coordinates?.lat ?? (selectedMarkerSalon as any)?.latitude;
+      const sLng = selectedMarkerSalon.coordinates?.lng ?? (selectedMarkerSalon as any)?.longitude;
+      const destPoint: [number, number] = [Number(sLat) || 12.9716, Number(sLng) || 77.5946];
       const startPoint: [number, number] = [userLocation.lat, userLocation.lng];
-      const endPoint: [number, number] = [
-        selectedMarkerSalon.coordinates.lat,
-        selectedMarkerSalon.coordinates.lng,
-      ];
+
+      const routePoints: [number, number][] = (drivingRoute && drivingRoute.coordinates.length > 0)
+        ? drivingRoute.coordinates
+        : [startPoint, destPoint];
 
       // White outline casing for crisp contrast on any map background
-      L.polyline([startPoint, endPoint], {
+      L.polyline(routePoints, {
         color: '#FFFFFF',
-        weight: 6,
-        opacity: 0.9,
+        weight: 7,
+        opacity: 0.95,
         lineCap: 'round',
         lineJoin: 'round',
       }).addTo(layer);
 
-      // Main dashed animated polyline in primary brand color
-      L.polyline([startPoint, endPoint], {
+      // Main driving route in primary brand color along actual streets
+      L.polyline(routePoints, {
         color: primaryHex,
-        weight: 3.5,
+        weight: 4.5,
         opacity: 0.95,
-        dashArray: '8, 8',
         lineCap: 'round',
         lineJoin: 'round',
         className: 'animated-route-line',
       }).addTo(layer);
 
-      // Midpoint distance pill badge
-      const distKm = calculateHaversineDistance(
+      // Midpoint distance and duration pill badge
+      const distFormatted = drivingRoute?.distanceFormatted || `${calculateHaversineDistance(
         userLocation.lat,
         userLocation.lng,
-        selectedMarkerSalon.coordinates.lat,
-        selectedMarkerSalon.coordinates.lng,
-      );
-      const distFormatted = distKm < 1 ? `${Math.round(distKm * 1000)} m` : `${distKm.toFixed(1)} km`;
-      const estMins = Math.max(1, Math.round(distKm * 3));
-      const midLat = (userLocation.lat + selectedMarkerSalon.coordinates.lat) / 2;
-      const midLng = (userLocation.lng + selectedMarkerSalon.coordinates.lng) / 2;
+        destPoint[0],
+        destPoint[1],
+      ).toFixed(1)} km`;
+
+      const estMins = drivingRoute?.durationMinutes || Math.max(1, Math.round(Number(distFormatted.replace(/[^0-9.]/g, '')) * 3));
+      const midIdx = Math.floor(routePoints.length / 2);
+      const [midLat, midLng] = routePoints[midIdx] || [
+        (userLocation.lat + destPoint[0]) / 2,
+        (userLocation.lng + destPoint[1]) / 2,
+      ];
 
       const midpointHtml = `
         <div style="
@@ -451,12 +497,9 @@ export const MapScreen: React.FC = () => {
           pointer-events: none;
           transform: translate(-50%, -50%);
         ">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="${primaryHex}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="5" y1="12" x2="19" y2="12"></line>
-            <polyline points="12 5 19 12 12 19"></polyline>
-          </svg>
+          <span style="color: ${primaryHex};">🚗</span>
           <span>${distFormatted}</span>
-          <span style="color: #A1A1AA; font-size: 9px; font-weight: 600;">(~${estMins}m)</span>
+          <span style="color: #A1A1AA; font-size: 9px; font-weight: 600;">(~${estMins}m drive)</span>
         </div>
       `;
 
@@ -473,11 +516,14 @@ export const MapScreen: React.FC = () => {
         interactive: false,
       }).addTo(layer);
 
-      // Frame map view to fit both user and destination studio on initial load
-      if (!hasInitialFittedRef.current && leafletMapRef.current) {
+      // Frame map view to fit road route on load or when selected studio changes
+      if (leafletMapRef.current && (!hasInitialFittedRef.current || drivingRoute)) {
         hasInitialFittedRef.current = true;
         try {
-          leafletMapRef.current.fitBounds([startPoint, endPoint], {
+          const fitCoords = routePoints.length > 20
+            ? routePoints.filter((_, idx) => idx % 4 === 0 || idx === routePoints.length - 1)
+            : routePoints;
+          leafletMapRef.current.fitBounds(fitCoords, {
             padding: [60, 60],
             maxZoom: 16,
           });
@@ -541,7 +587,7 @@ export const MapScreen: React.FC = () => {
       });
       marker.addTo(layer);
     });
-  }, [mapEngine, isLeafletLoaded, visibleSalons, selectedMarkerSalon, userLocation, genderFilter]);
+  }, [mapEngine, isLeafletLoaded, visibleSalons, selectedMarkerSalon, userLocation, genderFilter, drivingRoute]);
 
   // Handle Zoom In / Out
   const handleZoom = (delta: number) => {
@@ -813,13 +859,12 @@ export const MapScreen: React.FC = () => {
             <span>
               Distance to <strong className="text-stone-900">{selectedMarkerSalon.name}</strong>:{' '}
               <span className={isWomen ? 'text-[#E11D48]' : 'text-[#FF6422]'}>
-                {calculateHaversineDistance(
+                {drivingRoute ? `${drivingRoute.distanceFormatted} (${drivingRoute.durationFormatted} drive)` : `${calculateHaversineDistance(
                   userLocation.lat,
                   userLocation.lng,
                   selectedMarkerSalon.coordinates.lat,
                   selectedMarkerSalon.coordinates.lng,
-                ).toFixed(1)}{' '}
-                km
+                ).toFixed(1)} km`}
               </span>
             </span>
           </div>
@@ -925,12 +970,14 @@ export const MapScreen: React.FC = () => {
                   <span className="text-stone-300">•</span>
                   <span className="text-stone-600 font-semibold">
                     {userLocation
-                      ? `${calculateHaversineDistance(
-                          userLocation.lat,
-                          userLocation.lng,
-                          selectedMarkerSalon.coordinates.lat,
-                          selectedMarkerSalon.coordinates.lng,
-                        ).toFixed(1)} km away`
+                      ? drivingRoute
+                        ? `${drivingRoute.distanceFormatted} · ${drivingRoute.durationFormatted} drive`
+                        : `${calculateHaversineDistance(
+                            userLocation.lat,
+                            userLocation.lng,
+                            selectedMarkerSalon.coordinates.lat,
+                            selectedMarkerSalon.coordinates.lng,
+                          ).toFixed(1)} km away`
                       : `${selectedMarkerSalon.distanceKm} km`}
                   </span>
                 </div>
