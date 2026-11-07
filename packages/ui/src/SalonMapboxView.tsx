@@ -262,62 +262,123 @@ export const SalonMapboxView: React.FC<SalonMapboxViewProps> = ({
 
     if (userLocation && drivingRoute && drivingRoute.coordinates.length > 0) {
       const routeGroup = L.layerGroup();
+      const isWalking = drivingRoute.travelMode === 'walking';
 
       if (drivingRoute.isRoadRoute && drivingRoute.roadCoordinates.length > 0) {
-        // 1. Off-road displacement from user -> road entrance (if user is off-road)
-        if (drivingRoute.userDisplacement && drivingRoute.userDisplacement.length > 1) {
-          L.polyline(drivingRoute.userDisplacement, {
-            color: '#FF6422',
-            weight: 3.5,
-            dashArray: '5, 7',
-            opacity: 0.9,
+        if (isWalking) {
+          // Walking Mode (Google Maps style as in Image 2)
+          // 1. Dotted walking connector from user/building to pathway (if applicable)
+          if (drivingRoute.userDisplacement && drivingRoute.userDisplacement.length > 1) {
+            L.polyline(drivingRoute.userDisplacement, {
+              color: '#6366F1',
+              weight: 4,
+              dashArray: '2, 8',
+              opacity: 0.85,
+              lineCap: 'round',
+            }).addTo(routeGroup);
+          }
+
+          // 2. Main walking route along campus walkway / footpath (crisp purple circular dots)
+          L.polyline(drivingRoute.roadCoordinates, {
+            color: '#4338CA',
+            weight: 6,
+            dashArray: '2, 10',
+            opacity: 0.95,
             lineCap: 'round',
           }).addTo(routeGroup);
-        }
 
-        // 2. Road route along actual streets (white casing + solid orange route)
-        L.polyline(drivingRoute.roadCoordinates, {
-          color: '#FFFFFF',
-          weight: 7,
-          opacity: 0.95,
-          lineCap: 'round',
-          lineJoin: 'round',
-        }).addTo(routeGroup);
+          // 3. Dotted walking connector from pathway to destination building (if applicable)
+          if (drivingRoute.shopDisplacement && drivingRoute.shopDisplacement.length > 1) {
+            L.polyline(drivingRoute.shopDisplacement, {
+              color: '#6366F1',
+              weight: 4,
+              dashArray: '2, 8',
+              opacity: 0.85,
+              lineCap: 'round',
+            }).addTo(routeGroup);
+          }
+        } else {
+          // Driving Mode (Via Road)
+          // 1. Off-road displacement from user -> road entrance
+          if (drivingRoute.userDisplacement && drivingRoute.userDisplacement.length > 1) {
+            L.polyline(drivingRoute.userDisplacement, {
+              color: '#FF6422',
+              weight: 3.5,
+              dashArray: '5, 7',
+              opacity: 0.9,
+              lineCap: 'round',
+            }).addTo(routeGroup);
+          }
 
-        L.polyline(drivingRoute.roadCoordinates, {
-          color: '#FF6422',
-          weight: 4.5,
-          opacity: 0.95,
-          lineCap: 'round',
-          lineJoin: 'round',
-        }).addTo(routeGroup);
-
-        // 3. Off-road displacement from road exit -> shop pin (if shop is set back)
-        if (drivingRoute.shopDisplacement && drivingRoute.shopDisplacement.length > 1) {
-          L.polyline(drivingRoute.shopDisplacement, {
-            color: '#FF6422',
-            weight: 3.5,
-            dashArray: '5, 7',
-            opacity: 0.9,
+          // 2. Road route along actual streets (white casing + solid orange route)
+          L.polyline(drivingRoute.roadCoordinates, {
+            color: '#FFFFFF',
+            weight: 7,
+            opacity: 0.95,
             lineCap: 'round',
+            lineJoin: 'round',
           }).addTo(routeGroup);
+
+          L.polyline(drivingRoute.roadCoordinates, {
+            color: '#FF6422',
+            weight: 4.5,
+            opacity: 0.95,
+            lineCap: 'round',
+            lineJoin: 'round',
+          }).addTo(routeGroup);
+
+          // 3. Off-road displacement from road exit -> shop pin
+          if (drivingRoute.shopDisplacement && drivingRoute.shopDisplacement.length > 1) {
+            L.polyline(drivingRoute.shopDisplacement, {
+              color: '#FF6422',
+              weight: 3.5,
+              dashArray: '5, 7',
+              opacity: 0.9,
+              lineCap: 'round',
+            }).addTo(routeGroup);
+          }
         }
       } else {
-        // Direct displacement fallback when no road exists on map
+        // Direct displacement fallback when no road/path exists on map
         L.polyline(drivingRoute.coordinates, {
-          color: '#FF6422',
-          weight: 3.5,
-          dashArray: '8, 8',
+          color: isWalking ? '#4338CA' : '#FF6422',
+          weight: 4,
+          dashArray: '3, 8',
           opacity: 0.95,
           lineCap: 'round',
         }).addTo(routeGroup);
       }
 
-      // Route midpoint driving distance pill
+      // Route midpoint distance/duration badge matching Google Maps
       const midIdx = Math.floor(drivingRoute.coordinates.length / 2);
       const [midLat, midLng] = drivingRoute.coordinates[midIdx] || [(userLocation.lat + lat) / 2, (userLocation.lng + lng) / 2];
 
-      const midHtml = `
+      const midHtml = isWalking ? `
+        <div style="
+          display: inline-flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          background: #1D4ED8;
+          color: #FFFFFF;
+          padding: 3px 8px;
+          border-radius: 6px;
+          border: 1.5px solid #FFFFFF;
+          box-shadow: 0 4px 14px rgba(29, 78, 216, 0.45);
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+          white-space: nowrap;
+          pointer-events: none;
+          transform: translate(-50%, -50%);
+        ">
+          <div style="display: flex; align-items: center; gap: 3px; font-size: 11px; font-weight: 800; line-height: 1.2;">
+            <span>🚶</span>
+            <span>${drivingRoute.durationFormatted}</span>
+          </div>
+          <div style="font-size: 9px; font-weight: 700; opacity: 0.95; line-height: 1.2;">
+            ${drivingRoute.distanceFormatted}
+          </div>
+        </div>
+      ` : `
         <div style="
           display: inline-flex;
           align-items: center;
@@ -344,8 +405,8 @@ export const SalonMapboxView: React.FC<SalonMapboxViewProps> = ({
       const midIcon = L.divIcon({
         className: 'route-dist-pill',
         html: midHtml,
-        iconSize: [110, 24],
-        iconAnchor: [55, 12],
+        iconSize: isWalking ? [70, 32] : [110, 24],
+        iconAnchor: isWalking ? [35, 16] : [55, 12],
       });
 
       L.marker([midLat, midLng], { icon: midIcon, interactive: false }).addTo(routeGroup);
@@ -422,7 +483,7 @@ export const SalonMapboxView: React.FC<SalonMapboxViewProps> = ({
           <span>{salon.name}</span>
           {drivingRoute && (
             <span className="text-[#FF6422] font-black border-l border-stone-200 pl-1.5 flex items-center gap-1">
-              <Car className="w-3 h-3" />
+              <span>{drivingRoute.travelMode === 'walking' ? '🚶' : '🚗'}</span>
               <span>{drivingRoute.distanceFormatted} ({drivingRoute.durationFormatted})</span>
             </span>
           )}

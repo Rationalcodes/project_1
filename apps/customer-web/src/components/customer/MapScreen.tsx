@@ -319,49 +319,92 @@ export const MapScreen: React.FC = () => {
       const sLng = selectedMarkerSalon.coordinates?.lng ?? (selectedMarkerSalon as any)?.longitude;
       const destCoords = { lat: Number(sLat) || 12.9716, lng: Number(sLng) || 77.5946 };
 
+      const isWalking = drivingRoute?.travelMode === 'walking';
+
       if (drivingRoute?.isRoadRoute && drivingRoute.roadCoordinates.length > 0) {
-        // 1. Off-road displacement from user -> road start (dashed connector line)
-        if (drivingRoute.userDisplacement && drivingRoute.userDisplacement.length > 1) {
-          googleUserDispRef.current = new gmaps.Polyline({
-            path: drivingRoute.userDisplacement.map(([lat, lng]) => ({ lat, lng })),
+        if (isWalking) {
+          // Google Maps Walking Polyline: Crisp Circular Dots
+          if (drivingRoute.userDisplacement && drivingRoute.userDisplacement.length > 1) {
+            googleUserDispRef.current = new gmaps.Polyline({
+              path: drivingRoute.userDisplacement.map(([lat, lng]) => ({ lat, lng })),
+              geodesic: true,
+              strokeOpacity: 0,
+              icons: [{
+                icon: { path: gmaps.SymbolPath.CIRCLE, scale: 2.5, fillOpacity: 0.8, fillColor: '#6366F1', strokeColor: '#6366F1' },
+                offset: '0',
+                repeat: '8px',
+              }],
+              map: googleMapRef.current,
+            });
+          }
+
+          googlePolylineRef.current = new gmaps.Polyline({
+            path: drivingRoute.roadCoordinates.map(([lat, lng]) => ({ lat, lng })),
             geodesic: true,
-            strokeColor: primaryHex,
-            strokeOpacity: 0.8,
-            strokeWeight: 3.5,
+            strokeOpacity: 0,
             icons: [{
-              icon: { path: 'M 0,-1 0,1', strokeOpacity: 1, scale: 2 },
+              icon: { path: gmaps.SymbolPath.CIRCLE, scale: 4.5, fillOpacity: 1, fillColor: '#4338CA', strokeColor: '#4338CA' },
               offset: '0',
-              repeat: '8px',
+              repeat: '12px',
             }],
             map: googleMapRef.current,
           });
-        }
 
-        // 2. Road route along actual streets (solid travel line)
-        googlePolylineRef.current = new gmaps.Polyline({
-          path: drivingRoute.roadCoordinates.map(([lat, lng]) => ({ lat, lng })),
-          geodesic: true,
-          strokeColor: primaryHex,
-          strokeOpacity: 0.95,
-          strokeWeight: 5,
-          map: googleMapRef.current,
-        });
+          if (drivingRoute.shopDisplacement && drivingRoute.shopDisplacement.length > 1) {
+            googleShopDispRef.current = new gmaps.Polyline({
+              path: drivingRoute.shopDisplacement.map(([lat, lng]) => ({ lat, lng })),
+              geodesic: true,
+              strokeOpacity: 0,
+              icons: [{
+                icon: { path: gmaps.SymbolPath.CIRCLE, scale: 2.5, fillOpacity: 0.8, fillColor: '#6366F1', strokeColor: '#6366F1' },
+                offset: '0',
+                repeat: '8px',
+              }],
+              map: googleMapRef.current,
+            });
+          }
+        } else {
+          // Driving Mode: Solid Travel Line
+          if (drivingRoute.userDisplacement && drivingRoute.userDisplacement.length > 1) {
+            googleUserDispRef.current = new gmaps.Polyline({
+              path: drivingRoute.userDisplacement.map(([lat, lng]) => ({ lat, lng })),
+              geodesic: true,
+              strokeColor: primaryHex,
+              strokeOpacity: 0.8,
+              strokeWeight: 3.5,
+              icons: [{
+                icon: { path: 'M 0,-1 0,1', strokeOpacity: 1, scale: 2 },
+                offset: '0',
+                repeat: '8px',
+              }],
+              map: googleMapRef.current,
+            });
+          }
 
-        // 3. Off-road displacement from road exit -> shop pin (dashed connector line)
-        if (drivingRoute.shopDisplacement && drivingRoute.shopDisplacement.length > 1) {
-          googleShopDispRef.current = new gmaps.Polyline({
-            path: drivingRoute.shopDisplacement.map(([lat, lng]) => ({ lat, lng })),
+          googlePolylineRef.current = new gmaps.Polyline({
+            path: drivingRoute.roadCoordinates.map(([lat, lng]) => ({ lat, lng })),
             geodesic: true,
             strokeColor: primaryHex,
-            strokeOpacity: 0.8,
-            strokeWeight: 3.5,
-            icons: [{
-              icon: { path: 'M 0,-1 0,1', strokeOpacity: 1, scale: 2 },
-              offset: '0',
-              repeat: '8px',
-            }],
+            strokeOpacity: 0.95,
+            strokeWeight: 5,
             map: googleMapRef.current,
           });
+
+          if (drivingRoute.shopDisplacement && drivingRoute.shopDisplacement.length > 1) {
+            googleShopDispRef.current = new gmaps.Polyline({
+              path: drivingRoute.shopDisplacement.map(([lat, lng]) => ({ lat, lng })),
+              geodesic: true,
+              strokeColor: primaryHex,
+              strokeOpacity: 0.8,
+              strokeWeight: 3.5,
+              icons: [{
+                icon: { path: 'M 0,-1 0,1', strokeOpacity: 1, scale: 2 },
+                offset: '0',
+                repeat: '8px',
+              }],
+              map: googleMapRef.current,
+            });
+          }
         }
       } else {
         // Direct displacement fallback when no road exists on map
@@ -371,7 +414,7 @@ export const MapScreen: React.FC = () => {
             destCoords,
           ],
           geodesic: true,
-          strokeColor: primaryHex,
+          strokeColor: isWalking ? '#4338CA' : primaryHex,
           strokeOpacity: 0.9,
           strokeWeight: 4,
           map: googleMapRef.current,
@@ -397,12 +440,16 @@ export const MapScreen: React.FC = () => {
         lng: (userLocation.lng + destCoords.lng) / 2,
       };
 
+      const labelText = isWalking
+        ? `🚶 ${drivingRoute?.durationFormatted || '2 min'} (${distFormatted})`
+        : `🚗 ${distFormatted}${durText}`;
+
       googleMidpointMarkerRef.current = new gmaps.Marker({
         position: midPoint,
         map: googleMapRef.current,
         label: {
-          text: `🚗 ${distFormatted}${durText}`,
-          color: '#1F1F1F',
+          text: labelText,
+          color: '#FFFFFF',
           fontSize: '11px',
           fontWeight: '800',
           className: 'google-maps-label',
@@ -502,52 +549,89 @@ export const MapScreen: React.FC = () => {
         ? drivingRoute.coordinates
         : [startPoint, destPoint];
 
+      const isWalking = drivingRoute?.travelMode === 'walking';
+
       if (drivingRoute?.isRoadRoute && drivingRoute.roadCoordinates.length > 0) {
-        // 1. Off-road displacement from user -> road network entry (dashed connector)
-        if (drivingRoute.userDisplacement && drivingRoute.userDisplacement.length > 1) {
-          L.polyline(drivingRoute.userDisplacement, {
-            color: primaryHex,
-            weight: 3.5,
-            dashArray: '5, 7',
-            opacity: 0.9,
+        if (isWalking) {
+          // Walking Mode (Google Maps style as in Image 2)
+          // 1. Dotted walking connector from user/building to pathway (if applicable)
+          if (drivingRoute.userDisplacement && drivingRoute.userDisplacement.length > 1) {
+            L.polyline(drivingRoute.userDisplacement, {
+              color: '#6366F1',
+              weight: 4,
+              dashArray: '2, 8',
+              opacity: 0.85,
+              lineCap: 'round',
+            }).addTo(layer);
+          }
+
+          // 2. Main walking route along campus walkway / footpath (crisp purple circular dots)
+          L.polyline(drivingRoute.roadCoordinates, {
+            color: '#4338CA',
+            weight: 6,
+            dashArray: '2, 10',
+            opacity: 0.95,
             lineCap: 'round',
           }).addTo(layer);
-        }
 
-        // 2. Road route along actual streets (white casing + solid brand color route)
-        L.polyline(drivingRoute.roadCoordinates, {
-          color: '#FFFFFF',
-          weight: 7,
-          opacity: 0.95,
-          lineCap: 'round',
-          lineJoin: 'round',
-        }).addTo(layer);
+          // 3. Dotted walking connector from pathway to destination building (if applicable)
+          if (drivingRoute.shopDisplacement && drivingRoute.shopDisplacement.length > 1) {
+            L.polyline(drivingRoute.shopDisplacement, {
+              color: '#6366F1',
+              weight: 4,
+              dashArray: '2, 8',
+              opacity: 0.85,
+              lineCap: 'round',
+            }).addTo(layer);
+          }
+        } else {
+          // Driving Mode (Road travel)
+          // 1. Off-road displacement from user -> road network entry (dashed connector)
+          if (drivingRoute.userDisplacement && drivingRoute.userDisplacement.length > 1) {
+            L.polyline(drivingRoute.userDisplacement, {
+              color: primaryHex,
+              weight: 3.5,
+              dashArray: '5, 7',
+              opacity: 0.9,
+              lineCap: 'round',
+            }).addTo(layer);
+          }
 
-        L.polyline(drivingRoute.roadCoordinates, {
-          color: primaryHex,
-          weight: 4.5,
-          opacity: 0.95,
-          lineCap: 'round',
-          lineJoin: 'round',
-          className: 'animated-route-line',
-        }).addTo(layer);
-
-        // 3. Off-road displacement from road exit -> shop pin (dashed connector)
-        if (drivingRoute.shopDisplacement && drivingRoute.shopDisplacement.length > 1) {
-          L.polyline(drivingRoute.shopDisplacement, {
-            color: primaryHex,
-            weight: 3.5,
-            dashArray: '5, 7',
-            opacity: 0.9,
+          // 2. Road route along actual streets (white casing + solid brand color route)
+          L.polyline(drivingRoute.roadCoordinates, {
+            color: '#FFFFFF',
+            weight: 7,
+            opacity: 0.95,
             lineCap: 'round',
+            lineJoin: 'round',
           }).addTo(layer);
+
+          L.polyline(drivingRoute.roadCoordinates, {
+            color: primaryHex,
+            weight: 4.5,
+            opacity: 0.95,
+            lineCap: 'round',
+            lineJoin: 'round',
+            className: 'animated-route-line',
+          }).addTo(layer);
+
+          // 3. Off-road displacement from road exit -> shop pin (dashed connector)
+          if (drivingRoute.shopDisplacement && drivingRoute.shopDisplacement.length > 1) {
+            L.polyline(drivingRoute.shopDisplacement, {
+              color: primaryHex,
+              weight: 3.5,
+              dashArray: '5, 7',
+              opacity: 0.9,
+              lineCap: 'round',
+            }).addTo(layer);
+          }
         }
       } else {
         // Direct displacement fallback when no road exists on map
         L.polyline(routePoints, {
-          color: primaryHex,
-          weight: 3.5,
-          dashArray: '8, 8',
+          color: isWalking ? '#4338CA' : primaryHex,
+          weight: 4,
+          dashArray: '3, 8',
           opacity: 0.95,
           lineCap: 'round',
         }).addTo(layer);
@@ -568,7 +652,32 @@ export const MapScreen: React.FC = () => {
         (userLocation.lng + destPoint[1]) / 2,
       ];
 
-      const midpointHtml = `
+      const midpointHtml = isWalking ? `
+        <div style="
+          display: inline-flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          background: #1D4ED8;
+          color: #FFFFFF;
+          padding: 3px 8px;
+          border-radius: 6px;
+          border: 1.5px solid #FFFFFF;
+          box-shadow: 0 4px 14px rgba(29, 78, 216, 0.45);
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+          white-space: nowrap;
+          pointer-events: none;
+          transform: translate(-50%, -50%);
+        ">
+          <div style="display: flex; align-items: center; gap: 3px; font-size: 11px; font-weight: 800; line-height: 1.2;">
+            <span>🚶</span>
+            <span>${drivingRoute?.durationFormatted || `${estMins} min`}</span>
+          </div>
+          <div style="font-size: 9px; font-weight: 700; opacity: 0.95; line-height: 1.2;">
+            ${distFormatted}
+          </div>
+        </div>
+      ` : `
         <div style="
           display: inline-flex;
           align-items: center;
@@ -948,7 +1057,7 @@ export const MapScreen: React.FC = () => {
             <span>
               Distance to <strong className="text-stone-900">{selectedMarkerSalon.name}</strong>:{' '}
               <span className={isWomen ? 'text-[#E11D48]' : 'text-[#FF6422]'}>
-                {drivingRoute ? `${drivingRoute.distanceFormatted} (${drivingRoute.durationFormatted} drive)` : `${calculateHaversineDistance(
+                {drivingRoute ? `${drivingRoute.distanceFormatted} (${drivingRoute.durationFormatted} ${drivingRoute.travelMode === 'walking' ? 'walk' : 'drive'})` : `${calculateHaversineDistance(
                   userLocation.lat,
                   userLocation.lng,
                   selectedMarkerSalon.coordinates.lat,
@@ -1060,7 +1169,7 @@ export const MapScreen: React.FC = () => {
                   <span className="text-stone-600 font-semibold">
                     {userLocation
                       ? drivingRoute
-                        ? `${drivingRoute.distanceFormatted} · ${drivingRoute.durationFormatted} drive`
+                        ? `${drivingRoute.distanceFormatted} · ${drivingRoute.durationFormatted} ${drivingRoute.travelMode === 'walking' ? 'walk' : 'drive'}`
                         : `${calculateHaversineDistance(
                             userLocation.lat,
                             userLocation.lng,
