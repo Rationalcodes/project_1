@@ -72,15 +72,44 @@
 
 /* ==============================================================================
  * Clean Google Translate Integration Styling
- * Hides default top banner frame and tooltips so the app stays 100% native
+ * Hides default top banner frame, floating circular badge, tooltips, and spinners
+ * so the app stays 100% clean and native
  * ============================================================================== */
 .goog-te-banner-frame.skiptranslate,
 .goog-te-banner-frame,
-iframe.goog-te-banner-frame {
+iframe.goog-te-banner-frame,
+iframe.skiptranslate,
+div.skiptranslate:not(:has(.goog-te-combo)) {
   display: none !important;
   visibility: hidden !important;
   height: 0 !important;
+  width: 0 !important;
   opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+/* Hide Google Translate new floating circular widget & spinning bubble */
+div[class*="VIpgJd"],
+div[class*="VIpgJd-ZVi9od"],
+.VIpgJd-ZVi9od-aZ2wEe-wOHMyf,
+.VIpgJd-ZVi9od-aZ2wEe-OiiCO,
+.VIpgJd-ZVi9od-aZ2wEe,
+.VIpgJd-yAWNEb-hvhgNd,
+.VIpgJd-yAWNEb-L7lbkb,
+.VIpgJd-ZVi9od-ORHb-OiiCO,
+.goog-te-spinner-pos,
+.goog-te-spinner,
+.goog-te-gadget-icon,
+.goog-logo-link {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  position: absolute !important;
+  top: -9999px !important;
+  left: -9999px !important;
 }
 
 body {
@@ -96,10 +125,6 @@ body {
 .goog-text-highlight {
   background: none !important;
   box-shadow: none !important;
-}
-
-.skiptranslate:not(.goog-te-combo) {
-  display: none !important;
 }
 
 #google_translate_element {
