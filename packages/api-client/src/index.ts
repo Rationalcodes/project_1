@@ -1,4 +1,4 @@
-import { Salon, SalonRegistrationInput } from '@kumbhakaran/shared-types';
+import { Salon, SalonRegistrationInput, HomeBanner } from '@kumbhakaran/shared-types';
 
 export interface NearbySalonsApiResponse {
   totalFound: number;
@@ -899,6 +899,36 @@ export class KumbhakaranApiClient {
       throw new Error(err.message || `Salon deletion failed with status ${res.status}`);
     }
     return await res.json();
+  }
+
+  /**
+   * Home Banners and Promotional Posters
+   */
+  async getBanners(): Promise<HomeBanner[]> {
+    try {
+      const res = await fetch(`${this.baseUrl}/banners`, {
+        headers: this.getHeaders({ Accept: 'application/json' }),
+      });
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch (err) {
+      console.warn('Failed to fetch banners from backend API:', err);
+    }
+    return [];
+  }
+
+  async saveBanners(banners: HomeBanner[]): Promise<boolean> {
+    const res = await fetch(`${this.baseUrl}/admin/salons/banners`, {
+      method: 'POST',
+      headers: this.getHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({ banners }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || 'Failed to save banners on backend');
+    }
+    return true;
   }
 
   /**

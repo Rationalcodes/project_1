@@ -55,6 +55,16 @@ const AdminContext = createContext<AdminContextType | undefined>(undefined);
 export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [salons, setSalons] = useState<Salon[]>(INITIAL_SALONS);
   const [banners, setBanners] = useState<HomeBanner[]>(getInitialBanners);
+
+  // Sync banners from backend database on load
+  useEffect(() => {
+    defaultApiClient.getBanners().then((fetched) => {
+      if (Array.isArray(fetched) && fetched.length > 0) {
+        setBanners(fetched);
+        safeStorage.setItem(BANNER_STORAGE_KEY, JSON.stringify(fetched));
+      }
+    }).catch(() => {});
+  }, []);
   const [adminTab, setAdminTabState] = useState<AdminTab>(() => {
     try {
       const saved = safeStorage.getItem('kumbhakaran_admin_tab') as AdminTab;
@@ -331,22 +341,32 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     });
   };
 
-  const saveBanners = (newBanners: HomeBanner[]) => {
+  const saveBanners = async (newBanners: HomeBanner[]) => {
     setBanners(newBanners);
     safeStorage.setItem(BANNER_STORAGE_KEY, JSON.stringify(newBanners));
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('sloon_banners_updated', { detail: newBanners }));
     }
-    triggerNotification('Home banners & posters updated successfully!');
+    try {
+      await defaultApiClient.saveBanners(newBanners);
+      triggerNotification('Home banners & posters saved to database & live on customer UI!');
+    } catch (err: any) {
+      triggerNotification('Banners saved locally: ' + (err.message || 'saved'));
+    }
   };
 
-  const resetBanners = () => {
+  const resetBanners = async () => {
     setBanners(DEFAULT_HOME_BANNERS);
     safeStorage.setItem(BANNER_STORAGE_KEY, JSON.stringify(DEFAULT_HOME_BANNERS));
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('sloon_banners_updated', { detail: DEFAULT_HOME_BANNERS }));
     }
-    triggerNotification('Reset to 4 blank poster spaces.');
+    try {
+      await defaultApiClient.saveBanners(DEFAULT_HOME_BANNERS);
+      triggerNotification('Reset to 4 blank poster spaces on database.');
+    } catch {
+      triggerNotification('Reset to 4 blank poster spaces.');
+    }
   };
 
   return (

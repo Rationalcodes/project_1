@@ -1,5 +1,6 @@
 import { Module, forwardRef } from '@nestjs/common';
 import { SalonsController } from './salons.controller';
+import { BannersController } from './banners.controller';
 import { SalonsService } from './salons.service';
 import { QueueEngineService } from './queue-engine.service';
 import { QueueGateway } from './queue.gateway';
@@ -8,7 +9,7 @@ import { DiscoveryModule } from '../discovery/discovery.module';
 
 @Module({
   imports: [forwardRef(() => DiscoveryModule)],
-  controllers: [SalonsController],
+  controllers: [SalonsController, BannersController],
   providers: [SalonsService, QueueEngineService, QueueGateway, SalonOwnerGuard],
   exports: [SalonsService, QueueEngineService, QueueGateway],
 })

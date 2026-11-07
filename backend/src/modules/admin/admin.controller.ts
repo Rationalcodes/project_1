@@ -1,6 +1,7 @@
 import {
   Controller,
   Get,
+  Post,
   Patch,
   Delete,
   Param,
@@ -100,5 +101,22 @@ export class AdminSalonsController {
     @CurrentUser() adminUser: AuthenticatedUser,
   ) {
     return this.salonsService.deleteSalon(id, dto.confirmSalonName, adminUser);
+  }
+
+  @Get('banners')
+  @ApiOperation({ summary: 'List current home banners (Admin Only)' })
+  @ApiResponse({ status: 200, description: 'List of home banners' })
+  async getBanners() {
+    return this.salonsService.getBanners();
+  }
+
+  @Post('banners')
+  @ApiOperation({ summary: 'Save updated home banners and posters (Admin Only)' })
+  @ApiResponse({ status: 200, description: 'Banners updated successfully' })
+  async updateBanners(
+    @Body() body: { banners: any[] },
+    @CurrentUser() adminUser: AuthenticatedUser,
+  ) {
+    return this.salonsService.saveBanners(body.banners || [], adminUser);
   }
 }

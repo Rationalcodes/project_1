@@ -3110,4 +3110,56 @@ export class SalonsService {
 
     return { report: null, history: [] };
   }
+
+  /**
+   * Retrieves active home banners and promotional posters
+   */
+  async getBanners(): Promise<any[]> {
+    try {
+      const latest = await this.prisma.adminAuditLog.findFirst({
+        where: { targetType: 'SYSTEM_BANNERS', action: 'UPDATE_BANNERS' },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      if (latest && latest.details && Array.isArray((latest.details as any).banners)) {
+        return (latest.details as any).banners;
+      }
+    } catch (err) {
+      this.logger.error('Failed to retrieve banners from database:', err);
+    }
+
+    // Default 4 blank poster slots
+    return [
+      { id: 'slot-1', slot: 1, imageUrl: '', title: '', subtitle: '', targetUrl: '', isActive: true },
+      { id: 'slot-2', slot: 2, imageUrl: '', title: '', subtitle: '', targetUrl: '', isActive: true },
+      { id: 'slot-3', slot: 3, imageUrl: '', title: '', subtitle: '', targetUrl: '', isActive: true },
+      { id: 'slot-4', slot: 4, imageUrl: '', title: '', subtitle: '', targetUrl: '', isActive: true },
+    ];
+  }
+
+  /**
+   * Saves updated home banners & posters with audit logging
+   */
+  async saveBanners(banners: any[], actor: AuthenticatedUser): Promise<{ success: boolean; banners: any[] }> {
+    try {
+      await this.prisma.adminAuditLog.create({
+        data: {
+          id: `audit-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+          actorId: actor?.id || 'admin',
+          actorEmail: actor?.email || 'admin@sloon.in',
+          action: 'UPDATE_BANNERS',
+          targetType: 'SYSTEM_BANNERS',
+          targetId: 'home_banners',
+          targetName: 'Home Banners & Posters',
+          details: { banners },
+        },
+      });
+
+      this.logger.log(`[AUDIT] System banners updated by Admin ${actor?.email || 'unknown'} (${banners.length} banners)`);
+      return { success: true, banners };
+    } catch (err) {
+      this.logger.error('Failed to persist banners:', err);
+      throw err;
+    }
+  }
 }

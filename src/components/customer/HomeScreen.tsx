@@ -25,6 +25,7 @@ import { useSalon, getEstimatedWaitMinutes, getQueueDisplay, getQueueFreshness, 
 import { LazyModeSelector } from '../common/LazyModeSelector';
 import { Salon } from '../../types';
 import { HomeBanner, DEFAULT_HOME_BANNERS } from '@kumbhakaran/shared-types';
+import { defaultApiClient } from '@kumbhakaran/api-client';
 
 export const HomeScreen: React.FC = () => {
   const {
@@ -63,6 +64,17 @@ export const HomeScreen: React.FC = () => {
   });
 
   useEffect(() => {
+    // 1. Fetch live banners from backend database
+    defaultApiClient.getBanners().then((fetched) => {
+      if (Array.isArray(fetched) && fetched.length > 0) {
+        setHomeBanners(fetched);
+        try {
+          localStorage.setItem(BANNER_STORAGE_KEY, JSON.stringify(fetched));
+        } catch {}
+      }
+    }).catch(() => {});
+
+    // 2. Listen to local/tab update events
     const handleUpdate = (e: any) => {
       if (e.detail && Array.isArray(e.detail)) setHomeBanners(e.detail);
     };
