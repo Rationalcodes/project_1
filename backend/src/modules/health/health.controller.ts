@@ -7,6 +7,27 @@ import { HealthService, SystemHealthResponse } from './health.service';
 export class HealthController {
   constructor(private readonly healthService: HealthService) {}
 
+  @Get('live')
+  @ApiOperation({
+    summary: 'Process liveness probe',
+    description: 'Returns 200 OK without database queries. Used by cloud orchestrators and Render health monitors.',
+  })
+  @ApiResponse({ status: 200, description: 'Service process is running' })
+  getLiveness() {
+    return this.healthService.checkLiveness();
+  }
+
+  @Get('ready')
+  @ApiOperation({
+    summary: 'Service readiness probe',
+    description: 'Performs a lightweight SELECT 1 database ping to verify database connection pool readiness.',
+  })
+  @ApiResponse({ status: 200, description: 'Service and database are ready' })
+  @ApiResponse({ status: 503, description: 'Database is not ready' })
+  async getReadiness() {
+    return this.healthService.checkReadiness();
+  }
+
   @Get()
   @ApiOperation({
     summary: 'System and database health check',

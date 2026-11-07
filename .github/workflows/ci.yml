@@ -1,0 +1,52 @@
+name: Sloon CI Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  validate:
+    name: Build & Verify Platform Integrity
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout Codebase
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma Client
+        run: pnpm --filter @kumbhakaran/backend run prisma:generate
+
+      - name: Build NestJS + Fastify Backend
+        run: pnpm run build:backend
+
+      - name: Build Monorepo (Vite Frontend Apps & Bundles)
+        run: pnpm run build
+
+      - name: Execute Phase 3 Realtime & Multi-Tenant Event Isolation Tests
+        run: pnpm --filter @kumbhakaran/backend exec ts-node src/scripts/test-phase3-realtime.ts
+
+      - name: Execute Queue Concurrency, Locking & Idempotency Tests
+        run: pnpm --filter @kumbhakaran/backend exec ts-node src/scripts/test-queue-entry-create.ts
+
+      - name: Execute Phase 4 Frontend Caching & Request Coalescing Tests
+        run: npx tsx scripts/test-phase4-frontend.ts
+
+      - name: Execute Phase 5 Backend Architecture, Filtering & Mutex Tests
+        run: pnpm --filter @kumbhakaran/backend exec ts-node src/scripts/test-phase5-backend.ts

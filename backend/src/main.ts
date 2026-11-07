@@ -35,12 +35,23 @@ async function bootstrap() {
     if (
       rawUrl &&
       !rawUrl.startsWith('/api/') &&
-      !rawUrl.startsWith('/health') &&
       !rawUrl.startsWith('/docs') &&
       !rawUrl.startsWith('/favicon')
     ) {
       const destination = `/api/v1${rawUrl.startsWith('/') ? rawUrl : `/${rawUrl}`}`;
       reply.code(307).redirect(destination);
+    }
+  });
+
+  // OWASP Security Headers & Request Correlation ID (Phase 6 Hardening)
+  fastify.addHook('onSend', async (req: any, reply: any) => {
+    reply.header('X-Content-Type-Options', 'nosniff');
+    reply.header('X-Frame-Options', 'SAMEORIGIN');
+    reply.header('X-XSS-Protection', '1; mode=block');
+    reply.header('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+    reply.header('Referrer-Policy', 'strict-origin-when-cross-origin');
+    if (req.id) {
+      reply.header('X-Request-Id', req.id);
     }
   });
 

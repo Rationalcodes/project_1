@@ -169,10 +169,12 @@ async function runAuthSecurityTests() {
   // TEST 5: Cross-Salon Authorization Enforcement (Forbidden on unowned salon)
   // ---------------------------------------------------------------------------
   try {
-    process.stdout.write('[5/6] Testing Multi-Salon Isolation (Customer modifying unowned salon)... ');
+    process.stdout.write('[5/10] Testing Multi-Salon Isolation (Customer modifying unowned salon)... ');
+    const sampleSalon = await prisma.salon.findFirst({ select: { id: true } });
+    const targetSalonId = sampleSalon?.id || 'salon-1793713039749';
     const res = await fastifyInstance.inject({
       method: 'PATCH',
-      url: '/api/v1/salons/salon-1793713039749/queue',
+      url: `/api/v1/salons/${targetSalonId}/queue`,
       headers: {
         authorization: `Bearer ${customerToken}`,
         'content-type': 'application/json',
@@ -363,9 +365,11 @@ async function runAuthSecurityTests() {
     });
     const activeCustToken = JSON.parse(custRes.body).accessToken;
 
+    const sampleSalon = await prisma.salon.findFirst({ select: { id: true } });
+    const targetSalonId = sampleSalon?.id || 'salon-1793713039749';
     const res = await fastifyInstance.inject({
       method: 'PATCH',
-      url: '/api/v1/salons/salon-1793713039749',
+      url: `/api/v1/salons/${targetSalonId}`,
       headers: {
         authorization: `Bearer ${activeCustToken}`,
         'content-type': 'application/json',
@@ -405,9 +409,11 @@ async function runAuthSecurityTests() {
     });
     const partnerToken = JSON.parse(partnerLoginRes.body).accessToken;
 
+    const sampleSalon = await prisma.salon.findFirst({ select: { id: true } });
+    const targetSalonId = sampleSalon?.id || 'salon-1793713039749';
     const res = await fastifyInstance.inject({
       method: 'PATCH',
-      url: '/api/v1/salons/salon-1793713039749',
+      url: `/api/v1/salons/${targetSalonId}`,
       headers: {
         authorization: `Bearer ${partnerToken}`,
         'content-type': 'application/json',

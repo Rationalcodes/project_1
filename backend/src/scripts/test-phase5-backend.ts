@@ -224,8 +224,28 @@ async function runPhase5Tests() {
     );
   }
 
+  console.log('\n--- Section 6: Health Liveness & Readiness Probes (Phase 6) ---');
+  {
+    const { HealthService } = await import('../modules/health/health.service');
+    const mockPrisma = {
+      $queryRawUnsafe: async (sql: string) => {
+        if (sql.includes('SELECT 1')) return [{ '?column?': 1 }];
+        return [];
+      },
+    } as any;
+
+    const healthService = new HealthService(mockPrisma);
+    const live = healthService.checkLiveness();
+    assert(live.status === 'ok', 'Liveness probe returns status ok');
+    assert(typeof live.uptimeSeconds === 'number', 'Liveness probe includes uptimeSeconds');
+
+    const ready = await healthService.checkReadiness();
+    assert(ready.status === 'ready', 'Readiness probe returns status ready');
+    assert(ready.database === 'connected', 'Readiness probe confirms database connectivity');
+  }
+
   console.log('\n=============================================================');
-  console.log('  PHASE 5: ALL TESTS PASSED SUCCESSFULLY');
+  console.log('  PHASE 5 & 6: ALL TESTS PASSED SUCCESSFULLY');
   console.log('=============================================================');
 }
 

@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 
 export interface DatabaseVerificationResult {
@@ -48,6 +48,34 @@ export class HealthService {
   private readonly startTime = Date.now();
 
   constructor(private readonly prisma: PrismaService) {}
+
+  checkLiveness() {
+    return {
+      status: 'ok',
+      service: 'Kumbhakaran API (NestJS + Fastify)',
+      timestamp: new Date().toISOString(),
+      uptimeSeconds: Math.floor((Date.now() - this.startTime) / 1000),
+      environment: process.env.NODE_ENV || 'development',
+    };
+  }
+
+  async checkReadiness() {
+    try {
+      await this.prisma.$queryRawUnsafe('SELECT 1;');
+      return {
+        status: 'ready',
+        database: 'connected',
+        timestamp: new Date().toISOString(),
+      };
+    } catch (err) {
+      throw new ServiceUnavailableException({
+        status: 'not_ready',
+        database: 'disconnected',
+        error: (err as Error).message,
+        timestamp: new Date().toISOString(),
+      });
+    }
+  }
 
   async checkHealth(): Promise<SystemHealthResponse> {
     const dbVerification = await this.verifyDatabase();

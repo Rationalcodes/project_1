@@ -60,9 +60,10 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       message = process.env.NODE_ENV === 'development' ? exception.message : 'Internal server error';
     }
 
-    // Structured sanitized log
+    // Structured sanitized log with correlation ID
     const sanitizedLog = {
       event: 'http.request.exception',
+      requestId: request.id,
       method: request.method,
       url: request.url,
       statusCode: status,
@@ -84,6 +85,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       error: errorType,
       timestamp: new Date().toISOString(),
       path: request.url,
+      requestId: request.id,
     };
 
     reply.code(status).send(formattedResponse);
