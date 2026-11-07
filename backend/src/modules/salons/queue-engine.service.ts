@@ -231,6 +231,25 @@ export class QueueEngineService implements OnModuleInit, OnModuleDestroy {
   async sweepAllSalonsClosingAndDailyReset(): Promise<void> {
     try {
       const startOfToday = getStartOfTodayIST();
+
+      // 1. Single batch cleanup for ALL yesterday's stale tickets across the platform (Phase 2 Optimization)
+      const staleBatch = await this.prisma.salonQueueEntry.updateMany({
+        where: {
+          status: { in: ['waiting', 'called', 'in_service', 'skipped'] },
+          joinedAt: { lt: startOfToday },
+        },
+        data: {
+          status: 'cancelled',
+          cancelledAt: new Date(),
+          cancellationReason: 'Daily reset: Ticket expired at end of business day',
+        },
+      });
+
+      if (staleBatch.count > 0) {
+        this.logger.log(`[sweepAllSalonsClosingAndDailyReset] Cleaned up ${staleBatch.count} stale tickets from previous business days.`);
+      }
+
+      // 2. Query salons and check closing hours
       const salons = await this.prisma.salon.findMany({
         select: {
           id: true,
@@ -242,41 +261,26 @@ export class QueueEngineService implements OnModuleInit, OnModuleDestroy {
         },
       });
 
-      for (const salon of salons) {
+      // Filter in memory: only closed salons require closing reset verification
+      const closedSalons = salons.filter((s) => {
+        const isManuallyClosed = s.isOpen === false || s.queueStatus === 'closed';
+        const isPastClosingHours = isSalonPastClosingTime(s.openingHoursClose, s.openingHoursOpen);
+        return isManuallyClosed || isPastClosingHours;
+      });
+
+      for (const salon of closedSalons) {
         const isManuallyClosed = salon.isOpen === false || salon.queueStatus === 'closed';
-        const isPastClosingHours = isSalonPastClosingTime(salon.openingHoursClose, salon.openingHoursOpen);
-
-        if (isManuallyClosed || isPastClosingHours) {
-          const activeCount = await this.prisma.salonQueueEntry.count({
-            where: {
-              salonId: salon.id,
-              status: { in: ['waiting', 'called', 'in_service', 'skipped'] },
-            },
-          });
-          if (activeCount > 0) {
-            await this.performSalonClosingQueueReset(
-              salon.id,
-              isManuallyClosed ? 'Shop closed by salon partner' : `Daily reset: Operating hours ended (${salon.openingHoursClose || '09:30 PM'})`,
-            );
-          }
-        } else {
-          // Shop is open, but cancel any leftover tickets from yesterday
-          const staleTickets = await this.prisma.salonQueueEntry.updateMany({
-            where: {
-              salonId: salon.id,
-              status: { in: ['waiting', 'called', 'in_service', 'skipped'] },
-              joinedAt: { lt: startOfToday },
-            },
-            data: {
-              status: 'cancelled',
-              cancelledAt: new Date(),
-              cancellationReason: 'Daily reset: Ticket expired at end of business day',
-            },
-          });
-
-          if (staleTickets.count > 0) {
-            this.logger.log(`[sweepAllSalonsClosingAndDailyReset] Cancelled ${staleTickets.count} leftover tickets from yesterday for salon ${salon.id}`);
-          }
+        const activeCount = await this.prisma.salonQueueEntry.count({
+          where: {
+            salonId: salon.id,
+            status: { in: ['waiting', 'called', 'in_service', 'skipped'] },
+          },
+        });
+        if (activeCount > 0) {
+          await this.performSalonClosingQueueReset(
+            salon.id,
+            isManuallyClosed ? 'Shop closed by salon partner' : `Daily reset: Operating hours ended (${salon.openingHoursClose || '09:30 PM'})`,
+          );
         }
       }
     } catch (err) {
@@ -420,10 +424,10 @@ export class QueueEngineService implements OnModuleInit, OnModuleDestroy {
 
     let staffList = staffRecords;
 
-    // Check if salon has any staff records (active or inactive)
-    const existingStaffCount = await this.prisma.salonStaff.count({
-      where: { salonId },
-    });
+    // Avoid redundant SQL count if active staff already loaded (Phase 2 Optimization)
+    const existingStaffCount = staffList.length > 0
+      ? staffList.length
+      : await this.prisma.salonStaff.count({ where: { salonId } });
 
     // Only create initial default staff slots if salon is newly registered and has never had any staff configured
     if (staffList.length === 0 && existingStaffCount === 0) {

@@ -527,32 +527,32 @@ export class SalonsService {
       if (rows && rows.length > 0) {
         salonData = rows[0];
 
-        // Fetch services
-        const services: any[] = await this.prisma.$queryRawUnsafe(
-          `SELECT id, name, category, price, duration_minutes, description, is_available
-           FROM salon_services
-           WHERE salon_id = $1 AND is_available = true;`,
-          id,
-        );
+        // Concurrently fetch relational services, reviews, and staff in parallel (Phase 2 Optimization)
+        // Services and reviews do not swallow errors so database failures properly trigger fallback
+        const [services, reviews, staff] = await Promise.all([
+          this.prisma.$queryRawUnsafe<any[]>(
+            `SELECT id, name, category, price, duration_minutes, description, is_available
+             FROM salon_services
+             WHERE salon_id = $1 AND is_available = true;`,
+            id,
+          ),
+          this.prisma.$queryRawUnsafe<any[]>(
+            `SELECT id, customer_name, customer_avatar, rating, comment, verified_visit, created_at, owner_reply
+             FROM salon_reviews
+             WHERE salon_id = $1 AND flagged = false
+             ORDER BY created_at DESC LIMIT 50;`,
+            id,
+          ),
+          this.prisma.$queryRawUnsafe<any[]>(
+            `SELECT id, name, role, experience, specialties, photo, rating, status
+             FROM salon_staff
+             WHERE salon_id = $1 AND status = 'active';`,
+            id,
+          ).catch(() => [] as any[]),
+        ]);
+
         salonData.services = services;
-
-        // Fetch public reviews
-        const reviews: any[] = await this.prisma.$queryRawUnsafe(
-          `SELECT id, customer_name, customer_avatar, rating, comment, verified_visit, created_at, owner_reply
-           FROM salon_reviews
-           WHERE salon_id = $1 AND flagged = false
-           ORDER BY created_at DESC LIMIT 50;`,
-          id,
-        );
         salonData.reviews = reviews;
-
-        // Fetch staff members
-        const staff = await this.prisma.$queryRawUnsafe<any[]>(
-          `SELECT id, name, role, experience, specialties, photo, rating, status
-           FROM salon_staff
-           WHERE salon_id = $1 AND status = 'active';`,
-          id,
-        ).catch(() => [] as any[]);
         salonData.staff = staff;
       }
     } catch {
