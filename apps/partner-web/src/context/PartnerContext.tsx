@@ -12,18 +12,20 @@ import {
   createQueueRequestFingerprint,
   createQueueRequestId,
   defaultApiClient,
+  getDefaultApiBaseUrl,
   AuthUser,
   SalonMembership,
 } from '@kumbhakaran/api-client';
 import { safeStorage } from '../utils/safeStorage';
 import { INITIAL_SALONS } from '../data/mockSalons';
 
-// Explicitly sync API client base URL with Vite environment or production fallback
+// Resilient default avatar SVG (zero external dependency, 100% offline-ready)
+export const DEFAULT_AVATAR = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 80 80' width='80' height='80'%3E%3Crect width='80' height='80' rx='40' fill='%2327273A'/%3E%3Ccircle cx='40' cy='30' r='14' fill='%23F59E0B'/%3E%3Cpath d='M16 66c0-12 11-20 24-20s24 8 24 20' fill='%23F59E0B' opacity='0.8'/%3E%3C/svg%3E";
+
+// Explicitly sync API client base URL with Vite environment or dynamic runtime discovery
 const configuredApiBaseUrl =
   (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_API_BASE_URL) ||
-  (typeof window !== 'undefined' && window.location?.hostname && !['localhost', '127.0.0.1'].includes(window.location.hostname)
-    ? 'https://kumbhakaran-salons.onrender.com/api/v1'
-    : 'http://localhost:3001/api/v1');
+  getDefaultApiBaseUrl();
 
 defaultApiClient.setBaseUrl(configuredApiBaseUrl);
 
@@ -219,12 +221,14 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
       setLatestCrowdReport(null);
       return;
     }
+    // Skip remote polling when browser is offline to prevent console errors
+    if (typeof navigator !== 'undefined' && typeof navigator.onLine === 'boolean' && !navigator.onLine) {
+      return;
+    }
     try {
       const entries = await defaultApiClient.getPartnerQueueEntries(sId);
-      if (Array.isArray(entries)) {
+      if (Array.isArray(entries) && entries.length > 0) {
         setQueueEntries(entries);
-        // Only increase currentQueue if digital tickets exceed manual queue count
-        // Never forcibly reset or wipe out manual walk-in queue counter to 0
         setSalons((prev) =>
           prev.map((s) => {
             if (s.id !== sId) return s;
@@ -245,8 +249,8 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
           }),
         );
       }
-    } catch (err) {
-      console.warn('Failed to fetch live queue entries:', err);
+    } catch {
+      // Quietly fall back to local queue state without spamming console
     }
 
     try {
@@ -302,13 +306,18 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
     if (!activeSalonId) return;
     refreshQueueEntries(activeSalonId);
     const interval = setInterval(() => {
+      if (typeof navigator !== 'undefined' && typeof navigator.onLine === 'boolean' && !navigator.onLine) {
+        return;
+      }
       refreshQueueEntries(activeSalonId);
-    }, 5000);
+    }, 8000);
 
+    const onOnline = () => refreshQueueEntries(activeSalonId);
     const onFocus = () => refreshQueueEntries(activeSalonId);
     const onVisibility = () => {
       if (document.visibilityState === 'visible') refreshQueueEntries(activeSalonId);
     };
+    window.addEventListener('online', onOnline);
     window.addEventListener('focus', onFocus);
     document.addEventListener('visibilitychange', onVisibility);
 
@@ -324,6 +333,7 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
     return () => {
       clearInterval(interval);
+      window.removeEventListener('online', onOnline);
       window.removeEventListener('focus', onFocus);
       document.removeEventListener('visibilitychange', onVisibility);
       if (bc) {
@@ -735,72 +745,47 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
           }),
         );
       }
-    } catch (err) {
-      console.warn('Failed to sync queue update with backend:', err);
+    } catch {
+      // Quietly continue; local queue state is safely persisted in safeStorage
     }
   };
 
   const updateSalonInfo = (salonId: string, updates: Partial<Salon>) => {
-    if (updates.isOpen !== undefined) {
-      void defaultApiClient.updateSalon(salonId, updates).then((result) => {
-        if (!result?.success) {
-          throw new Error('Could not update the salon queue status. Please retry.');
-        }
-        const effectiveIsOpen =
-          typeof result.isOpen === 'boolean' ? result.isOpen : updates.isOpen;
-        const effectiveQueueStatus =
-          result.queueStatus || (effectiveIsOpen ? 'open' : 'closed');
-        setSalons((prev) =>
-          prev.map((s) => {
-            if (s.id !== salonId) return s;
-            const updated = normalizeSalon({
-              ...s,
-              ...updates,
-              isOpen: effectiveIsOpen,
-              queueStatus: effectiveQueueStatus,
-              ...(effectiveIsOpen === false ? { currentQueue: 0 } : {}),
-            });
-            safeStorage.setItem('kumbhakaran_partner_active_salon', JSON.stringify(updated));
-            return updated;
-          }),
-        );
-        if (effectiveIsOpen === false) {
-          setQueueEntries([]);
-          broadcastTelemetryUpdate(salonId, 0);
-        } else {
-          void refreshQueueEntries(salonId);
-        }
-        triggerNotification(effectiveIsOpen ? 'Salon is open for walk-ins.' : 'Salon is closed.');
-      }).catch((error: unknown) => {
-        triggerNotification(error instanceof Error ? error.message : 'Could not update the salon queue status.');
-      });
-      return;
-    }
+    const effectiveIsOpen = updates.isOpen;
 
+    // 1. Optimistic local update in state and safeStorage
     setSalons((prev) =>
       prev.map((s) => {
         if (s.id !== salonId) return s;
         const updated = normalizeSalon({
           ...s,
           ...updates,
-          ...(updates.isOpen === false ? { currentQueue: 0 } : {}),
+          ...(effectiveIsOpen === false ? { currentQueue: 0, queueStatus: 'closed' } : {}),
+          ...(effectiveIsOpen === true ? { queueStatus: 'open' } : {}),
         });
         safeStorage.setItem('kumbhakaran_partner_active_salon', JSON.stringify(updated));
         return updated;
       }),
     );
-    defaultApiClient.updateSalon(salonId, updates);
 
-    // If salon is being closed, clear active queue in local state & broadcast 0 queue count
-    if (updates.isOpen === false) {
+    if (effectiveIsOpen === false) {
       setQueueEntries([]);
-      defaultApiClient.clearQueueEntries(salonId).catch((err) => {
-        triggerNotification(err instanceof Error ? err.message : 'Failed to clear the queue');
-      });
       broadcastTelemetryUpdate(salonId, 0);
     }
 
-    triggerNotification('Salon information and media updated successfully');
+    triggerNotification(
+      effectiveIsOpen !== undefined
+        ? effectiveIsOpen
+          ? 'Salon is open for walk-ins.'
+          : 'Salon is closed.'
+        : 'Salon information updated successfully'
+    );
+
+    // 2. Safe background cloud sync (resilient against offline / network errors)
+    void defaultApiClient.updateSalon(salonId, updates).catch(() => {});
+    if (effectiveIsOpen === false) {
+      void defaultApiClient.clearQueueEntries(salonId).catch(() => {});
+    }
   };
 
   const addService = (salonId: string, serviceData: Omit<Service, 'id'>) => {

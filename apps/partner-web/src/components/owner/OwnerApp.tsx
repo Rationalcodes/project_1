@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useSalon, getEstimatedWaitMinutes, getQueueDisplay, getQueueFreshness } from '../../context/PartnerContext';
+import { useSalon, getEstimatedWaitMinutes, getQueueDisplay, getQueueFreshness, DEFAULT_AVATAR } from '../../context/PartnerContext';
 import { useLanguage } from '../../i18n/LanguageContext';
 import {
   LayoutDashboard,
@@ -1717,9 +1717,12 @@ export const OwnerApp: React.FC = () => {
               <div key={member.id} className="bg-[#14141c] border border-zinc-800 rounded-2xl p-4 flex items-center justify-between gap-3 text-xs">
                 <div className="flex items-center gap-3">
                   <img
-                    src={member.photo || (member as any).avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80'}
+                    src={member.photo || (member as any).avatarUrl || DEFAULT_AVATAR}
                     alt={member.name}
                     className="w-12 h-12 rounded-xl object-cover"
+                    onError={(e) => {
+                      (e.currentTarget as HTMLImageElement).src = DEFAULT_AVATAR;
+                    }}
                   />
                   <div>
                     <h4 className="font-bold text-white text-sm">{member.name}</h4>
@@ -1797,9 +1800,12 @@ export const OwnerApp: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <img
-                      src={rev.customerAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80'}
+                      src={rev.customerAvatar || DEFAULT_AVATAR}
                       alt={rev.customerName}
                       className="w-7 h-7 rounded-full object-cover"
+                      onError={(e) => {
+                        (e.currentTarget as HTMLImageElement).src = DEFAULT_AVATAR;
+                      }}
                     />
                     <div>
                       <span className="font-bold text-white">{rev.customerName}</span>

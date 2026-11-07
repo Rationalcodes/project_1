@@ -12,18 +12,17 @@ import {
   createQueueRequestFingerprint,
   createQueueRequestId,
   defaultApiClient,
+  getDefaultApiBaseUrl,
   AuthUser,
 } from '@kumbhakaran/api-client';
 import { safeStorage } from '../utils/safeStorage';
 import { calculateHaversineDistance } from '@kumbhakaran/ui';
 import { INITIAL_SALONS, INITIAL_USER } from '../data/mockSalons';
 
-// Explicitly sync API client base URL with Vite environment or production fallback
+// Explicitly sync API client base URL with Vite environment or dynamic runtime discovery
 const configuredApiBaseUrl =
   (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_API_BASE_URL) ||
-  (typeof window !== 'undefined' && window.location?.hostname && !['localhost', '127.0.0.1'].includes(window.location.hostname)
-    ? 'https://kumbhakaran-salons.onrender.com/api/v1'
-    : 'http://localhost:3001/api/v1');
+  getDefaultApiBaseUrl();
 
 defaultApiClient.setBaseUrl(configuredApiBaseUrl);
 
