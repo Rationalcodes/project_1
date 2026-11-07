@@ -20,6 +20,22 @@ async function bootstrap() {
   app.setGlobalPrefix('api/v1');
   app.enableShutdownHooks();
 
+  // Fallback Redirect: Automatically redirect legacy requests missing /api/v1 to /api/v1 (307 preserves method and body)
+  const fastify = app.getHttpAdapter().getInstance();
+  fastify.addHook('onRequest', async (req: any, reply: any) => {
+    const rawUrl = req.raw?.url || req.url || '';
+    if (
+      rawUrl &&
+      !rawUrl.startsWith('/api/') &&
+      !rawUrl.startsWith('/health') &&
+      !rawUrl.startsWith('/docs') &&
+      !rawUrl.startsWith('/favicon')
+    ) {
+      const destination = `/api/v1${rawUrl.startsWith('/') ? rawUrl : `/${rawUrl}`}`;
+      reply.code(307).redirect(destination);
+    }
+  });
+
   // 3. Configure Production & Preview CORS
   const allowedOriginsEnv = process.env.ALLOWED_ORIGINS;
   const explicitOrigins = allowedOriginsEnv
