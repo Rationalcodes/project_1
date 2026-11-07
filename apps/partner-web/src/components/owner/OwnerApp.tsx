@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useSalon, getEstimatedWaitMinutes, getQueueDisplay, getQueueFreshness } from '../../context/PartnerContext';
 import { useLanguage } from '../../i18n/LanguageContext';
 import {
@@ -123,6 +123,105 @@ export const OwnerApp: React.FC = () => {
       });
     return () => { active = false; };
   }, [activeSalon?.id]);
+
+  // Real-time dynamic stats calculated from actual live queue and completed sessions
+  const completedEntriesToday = useMemo(() => {
+    return (queueEntries || []).filter((e) => e.status === 'completed');
+  }, [queueEntries]);
+
+  const realCustomersServed = useMemo(() => {
+    return Math.max(activeSalon?.todayCustomersServed || 0, completedEntriesToday.length);
+  }, [activeSalon?.todayCustomersServed, completedEntriesToday.length]);
+
+  const realTodayRevenue = useMemo(() => {
+    const queueRevenue = completedEntriesToday.reduce((sum, e) => {
+      const p = Number((e as any).servicePrice);
+      return sum + (Number.isFinite(p) && p > 0 ? p : (activeSalon?.startingPrice || 150));
+    }, 0);
+    return Math.max(activeSalon?.todayRevenue || 0, queueRevenue);
+  }, [completedEntriesToday, activeSalon?.todayRevenue, activeSalon?.startingPrice]);
+
+  const realMonthlyRevenue = useMemo(() => {
+    return Math.max(activeSalon?.monthlyRevenue || 0, realTodayRevenue);
+  }, [activeSalon?.monthlyRevenue, realTodayRevenue]);
+
+  // Real-time hourly customer density
+  const hourlyStats = useMemo(() => {
+    const slots = [
+      { label: '9 AM', startHour: 9, endHour: 10 },
+      { label: '11 AM', startHour: 11, endHour: 12 },
+      { label: '1 PM', startHour: 13, endHour: 14 },
+      { label: '3 PM', startHour: 15, endHour: 16 },
+      { label: '5 PM', startHour: 17, endHour: 18 },
+      { label: '7 PM', startHour: 19, endHour: 20 },
+      { label: '9 PM', startHour: 21, endHour: 23 },
+    ];
+
+    const counts = slots.map((slot) => {
+      const count = (queueEntries || []).filter((e) => {
+        const timeStr = (e as any).servedAt || e.joinedAt;
+        if (!timeStr) return false;
+        try {
+          const d = new Date(timeStr);
+          const h = d.getHours();
+          return h >= slot.startHour && h <= slot.endHour;
+        } catch {
+          return false;
+        }
+      }).length;
+      return { time: slot.label, count };
+    });
+
+    const maxCount = Math.max(...counts.map((c) => c.count), 0);
+    const peakSlot = counts.find((c) => c.count > 0 && c.count === maxCount);
+
+    const bars = counts.map((item) => ({
+      time: item.time,
+      count: item.count,
+      height: maxCount > 0 ? `${Math.max(16, Math.round((item.count / maxCount) * 100))}%` : '8%',
+      peak: maxCount > 0 && item.count === maxCount,
+    }));
+
+    return {
+      bars,
+      peakLabel: peakSlot
+        ? `Peak Today: ${peakSlot.time} (${peakSlot.count} walk-in${peakSlot.count > 1 ? 's' : ''})`
+        : (realCustomersServed > 0 ? 'Tracking walk-in distribution' : 'Awaiting walk-in rush data'),
+      hasData: maxCount > 0,
+    };
+  }, [queueEntries, realCustomersServed]);
+
+  // Real-time popular service
+  const popularServiceStats = useMemo(() => {
+    if (completedEntriesToday.length === 0) {
+      const firstService = activeSalon?.services?.[0]?.name;
+      return {
+        name: firstService || 'Walk-In Haircut',
+        note: 'Live percentage updates as walk-ins are served',
+      };
+    }
+
+    const counts: Record<string, number> = {};
+    completedEntriesToday.forEach((e) => {
+      const sName = e.serviceName || 'Haircut';
+      counts[sName] = (counts[sName] || 0) + 1;
+    });
+
+    let topName = '';
+    let topCount = 0;
+    Object.entries(counts).forEach(([name, count]) => {
+      if (count > topCount) {
+        topCount = count;
+        topName = name;
+      }
+    });
+
+    const pct = Math.round((topCount / completedEntriesToday.length) * 100);
+    return {
+      name: topName,
+      note: `${pct}% of completed walk-ins today (${topCount} of ${completedEntriesToday.length})`,
+    };
+  }, [completedEntriesToday, activeSalon?.services]);
 
   const handlePrintDeskStandee = () => {
     if (!activeSalon || !partnerQrDataUrl) return;
@@ -968,7 +1067,7 @@ export const OwnerApp: React.FC = () => {
               </div>
 
               <div>
-                <span>Completed today: <strong className="text-white">{activeSalon.todayCustomersServed} customers</strong></span>
+                <span>Completed today: <strong className="text-white">{realCustomersServed} customers</strong></span>
               </div>
             </div>
           </div>
@@ -1255,18 +1354,24 @@ export const OwnerApp: React.FC = () => {
       {/* TAB 2: DASHBOARD OVERVIEW */}
       {ownerTab === 'dashboard' && (
         <div className="space-y-6">
-          {/* Key Metric KPI Cards */}
+          {/* Key Metric KPI Cards (Real-Time Dynamic Telemetry) */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
             <div className="bg-[#14141c] border border-zinc-800 rounded-2xl p-4">
               <div className="text-[10px] text-zinc-400 uppercase font-bold flex items-center gap-1">
                 <Users className="w-3.5 h-3.5 text-amber-400" /> Customers Today
               </div>
               <div className="text-2xl sm:text-3xl font-black text-white mt-1">
-                {activeSalon.todayCustomersServed}
+                {realCustomersServed}
               </div>
-              <div className="text-[10px] text-emerald-400 font-semibold mt-1 flex items-center gap-0.5">
-                <TrendingUp className="w-3 h-3" /> +18% vs yesterday
-              </div>
+              {realCustomersServed > 0 ? (
+                <div className="text-[10px] text-emerald-400 font-semibold mt-1 flex items-center gap-0.5">
+                  <TrendingUp className="w-3 h-3" /> {realCustomersServed} served today
+                </div>
+              ) : (
+                <div className="text-[10px] text-zinc-500 font-medium mt-1">
+                  Active tracking from start
+                </div>
+              )}
             </div>
 
             <div className="bg-[#14141c] border border-zinc-800 rounded-2xl p-4">
@@ -1286,10 +1391,10 @@ export const OwnerApp: React.FC = () => {
                 <DollarSign className="w-3.5 h-3.5 text-emerald-400" /> Today's Revenue
               </div>
               <div className="text-2xl sm:text-3xl font-black text-white mt-1">
-                ₹{activeSalon.todayRevenue.toLocaleString()}
+                ₹{realTodayRevenue.toLocaleString()}
               </div>
               <div className="text-[10px] text-zinc-400 mt-1">
-                Monthly: ₹{activeSalon.monthlyRevenue.toLocaleString()}
+                Monthly: ₹{realMonthlyRevenue.toLocaleString()}
               </div>
             </div>
 
@@ -1306,7 +1411,7 @@ export const OwnerApp: React.FC = () => {
             </div>
           </div>
 
-          {/* Peak Business Hours Visualization */}
+          {/* Peak Business Hours Visualization (Real-Time Dynamic Hourly Density) */}
           <div className="bg-[#14141c] border border-zinc-800 rounded-3xl p-5 shadow-xl">
             <div className="flex items-center justify-between mb-4">
               <div>
@@ -1315,35 +1420,29 @@ export const OwnerApp: React.FC = () => {
                   Peak Walk-In Rush Hours
                 </h3>
                 <p className="text-xs text-zinc-400">
-                  Hourly customer density helps plan stylist staffing
+                  Real-time hourly customer density recorded as walk-ins are served
                 </p>
               </div>
               <span className="text-xs font-semibold text-amber-400 bg-amber-400/10 px-2.5 py-1 rounded-xl">
-                Peak: 5:00 PM – 8:00 PM
+                {hourlyStats.peakLabel}
               </span>
             </div>
 
             {/* Visual Bar Graph */}
             <div className="h-44 flex items-end justify-between gap-1 sm:gap-2 pt-6 pb-2 border-b border-zinc-800">
-              {[
-                { time: '9 AM', count: 2, height: '20%' },
-                { time: '11 AM', count: 5, height: '45%' },
-                { time: '1 PM', count: 7, height: '60%' },
-                { time: '3 PM', count: 4, height: '35%' },
-                { time: '5 PM', count: 12, height: '90%', peak: true },
-                { time: '7 PM', count: 14, height: '100%', peak: true },
-                { time: '9 PM', count: 6, height: '50%' }
-              ].map((bar) => (
+              {hourlyStats.bars.map((bar) => (
                 <div key={bar.time} className="flex-1 flex flex-col items-center h-full justify-end group">
                   <span className="text-[10px] font-bold text-zinc-400 group-hover:text-amber-400 mb-1 opacity-80">
                     {bar.count}
                   </span>
                   <div
                     style={{ height: bar.height }}
-                    className={`w-full max-w-[36px] rounded-t-lg transition-all ${
+                    className={`w-full max-w-[36px] rounded-t-lg transition-all duration-500 ${
                       bar.peak
                         ? 'bg-amber-400 shadow-lg shadow-amber-400/20 group-hover:bg-amber-300'
-                        : 'bg-zinc-700/80 group-hover:bg-zinc-600'
+                        : bar.count > 0
+                        ? 'bg-amber-500/60 group-hover:bg-amber-500'
+                        : 'bg-zinc-800/80 group-hover:bg-zinc-700'
                     }`}
                   />
                   <span className="text-[10px] text-zinc-500 mt-2 font-medium">
@@ -1352,6 +1451,12 @@ export const OwnerApp: React.FC = () => {
                 </div>
               ))}
             </div>
+
+            {!hourlyStats.hasData && (
+              <div className="mt-3 text-center text-[11px] text-zinc-500">
+                Density bars will dynamically record and spike as walk-in customers take tokens throughout the day.
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -1745,24 +1850,26 @@ export const OwnerApp: React.FC = () => {
         </div>
       )}
 
-      {/* TAB 6: ANALYTICS & TRAFFIC REPORTS */}
+      {/* TAB 6: ANALYTICS & TRAFFIC REPORTS (Real-Time Dynamic Metrics) */}
       {ownerTab === 'analytics' && (
         <div className="space-y-5">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div className="bg-[#14141c] border border-zinc-800 rounded-2xl p-4">
-              <span className="text-xs text-zinc-400">Weekly Walk-In Total</span>
-              <div className="text-2xl font-black text-white mt-1">194 Customers</div>
-              <span className="text-[10px] text-emerald-400">+14% growth</span>
+              <span className="text-xs text-zinc-400">Customers Served Today</span>
+              <div className="text-2xl font-black text-white mt-1">{realCustomersServed} Customers</div>
+              <span className="text-[10px] text-emerald-400">
+                {realCustomersServed > 0 ? `${realCustomersServed} completed walk-ins` : 'Starts from first walk-in today'}
+              </span>
             </div>
             <div className="bg-[#14141c] border border-zinc-800 rounded-2xl p-4">
-              <span className="text-xs text-zinc-400">Estimated Monthly Revenue</span>
-              <div className="text-2xl font-black text-amber-400 mt-1">₹{activeSalon.monthlyRevenue.toLocaleString()}</div>
-              <span className="text-[10px] text-zinc-500">Based on services logged</span>
+              <span className="text-xs text-zinc-400">Total Revenue Tracked</span>
+              <div className="text-2xl font-black text-amber-400 mt-1">₹{realMonthlyRevenue.toLocaleString()}</div>
+              <span className="text-[10px] text-zinc-500">Based on live services completed</span>
             </div>
             <div className="bg-[#14141c] border border-zinc-800 rounded-2xl p-4">
-              <span className="text-xs text-zinc-400">Most Popular Service</span>
-              <div className="text-2xl font-black text-white mt-1">Signature Fade</div>
-              <span className="text-[10px] text-zinc-500">42% of all walk-ins</span>
+              <span className="text-xs text-zinc-400">Top In-Demand Service</span>
+              <div className="text-2xl font-black text-white mt-1 truncate">{popularServiceStats.name}</div>
+              <span className="text-[10px] text-zinc-500 truncate block">{popularServiceStats.note}</span>
             </div>
           </div>
         </div>
