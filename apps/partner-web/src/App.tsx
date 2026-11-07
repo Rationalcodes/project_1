@@ -29,7 +29,7 @@ const PartnerMainContent: React.FC = () => {
               }}
             />
             <span className="hidden sm:inline text-[10px] uppercase tracking-widest px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-400 font-bold border border-amber-500/30 shrink-0 self-center notranslate">
-              {t.partnerOS}
+              Partner
             </span>
           </div>
 

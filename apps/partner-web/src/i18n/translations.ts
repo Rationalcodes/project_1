@@ -144,7 +144,7 @@ export interface TranslationDictionary {
 
 export const translations: Record<string, TranslationDictionary> = {
   en: {
-    partnerOS: 'Partner OS',
+    partnerOS: 'Partner',
     partnerPortal: 'Partner Portal',
     salonForOwners: 'SLOON for Owners',
     dashboard: 'Dashboard',
