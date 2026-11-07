@@ -3,11 +3,11 @@ import { calculateHaversineDistance } from './googleMaps';
 export interface DrivingRouteResult {
   /** Array of [latitude, longitude] coordinates along the complete journey */
   coordinates: [number, number][];
-  /** Off-road displacement from user GPS to the nearest road/walkway entry point (if user is off-road, max 75m) */
+  /** Off-road displacement from user GPS to the nearest road entry point (shortest distance to road) */
   userDisplacement: [number, number][] | null;
   /** Road/pathway coordinates along actual streets or campus walkways */
   roadCoordinates: [number, number][];
-  /** Off-road displacement from the road/walkway exit point to the shop pin (if shop is off-road, max 75m) */
+  /** Off-road displacement from road exit point to the shop pin (shortest distance to shop when road ends) */
   shopDisplacement: [number, number][] | null;
   distanceMeters: number;
   distanceKm: number;
@@ -24,13 +24,13 @@ export interface DrivingRouteResult {
 const routeCache = new Map<string, DrivingRouteResult>();
 
 /**
- * Intelligent Google Maps-style navigation routing:
- * 1. Straight-line distance <= 1.2 km: Defaults to walking / campus walkways (like Google Maps 2 min, 140m).
- * 2. Straight-line distance > 1.2 km: Evaluates driving along roads.
- * 3. Detour detection: If driving detour is > 2.2x direct distance for trips under 2.5 km (e.g. car blocked by campus gates),
- *    evaluates walking paths and selects the pedestrian route.
- * 4. Displacement connectors: Clamped to max 75m so unnatural diagonal lines are never drawn across campus fields.
- * 5. Returns precise travelMode ('walking' | 'driving') for authentic Google Maps styling.
+ * Intelligent Navigation Routing for India:
+ * 1. Finds shortest distance from user location to the nearest accessible road and connects to it.
+ * 2. Passes along the road network as far as road connectivity goes towards the destination.
+ * 3. If there isn't road connectivity directly reaching the shop (e.g. inside a lane, bazaar, colony,
+ *    or campus), selects the shortest direct distance from the road exit point to the destination pin.
+ * 4. If there is NO road connectivity at all, or if following the road creates an absurd detour
+ *    (e.g. 6 km outer loop when the shop is only 150m away), selects the direct shortest distance to reach.
  */
 export async function fetchDrivingRoute(
   origin: { lat: number; lng: number },
@@ -61,24 +61,25 @@ export async function fetchDrivingRoute(
   }
 
   const directKm = calculateHaversineDistance(oLat, oLng, dLat, dLng);
+  const directMeters = Math.max(10, Math.round(directKm * 1000));
   const cacheKey = `${oLat.toFixed(4)},${oLng.toFixed(4)}->${dLat.toFixed(4)},${dLng.toFixed(4)}`;
   const cached = routeCache.get(cacheKey);
   if (cached) {
     return cached;
   }
 
-  // Helper formatters with user displacement + route travel
+  // Format helper: Connects User -> Nearest Road -> Road Navigation -> Road Exit -> Shop Pin
   const formatResult = (
     rawCoords: [number, number][],
-    distMeters: number,
-    durSeconds: number,
+    roadDistMeters: number,
+    roadDurSeconds: number,
     isRoad: boolean,
     mode: 'walking' | 'driving' | 'direct'
   ): DrivingRouteResult => {
     let userDisplacement: [number, number][] | null = null;
     let shopDisplacement: [number, number][] | null = null;
-    let extraDistMeters = 0;
-    let extraDurSeconds = 0;
+    let userToRoadM = 0;
+    let roadToShopM = 0;
 
     let fullCoordinates: [number, number][] = [];
 
@@ -86,77 +87,121 @@ export async function fetchDrivingRoute(
       const roadStart = rawCoords[0];
       const roadEnd = rawCoords[rawCoords.length - 1];
 
-      // Displacement from user location to pathway/road entrance:
-      // Only draw connector if within realistic walking/entrance proximity (6m to 75m).
-      // Never draw an unnatural line across hundreds of meters of buildings or fields!
-      const userToRoadM = calculateHaversineDistance(oLat, oLng, roadStart[0], roadStart[1]) * 1000;
-      if (userToRoadM >= 6 && userToRoadM <= 75) {
+      // 1. Find shortest distance to road and connect user to it (if not already on road > 3m)
+      userToRoadM = calculateHaversineDistance(oLat, oLng, roadStart[0], roadStart[1]) * 1000;
+      if (userToRoadM > 3) {
         userDisplacement = [[oLat, oLng], roadStart];
-        extraDistMeters += userToRoadM;
-        extraDurSeconds += Math.round(userToRoadM / 1.3);
       }
 
-      // Displacement from pathway/road exit to shop pin:
-      // Only draw connector if within realistic entrance proximity (6m to 75m).
-      const roadToShopM = calculateHaversineDistance(roadEnd[0], roadEnd[1], dLat, dLng) * 1000;
-      if (roadToShopM >= 6 && roadToShopM <= 75) {
+      // 2. If there isn't road connectivity directly reaching the shop, select shortest distance from road to shop
+      roadToShopM = calculateHaversineDistance(roadEnd[0], roadEnd[1], dLat, dLng) * 1000;
+      if (roadToShopM > 3) {
         shopDisplacement = [roadEnd, [dLat, dLng]];
-        extraDistMeters += roadToShopM;
-        extraDurSeconds += Math.round(roadToShopM / 1.3);
       }
 
+      const totalJourneyM = Math.round(userToRoadM + roadDistMeters + roadToShopM);
+
+      // 3. Indian Detour & Connectivity Check:
+      // If taking the road creates a huge detour (> 2.2x direct distance for trips under 2.5 km, or > 3.5x overall),
+      // or if direct distance is within immediate vicinity (<= 200m) and road is looping away,
+      // select the shortest direct distance to reach!
+      const isDetour = (totalJourneyM > directMeters * 2.2 && directMeters <= 2500) || (totalJourneyM > directMeters * 3.5);
+      if (isDetour && directMeters <= 2500) {
+        const directDurMin = Math.max(1, Math.round(directMeters / 75)); // ~4.5 km/h walk
+        const resDirect: DrivingRouteResult = {
+          coordinates: [[oLat, oLng], [dLat, dLng]],
+          userDisplacement: null,
+          roadCoordinates: [],
+          shopDisplacement: null,
+          distanceMeters: directMeters,
+          distanceKm: Math.round((directMeters / 1000) * 10) / 10,
+          distanceFormatted: directMeters < 1000 ? `${directMeters}m` : `${(directMeters / 1000).toFixed(1)} km`,
+          durationMinutes: directDurMin,
+          durationFormatted: `${directDurMin} min`,
+          isRoadRoute: false,
+          hasUserDisplacement: false,
+          hasShopDisplacement: false,
+          routeSummaryLabel: 'Shortest direct distance',
+          travelMode: 'walking',
+        };
+        routeCache.set(cacheKey, resDirect);
+        return resDirect;
+      }
+
+      // Unbroken continuous path: User -> Road Entry -> Road Route -> Road Exit -> Shop Pin
       fullCoordinates = [
         ...(userDisplacement ? [[oLat, oLng] as [number, number]] : []),
         ...rawCoords,
         ...(shopDisplacement ? [[dLat, dLng] as [number, number]] : []),
       ];
-    } else {
-      fullCoordinates = [[oLat, oLng], [dLat, dLng]];
+
+      const extraDurSeconds = Math.round((userToRoadM + roadToShopM) / 1.3); // pedestrian connector speed
+      const totalDistMeters = Math.max(10, totalJourneyM);
+      const distKm = Math.round((totalDistMeters / 1000) * 10) / 10;
+      const distFormatted = totalDistMeters < 1000 ? `${totalDistMeters}m` : `${distKm.toFixed(1)} km`;
+
+      let totalDurSec = roadDurSeconds + extraDurSeconds;
+      if (mode === 'walking' && totalDurSec === 0) {
+        totalDurSec = Math.round(totalDistMeters / 1.25);
+      }
+      const durMins = Math.max(1, Math.round(totalDurSec / 60));
+      const durFormatted = durMins >= 60 ? `${Math.floor(durMins / 60)}h ${durMins % 60}m` : `${durMins} min`;
+
+      let summaryLabel = mode === 'walking' ? 'Walking path' : 'Via Road';
+      if (userDisplacement && shopDisplacement) {
+        summaryLabel = 'Road + shortest connectors';
+      }
+
+      const res: DrivingRouteResult = {
+        coordinates: fullCoordinates,
+        userDisplacement,
+        roadCoordinates: rawCoords,
+        shopDisplacement,
+        distanceMeters: totalDistMeters,
+        distanceKm: distKm,
+        distanceFormatted: distFormatted,
+        durationMinutes: durMins,
+        durationFormatted: durFormatted,
+        isRoadRoute: true,
+        hasUserDisplacement: Boolean(userDisplacement),
+        hasShopDisplacement: Boolean(shopDisplacement),
+        routeSummaryLabel: summaryLabel,
+        travelMode: mode,
+      };
+
+      routeCache.set(cacheKey, res);
+      return res;
     }
 
-    const totalDistMeters = Math.max(10, Math.round(distMeters + extraDistMeters));
-    const distKm = Math.round((totalDistMeters / 1000) * 10) / 10;
-    // Format distance: under 1 km shows meters like Google Maps (e.g. "140m")
-    const distFormatted = totalDistMeters < 1000 ? `${totalDistMeters}m` : `${distKm.toFixed(1)} km`;
-
-    // Speed estimation: pedestrian walking ~1.25 m/s (~4.5 km/h), driving from router
-    let totalDurSec = durSeconds + extraDurSeconds;
-    if (mode === 'walking' && totalDurSec === 0) {
-      totalDurSec = Math.round(totalDistMeters / 1.25);
-    }
-    const durMins = Math.max(1, Math.round(totalDurSec / 60));
-    const durFormatted = durMins >= 60 ? `${Math.floor(durMins / 60)}h ${durMins % 60}m` : `${durMins} min`;
-
-    let summaryLabel = mode === 'walking' ? 'Walking path' : 'Via Road';
-    if (!isRoad) summaryLabel = 'Direct';
-
-    const res: DrivingRouteResult = {
-      coordinates: fullCoordinates,
-      userDisplacement,
-      roadCoordinates: isRoad ? rawCoords : [],
-      shopDisplacement,
-      distanceMeters: totalDistMeters,
-      distanceKm: distKm,
-      distanceFormatted: distFormatted,
-      durationMinutes: durMins,
-      durationFormatted: durFormatted,
-      isRoadRoute: isRoad,
-      hasUserDisplacement: Boolean(userDisplacement),
-      hasShopDisplacement: Boolean(shopDisplacement),
-      routeSummaryLabel: summaryLabel,
-      travelMode: mode,
+    // Fallback: If there isn't road connectivity at all, select shortest direct distance
+    const directMinutes = Math.max(1, Math.round(directMeters / 75));
+    const fallbackRes: DrivingRouteResult = {
+      coordinates: [[oLat, oLng], [dLat, dLng]],
+      userDisplacement: null,
+      roadCoordinates: [],
+      shopDisplacement: null,
+      distanceMeters: directMeters,
+      distanceKm: Math.round((directMeters / 1000) * 10) / 10,
+      distanceFormatted: directMeters < 1000 ? `${directMeters}m` : `${(directMeters / 1000).toFixed(1)} km`,
+      durationMinutes: directMinutes,
+      durationFormatted: `${directMinutes} min`,
+      isRoadRoute: false,
+      hasUserDisplacement: false,
+      hasShopDisplacement: false,
+      routeSummaryLabel: 'Shortest direct distance',
+      travelMode: directKm <= 1.2 ? 'walking' : 'direct',
     };
 
-    routeCache.set(cacheKey, res);
-    return res;
+    routeCache.set(cacheKey, fallbackRes);
+    return fallbackRes;
   };
 
-  // Google Maps logic:
-  // Direct distance <= 1.2 km -> Preferred mode is Walking (campus, neighborhood, footpaths)
-  // Direct distance > 1.2 km -> Preferred mode is Driving
+  // Google Maps / OSRM logic:
+  // Short trip (<= 1.2 km): Preferred mode is Walking (campus, neighborhood, gullies)
+  // Longer trip (> 1.2 km): Preferred mode is Driving
   const preferredMode: 'walking' | 'driving' = directKm <= 1.2 ? 'walking' : 'driving';
 
-  // 1. Try Google Maps DirectionsService if window.google is loaded
+  // 1. Google Maps DirectionsService (if available)
   if (typeof window !== 'undefined' && (window as any).google?.maps?.DirectionsService) {
     try {
       const gmaps = (window as any).google.maps;
@@ -193,8 +238,6 @@ export async function fetchDrivingRoute(
       } else {
         const driveData = await queryGoogle(gmaps.TravelMode.DRIVING);
         if (driveData && driveData.coords.length > 0) {
-          // Detour check: if driving requires a massive detour (> 2.2x direct distance) and direct distance is <= 2.5 km,
-          // check if walking gives a cleaner campus/pedestrian path
           if (driveData.distM > directKm * 1000 * 2.2 && directKm <= 2.5) {
             const walkData = await queryGoogle(gmaps.TravelMode.WALKING);
             if (walkData && walkData.coords.length > 0 && walkData.distM < driveData.distM * 0.7) {
@@ -210,7 +253,6 @@ export async function fetchDrivingRoute(
   }
 
   // 2. OSRM High-Speed Network
-  // Helper to query OSRM or OSM routed-foot
   const queryOsrm = async (profile: 'foot' | 'driving'): Promise<{ coords: [number, number][]; distM: number; durS: number } | null> => {
     try {
       const controller = new AbortController();
@@ -241,7 +283,6 @@ export async function fetchDrivingRoute(
       // continue to backup
     }
 
-    // Backup for foot routing: OSM routed-foot
     if (profile === 'foot') {
       try {
         const controller = new AbortController();
@@ -276,17 +317,13 @@ export async function fetchDrivingRoute(
     if (footRes && footRes.coords.length > 0) {
       return formatResult(footRes.coords, footRes.distM, footRes.durS, true, 'walking');
     }
-    // If foot router failed, try driving
     const driveRes = await queryOsrm('driving');
     if (driveRes && driveRes.coords.length > 0) {
       return formatResult(driveRes.coords, driveRes.distM, driveRes.durS, true, 'driving');
     }
   } else {
-    // Preferred mode is driving
     const driveRes = await queryOsrm('driving');
     if (driveRes && driveRes.coords.length > 0) {
-      // Detour check: if driving distance is > 2.2x direct distance and direct distance is <= 2.5 km,
-      // try foot router to see if a direct campus or pedestrian path exists
       if (driveRes.distM > directKm * 1000 * 2.2 && directKm <= 2.5) {
         const footRes = await queryOsrm('foot');
         if (footRes && footRes.coords.length > 0 && footRes.distM < driveRes.distM * 0.7) {
@@ -295,22 +332,12 @@ export async function fetchDrivingRoute(
       }
       return formatResult(driveRes.coords, driveRes.distM, driveRes.durS, true, 'driving');
     }
-    // If driving router failed, try foot
     const footRes = await queryOsrm('foot');
     if (footRes && footRes.coords.length > 0) {
       return formatResult(footRes.coords, footRes.distM, footRes.durS, true, 'walking');
     }
   }
 
-  // 3. Fallback: If no road/pathway found, direct displacement
-  const directMeters = Math.round(directKm * 1000);
-  const directMinutes = Math.max(1, Math.round(preferredMode === 'walking' ? directMeters / 75 : directKm * 3));
-
-  return formatResult(
-    [[oLat, oLng], [dLat, dLng]],
-    directMeters,
-    directMinutes * 60,
-    false,
-    directKm <= 1.2 ? 'walking' : 'direct'
-  );
+  // 3. If there isn't road connectivity on the map network, select shortest direct distance
+  return formatResult([], directMeters, Math.max(60, Math.round(directMeters / 1.25)), false, directKm <= 1.2 ? 'walking' : 'direct');
 }
