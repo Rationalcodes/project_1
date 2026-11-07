@@ -19,16 +19,16 @@ const PartnerMainContent: React.FC = () => {
       {/* Partner OS Top Bar */}
       <header className="sticky top-0 z-40 bg-[#0c0c10]/95 backdrop-blur-md border-b border-zinc-800/80 px-3 sm:px-4 py-2.5 sm:py-3 transition-all w-full max-w-full overflow-hidden">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2 sm:gap-3 min-w-0 shrink group">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0 shrink group notranslate">
             <img
               src={logoWhite}
               alt="SLOON - Unisex Grooming Network"
-              className="h-9 sm:h-10 md:h-12 w-auto max-w-[190px] sm:max-w-[230px] md:max-w-[270px] object-contain transition-transform group-hover:scale-105"
+              className="h-9 sm:h-10 md:h-12 w-auto max-w-[190px] sm:max-w-[230px] md:max-w-[270px] object-contain transition-transform group-hover:scale-105 notranslate"
               onError={(e) => {
                 (e.currentTarget as HTMLImageElement).src = logoFallback;
               }}
             />
-            <span className="hidden sm:inline text-[10px] uppercase tracking-widest px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-400 font-bold border border-amber-500/30 shrink-0 self-center">
+            <span className="hidden sm:inline text-[10px] uppercase tracking-widest px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-400 font-bold border border-amber-500/30 shrink-0 self-center notranslate">
               {t.partnerOS}
             </span>
           </div>

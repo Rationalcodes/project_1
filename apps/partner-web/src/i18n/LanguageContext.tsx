@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { INDIAN_LANGUAGES, LanguageOption, TranslationDictionary, getTranslation } from './translations';
 import { safeStorage } from '../utils/safeStorage';
+import { setGoogleTranslateLanguage, syncCurrentGoogleTranslateLanguage } from './googleTranslate';
 
 interface LanguageContextType {
   currentLanguage: string;
@@ -39,12 +40,19 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const [isLanguageModalOpen, setIsLanguageModalOpen] = useState<boolean>(false);
 
+  // Sync Google Translate with saved language on component mount
+  useEffect(() => {
+    syncCurrentGoogleTranslateLanguage(currentLanguage);
+  }, []);
+
   const setLanguage = (langCode: string) => {
     if (INDIAN_LANGUAGES.some((l) => l.code === langCode)) {
       setCurrentLanguageState(langCode);
       try {
         safeStorage.setItem(STORAGE_LANG_KEY, langCode);
       } catch {}
+      // Programmatically trigger browser Google Translate
+      setGoogleTranslateLanguage(langCode);
     }
   };
 
@@ -55,6 +63,8 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     try {
       safeStorage.setItem(STORAGE_CHOSEN_FLAG, 'true');
     } catch {}
+    // Programmatically trigger browser Google Translate
+    setGoogleTranslateLanguage(langCode);
   };
 
   const openLanguageModal = () => setIsLanguageModalOpen(true);

@@ -14,8 +14,24 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
     <!-- Google Identity Services (GIS) Web SDK -->
     <script src="https://accounts.google.com/gsi/client" async defer></script>
+
+    <!-- Google Translate Website Integration (Zero manual dictionary files) -->
+    <script type="text/javascript">
+      window.googleTranslateElementInit = function() {
+        if (window.google && window.google.translate) {
+          new window.google.translate.TranslateElement({
+            pageLanguage: 'en',
+            includedLanguages: 'en,hi,mr,gu,bn,ta,te,kn,ml,pa,ur,or,as',
+            autoDisplay: false
+          }, 'google_translate_element');
+        }
+      };
+    </script>
+    <script type="text/javascript" src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit" async defer></script>
   </head>
   <body class="bg-[#09090c] text-slate-100 antialiased selection:bg-amber-500/30 selection:text-amber-300">
+    <!-- Google Translate Container (Hidden, controlled programmatically) -->
+    <div id="google_translate_element" style="display: none !important;"></div>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
