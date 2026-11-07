@@ -53,7 +53,31 @@ export const HomeScreen: React.FC = () => {
   const [showHowItWorksModal, setShowHowItWorksModal] = useState(false);
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
 
-  const totalSlides = 4;
+  // Banner slides content tailored for SLOON
+  const bannerSlides = [
+    {
+      badge: 'HOW IT WORKS',
+      title: 'Book now, pay at the salon',
+      subtitle: 'No card needed — cash or card at the counter.',
+    },
+    {
+      badge: 'LIVE QUEUE ENGINE',
+      title: 'Know the wait before you step out',
+      subtitle: 'Real-time chair counts updated directly by your barber.',
+    },
+    {
+      badge: 'A QUICK UPDATE FROM YOU',
+      title: 'Help keep wait times up to date',
+      subtitle: 'At the salon? Share what the queue looks like for others.',
+    },
+    {
+      badge: 'DIGITAL WALK-IN TOKEN',
+      title: 'Grab your token from home',
+      subtitle: 'Take token #01, #02... and walk right into your chair.',
+    },
+  ];
+
+  const totalSlides = bannerSlides.length;
   const nextSlide = () => setCurrentSlide((prev) => (prev + 1) % totalSlides);
   const prevSlide = () => setCurrentSlide((prev) => (prev - 1 + totalSlides) % totalSlides);
 
@@ -216,194 +240,82 @@ export const HomeScreen: React.FC = () => {
 
   return (
     <div className="space-y-6 pb-28 text-stone-900">
-      {/* 1. TOP PROMOTIONAL CAROUSEL (Auto-switching & Swipeable) */}
+      {/* 1. TOP PROMOTIONAL / HOW IT WORKS BANNER CAROUSEL */}
       <section className="relative">
         <div
-          className="relative overflow-hidden rounded-2xl sm:rounded-3xl shadow-xs border border-stone-200/70 group select-none"
+          className={`relative overflow-hidden rounded-3xl p-6 sm:p-7 text-white shadow-lg transition-all duration-500 ${
+            isWomen
+              ? 'bg-gradient-to-br from-[#E11D48] via-[#BE123C] to-[#9F1239]'
+              : 'bg-gradient-to-br from-[#1E40AF] via-[#2563EB] to-[#1D4ED8]'
+          }`}
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
         >
-          {/* Sliding Track */}
-          <div
-            className="flex transition-transform duration-500 ease-out"
-            style={{ transform: `translateX(-${currentSlide * 100}%)` }}
-          >
-            {/* SLIDE 0: Compact "Too lazy to call. Too smart to wait." */}
-            <div className="w-full shrink-0 flex-none min-h-[135px] sm:min-h-[150px] bg-[#FAF6EF] p-4 sm:p-5 flex items-center justify-between gap-4">
-              <div className="space-y-1.5 sm:space-y-2 max-w-sm sm:max-w-md z-10">
-                <div className="space-y-0.5 leading-tight">
-                  <h1 className="text-base sm:text-xl md:text-2xl font-serif font-black text-stone-900 tracking-tight leading-tight">
-                    Too lazy to call.
-                  </h1>
-                  <h2 className="text-base sm:text-xl md:text-2xl font-serif italic font-bold text-[#E05326] tracking-tight leading-tight">
-                    Too smart to wait.
-                  </h2>
-                </div>
-                <p className="text-[11px] sm:text-xs text-stone-600 font-medium leading-snug line-clamp-2">
-                  Know the waiting crowd before stepping out, and walk straight into your chair.
-                </p>
-                <div className="pt-0.5">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const targetSalon = displayedSalons.find((s) => s.isOpen) || displayedSalons[0];
-                      if (targetSalon) {
-                        handleSalonCardClick(targetSalon);
-                      } else {
-                        setCustomerTab('explore');
-                      }
-                    }}
-                    className="px-3.5 py-1.5 rounded-full bg-[#18181b] hover:bg-black text-white text-[11px] sm:text-xs font-bold shadow-xs hover:shadow transition-all active:scale-95 cursor-pointer flex items-center gap-1.5"
-                  >
-                    <span>Get your pass</span>
-                    <ArrowRight className="w-3 h-3" />
-                  </button>
-                </div>
-              </div>
+          {/* Subtle Store Awning Watermark Illustration in Corner */}
+          <div className="absolute -right-4 -bottom-6 w-44 h-44 text-white/10 pointer-events-none transform rotate-3">
+            <svg viewBox="0 0 100 100" fill="none" stroke="currentColor" strokeWidth="3" className="w-full h-full">
+              <path d="M10 30 Q 30 10 50 30 T 90 30 L 90 70 L 10 70 Z" fill="currentColor" fillOpacity="0.08" />
+              <path d="M15 30 L 15 70 M 35 30 L 35 70 M 55 30 L 55 70 M 75 30 L 75 70" stroke="currentColor" strokeWidth="4" />
+              <rect x="25" y="45" width="20" height="25" rx="3" stroke="currentColor" strokeWidth="3" />
+              <rect x="55" y="45" width="20" height="25" rx="3" stroke="currentColor" strokeWidth="3" />
+              <path d="M10 70 L 90 70 L 85 90 L 15 90 Z" fill="currentColor" fillOpacity="0.15" />
+            </svg>
+          </div>
 
-              {/* Orbit Rings & Phone-Off Badge */}
-              <div className="shrink-0 flex items-center justify-center">
-                <div className="relative w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 flex items-center justify-center">
-                  <div className="absolute inset-0 rounded-full border border-[#EBDCCB]/90" />
-                  <div className="absolute inset-2 sm:inset-2.5 rounded-full border border-[#F0E6D8]" />
-                  <div className="absolute top-2 left-2.5 sm:top-2.5 sm:left-3 w-1.5 h-1.5 rounded-full bg-stone-900 shadow-2xs" />
-                  <div className="absolute bottom-2 right-2.5 sm:bottom-2.5 sm:right-3 w-2 h-2 rounded-full border border-stone-800" />
-                  <div className="relative w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-full bg-[#E05326] flex items-center justify-center shadow-md shadow-orange-500/25">
-                    <PhoneOff className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 text-white stroke-[2.2]" />
-                  </div>
-                </div>
-              </div>
+          <div className="relative z-10 max-w-lg">
+            {/* Top Pill: HOW IT WORKS */}
+            <div className="mb-4">
+              <button
+                type="button"
+                onClick={() => setShowHowItWorksModal(true)}
+                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 hover:bg-white/30 backdrop-blur-xs text-[11px] font-bold tracking-wider uppercase text-white shadow-xs transition-all cursor-pointer"
+              >
+                <span>{bannerSlides[currentSlide].badge}</span>
+                <Info className="w-3.5 h-3.5" />
+              </button>
             </div>
 
-            {/* SLIDE 1: Book now, pay at the salon */}
-            <div
-              className={`w-full shrink-0 flex-none min-h-[135px] sm:min-h-[150px] p-4 sm:p-5 text-white relative overflow-hidden flex items-center justify-between ${
-                isWomen
-                  ? 'bg-gradient-to-br from-[#E11D48] via-[#BE123C] to-[#9F1239]'
-                  : 'bg-gradient-to-br from-[#1E40AF] via-[#2563EB] to-[#1D4ED8]'
-              }`}
-            >
-              <div className="absolute -right-4 -bottom-6 w-36 h-36 text-white/10 pointer-events-none transform rotate-3">
-                <Store className="w-full h-full stroke-1" />
-              </div>
-              <div className="relative z-10 max-w-sm sm:max-w-md space-y-1.5">
-                <button
-                  type="button"
-                  onClick={() => setShowHowItWorksModal(true)}
-                  className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-white/20 backdrop-blur-xs text-[10px] font-bold tracking-wider uppercase text-white hover:bg-white/30 transition-colors cursor-pointer"
-                >
-                  <span>HOW IT WORKS</span>
-                  <Info className="w-2.5 h-2.5" />
-                </button>
-                <h3 className="text-base sm:text-xl font-black text-white tracking-tight leading-snug">
-                  Book now, pay at the salon
-                </h3>
-                <p className="text-[11px] sm:text-xs text-white/90 font-medium leading-snug">
-                  No card needed — cash or card at the counter.
-                </p>
-                <button
-                  type="button"
-                  onClick={() => setShowHowItWorksModal(true)}
-                  className="inline-flex items-center gap-1 text-[11px] font-bold text-white underline hover:text-white/80 transition-colors pt-0.5 cursor-pointer"
-                >
-                  <span>Learn how it works</span>
-                  <ArrowRight className="w-3 h-3" />
-                </button>
-              </div>
-            </div>
+            {/* Bold Headline */}
+            <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight leading-snug drop-shadow-sm min-h-[64px] sm:min-h-[72px] flex items-center">
+              {bannerSlides[currentSlide].title}
+            </h1>
 
-            {/* SLIDE 2: Chair-Side Real-Time Tracker (Removed "LIVE QUEUE") */}
-            <div
-              className={`w-full shrink-0 flex-none min-h-[135px] sm:min-h-[150px] p-4 sm:p-5 text-white relative overflow-hidden flex items-center justify-between ${
-                isWomen
-                  ? 'bg-gradient-to-br from-[#BE123C] via-[#9F1239] to-[#881337]'
-                  : 'bg-gradient-to-br from-[#1D4ED8] via-[#1E40AF] to-[#1E3A8A]'
-              }`}
-            >
-              <div className="relative z-10 max-w-sm sm:max-w-md space-y-1.5">
-                <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-white/20 backdrop-blur-xs text-[10px] font-bold tracking-wider uppercase text-white">
-                  <span>REAL-TIME TRACKER</span>
-                </div>
-                <h3 className="text-base sm:text-xl font-black text-white tracking-tight leading-snug">
-                  Know the wait before you step out
-                </h3>
-                <p className="text-[11px] sm:text-xs text-white/90 font-medium leading-snug">
-                  Chair counts updated directly by your barber.
-                </p>
-                <button
-                  type="button"
-                  onClick={() => setCustomerTab('explore')}
-                  className="inline-flex items-center gap-1 text-[11px] font-bold text-white underline hover:text-white/80 transition-colors pt-0.5 cursor-pointer"
-                >
-                  <span>Browse studios nearby</span>
-                  <ArrowRight className="w-3 h-3" />
-                </button>
-              </div>
-            </div>
-
-            {/* SLIDE 3: Instant Walk-In Pass (Removed "DIGITAL TOKEN") */}
-            <div className="w-full shrink-0 flex-none min-h-[135px] sm:min-h-[150px] p-4 sm:p-5 text-white relative overflow-hidden flex items-center justify-between bg-gradient-to-br from-stone-900 via-stone-800 to-stone-900">
-              <div className="relative z-10 max-w-sm sm:max-w-md space-y-1.5">
-                <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-white/20 backdrop-blur-xs text-[10px] font-bold tracking-wider uppercase text-white">
-                  <span>INSTANT PASS</span>
-                </div>
-                <h3 className="text-base sm:text-xl font-black text-white tracking-tight leading-snug">
-                  Grab your pass from home
-                </h3>
-                <p className="text-[11px] sm:text-xs text-stone-300 font-medium leading-snug">
-                  Take pass #01, #02... and walk right into your chair.
-                </p>
-                <button
-                  type="button"
-                  onClick={() => {
-                    const targetSalon = displayedSalons.find((s) => s.isOpen) || displayedSalons[0];
-                    if (targetSalon) {
-                      handleSalonCardClick(targetSalon);
-                    } else {
-                      setCustomerTab('explore');
-                    }
-                  }}
-                  className="inline-flex items-center gap-1 text-[11px] font-bold text-orange-400 underline hover:text-orange-300 transition-colors pt-0.5 cursor-pointer"
-                >
-                  <span>Get in line now</span>
-                  <ArrowRight className="w-3 h-3" />
-                </button>
-              </div>
-            </div>
+            {/* Subtitle */}
+            <p className="text-xs sm:text-sm text-white/85 font-medium mt-1 leading-relaxed">
+              {bannerSlides[currentSlide].subtitle}
+            </p>
           </div>
 
           {/* Prev / Next Slide Arrows (Hover/Tap) */}
           <button
             type="button"
             onClick={prevSlide}
-            aria-label="Previous poster"
-            className="absolute left-2 top-1/2 -translate-y-1/2 z-20 w-7 h-7 rounded-full bg-stone-900/40 hover:bg-stone-900/70 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-xs cursor-pointer"
+            aria-label="Previous slide"
+            className="absolute left-2 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-black/20 hover:bg-black/40 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-xs cursor-pointer"
           >
             <ChevronLeft className="w-4 h-4" />
           </button>
           <button
             type="button"
             onClick={nextSlide}
-            aria-label="Next poster"
-            className="absolute right-2 top-1/2 -translate-y-1/2 z-20 w-7 h-7 rounded-full bg-stone-900/40 hover:bg-stone-900/70 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-xs cursor-pointer"
+            aria-label="Next slide"
+            className="absolute right-2 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-black/20 hover:bg-black/40 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-xs cursor-pointer"
           >
             <ChevronRight className="w-4 h-4" />
           </button>
         </div>
 
         {/* Carousel Indicator Dots */}
-        <div className="flex items-center justify-center gap-1.5 mt-2.5">
-          {[0, 1, 2, 3].map((idx) => (
+        <div className="flex items-center justify-center gap-1.5 mt-3">
+          {bannerSlides.map((_, idx) => (
             <button
               key={idx}
               type="button"
               onClick={() => setCurrentSlide(idx)}
               className={`h-1.5 rounded-full transition-all cursor-pointer ${
                 currentSlide === idx
-                  ? idx === 0
-                    ? 'w-6 bg-[#E05326]'
-                    : isWomen
+                  ? isWomen
                     ? 'w-6 bg-rose-600'
                     : 'w-6 bg-blue-600'
                   : 'w-1.5 bg-stone-300 hover:bg-stone-400'
