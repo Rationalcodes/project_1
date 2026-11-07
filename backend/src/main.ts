@@ -4,6 +4,7 @@ import { ValidationPipe, Logger } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import compress from '@fastify/compress';
 import { AppModule } from './app.module';
+import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
@@ -79,7 +80,7 @@ async function bootstrap() {
     credentials: true,
   });
 
-  // 4. Configure Global Request Validation
+  // 4. Configure Global Request Validation & Sanitized Error Filtering (Phase 5 Optimization)
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -90,6 +91,7 @@ async function bootstrap() {
       },
     }),
   );
+  app.useGlobalFilters(new GlobalExceptionFilter());
 
   // 5. Configure OpenAPI / Swagger Documentation
   const swaggerConfig = new DocumentBuilder()

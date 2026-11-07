@@ -97,10 +97,15 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
   async runTransaction<T>(
     operation: string,
     callback: (transaction: Prisma.TransactionClient) => Promise<T>,
+    options?: { maxWait?: number; timeout?: number; isolationLevel?: Prisma.TransactionIsolationLevel },
   ): Promise<T> {
     const startedAt = Date.now();
     try {
-      return await this.$transaction(callback);
+      return await this.$transaction(callback, {
+        maxWait: options?.maxWait ?? 5000,
+        timeout: options?.timeout ?? 10000,
+        isolationLevel: options?.isolationLevel,
+      });
     } catch (error) {
       this.logger.error(JSON.stringify({
         event: 'db.transaction.failed',

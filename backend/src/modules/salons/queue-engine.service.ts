@@ -144,6 +144,7 @@ export class QueueEngineService implements OnModuleInit, OnModuleDestroy {
     persistRequested: boolean;
   }>();
   private sweepTimer?: NodeJS.Timeout;
+  private isSweepInFlight = false;
 
   constructor(
     private readonly prisma: PrismaService,
@@ -227,8 +228,15 @@ export class QueueEngineService implements OnModuleInit, OnModuleDestroy {
 
   /**
    * Sweeps all salons to check if they are closed (manually or past closing time) or have stale tickets from previous days.
+   * Guarded by in-flight execution mutex to prevent overlapping background runs (Phase 5 Scalability).
    */
   async sweepAllSalonsClosingAndDailyReset(): Promise<void> {
+    if (this.isSweepInFlight) {
+      this.logger.warn('[sweepAllSalonsClosingAndDailyReset] Prior sweep still in flight; skipping overlapping execution.');
+      return;
+    }
+    this.isSweepInFlight = true;
+
     try {
       const startOfToday = getStartOfTodayIST();
 
@@ -285,6 +293,8 @@ export class QueueEngineService implements OnModuleInit, OnModuleDestroy {
       }
     } catch (err) {
       this.logger.error(`Error in sweepAllSalonsClosingAndDailyReset: ${(err as Error).message}`);
+    } finally {
+      this.isSweepInFlight = false;
     }
   }
 
