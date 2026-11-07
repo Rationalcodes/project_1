@@ -4,7 +4,7 @@ services:
     runtime: node
     plan: free
     region: frankfurt
-    buildCommand: pnpm install --frozen-lockfile && pnpm --filter @kumbhakaran/backend build
+    buildCommand: pnpm install --prod=false && pnpm run build:backend
     startCommand: node backend/dist/main.js
     healthCheckPath: /api/v1/health
     envVars:
