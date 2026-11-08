@@ -1,36 +1,19 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
-  Star,
-  Clock,
-  ArrowRight,
-  Scissors,
-  CheckCircle2,
-  Compass,
-  ShieldCheck,
-  PhoneCall,
-  HelpCircle,
-  ChevronDown,
-  ChevronUp,
-  Store,
-  Info,
-  Heart,
-  X,
-  Navigation,
   Sparkles,
-  PhoneOff,
-  ChevronLeft,
-  ChevronRight,
-  Image as ImageIcon,
+  Zap,
+  Star,
+  MapPin,
+  ArrowRight,
+  ShieldCheck,
+  CheckCircle2,
+  Store,
+  Compass,
 } from 'lucide-react';
-import {
-  useSalon,
-  getEstimatedWaitMinutes,
-  getQueueDisplay,
-  matchesGenderFilter,
-  getSalonType,
-} from '../../context/CustomerContext';
-import { Salon, HomeBanner, DEFAULT_HOME_BANNERS } from '@kumbhakaran/shared-types';
-import { defaultApiClient } from '@kumbhakaran/api-client';
+import { useCustomer, matchesGenderFilter } from '../../context/CustomerContext';
+import { Salon } from '@kumbhakaran/shared-types';
+import { getTheme } from '../../theme';
+import { SalonCard } from '../common/SalonCard';
 
 export const HomeScreen: React.FC = () => {
   const {
@@ -41,730 +24,436 @@ export const HomeScreen: React.FC = () => {
     addToRecentlyViewed,
     toggleFavorite,
     userProfile,
+    lazyFilter,
+    setLazyFilter,
     selectedServiceFilter,
     setSelectedServiceFilter,
-  } = useSalon();
+    searchQuery,
+  } = useCustomer();
 
   const isWomen = genderFilter === 'women';
+  const theme = getTheme(genderFilter);
+  const isLazyActive = lazyFilter === '0-5';
 
-  const BANNER_STORAGE_KEY = 'sloon_home_banners';
+  // Filter salons by gender support, search query, and service
+  const filteredSalons = useMemo(() => {
+    return salons.filter((salon) => {
+      // 1. Gender check using unified matcher
+      if (!matchesGenderFilter(salon, genderFilter)) return false;
 
-  // 4 Home Poster Spaces (Admin controllable & persistent)
-  const [homeBanners, setHomeBanners] = useState<HomeBanner[]>(() => {
-    try {
-      const saved = localStorage.getItem(BANNER_STORAGE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      // 2. Search query check
+      if (searchQuery.trim()) {
+        const query = searchQuery.toLowerCase();
+        const matchesName = salon.name?.toLowerCase().includes(query);
+        const matchesLocality = salon.locality?.toLowerCase().includes(query);
+        const matchesCity = salon.city?.toLowerCase().includes(query);
+        const matchesServices = salon.services?.some((s) => s.name?.toLowerCase().includes(query));
+        if (!matchesName && !matchesLocality && !matchesCity && !matchesServices) return false;
       }
-    } catch {}
-    return DEFAULT_HOME_BANNERS;
-  });
 
-  useEffect(() => {
-    // 1. Fetch live banners from backend database
-    defaultApiClient.getBanners().then((fetched) => {
-      if (Array.isArray(fetched) && fetched.length > 0) {
-        setHomeBanners(fetched);
-        try {
-          localStorage.setItem(BANNER_STORAGE_KEY, JSON.stringify(fetched));
-        } catch {}
-      }
-    }).catch(() => {});
-
-    // 2. Listen to local/tab update events
-    const handleUpdate = (e: any) => {
-      if (e.detail && Array.isArray(e.detail)) setHomeBanners(e.detail);
-    };
-    const handleStorage = (e: StorageEvent) => {
-      if (e.key === BANNER_STORAGE_KEY && e.newValue) {
-        try {
-          const parsed = JSON.parse(e.newValue);
-          if (Array.isArray(parsed)) setHomeBanners(parsed);
-        } catch {}
-      }
-    };
-    window.addEventListener('sloon_banners_updated', handleUpdate);
-    window.addEventListener('storage', handleStorage);
-    return () => {
-      window.removeEventListener('sloon_banners_updated', handleUpdate);
-      window.removeEventListener('storage', handleStorage);
-    };
-  }, []);
-
-  // Banner carousel state & touch/swipe handlers
-  const [currentSlide, setCurrentSlide] = useState(0);
-  const [touchStartX, setTouchStartX] = useState<number | null>(null);
-  const [touchDeltaX, setTouchDeltaX] = useState<number>(0);
-  const [isSwiping, setIsSwiping] = useState(false);
-  const [showHowItWorksModal, setShowHowItWorksModal] = useState(false);
-  const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
-
-  const totalSlides = homeBanners.length || 4;
-  const nextSlide = () => setCurrentSlide((prev) => (prev + 1) % totalSlides);
-  const prevSlide = () => setCurrentSlide((prev) => (prev - 1 + totalSlides) % totalSlides);
-
-  // Auto-switch carousel every 4.5s
-  useEffect(() => {
-    if (isSwiping) return;
-    const timer = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % totalSlides);
-    }, 4500);
-    return () => clearInterval(timer);
-  }, [isSwiping, totalSlides]);
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    setTouchStartX(e.touches[0].clientX);
-    setIsSwiping(true);
-    setTouchDeltaX(0);
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (touchStartX === null) return;
-    setTouchDeltaX(e.touches[0].clientX - touchStartX);
-  };
-
-  const handleTouchEnd = () => {
-    if (touchStartX !== null) {
-      if (touchDeltaX < -40) {
-        nextSlide();
-      } else if (touchDeltaX > 40) {
-        prevSlide();
-      }
-    }
-    setTouchStartX(null);
-    setTouchDeltaX(0);
-    setIsSwiping(false);
-  };
-
-  // Categories list with ultra-crisp grooming imagery
-  const categories = isWomen
-    ? [
-        {
-          id: 'Hair',
-          name: 'Hair Care',
-          image: 'https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=400&q=80',
-        },
-        {
-          id: 'Facial',
-          name: 'Face & Skin',
-          image: 'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?auto=format&fit=crop&w=400&q=80',
-        },
-        {
-          id: 'Eye',
-          name: 'Eye & Brow',
-          image: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=400&q=80',
-        },
-        {
-          id: 'Spa',
-          name: 'Spa & Care',
-          image: 'https://images.unsplash.com/photo-1544161515-4ab6ce6db874?auto=format&fit=crop&w=400&q=80',
-        },
-        {
-          id: 'Color',
-          name: 'Hair Color',
-          image: 'https://images.unsplash.com/photo-1562322140-8baeececf3df?auto=format&fit=crop&w=400&q=80',
-        },
-        {
-          id: 'Combos',
-          name: 'Packages',
-          image: 'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&fit=crop&w=400&q=80',
-        },
-      ]
-    : [
-        {
-          id: 'Hair',
-          name: 'Hair Care',
-          image: 'https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=400&q=80',
-        },
-        {
-          id: 'Facial',
-          name: 'Face & Skin',
-          image: 'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?auto=format&fit=crop&w=400&q=80',
-        },
-        {
-          id: 'Beard',
-          name: 'Beard & Shave',
-          image: 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=400&q=80',
-        },
-        {
-          id: 'Eye',
-          name: 'Eye & Brow',
-          image: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=400&q=80',
-        },
-        {
-          id: 'Spa',
-          name: 'Spa & Massage',
-          image: 'https://images.unsplash.com/photo-1544161515-4ab6ce6db874?auto=format&fit=crop&w=400&q=80',
-        },
-        {
-          id: 'Color',
-          name: 'Hair Color',
-          image: 'https://images.unsplash.com/photo-1562322140-8baeececf3df?auto=format&fit=crop&w=400&q=80',
-        },
-        {
-          id: 'Combos',
-          name: 'Combos',
-          image: 'https://images.unsplash.com/photo-1596704017254-9b121068fb31?auto=format&fit=crop&w=400&q=80',
-        },
-      ];
-
-  // Memoized gender and service category filtering (Phase 4 Optimization)
-  const genderMatchedSalons = useMemo(
-    () => salons.filter((s) => matchesGenderFilter(s, genderFilter)),
-    [salons, genderFilter],
-  );
-
-  // Filter salons if a category is clicked
-  const displayedSalons = useMemo(() => {
-    return genderMatchedSalons.filter((salon) => {
-      if (selectedServiceFilter === 'All' || !selectedServiceFilter) return true;
-      // Check salon services
-      if (Array.isArray(salon.services) && salon.services.length > 0) {
-        return salon.services.some(
-          (svc) =>
-            svc.category?.toLowerCase() === selectedServiceFilter.toLowerCase() ||
-            svc.name?.toLowerCase().includes(selectedServiceFilter.toLowerCase()),
+      // 3. Category service filter
+      if (selectedServiceFilter && selectedServiceFilter !== 'All') {
+        const matchesCategory = salon.services?.some(
+          (s) => s.name?.toLowerCase().includes(selectedServiceFilter.toLowerCase())
         );
+        if (!matchesCategory) return false;
       }
+
+      // 4. Lazy Mode (No current queue)
+      if (isLazyActive) {
+        if (salon.currentQueue > 0 || !salon.isOpen) return false;
+      }
+
       return true;
     });
-  }, [genderMatchedSalons, selectedServiceFilter]);
+  }, [salons, genderFilter, searchQuery, selectedServiceFilter, isLazyActive]);
 
-  const handleSalonCardClick = (salon: Salon) => {
+  // Specific segments
+  const nearbySalons = useMemo(() => {
+    return [...filteredSalons].sort((a, b) => (a.distanceKm || 99) - (b.distanceKm || 99));
+  }, [filteredSalons]);
+
+  const immediateChairs = useMemo(() => {
+    return filteredSalons.filter((s) => s.isOpen !== false && s.currentQueue <= 2);
+  }, [filteredSalons]);
+
+  const topRated = useMemo(() => {
+    return [...filteredSalons].sort((a, b) => (b.rating || 0) - (a.rating || 0));
+  }, [filteredSalons]);
+
+  const recentlyViewedSalons = useMemo(() => {
+    if (!userProfile?.recentlyViewed?.length) return [];
+    return userProfile.recentlyViewed
+      .map((id) => salons.find((s) => s.id === id))
+      .filter((s): s is Salon => Boolean(s));
+  }, [salons, userProfile?.recentlyViewed]);
+
+  const handleSelectSalon = (salon: Salon) => {
     addToRecentlyViewed(salon.id);
     setSelectedSalonForDetail(salon);
   };
 
-  const handleCategoryClick = (categoryId: string) => {
-    if (selectedServiceFilter === categoryId) {
-      setSelectedServiceFilter('All');
-    } else {
-      setSelectedServiceFilter(categoryId);
-    }
-  };
-
-  const faqs = [
-    {
-      q: 'Is SLOON free to use?',
-      a: 'Yes, 100% free. You only pay your salon directly at the counter for your haircut or styling. There are no platform fees or booking charges.',
-    },
-    {
-      q: 'How are waiting times tracked?',
-      a: 'Salons update their waiting list live from their phone whenever a customer arrives or finishes. Each salon card shows exactly when the counter was last updated.',
-    },
-    {
-      q: 'Do I need to book an appointment?',
-      a: 'No appointments needed. SLOON is made for walk-ins. Check the crowd from home, head over when wait times are low, and walk right in.',
-    },
-    {
-      q: 'Can I get in line from home?',
-      a: 'Yes! Tap any salon to view details, then tap "Join Walk-In Queue" to grab a digital ticket (#01, #02...). You can time your visit so a chair is ready when you arrive.',
-    },
-    {
-      q: 'Can I share a queue update?',
-      a: 'If you’re near a salon, you can share how many people are waiting and the estimated wait. Your location helps us confirm the update is from someone nearby.',
-    },
-  ];
-
   return (
-    <div className="space-y-6 pb-28 text-stone-900">
-      {/* 1. TOP POSTER CAROUSEL (4 Blank Poster Spaces with Admin Update Access) */}
-      <section className="relative">
-        <div
-          className="relative overflow-hidden rounded-3xl group select-none shadow-xs border border-stone-200/80"
-          onTouchStart={handleTouchStart}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={handleTouchEnd}
-        >
-          {/* Sliding Track */}
-          <div
-            className="flex transition-transform duration-500 ease-out"
-            style={{ transform: `translateX(-${currentSlide * 100}%)` }}
-          >
-            {homeBanners.map((banner, idx) => {
-              const hasImage = Boolean(banner.imageUrl && banner.imageUrl.trim());
+    <div className="space-y-8 pb-16">
+      {/* 1. EDITORIAL HERO SHOWCASE */}
+      <section
+        className={`relative rounded-3xl overflow-hidden border transition-all ${
+          isWomen
+            ? 'bg-gradient-to-br from-[#FFF5F2] via-[#FFFBF9] to-[#FFEAE3] border-rose-200/80 shadow-[0_4px_24px_rgba(225,29,72,0.04)]'
+            : 'bg-gradient-to-br from-[#FFF4EE] via-[#FAF7F2] to-[#FFE7DC] border-orange-200/80 shadow-[0_4px_24px_rgba(255,100,34,0.04)]'
+        }`}
+      >
+        <div className="grid grid-cols-1 md:grid-cols-12 items-center gap-6 p-6 sm:p-8 lg:p-10">
+          <div className="md:col-span-7 space-y-3.5">
+            <span
+              className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider ${theme.badgeBg} ${theme.badgeText} border ${theme.badgeBorder}`}
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>{theme.heroTagline}</span>
+            </span>
 
-              if (hasImage) {
-                return (
-                  <div
-                    key={banner.id || idx}
-                    onClick={() => {
-                      if (banner.targetUrl) {
-                        window.open(banner.targetUrl, '_blank');
-                      } else {
-                        setCustomerTab('explore');
-                      }
-                    }}
-                    className="w-full shrink-0 flex-none aspect-[3/1] min-h-[160px] sm:min-h-[220px] md:min-h-[260px] relative overflow-hidden rounded-3xl bg-stone-900 cursor-pointer"
-                  >
-                    <img
-                      src={banner.imageUrl}
-                      alt={banner.title || `Poster #${banner.slot}`}
-                      loading="lazy"
-                      decoding="async"
-                      className="w-full h-full object-cover"
-                    />
-                    {(banner.title || banner.subtitle) && (
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-transparent p-5 sm:p-7 flex flex-col justify-end text-white">
-                        {banner.title && (
-                          <h3 className="text-base sm:text-2xl font-black tracking-tight leading-snug drop-shadow-sm">
-                            {banner.title}
-                          </h3>
-                        )}
-                        {banner.subtitle && (
-                          <p className="text-xs sm:text-sm text-stone-200 font-medium mt-0.5 leading-snug drop-shadow-sm">
-                            {banner.subtitle}
-                          </p>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                );
-              }
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-stone-900 tracking-tight leading-tight">
+              {theme.heroHeadline}
+            </h1>
 
-              // BLANK POSTER SPACE OF THE SAME LENGTH AND WIDTH
-              return (
-                <div
-                  key={banner.id || idx}
-                  className="w-full shrink-0 flex-none aspect-[3/1] min-h-[160px] sm:min-h-[220px] md:min-h-[260px] rounded-3xl border-2 border-dashed border-stone-300/80 bg-stone-100/70 p-5 sm:p-6 flex flex-col items-center justify-center text-center relative overflow-hidden transition-all"
-                >
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-stone-200/80 flex items-center justify-center text-stone-400 mb-2 shadow-2xs">
-                    <ImageIcon className="w-5 h-5 sm:w-6 sm:h-6" />
-                  </div>
-                  <span className="text-[11px] font-extrabold uppercase tracking-wider text-stone-600 px-3 py-1 rounded-full bg-stone-200/70 mb-1">
-                    Poster Space #{banner.slot}
-                  </span>
-                  <p className="text-xs text-stone-400 font-medium">
-                    1200 × 400 px
-                  </p>
-                </div>
-              );
-            })}
+            <p className="text-xs sm:text-sm text-stone-600 font-medium leading-relaxed max-w-xl">
+              {theme.heroSubheadline}
+            </p>
+
+            <div className="pt-2 flex items-center gap-3 flex-wrap">
+              <button
+                type="button"
+                onClick={() => setCustomerTab('explore')}
+                className={`px-5 py-2.5 rounded-2xl text-xs font-black text-white shadow-lg transition-all cursor-pointer flex items-center gap-2 ${
+                  isWomen
+                    ? 'bg-[#E11D48] hover:bg-[#BE123C] shadow-rose-500/25'
+                    : 'bg-[#FF6422] hover:bg-[#E05316] shadow-orange-500/25'
+                }`}
+              >
+                <span>Browse Neighbourhood Studios</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setCustomerTab('map')}
+                className="px-4 py-2.5 rounded-2xl text-xs font-bold text-stone-800 bg-white border border-stone-200 hover:bg-stone-50 transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs"
+              >
+                <MapPin className="w-3.5 h-3.5 text-stone-600" />
+                <span>Locate on Map</span>
+              </button>
+            </div>
           </div>
 
-          {/* Prev / Next Slide Arrows (Hover/Tap) */}
-          <button
-            type="button"
-            onClick={prevSlide}
-            aria-label="Previous poster"
-            className="absolute left-2.5 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-black/30 hover:bg-black/50 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-xs cursor-pointer shadow-md"
-          >
-            <ChevronLeft className="w-4 h-4" />
-          </button>
-          <button
-            type="button"
-            onClick={nextSlide}
-            aria-label="Next poster"
-            className="absolute right-2.5 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-black/30 hover:bg-black/50 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-xs cursor-pointer shadow-md"
-          >
-            <ChevronRight className="w-4 h-4" />
-          </button>
-        </div>
-
-        {/* Carousel Indicator Dots */}
-        <div className="flex items-center justify-center gap-1.5 mt-2.5">
-          {homeBanners.map((_, idx) => (
-            <button
-              key={idx}
-              type="button"
-              onClick={() => setCurrentSlide(idx)}
-              className={`h-1.5 rounded-full transition-all cursor-pointer ${
-                currentSlide === idx
-                  ? 'w-6 bg-stone-800'
-                  : 'w-1.5 bg-stone-300 hover:bg-stone-400'
-              }`}
-              aria-label={`Poster ${idx + 1}`}
-            />
-          ))}
+          <div className="md:col-span-5 hidden md:block">
+            <div className="relative aspect-[4/3] rounded-2xl overflow-hidden shadow-xl border border-white">
+              <img
+                src={theme.heroImage}
+                alt=""
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent pointer-events-none" />
+              <div className="absolute bottom-3 left-3 right-3 text-white">
+                <span className="text-[10px] font-black uppercase tracking-wider bg-black/60 px-2 py-0.5 rounded-md backdrop-blur-xs">
+                  Physical Queues Tracked Live
+                </span>
+                <p className="text-xs font-bold mt-1 drop-shadow-sm">
+                  Verified waiting counts updated by studio front desks.
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* 2. CATEGORIES SECTION (ROUND PHOTO AVATARS) */}
+      {/* 2. GROOMING CATEGORY CAROUSEL */}
       <section className="space-y-3">
-        <div className="flex items-center justify-between px-1">
-          <h2 className="text-base sm:text-lg font-black text-stone-900 tracking-tight">
-            Categories
-          </h2>
-          <button
-            onClick={() => {
-              setSelectedServiceFilter('All');
-              setCustomerTab('explore');
-            }}
-            className={`text-xs font-bold hover:underline cursor-pointer ${
-              isWomen ? 'text-rose-600 hover:text-rose-700' : 'text-blue-600 hover:text-blue-700'
-            }`}
-          >
-            View all
-          </button>
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-black text-stone-900 tracking-tight">
+              {isWomen ? 'Beauty & Salon Services' : 'Grooming Categories'}
+            </h2>
+            <p className="text-xs text-stone-500">
+              Filter studios by service specialties and transparent rate cards
+            </p>
+          </div>
+
+          {selectedServiceFilter && (
+            <button
+              type="button"
+              onClick={() => setSelectedServiceFilter(null)}
+              className="text-xs font-bold text-stone-500 hover:text-stone-800 underline cursor-pointer"
+            >
+              Clear filter
+            </button>
+          )}
         </div>
 
-        {/* Horizontal Scrolling Row of Circular Grooming Avatars */}
-        <div className="flex items-start gap-3.5 sm:gap-4 overflow-x-auto pb-2 no-scrollbar px-1 -mx-1">
-          {categories.map((cat) => {
+        <div className="flex items-center gap-3 overflow-x-auto no-scrollbar pb-2 pt-1">
+          {theme.categories.map((cat) => {
+            const Icon = cat.icon;
             const isSelected = selectedServiceFilter === cat.id;
+
             return (
               <button
                 key={cat.id}
-                onClick={() => handleCategoryClick(cat.id)}
-                className="flex flex-col items-center shrink-0 group cursor-pointer focus:outline-none"
+                type="button"
+                onClick={() => setSelectedServiceFilter(isSelected ? null : cat.id)}
+                className={`group shrink-0 w-32 sm:w-36 rounded-2xl p-2.5 border transition-all text-left cursor-pointer flex flex-col justify-between ${
+                  isSelected
+                    ? isWomen
+                      ? 'bg-rose-50/90 border-[#E11D48] shadow-xs'
+                      : 'bg-orange-50/90 border-[#FF6422] shadow-xs'
+                    : 'bg-white border-stone-200/80 hover:border-stone-400 hover:shadow-xs'
+                }`}
               >
-                <div
-                  className={`w-16 h-16 sm:w-18 sm:h-18 rounded-full overflow-hidden border-2 transition-all p-0.5 ${
-                    isSelected
-                      ? isWomen
-                        ? 'border-rose-600 ring-2 ring-rose-500/30 scale-105 shadow-md'
-                        : 'border-blue-600 ring-2 ring-blue-500/30 scale-105 shadow-md'
-                      : 'border-white ring-1 ring-stone-200/80 shadow-xs group-hover:scale-105 group-hover:border-stone-300'
-                  }`}
-                >
+                <div className="w-full aspect-[4/3] rounded-xl overflow-hidden mb-2 relative bg-stone-100">
                   <img
                     src={cat.image}
                     alt={cat.name}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     loading="lazy"
-                    decoding="async"
-                    className="w-full h-full object-cover rounded-full group-hover:scale-105 transition-transform duration-300"
                   />
+                  <div
+                    className={`absolute bottom-1.5 right-1.5 p-1 rounded-lg backdrop-blur-md ${
+                      isSelected
+                        ? isWomen
+                          ? 'bg-[#E11D48] text-white'
+                          : 'bg-[#FF6422] text-white'
+                        : 'bg-black/60 text-white'
+                    }`}
+                  >
+                    <Icon className="w-3.5 h-3.5" />
+                  </div>
                 </div>
-                <span
-                  className={`text-[11px] sm:text-xs mt-2 font-bold transition-colors text-center max-w-[76px] leading-tight ${
-                    isSelected
-                      ? isWomen
-                        ? 'text-rose-600 font-black'
-                        : 'text-blue-600 font-black'
-                      : 'text-stone-700 group-hover:text-stone-900'
-                  }`}
-                >
-                  {cat.name}
-                </span>
+
+                <div>
+                  <span className="block text-xs font-black text-stone-900 truncate">
+                    {cat.name}
+                  </span>
+                  <span className="block text-[10px] text-stone-500 truncate mt-0.5">
+                    {cat.description}
+                  </span>
+                </div>
               </button>
             );
           })}
         </div>
       </section>
 
-      {/* 3. NEARBY SALONS SECTION */}
-      <section className="space-y-3">
-        <div className="flex items-center justify-between px-1">
-          <div className="flex items-center gap-2">
-            <h2 className="text-base sm:text-lg font-black text-stone-900 tracking-tight">
-              Nearby Salons
-            </h2>
-            {selectedServiceFilter !== 'All' && (
-              <span
-                className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
-                  isWomen
-                    ? 'bg-rose-50 text-rose-700 border-rose-200'
-                    : 'bg-orange-50 text-orange-700 border-orange-200'
-                }`}
-              >
-                {selectedServiceFilter}
-              </span>
-            )}
-          </div>
-          <button
-            onClick={() => setCustomerTab('explore')}
-            className={`text-xs font-bold hover:underline cursor-pointer ${
-              isWomen ? 'text-rose-600 hover:text-rose-700' : 'text-blue-600 hover:text-blue-700'
+      {/* 3. LAZY MODE / IMMEDIATE CHAIR FILTER */}
+      <section
+        className={`p-4 rounded-3xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
+          lazyFilter
+            ? isWomen
+              ? 'bg-rose-50/80 border-rose-300'
+              : 'bg-orange-50/80 border-orange-300'
+            : 'bg-white border-stone-200'
+        }`}
+      >
+        <div className="flex items-center gap-3">
+          <div
+            className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 ${
+              lazyFilter
+                ? isWomen
+                  ? 'bg-[#E11D48] text-white'
+                  : 'bg-[#FF6422] text-white'
+                : 'bg-stone-100 text-stone-600'
             }`}
           >
-            View all
+            <Zap className="w-5 h-5" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-black text-stone-900">Lazy Mode</span>
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-800">
+                Zero Wait Only
+              </span>
+            </div>
+            <p className="text-xs text-stone-500">
+              Only display neighbourhood salons with an empty waiting area right now
+            </p>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => setLazyFilter(isLazyActive ? 'all' : '0-5')}
+          className={`px-4 py-2 rounded-2xl text-xs font-black transition-all cursor-pointer shrink-0 ${
+            isLazyActive
+              ? isWomen
+                ? 'bg-[#E11D48] text-white shadow-xs'
+                : 'bg-[#FF6422] text-white shadow-xs'
+              : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
+          }`}
+        >
+          {isLazyActive ? '✓ Showing 0-Wait Salons' : 'Enable Zero-Wait Filter'}
+        </button>
+      </section>
+
+      {/* 4. IMMEDIATE WALK-IN CHAIRS (0-2 WAITING) */}
+      {immediateChairs.length > 0 && (
+        <section className="space-y-3.5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+              <div>
+                <h2 className="text-lg font-black text-stone-900 tracking-tight">
+                  Chairs Available Right Now
+                </h2>
+                <p className="text-xs text-stone-500">
+                  Studios with 0 to 2 customers waiting. Walk straight in without long queues.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {immediateChairs.slice(0, 3).map((salon) => (
+              <SalonCard
+                key={salon.id}
+                salon={salon}
+                onSelect={handleSelectSalon}
+                isSaved={userProfile?.savedSalons?.includes(salon.id)}
+                onToggleFavorite={toggleFavorite}
+                experience={genderFilter}
+              />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* 5. NEARBY SALONS (PRIMARY FEED) */}
+      <section className="space-y-3.5">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-black text-stone-900 tracking-tight">
+              Nearby Studios in Your Area
+            </h2>
+            <p className="text-xs text-stone-500">
+              Ranked by proximity to your current location
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setCustomerTab('explore')}
+            className={`text-xs font-black transition-colors flex items-center gap-1 cursor-pointer ${
+              isWomen ? 'text-[#E11D48]' : 'text-[#FF6422]'
+            }`}
+          >
+            <span>View All ({filteredSalons.length})</span>
+            <ArrowRight className="w-3.5 h-3.5" />
           </button>
         </div>
 
-        {/* Salon Cards Grid / Vertical List matching the screenshot */}
-        {displayedSalons.length === 0 ? (
-          <div className="bg-white border border-[#E8E2D8] rounded-3xl p-6 text-center space-y-2">
-            <Store className="w-8 h-8 text-stone-400 mx-auto" />
-            <p className="text-xs font-bold text-stone-700">No salons found for this category</p>
-            <button
-              onClick={() => setSelectedServiceFilter('All')}
-              className={`text-xs font-bold hover:underline ${
-                isWomen ? 'text-rose-600' : 'text-orange-600'
-              }`}
-            >
-              Reset filter to see all salons
-            </button>
+        {nearbySalons.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {nearbySalons.slice(0, 6).map((salon) => (
+              <SalonCard
+                key={salon.id}
+                salon={salon}
+                onSelect={handleSelectSalon}
+                isSaved={userProfile?.savedSalons?.includes(salon.id)}
+                onToggleFavorite={toggleFavorite}
+                experience={genderFilter}
+              />
+            ))}
           </div>
         ) : (
-          <div className="space-y-4">
-            {displayedSalons.map((salon) => {
-              const queueInfo = getQueueDisplay(salon.currentQueue, salon.isOpen, salon.queueStatus);
-              const waitTime = getEstimatedWaitMinutes(
-                salon.currentQueue,
-                salon.avgServiceTimeMinutes,
-                salon.activeBarbers,
-              );
-              const isSaved = userProfile.savedSalons.includes(salon.id);
-              const salonType = getSalonType(salon);
-              const cover =
-                salon.coverImage ||
-                salon.posterImage ||
-                (salon.images && salon.images[0]) ||
-                (salon.locationImages && salon.locationImages[0]) ||
-                '';
-
-              return (
-                <div
-                  key={salon.id}
-                  onClick={() => handleSalonCardClick(salon)}
-                  className={`group bg-white border overflow-hidden shadow-xs hover:shadow-md transition-all duration-200 cursor-pointer ${
-                    isWomen
-                      ? 'rounded-2xl border-[#FED7CC] hover:border-rose-400'
-                      : 'rounded-2xl border-[#E8E2D8] hover:border-blue-400'
-                  }`}
-                >
-                  {/* Salon Cover Card with Floating Pill & Heart */}
-                  <div className="h-44 sm:h-52 w-full relative overflow-hidden bg-stone-100">
-                    {cover ? (
-                      <img
-                        src={cover}
-                        alt={salon.name}
-                        loading="lazy"
-                        decoding="async"
-                        className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-500"
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-gradient-to-br from-stone-900 to-black flex flex-col items-center justify-center text-white p-4 text-center">
-                        <Store className="w-8 h-8 text-white/80 mb-1" />
-                        <span className="text-base font-black tracking-wider uppercase">{salon.name}</span>
-                        <span className="text-xs text-stone-400">{salon.locality}</span>
-                      </div>
-                    )}
-
-                    {/* Gradient shadow for text & badge legibility */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/30 pointer-events-none" />
-
-                    {/* Top-Left: Live Queue Status Pill */}
-                    <div className="absolute top-3 left-3">
-                      <span
-                        className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black shadow-md backdrop-blur-md ${queueInfo.badgeClass}`}
-                      >
-                        <span className={`w-2 h-2 rounded-full ${queueInfo.dotClass}`} />
-                        {queueInfo.label}
-                      </span>
-                    </div>
-
-                    {/* Top-Right: Favorite Button (Matches Screenshot) */}
-                    <div className="absolute top-3 right-3">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          toggleFavorite(salon.id);
-                        }}
-                        className="p-2 rounded-full bg-white/95 text-stone-700 hover:text-rose-500 border border-stone-200 backdrop-blur-md transition-colors shadow-sm cursor-pointer"
-                        title={isSaved ? 'Remove from saved' : 'Save salon'}
-                      >
-                        <Heart
-                          className={`w-4 h-4 ${
-                            isSaved ? 'fill-rose-500 text-rose-500' : ''
-                          }`}
-                        />
-                      </button>
-                    </div>
-
-                    {/* Bottom overlay text on image */}
-                    <div className="absolute bottom-3 left-3 right-3 flex items-end justify-between text-white">
-                      <div>
-                        <div className="flex items-center gap-1.5">
-                          <span
-                            className={`px-2 py-0.5 rounded-md text-[10px] font-extrabold tracking-wide uppercase backdrop-blur-md border ${
-                              salonType === 'men'
-                                ? 'bg-blue-900/80 text-blue-100 border-blue-400/40'
-                                : salonType === 'women'
-                                ? 'bg-rose-900/80 text-rose-100 border-rose-400/40'
-                                : 'bg-stone-900/80 text-stone-100 border-stone-400/40'
-                            }`}
-                          >
-                            {salonType === 'men'
-                              ? 'Men Only'
-                              : salonType === 'women'
-                              ? 'Women Only'
-                              : 'Unisex'}
-                          </span>
-                          {!salon.isOpen && (
-                            <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-stone-900/80 text-stone-300">
-                              Closed
-                            </span>
-                          )}
-                        </div>
-                        <h3 className="text-lg sm:text-xl font-black text-white drop-shadow-md tracking-tight mt-1 line-clamp-1">
-                          {salon.name}
-                        </h3>
-                      </div>
-
-                      <div className="shrink-0 text-right">
-                        <span className="text-xs font-bold text-white/90 drop-shadow-sm">
-                          From ₹{salon.startingPrice}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Card Bottom Meta Bar */}
-                  <div className="px-4 py-3 bg-white flex items-center justify-between text-xs text-stone-600 border-t border-stone-100">
-                    <div className="flex items-center gap-1.5 truncate">
-                      <Navigation className="w-3.5 h-3.5 text-stone-400 shrink-0" />
-                      <span className="truncate">{salon.locality}</span>
-                      <span className="text-stone-300">•</span>
-                      <span className="font-semibold text-stone-500 shrink-0">
-                        {salon.distanceKm.toFixed(2)} km
-                      </span>
-                    </div>
-
-                    <div className="flex items-center gap-2 shrink-0">
-                      <span className="inline-flex items-center gap-1 font-bold text-stone-900">
-                        <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
-                        <span>{salon.rating.toFixed(1)}</span>
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+          <div className="p-8 bg-white rounded-3xl text-center border border-stone-200">
+            <Store className="w-10 h-10 text-stone-300 mx-auto mb-2" />
+            <h3 className="text-sm font-black text-stone-900">No studios match your filter</h3>
+            <p className="text-xs text-stone-500 mt-1 max-w-sm mx-auto">
+              Try adjusting your category selection or turn off Lazy Mode to discover all nearby salons.
+            </p>
+            {isLazyActive && (
+              <button
+                type="button"
+                onClick={() => setLazyFilter('all')}
+                className="mt-3 px-4 py-2 bg-stone-900 text-white text-xs font-bold rounded-xl cursor-pointer"
+              >
+                Disable Lazy Mode
+              </button>
+            )}
           </div>
         )}
       </section>
 
-      {/* 4. FREQUENTLY ASKED QUESTIONS */}
-      <section className="bg-white rounded-3xl border border-[#E8E2D8] p-5 sm:p-6 shadow-xs">
-        <div className="flex items-center gap-2 mb-4">
-          <HelpCircle className="w-4 h-4 text-[#FF6422]" />
-          <div>
-            <h3 className="text-sm sm:text-base font-bold text-stone-900">
-              Frequently asked questions
-            </h3>
-            <p className="text-xs text-stone-500">Everything you need to know about SLOON</p>
-          </div>
-        </div>
-
-        <div className="divide-y divide-[#E8E2D8]">
-          {faqs.map((faq, index) => {
-            const isOpen = openFaqIndex === index;
-            return (
-              <div key={index} className="py-3 first:pt-0 last:pb-0">
-                <button
-                  type="button"
-                  onClick={() => setOpenFaqIndex(isOpen ? null : index)}
-                  className="w-full flex items-center justify-between text-left gap-3 text-xs font-bold text-stone-800 hover:text-stone-950 transition-colors cursor-pointer"
-                >
-                  <span>{faq.q}</span>
-                  {isOpen ? (
-                    <ChevronUp className="w-4 h-4 text-stone-400 shrink-0" />
-                  ) : (
-                    <ChevronDown className="w-4 h-4 text-stone-400 shrink-0" />
-                  )}
-                </button>
-                {isOpen && (
-                  <p className="text-xs text-stone-600 mt-2 leading-relaxed pl-0.5">
-                    {faq.a}
-                  </p>
-                )}
+      {/* 6. TOP RATED STUDIOS */}
+      {topRated.length > 0 && (
+        <section className="space-y-3.5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Star className="w-4 h-4 fill-amber-400 text-amber-500" />
+              <div>
+                <h2 className="text-lg font-black text-stone-900 tracking-tight">
+                  Top-Rated Neighbourhood Studios
+                </h2>
+                <p className="text-xs text-stone-500">
+                  Highest customer reviews and verified styling quality
+                </p>
               </div>
-            );
-          })}
-        </div>
-      </section>
+            </div>
+          </div>
 
-      {/* 5. FOR SALON OWNERS FOOTER CTA */}
-      <section className="bg-gradient-to-r from-stone-900 to-stone-800 rounded-3xl p-5 sm:p-6 text-white relative overflow-hidden shadow-md">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="max-w-lg">
-            <span className="text-[11px] font-semibold text-orange-400 uppercase tracking-wider">
-              For Salon Owners
-            </span>
-            <h3 className="text-base sm:text-lg font-bold text-white mt-1">
-              Own a salon in Bilaspur?
-            </h3>
-            <p className="text-xs text-stone-300 mt-1 leading-relaxed">
-              List your studio on SLOON for free. Manage your live queue, reduce walk-in crowd, and attract new customers.
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {topRated.slice(0, 3).map((salon) => (
+              <SalonCard
+                key={salon.id}
+                salon={salon}
+                onSelect={handleSelectSalon}
+                isSaved={userProfile?.savedSalons?.includes(salon.id)}
+                onToggleFavorite={toggleFavorite}
+                experience={genderFilter}
+              />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* 7. RECENTLY VIEWED STUDIOS */}
+      {recentlyViewedSalons.length > 0 && (
+        <section className="space-y-3.5 pt-4 border-t border-stone-200">
+          <div>
+            <h2 className="text-base font-black text-stone-900 tracking-tight">
+              Recently Viewed Studios
+            </h2>
+            <p className="text-xs text-stone-500">
+              Quickly re-check physical waiting counts for studios you previously viewed
             </p>
           </div>
 
-          <div className="shrink-0 w-full sm:w-auto">
-            <a
-              href="https://partner.sloon.in"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-block w-full sm:w-auto px-5 py-2.5 rounded-full bg-[#FF6422] hover:bg-orange-600 text-white font-bold text-xs text-center shadow-md transition-all cursor-pointer"
-            >
-              Partner Portal Login
-            </a>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {recentlyViewedSalons.slice(0, 3).map((salon) => (
+              <SalonCard
+                key={salon.id}
+                salon={salon}
+                onSelect={handleSelectSalon}
+                isSaved={userProfile?.savedSalons?.includes(salon.id)}
+                onToggleFavorite={toggleFavorite}
+                experience={genderFilter}
+              />
+            ))}
           </div>
+        </section>
+      )}
+
+      {/* 8. SLOON CONFIDENCE GUARANTEE BANNER */}
+      <section className="bg-stone-900 rounded-3xl p-6 sm:p-8 text-white relative overflow-hidden">
+        <div className="relative z-10 max-w-xl space-y-2.5">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-white/10 text-white border border-white/20">
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+            <span>Walk-In Confidence</span>
+          </div>
+          <h3 className="text-xl sm:text-2xl font-black tracking-tight">
+            Too lazy to call. Too smart to wait.
+          </h3>
+          <p className="text-xs sm:text-sm text-stone-300 font-normal leading-relaxed">
+            SLOON is your neighbourhood salon network. We provide live queue counts, transparent pricing, and verified staff availability so you never wait blindly again.
+          </p>
         </div>
       </section>
-
-      {/* HOW IT WORKS MODAL */}
-      {showHowItWorksModal && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl p-6 sm:p-7 max-w-md w-full shadow-2xl border border-stone-200 animate-in fade-in zoom-in-95">
-            <div className="flex items-center justify-between pb-4 border-b border-[#E8E2D8]">
-              <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-2xl bg-blue-100 text-blue-600 flex items-center justify-center font-bold">
-                  ⓘ
-                </div>
-                <div>
-                  <h3 className="text-base font-black text-stone-900">How SLOON Works</h3>
-                  <p className="text-xs text-stone-500">Walk-in with zero waiting</p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowHowItWorksModal(false)}
-                className="text-stone-400 hover:text-stone-600 p-1.5 rounded-full hover:bg-stone-100 transition-colors cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="space-y-4 my-4">
-              <div className="flex items-start gap-3 p-3 rounded-2xl bg-stone-50 border border-stone-200">
-                <div className="w-7 h-7 rounded-full bg-blue-600 text-white flex items-center justify-center font-black text-xs shrink-0 mt-0.5">
-                  1
-                </div>
-                <div>
-                  <div className="text-xs font-bold text-stone-900">Check the Live Line</div>
-                  <div className="text-xs text-stone-600 mt-0.5">
-                    Browse salons and check real-time chair counts and wait times before stepping out.
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3 p-3 rounded-2xl bg-stone-50 border border-stone-200">
-                <div className="w-7 h-7 rounded-full bg-blue-600 text-white flex items-center justify-center font-black text-xs shrink-0 mt-0.5">
-                  2
-                </div>
-                <div>
-                  <div className="text-xs font-bold text-stone-900">Take a Token or Walk In</div>
-                  <div className="text-xs text-stone-600 mt-0.5">
-                    Grab your digital ticket (#01, #02...) from home, or head straight over when wait times are low.
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3 p-3 rounded-2xl bg-stone-50 border border-stone-200">
-                <div className="w-7 h-7 rounded-full bg-blue-600 text-white flex items-center justify-center font-black text-xs shrink-0 mt-0.5">
-                  3
-                </div>
-                <div>
-                  <div className="text-xs font-bold text-stone-900">Pay at the Salon Counter</div>
-                  <div className="text-xs text-stone-600 mt-0.5">
-                    No advance payments or card commitments needed. Pay normal prices directly to the barber via cash, UPI, or card.
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => setShowHowItWorksModal(false)}
-              className="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs shadow-md transition-all cursor-pointer"
-            >
-              Got it, let's explore!
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

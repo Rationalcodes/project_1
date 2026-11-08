@@ -2,12 +2,28 @@
 
 @layer base {
   :root {
-    --bg-main: #FAF7F2;
-    --bg-card: #FFFFFF;
-    --bg-card-hover: #FFFDF9;
-    --accent: #FF6422;
-    --accent-gold: #F59F00;
-    --border-subtle: #E8E2D8;
+    /* MEN THEME (Default) */
+    --color-brand-men: #FF6422;
+    --color-brand-men-hover: #E05316;
+    --color-canopy-men: #FF723A;
+    --color-bg-men: #FAF7F2;
+    --color-text-men-primary: #1F1F1F;
+    --color-text-men-secondary: #6B625D;
+    --color-border-men: #E8E2D8;
+
+    /* WOMEN THEME */
+    --color-brand-women: #E11D48;
+    --color-brand-women-hover: #BE123C;
+    --color-canopy-women: #FFDFD6;
+    --color-bg-women: #FFFBF9;
+    --color-text-women-primary: #3B1910;
+    --color-text-women-secondary: #8A6A6A;
+    --color-border-women: #FCE7F3;
+
+    /* SHARED SURFACES */
+    --color-surface-white: #FFFFFF;
+    --radius-card: 20px;
+    --radius-pill: 9999px;
   }
 
   *, *::before, *::after {
@@ -28,7 +44,7 @@
     overflow-x: hidden;
     position: relative;
     background-color: #FAF7F2;
-    color: #1C1917;
+    color: #1F1F1F;
     font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -44,7 +60,6 @@
     overflow-x: hidden;
     display: flex;
     flex-direction: column;
-    background-color: #FAF7F2;
   }
 }
 
