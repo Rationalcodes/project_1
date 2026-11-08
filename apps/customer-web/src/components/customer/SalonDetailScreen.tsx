@@ -1046,10 +1046,10 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
                 <a
                   href={`tel:${salon.phone}`}
                   className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white border border-[var(--border-subtle,#E7DED5)] text-stone-800 hover:text-stone-950 shadow-xs text-xs font-bold transition-all"
-                  title={`Call ${salon.name} at ${salon.phone}`}
+                  title={`Call ${salon.name}`}
                 >
                   <Phone className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>Call {salon.phone}</span>
+                  <span>Call Salon</span>
                 </a>
               )}
 

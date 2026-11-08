@@ -420,10 +420,10 @@ export const ExploreScreen: React.FC = () => {
                                 href={`tel:${salon.phone}`}
                                 onClick={(e) => e.stopPropagation()}
                                 className="flex items-center gap-1 text-[11px] font-bold text-stone-700 hover:text-emerald-700 shrink-0 bg-stone-50 hover:bg-emerald-50 px-2 py-0.5 rounded-lg border border-stone-200/80 transition-colors"
-                                title={`Call ${salon.phone}`}
+                                title="Call salon"
                               >
                                 <Phone className="w-3 h-3 text-emerald-600" />
-                                <span>{salon.phone}</span>
+                                <span>Call</span>
                               </a>
                             )}
                           </div>

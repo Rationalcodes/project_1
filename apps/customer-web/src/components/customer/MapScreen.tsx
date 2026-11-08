@@ -1193,10 +1193,10 @@ export const MapScreen: React.FC<MapScreenProps> = ({ onClose, isFullScreen = fa
                       <a
                         href={`tel:${selectedMarkerSalon.phone}`}
                         className="px-2.5 py-1 rounded-lg border border-stone-200 text-stone-700 hover:text-stone-900 bg-white shadow-xs text-[10px] font-bold flex items-center gap-1 transition-all"
-                        title={`Call ${selectedMarkerSalon.phone}`}
+                        title="Call salon"
                       >
                         <Phone className="w-3 h-3 text-emerald-600" />
-                        <span>{selectedMarkerSalon.phone}</span>
+                        <span>Call</span>
                       </a>
                     )}
 
@@ -1596,10 +1596,10 @@ export const MapScreen: React.FC<MapScreenProps> = ({ onClose, isFullScreen = fa
                     <a
                       href={`tel:${selectedMarkerSalon.phone}`}
                       className="px-2 py-1 rounded-lg border border-stone-200 text-stone-700 hover:text-stone-900 bg-white shadow-xs text-[10px] font-bold flex items-center gap-1 transition-all"
-                      title={`Call ${selectedMarkerSalon.phone}`}
+                      title="Call salon"
                     >
                       <Phone className="w-3 h-3 text-emerald-600" />
-                      <span>{selectedMarkerSalon.phone}</span>
+                      <span>Call</span>
                     </a>
                   )}
 
