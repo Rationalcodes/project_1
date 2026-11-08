@@ -494,6 +494,27 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
             </div>
           </div>
 
+          {/* Human Touch: Friendly Queue Guidance */}
+          <div className="mt-3 p-3 rounded-2xl bg-[#FAF7F2] border border-[#E8E2D8] text-xs text-stone-700 flex items-start gap-2.5">
+            <span className="text-base shrink-0">
+              {salon.currentQueue === 0 ? '✨' : salon.currentQueue <= 3 ? '⚡' : '☕'}
+            </span>
+            <div className="leading-relaxed">
+              <span className="font-bold text-stone-900">
+                {salon.currentQueue === 0
+                  ? 'No line ahead!'
+                  : salon.currentQueue <= 3
+                  ? 'Quick turnaround line!'
+                  : 'Chairs are busy right now.'}
+              </span>{' '}
+              {salon.currentQueue === 0
+                ? 'Walk right in — chairs are available immediately.'
+                : salon.currentQueue <= 3
+                ? `About ~${waitTime} minutes total wait. Grab a digital ticket to hold your spot as you head over.`
+                : `About ~${waitTime} minutes total wait. Secure your place in line from your phone so you don't wait awkwardly.`}
+            </div>
+          </div>
+
           {/* Customer's Active Ticket (if in queue) */}
           {activeTicket && (activeTicket.salonId === salon.id || !activeTicket.salonId) ? (
             <div className="mt-3 pt-3 border-t border-orange-200 bg-gradient-to-br from-amber-500/10 via-orange-500/5 to-amber-500/10 rounded-2xl p-4 border border-amber-300">
@@ -517,6 +538,11 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
                   </div>
                   <p className="text-xs text-stone-700 font-semibold mt-0.5">
                     {activeTicket.customerName} · {activeTicket.serviceName || 'Haircut & Styling'}
+                  </p>
+                  <p className="text-[11px] text-emerald-800 font-medium mt-1">
+                    {activeTicket.status === 'in_service'
+                      ? '✨ You are at the chair right now! Enjoy your session.'
+                      : `We're keeping your spot warm! About ~${waitTime} mins remaining — head over comfortably.`}
                   </p>
                 </div>
 
@@ -1551,7 +1577,7 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
               <div className="bg-orange-50/70 border border-orange-200 rounded-2xl p-3 text-xs text-stone-600 flex items-start gap-2">
                 <Info className="w-4 h-4 text-[#FF6422] shrink-0 mt-0.5" />
                 <p>
-                  Your ticket position will be assigned instantly. The salon will receive your name and number on their dashboard to call you when ready.
+                  Your ticket position is assigned instantly. The salon counter receives your name and number to call you when your chair is being sanitized and prepped. No upfront payment required — pay at the counter when done.
                 </p>
               </div>
 

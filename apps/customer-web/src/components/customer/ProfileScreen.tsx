@@ -333,7 +333,7 @@ export const ProfileScreen: React.FC = () => {
         <div className="text-xs text-stone-600 space-y-1">
           <div className="font-bold text-stone-900">The SLOON Promise</div>
           <div>
-            We never share your private phone number or email with salons. No booking fees, no upfront payments, and no marketing spam. Just pure walk-in transparency.
+            We believe getting a haircut should feel effortless. We never sell your contact info, charge hidden booking fees, or spam your inbox. Just honest walk-in transparency and respect for your time.
           </div>
         </div>
       </div>

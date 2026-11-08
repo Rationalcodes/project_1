@@ -24,7 +24,7 @@ export const FavouritesScreen: React.FC = () => {
             {isWomen ? 'Favourite Beauty Studios' : 'Favourite Grooming Spots'}
           </h1>
           <p className="text-xs text-stone-500 mt-0.5">
-            Keep an instant eye on live walk-in queues at your top studios
+            Your personal grooming circle. Watch wait times before heading out
           </p>
         </div>
 
@@ -79,7 +79,7 @@ export const FavouritesScreen: React.FC = () => {
           <Heart className="w-10 h-10 text-stone-300 mx-auto" />
           <h3 className="text-sm font-bold text-stone-900">No Favourites Added Yet</h3>
           <p className="text-xs text-stone-500 max-w-xs mx-auto">
-            Tap the heart icon on any studio card to save it here for quick walk-in monitoring.
+            Your personal grooming circle is empty. Tap the heart on any studio card to keep tabs on your favourite stylists and barbers!
           </p>
           <button
             onClick={() => setCustomerTab('explore')}

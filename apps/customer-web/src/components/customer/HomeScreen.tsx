@@ -47,6 +47,14 @@ export const HomeScreen: React.FC = () => {
 
   const isWomen = genderFilter === 'women';
 
+  const greeting = useMemo(() => {
+    const hour = new Date().getHours();
+    if (hour >= 5 && hour < 12) return { text: 'Good morning', icon: '☀️' };
+    if (hour >= 12 && hour < 17) return { text: 'Good afternoon', icon: '🌤️' };
+    if (hour >= 17 && hour < 21) return { text: 'Good evening', icon: '🌆' };
+    return { text: 'Hey there', icon: '🌙' };
+  }, []);
+
   const BANNER_STORAGE_KEY = 'sloon_home_banners';
 
   // 4 Home Poster Spaces (Admin controllable & persistent)
@@ -380,6 +388,37 @@ export const HomeScreen: React.FC = () => {
         </div>
       </section>
 
+      {/* HUMAN TOUCH: WARM PERSONALIZED GREETING & NEIGHBORHOOD PULSE */}
+      <section className="bg-white/80 backdrop-blur-xs rounded-3xl p-4 sm:p-5 border border-[#E8E2D8] shadow-2xs">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <div className="flex items-center gap-1.5 text-xs text-stone-500 font-semibold">
+              <span>{greeting.icon}</span>
+              <span>{greeting.text}</span>
+              {userProfile.name ? (
+                <span className="text-stone-900 font-bold">• {userProfile.name.split(' ')[0]}</span>
+              ) : null}
+            </div>
+            <h2 className="text-base sm:text-lg font-black text-stone-950 tracking-tight mt-0.5">
+              {isWomen ? 'Ready for a fresh glow today?' : 'Looking for a clean cut today?'}
+            </h2>
+            <p className="text-xs text-stone-500 mt-0.5">
+              {isWomen
+                ? 'Check real-time beauty chairs in your neighborhood and walk in with ease.'
+                : 'Check live barber chairs in your neighborhood and walk in without the wait.'}
+            </p>
+          </div>
+
+          <div className="hidden xs:flex flex-col items-end shrink-0 text-right">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-[11px] font-bold text-emerald-800 shadow-2xs">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span>Chairs active live</span>
+            </span>
+            <span className="text-[10px] text-stone-400 mt-1">Real front-desk sync</span>
+          </div>
+        </div>
+      </section>
+
       {/* 2. CATEGORIES SECTION (ROUND PHOTO AVATARS) */}
       <section className="space-y-3">
         <div className="flex items-center justify-between px-1">
@@ -541,7 +580,11 @@ export const HomeScreen: React.FC = () => {
                         className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black shadow-md backdrop-blur-md ${queueInfo.badgeClass}`}
                       >
                         <span className={`w-2 h-2 rounded-full ${queueInfo.dotClass}`} />
-                        {queueInfo.label}
+                        {salon.currentQueue === 0
+                          ? '✨ No wait • 0 in line'
+                          : salon.currentQueue <= 3
+                          ? `⚡ Low queue • ${salon.currentQueue} waiting`
+                          : queueInfo.label}
                       </span>
                     </div>
 
@@ -617,6 +660,13 @@ export const HomeScreen: React.FC = () => {
                         <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
                         <span>{salon.rating.toFixed(1)}</span>
                       </span>
+                      <span className="text-stone-300">•</span>
+                      <span className={`text-[11px] font-bold flex items-center gap-0.5 group-hover:translate-x-0.5 transition-transform ${
+                        isWomen ? 'text-rose-600' : 'text-blue-600'
+                      }`}>
+                        <span>Check chairs</span>
+                        <ArrowRight className="w-3 h-3" />
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -624,6 +674,23 @@ export const HomeScreen: React.FC = () => {
             })}
           </div>
         )}
+      </section>
+
+      {/* HUMAN TOUCH: COMMUNITY PROMISE & TRUST NOTE */}
+      <section className="bg-gradient-to-r from-amber-50/70 via-stone-50 to-orange-50/60 rounded-3xl p-5 border border-amber-200/70 text-stone-800 shadow-2xs">
+        <div className="flex items-start gap-3.5">
+          <div className="w-9 h-9 rounded-2xl bg-amber-100 text-amber-800 flex items-center justify-center font-bold text-lg shrink-0 mt-0.5 shadow-2xs">
+            🤝
+          </div>
+          <div className="space-y-1">
+            <h4 className="text-xs font-black uppercase tracking-wider text-amber-900">
+              The SLOON Neighborhood Promise
+            </h4>
+            <p className="text-xs text-stone-700 leading-relaxed">
+              We sync directly with independent local salon owners so you can glance at live chair counts from home. No awkward waiting around in packed waiting areas, no hidden booking fees, and no pressure.
+            </p>
+          </div>
+        </div>
       </section>
 
       {/* 4. FREQUENTLY ASKED QUESTIONS */}
