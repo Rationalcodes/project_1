@@ -332,7 +332,16 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const setGenderFilter = (filter: GenderFilter) => {
     setGenderFilterState(filter);
     safeStorage.setItem('kumbhakaran_gender_filter', filter);
+    if (typeof document !== 'undefined') {
+      document.documentElement.setAttribute('data-theme', filter);
+    }
   };
+
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      document.documentElement.setAttribute('data-theme', genderFilter);
+    }
+  }, [genderFilter]);
 
   // Synchronize browser URL bar and back button navigation with selected salon
   const handleSetSelectedSalonForDetail = useCallback(

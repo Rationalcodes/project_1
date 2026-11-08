@@ -1,13 +1,49 @@
 @import "tailwindcss";
 
 @layer base {
-  :root {
+  :root,
+  html[data-theme="men"] {
+    /* 1. PRIMARY BRAND IDENTITY — DARK ESPRESSO / RICH LEATHER (MEN) */
+    --color-roof: #1C1917;
+    --color-canopy-main: #292524;
+    --color-canopy-highlight: #783F0F;
+    --color-canopy-gradient: #A67C5B;
+    --color-primary-accent: #FF6422;
+    --color-secondary-accent: #D97706;
+    --color-text-on-dark: #FFF8F0;
+    --color-bg-main: #FAF7F2;
+    --color-bg-card: #FFFFFF;
+    --color-text-secondary: #78716C;
+    --color-border: #E7DED5;
+
     --bg-main: #FAF7F2;
     --bg-card: #FFFFFF;
     --bg-card-hover: #FFFDF9;
     --accent: #FF6422;
-    --accent-gold: #F59F00;
-    --border-subtle: #E8E2D8;
+    --accent-gold: #D97706;
+    --border-subtle: #E7DED5;
+  }
+
+  html[data-theme="women"] {
+    /* 2. COMPLEMENTARY EXPERIENCE — CUSTOM PLUM / ROSE (WOMEN) */
+    --color-roof: #351329;
+    --color-canopy-main: #54203F;
+    --color-canopy-highlight: #783653;
+    --color-canopy-gradient: #B66D86;
+    --color-primary-accent: #F47B70;
+    --color-secondary-accent: #E9A0AA;
+    --color-text-on-dark: #FFF8F5;
+    --color-bg-main: #FFFBF9;
+    --color-bg-card: #FFFFFF;
+    --color-text-secondary: #8A6A78;
+    --color-border: #F1DDE3;
+
+    --bg-main: #FFFBF9;
+    --bg-card: #FFFFFF;
+    --bg-card-hover: #FFFBF9;
+    --accent: #F47B70;
+    --accent-gold: #E9A0AA;
+    --border-subtle: #F1DDE3;
   }
 
   *, *::before, *::after {
@@ -27,7 +63,7 @@
     min-height: 100%;
     overflow-x: hidden;
     position: relative;
-    background-color: #FAF7F2;
+    background-color: var(--bg-main, #FAF7F2);
     color: #1C1917;
     font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     -webkit-font-smoothing: antialiased;
@@ -36,6 +72,7 @@
     text-size-adjust: 100%;
     margin: 0;
     padding: 0;
+    transition: background-color 300ms ease;
   }
 
   #root {
@@ -44,7 +81,8 @@
     overflow-x: hidden;
     display: flex;
     flex-direction: column;
-    background-color: #FAF7F2;
+    background-color: var(--bg-main, #FAF7F2);
+    transition: background-color 300ms ease;
   }
 }
 
@@ -66,7 +104,7 @@
 }
 
 ::-webkit-scrollbar-track {
-  background: #FAF7F2;
+  background: var(--bg-main, #FAF7F2);
 }
 
 ::-webkit-scrollbar-thumb {
@@ -83,7 +121,11 @@
 }
 
 .glow-amber {
-  box-shadow: 0 0 25px -5px rgba(245, 159, 0, 0.25);
+  box-shadow: 0 0 25px -5px rgba(217, 119, 6, 0.25);
+}
+
+.glow-coral {
+  box-shadow: 0 0 25px -5px rgba(244, 123, 112, 0.25);
 }
 
 .glow-green {
@@ -96,7 +138,7 @@
 }
 
 .leaflet-container {
-  background-color: #FAF7F2 !important;
+  background-color: var(--bg-main, #FAF7F2) !important;
 }
 
 .leaflet-div-icon,

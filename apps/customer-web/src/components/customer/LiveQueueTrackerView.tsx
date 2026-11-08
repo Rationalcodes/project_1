@@ -53,7 +53,7 @@ export const LiveQueueTrackerView: React.FC<LiveQueueTrackerViewProps> = ({
   } = useCustomer();
 
   const isWomen = genderFilter === 'women';
-  const primaryThemeColor = isWomen ? '#E11D48' : '#FF6422';
+  const primaryThemeColor = isWomen ? '#F47B70' : '#FF6422';
 
   // 1. Determine currently active/selected salon
   const ticketSalon = activeTicket?.salonId
@@ -248,10 +248,10 @@ export const LiveQueueTrackerView: React.FC<LiveQueueTrackerViewProps> = ({
   return (
     <div className="space-y-4 max-w-2xl mx-auto">
       {/* 1. Pro Studio Quick Switcher Bar */}
-      <div className="bg-white border border-[#E8E2D8] rounded-2xl p-3 shadow-xs">
+      <div className="bg-white border border-[#E7DED5] rounded-2xl p-3 shadow-xs">
         <div className="flex items-center justify-between mb-2">
           <label className="text-[11px] font-black uppercase tracking-wider text-stone-500 flex items-center gap-1.5">
-            <Store className={`w-3.5 h-3.5 ${isWomen ? 'text-[#E11D48]' : 'text-[#FF6422]'}`} />
+            <Store className={`w-3.5 h-3.5 ${isWomen ? 'text-[#F47B70]' : 'text-[#FF6422]'}`} />
             <span>Select Studio</span>
           </label>
           {onSwitchToMap && (
@@ -276,7 +276,7 @@ export const LiveQueueTrackerView: React.FC<LiveQueueTrackerViewProps> = ({
                 className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all border shrink-0 cursor-pointer ${
                   isSelected
                     ? isWomen
-                      ? 'bg-rose-50 border-[#E11D48] text-rose-950 shadow-xs ring-1 ring-rose-500/20'
+                      ? 'bg-rose-50 border-[#F47B70] text-rose-950 shadow-xs ring-1 ring-rose-500/20'
                       : 'bg-orange-50 border-[#FF6422] text-orange-950 shadow-xs ring-1 ring-orange-500/20'
                     : 'bg-stone-50 border-stone-200 text-stone-700 hover:bg-stone-100'
                 }`}
@@ -298,7 +298,7 @@ export const LiveQueueTrackerView: React.FC<LiveQueueTrackerViewProps> = ({
       </div>
 
       {/* 2. Focused Studio Header Card */}
-      <div className="bg-white border border-[#E8E2D8] rounded-2xl p-3.5 flex items-center justify-between gap-3 shadow-xs">
+      <div className="bg-white border border-[#E7DED5] rounded-2xl p-3.5 flex items-center justify-between gap-3 shadow-xs">
         <div className="min-w-0">
           <div className="flex items-center gap-1.5">
             <h2 className="text-base font-black text-stone-900 truncate">
@@ -330,10 +330,10 @@ export const LiveQueueTrackerView: React.FC<LiveQueueTrackerViewProps> = ({
         <div className="absolute top-0 right-0 -mr-10 -mt-10 w-44 h-44 rounded-full bg-orange-400/10 blur-3xl pointer-events-none" />
 
         {/* Top Header Row */}
-        <div className="flex items-center justify-between mb-3 pb-2 border-b border-[#E8E2D8]">
+        <div className="flex items-center justify-between mb-3 pb-2 border-b border-[#E7DED5]">
           <div className="flex items-center gap-2">
             <span className={`w-3 h-3 rounded-full ${queueInfo.dotClass}`} />
-            <span className={`text-xs font-black uppercase tracking-wider ${isWomen ? 'text-[#E11D48]' : 'text-[#FF6422]'}`}>
+            <span className={`text-xs font-black uppercase tracking-wider ${isWomen ? 'text-[#F47B70]' : 'text-[#FF6422]'}`}>
               Live Queue Status
             </span>
           </div>
@@ -362,9 +362,9 @@ export const LiveQueueTrackerView: React.FC<LiveQueueTrackerViewProps> = ({
           </div>
 
           {/* Estimated Wait Card */}
-          <div className="bg-[#FAF7F2] border border-[#E8E2D8] rounded-2xl p-4 sm:w-56 shrink-0 shadow-xs">
+          <div className="bg-[#FAF7F2] border border-[#E7DED5] rounded-2xl p-4 sm:w-56 shrink-0 shadow-xs">
             <div className="text-[10px] text-stone-500 uppercase font-semibold flex items-center gap-1">
-              <Clock className={`w-3.5 h-3.5 ${isWomen ? 'text-[#E11D48]' : 'text-[#FF6422]'}`} /> Estimated Wait Time
+              <Clock className={`w-3.5 h-3.5 ${isWomen ? 'text-[#F47B70]' : 'text-[#FF6422]'}`} /> Estimated Wait Time
             </div>
             <div className="text-2xl font-black text-stone-900 mt-1">
               ~{waitTime} <span className="text-xs font-normal text-stone-500">minutes</span>
@@ -393,7 +393,7 @@ export const LiveQueueTrackerView: React.FC<LiveQueueTrackerViewProps> = ({
             <div className="mt-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <div className="text-3xl font-black text-stone-900 tracking-tight flex items-baseline gap-1">
-                  <span className={isWomen ? 'text-[#E11D48]' : 'text-[#FF6422]'}>#</span>
+                  <span className={isWomen ? 'text-[#F47B70]' : 'text-[#FF6422]'}>#</span>
                   <span>{(activeTicket.ticketNumber || String(activeTicket.position || '')).replace(/^#+/, '')}</span>
                 </div>
                 <p className="text-xs text-stone-700 font-semibold mt-0.5">
@@ -496,7 +496,7 @@ export const LiveQueueTrackerView: React.FC<LiveQueueTrackerViewProps> = ({
               onClick={() => setShowJoinQueueModal(true)}
               className={`w-full sm:w-auto px-5 py-2.5 rounded-2xl ${
                 isWomen
-                  ? 'bg-[#E11D48] hover:bg-rose-700 shadow-rose-500/25'
+                  ? 'bg-[#F47B70] hover:bg-rose-700 shadow-rose-500/25'
                   : 'bg-[#FF6422] hover:bg-orange-600 shadow-orange-500/25'
               } active:scale-95 text-white font-extrabold text-xs shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer shrink-0`}
             >
@@ -531,7 +531,7 @@ export const LiveQueueTrackerView: React.FC<LiveQueueTrackerViewProps> = ({
         )}
 
         {/* Customer queue updates / Location Crowdsourcing (Matches Screenshot) */}
-        <div className="mt-4 pt-3.5 border-t border-[#E8E2D8] bg-stone-50/80 -mx-5 -mb-5 px-5 py-3.5 rounded-b-3xl">
+        <div className="mt-4 pt-3.5 border-t border-[#E7DED5] bg-stone-50/80 -mx-5 -mb-5 px-5 py-3.5 rounded-b-3xl">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-start gap-2.5">
               <div className="w-8 h-8 rounded-xl bg-orange-100 border border-orange-200 flex items-center justify-center text-sm shrink-0 mt-0.5">
@@ -563,7 +563,7 @@ export const LiveQueueTrackerView: React.FC<LiveQueueTrackerViewProps> = ({
               onClick={handleOpenCrowdModal}
               className="px-3.5 py-2 rounded-xl bg-[#1F1F1F] hover:bg-stone-800 text-white font-extrabold text-xs shadow-xs transition-all flex items-center justify-center gap-1.5 shrink-0 cursor-pointer"
             >
-              <Navigation className={`w-3.5 h-3.5 ${isWomen ? 'text-[#E11D48]' : 'text-[#FF6422]'}`} />
+              <Navigation className={`w-3.5 h-3.5 ${isWomen ? 'text-[#F47B70]' : 'text-[#FF6422]'}`} />
               <span>Share a quick update</span>
             </button>
           </div>
@@ -571,10 +571,10 @@ export const LiveQueueTrackerView: React.FC<LiveQueueTrackerViewProps> = ({
 
         {/* PRIVACY-COMPLIANT STUDIO QUEUE OVERVIEW */}
         {salon.currentQueue > 0 && (
-          <div className="mt-4 pt-3 border-t border-[#E8E2D8]">
+          <div className="mt-4 pt-3 border-t border-[#E7DED5]">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-stone-800 flex items-center gap-1.5">
-                <Users className={`w-3.5 h-3.5 ${isWomen ? 'text-[#E11D48]' : 'text-[#FF6422]'}`} />
+                <Users className={`w-3.5 h-3.5 ${isWomen ? 'text-[#F47B70]' : 'text-[#FF6422]'}`} />
                 Live Studio Queue ({salon.currentQueue} waiting)
               </span>
               <span className="text-[11px] text-stone-500 font-medium">Synced live</span>
@@ -586,8 +586,8 @@ export const LiveQueueTrackerView: React.FC<LiveQueueTrackerViewProps> = ({
         )}
 
         {/* Important Business Rule Banner */}
-        <div className="mt-4 pt-3 border-t border-[#E8E2D8] flex items-start gap-2.5 text-xs text-stone-600 bg-orange-50/50 p-3 rounded-2xl border border-orange-100">
-          <Info className={`w-4 h-4 ${isWomen ? 'text-[#E11D48]' : 'text-[#FF6422]'} shrink-0 mt-0.5`} />
+        <div className="mt-4 pt-3 border-t border-[#E7DED5] flex items-start gap-2.5 text-xs text-stone-600 bg-orange-50/50 p-3 rounded-2xl border border-orange-100">
+          <Info className={`w-4 h-4 ${isWomen ? 'text-[#F47B70]' : 'text-[#FF6422]'} shrink-0 mt-0.5`} />
           <p>
             <strong className="text-stone-900">Walk-in policy:</strong> SLOON eliminates blind waiting. Check the live queue or take a token to walk straight in without wasting time.
           </p>
@@ -598,9 +598,9 @@ export const LiveQueueTrackerView: React.FC<LiveQueueTrackerViewProps> = ({
       {showJoinQueueModal && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl p-6 sm:p-7 max-w-md w-full shadow-2xl border border-stone-200 animate-in fade-in zoom-in-95">
-            <div className="flex items-center justify-between pb-4 border-b border-[#E8E2D8]">
+            <div className="flex items-center justify-between pb-4 border-b border-[#E7DED5]">
               <div className="flex items-center gap-2.5">
-                <div className={`w-10 h-10 rounded-2xl ${isWomen ? 'bg-rose-100 text-[#E11D48]' : 'bg-orange-100 text-[#FF6422]'} flex items-center justify-center`}>
+                <div className={`w-10 h-10 rounded-2xl ${isWomen ? 'bg-rose-100 text-[#F47B70]' : 'bg-orange-100 text-[#FF6422]'} flex items-center justify-center`}>
                   <Ticket className="w-5 h-5" />
                 </div>
                 <div>
@@ -749,7 +749,7 @@ export const LiveQueueTrackerView: React.FC<LiveQueueTrackerViewProps> = ({
                     bookingFor === 'self' && activeTicket
                       ? 'bg-amber-600 hover:bg-amber-700 shadow-amber-600/25'
                       : isWomen
-                      ? 'bg-[#E11D48] hover:bg-rose-700 shadow-rose-500/25'
+                      ? 'bg-[#F47B70] hover:bg-rose-700 shadow-rose-500/25'
                       : 'bg-[#FF6422] hover:bg-orange-600 shadow-orange-500/25'
                   } text-white font-extrabold text-xs shadow-lg active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50`}
                 >
@@ -780,7 +780,7 @@ export const LiveQueueTrackerView: React.FC<LiveQueueTrackerViewProps> = ({
       {showCrowdModal && (
         <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl p-6 sm:p-7 max-w-lg w-full shadow-2xl border border-stone-200 animate-in fade-in zoom-in-95 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between pb-4 border-b border-[#E8E2D8]">
+            <div className="flex items-center justify-between pb-4 border-b border-[#E7DED5]">
               <div className="flex items-center gap-2.5">
                 <div className="w-10 h-10 rounded-2xl bg-orange-100 text-[#FF6422] flex items-center justify-center text-lg">
                   📍
@@ -950,7 +950,7 @@ export const LiveQueueTrackerView: React.FC<LiveQueueTrackerViewProps> = ({
               </div>
             </div>
 
-            <div className="mt-6 pt-4 border-t border-[#E8E2D8] flex items-center justify-end gap-2.5">
+            <div className="mt-6 pt-4 border-t border-[#E7DED5] flex items-center justify-end gap-2.5">
               <button
                 type="button"
                 onClick={() => setShowCrowdModal(false)}

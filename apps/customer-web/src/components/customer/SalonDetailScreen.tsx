@@ -372,7 +372,7 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
       <div className="flex items-center justify-between">
         <button
           onClick={onBack}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-[#E2DDD5] text-xs font-bold text-stone-800 hover:border-[#FF6422] hover:text-[#FF6422] transition-colors shadow-xs"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-[var(--border-subtle,#E7DED5)] text-xs font-bold text-stone-800 hover:border-[#FF6422] hover:text-[#FF6422] transition-colors shadow-xs"
         >
           <ArrowLeft className="w-4 h-4 text-[#FF6422]" />
           <span>Back</span>
@@ -384,7 +384,7 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
             className={`p-2 rounded-xl border transition-colors shadow-xs ${
               comparisonList.includes(salon.id)
                 ? 'bg-[#FF6422] text-white border-orange-500'
-                : 'bg-white border-[#E2DDD5] text-stone-600 hover:text-stone-900'
+                : 'bg-white border-[var(--border-subtle,#E7DED5)] text-stone-600 hover:text-stone-900'
             }`}
             title="Compare Salon"
           >
@@ -393,7 +393,7 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
 
           <button
             onClick={handleShare}
-            className="p-2 rounded-xl bg-white border border-[#E2DDD5] text-stone-600 hover:text-stone-900 shadow-xs transition-colors"
+            className="p-2 rounded-xl bg-white border border-[var(--border-subtle,#E7DED5)] text-stone-600 hover:text-stone-900 shadow-xs transition-colors"
             title="Share"
           >
             <Share2 className="w-4 h-4" />
@@ -401,7 +401,7 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
 
           <button
             onClick={() => toggleFavorite(salon.id)}
-            className="p-2 rounded-xl bg-white border border-[#E2DDD5] text-stone-500 hover:text-rose-500 shadow-xs transition-colors"
+            className="p-2 rounded-xl bg-white border border-[var(--border-subtle,#E7DED5)] text-stone-500 hover:text-rose-500 shadow-xs transition-colors"
             title="Save to Favourites"
           >
             <Heart className={`w-4 h-4 ${isSaved ? 'fill-rose-500 text-rose-500' : ''}`} />
@@ -410,8 +410,8 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
       </div>
 
       {/* TOP NAVIGATION TABS (DIAGRAM MATCH: Live Queue | Services | Showcase) */}
-      <div className="bg-white border-y border-[#E8E2D8] sticky top-0 z-20 shadow-2xs">
-        <div className="flex divide-x divide-[#E8E2D8] text-xs font-bold text-center">
+      <div className="bg-white border-y border-[var(--border-subtle,#E7DED5)] sticky top-0 z-20 shadow-2xs">
+        <div className="flex divide-x divide-[var(--border-subtle,#E7DED5)] text-xs font-bold text-center">
           <button
             type="button"
             onClick={() => setActiveTab(activeTab === 'queue' ? null : 'queue')}
@@ -456,7 +456,7 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
         <section className="bg-white border-2 border-orange-200 rounded-3xl p-5 shadow-[0_4px_20px_rgba(255,100,34,0.06)] relative overflow-hidden space-y-4 animate-in fade-in duration-150">
           <div className="absolute top-0 right-0 -mr-10 -mt-10 w-44 h-44 rounded-full bg-orange-400/10 blur-3xl pointer-events-none" />
 
-          <div className="flex items-center justify-between pb-2 border-b border-[#E8E2D8]">
+          <div className="flex items-center justify-between pb-2 border-b border-[var(--border-subtle,#E7DED5)]">
             <div className="flex items-center gap-2">
               <span className={`w-3 h-3 rounded-full ${queueInfo.dotClass}`} />
               <span className="text-xs font-black uppercase tracking-wider text-[#FF6422]">
@@ -480,7 +480,7 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
                 {queueInfo.label}
               </div>
             </div>
-            <div className="text-right bg-[#FAF7F2] border border-[#E8E2D8] rounded-2xl p-3 min-w-[120px]">
+            <div className="text-right bg-[#FAF7F2] border border-[var(--border-subtle,#E7DED5)] rounded-2xl p-3 min-w-[120px]">
               <div className="flex items-center gap-1 justify-end text-[10px] text-stone-500 uppercase tracking-wider font-semibold">
                 <Clock className="w-3 h-3" />
                 Estimated Wait
@@ -578,7 +578,7 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
               <button
                 type="button"
                 onClick={() => setShowCrowdModal(true)}
-                className="text-xs font-bold text-stone-600 hover:text-[#FF6422] px-3 py-2 rounded-xl bg-stone-50 border border-[#E2DDD5] hover:bg-orange-50 transition-colors flex items-center gap-1.5 cursor-pointer"
+                className="text-xs font-bold text-stone-600 hover:text-[#FF6422] px-3 py-2 rounded-xl bg-stone-50 border border-[var(--border-subtle,#E7DED5)] hover:bg-orange-50 transition-colors flex items-center gap-1.5 cursor-pointer"
               >
                 <Users className="w-3.5 h-3.5 text-stone-500" />
                 <span>Are you here? Share wait update</span>
@@ -604,7 +604,7 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
                 className={`px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap border transition-all ${
                   selectedServiceCategory === cat
                     ? 'bg-[#FF6422] text-white border-orange-500 shadow-xs'
-                    : 'bg-white border-[#E2DDD5] text-stone-700 hover:border-orange-300'
+                    : 'bg-white border-[var(--border-subtle,#E7DED5)] text-stone-700 hover:border-orange-300'
                 }`}
               >
                 {cat}
@@ -617,7 +617,7 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
             {filteredServices.map((service) => (
               <div
                 key={service.id}
-                className="bg-white border border-[#E8E2D8] rounded-2xl p-4 flex items-start justify-between gap-3 hover:border-orange-300 transition-colors shadow-xs"
+                className="bg-white border border-[var(--border-subtle,#E7DED5)] rounded-2xl p-4 flex items-start justify-between gap-3 hover:border-orange-300 transition-colors shadow-xs"
               >
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
@@ -677,7 +677,7 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all shadow-xs ${
                     isSelected
                       ? 'bg-[#FF6422] text-white shadow-sm shadow-orange-500/20'
-                      : 'bg-white text-stone-700 hover:border-orange-300 border border-[#E2DDD5]'
+                      : 'bg-white text-stone-700 hover:border-orange-300 border border-[var(--border-subtle,#E7DED5)]'
                   }`}
                 >
                   <Icon className="w-3.5 h-3.5" />
@@ -689,7 +689,7 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
 
           {/* Media Grid */}
           {filteredGalleryItems.length === 0 ? (
-            <div className="bg-white border border-[#E8E2D8] rounded-2xl p-8 text-center text-xs text-stone-500 shadow-xs">
+            <div className="bg-white border border-[var(--border-subtle,#E7DED5)] rounded-2xl p-8 text-center text-xs text-stone-500 shadow-xs">
               No media in this category yet.
             </div>
           ) : (
@@ -698,7 +698,7 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
                 <div
                   key={item.id}
                   onClick={() => setLightboxIndex(galleryItems.findIndex(g => g.id === item.id))}
-                  className="group relative h-44 rounded-2xl overflow-hidden border border-[#E8E2D8] bg-stone-100 cursor-pointer shadow-xs hover:border-orange-400 transition-all"
+                  className="group relative h-44 rounded-2xl overflow-hidden border border-[var(--border-subtle,#E7DED5)] bg-stone-100 cursor-pointer shadow-xs hover:border-orange-400 transition-all"
                 >
                   {item.type === 'video' ? (
                     <div className="w-full h-full relative">
@@ -754,7 +754,7 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
       )}
 
       {/* Cover Image Carousel, Poster & Loop Video Showcase */}
-      <div className="rounded-3xl overflow-hidden border border-[#E8E2D8] bg-white relative shadow-sm">
+      <div className="rounded-3xl overflow-hidden border border-[var(--border-subtle,#E7DED5)] bg-white relative shadow-sm">
         <div className="h-64 sm:h-80 w-full relative overflow-hidden group">
           {salon.loopVideoUrl && showVideoInHero ? (
             <video
@@ -810,7 +810,7 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
             </div>
 
             {salon.loopVideoUrl && (
-              <div className="flex items-center gap-1.5 bg-white/90 backdrop-blur-md border border-[#E2DDD5] p-1 rounded-full shadow-md">
+              <div className="flex items-center gap-1.5 bg-white/90 backdrop-blur-md border border-[var(--border-subtle,#E7DED5)] p-1 rounded-full shadow-md">
                 <button
                   type="button"
                   onClick={() => setShowVideoInHero(!showVideoInHero)}
@@ -987,7 +987,7 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
           )}
 
           {/* Location & Quick Actions (Diagram Match: Location on Salon Card) */}
-          <div className="mt-4 pt-3 border-t border-[#E8E2D8] flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+          <div className="mt-4 pt-3 border-t border-[var(--border-subtle,#E7DED5)] flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
             <button
               type="button"
               onClick={() => setShowInAppMap(true)}
@@ -1027,7 +1027,7 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
 
               <a
                 href={`tel:${salon.phone}`}
-                className="flex items-center gap-1 px-3 py-2 rounded-xl bg-white border border-[#E2DDD5] text-stone-700 hover:text-stone-900 shadow-xs text-xs font-semibold"
+                className="flex items-center gap-1 px-3 py-2 rounded-xl bg-white border border-[var(--border-subtle,#E7DED5)] text-stone-700 hover:text-stone-900 shadow-xs text-xs font-semibold"
               >
                 <Phone className="w-3.5 h-3.5 text-stone-500" />
                 <span>Call Studio</span>
@@ -1052,8 +1052,8 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
       </div>
 
       {/* BOTTOM NAVIGATION TABS (DIAGRAM MATCH: Stylists | Reviews) */}
-      <div className="bg-white border-y border-[#E8E2D8] mt-6 shadow-2xs">
-        <div className="flex divide-x divide-[#E8E2D8] text-xs font-bold text-center">
+      <div className="bg-white border-y border-[var(--border-subtle,#E7DED5)] mt-6 shadow-2xs">
+        <div className="flex divide-x divide-[var(--border-subtle,#E7DED5)] text-xs font-bold text-center">
           <button
             type="button"
             onClick={() => setActiveTab(activeTab === 'staff' ? null : 'staff')}
@@ -1091,12 +1091,12 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
             {salon.staff.map((member) => (
               <div
                 key={member.id}
-                className="bg-white border border-[#E8E2D8] rounded-2xl p-4 flex items-center gap-3.5 shadow-xs"
+                className="bg-white border border-[var(--border-subtle,#E7DED5)] rounded-2xl p-4 flex items-center gap-3.5 shadow-xs"
               >
                 <img
                   src={member.photo}
                   alt={member.name}
-                  className="w-16 h-16 rounded-2xl object-cover shrink-0 border border-[#E2DDD5]"
+                  className="w-16 h-16 rounded-2xl object-cover shrink-0 border border-[var(--border-subtle,#E7DED5)]"
                 />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center justify-between gap-2">
@@ -1125,7 +1125,7 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
 
                   <div className="flex flex-wrap gap-1 mt-2">
                     {member.specialties.map((spec, idx) => (
-                      <span key={idx} className="text-[9px] bg-[#FAF7F2] text-stone-700 px-2 py-0.5 rounded border border-[#E2DDD5]">
+                      <span key={idx} className="text-[9px] bg-[#FAF7F2] text-stone-700 px-2 py-0.5 rounded border border-[var(--border-subtle,#E7DED5)]">
                         {spec}
                       </span>
                     ))}
@@ -1141,8 +1141,8 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
       {activeTab === 'reviews' && (
         <div className="space-y-5">
           {/* Ratings Overview & 5 Criteria Breakdown */}
-          <div className="bg-white border border-[#E8E2D8] rounded-2xl p-4 shadow-xs">
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pb-4 border-b border-[#E8E2D8]">
+          <div className="bg-white border border-[var(--border-subtle,#E7DED5)] rounded-2xl p-4 shadow-xs">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pb-4 border-b border-[var(--border-subtle,#E7DED5)]">
               <div className="text-center sm:text-left">
                 <div className="text-4xl font-black text-stone-900 flex items-center justify-center sm:justify-start gap-2">
                   <Star className="w-8 h-8 fill-amber-500 text-amber-500" />
@@ -1171,7 +1171,7 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
                 { label: 'Pricing & Value', score: salon.ratingBreakdown?.pricing ?? 5 },
                 { label: 'Overall Experience', score: salon.ratingBreakdown?.overallExperience ?? 5 }
               ].map((c) => (
-                <div key={c.label} className="bg-[#FAF7F2] border border-[#E2DDD5] p-2 rounded-xl flex items-center justify-between">
+                <div key={c.label} className="bg-[#FAF7F2] border border-[var(--border-subtle,#E7DED5)] p-2 rounded-xl flex items-center justify-between">
                   <span className="text-stone-700">{c.label}</span>
                   <div className="flex items-center gap-1.5 font-bold text-amber-800">
                     <div className="w-16 h-1.5 bg-stone-200 rounded-full overflow-hidden">
@@ -1200,7 +1200,7 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
 
               if (uniqueReviews.length === 0) {
                 return (
-                  <div className="bg-white border border-[#E8E2D8] rounded-2xl p-6 text-center space-y-2 shadow-xs">
+                  <div className="bg-white border border-[var(--border-subtle,#E7DED5)] rounded-2xl p-6 text-center space-y-2 shadow-xs">
                     <p className="text-stone-600 text-xs">No reviews submitted yet.</p>
                     <p className="text-stone-500 text-[11px]">Be the first customer to share your grooming experience!</p>
                   </div>
@@ -1208,7 +1208,7 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
               }
 
               return uniqueReviews.map((rev) => (
-                <div key={rev.id} className="bg-white border border-[#E8E2D8] rounded-2xl p-4 space-y-2 shadow-xs">
+                <div key={rev.id} className="bg-white border border-[var(--border-subtle,#E7DED5)] rounded-2xl p-4 space-y-2 shadow-xs">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2.5">
                       <img src={rev.customerAvatar} alt={rev.customerName} className="w-8 h-8 rounded-full object-cover" />
@@ -1255,11 +1255,11 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
       {showInAppMap && (
         <div className="fixed inset-0 z-50 bg-[#FAF7F2] flex flex-col animate-in fade-in duration-200">
           {/* Top Header */}
-          <header className="bg-white border-b border-[#E8E2D8] p-3 px-4 flex items-center justify-between gap-3 shadow-xs shrink-0">
+          <header className="bg-white border-b border-[var(--border-subtle,#E7DED5)] p-3 px-4 flex items-center justify-between gap-3 shadow-xs shrink-0">
             <button
               type="button"
               onClick={() => setShowInAppMap(false)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-stone-50 border border-[#E2DDD5] text-xs font-bold text-stone-800 hover:border-[#FF6422] hover:text-[#FF6422] transition-colors shadow-2xs cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-stone-50 border border-[var(--border-subtle,#E7DED5)] text-xs font-bold text-stone-800 hover:border-[#FF6422] hover:text-[#FF6422] transition-colors shadow-2xs cursor-pointer"
             >
               <ArrowLeft className="w-4 h-4 text-[#FF6422]" />
               <span>Back to Studio</span>
@@ -1307,12 +1307,12 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
               salon={salon}
               userLocation={userLocation}
               height="100%"
-              className="w-full flex-1 min-h-[350px] rounded-2xl shadow-md border border-[#E2DDD5]"
+              className="w-full flex-1 min-h-[350px] rounded-2xl shadow-md border border-[var(--border-subtle,#E7DED5)]"
             />
           </main>
 
           {/* Bottom Action Footer */}
-          <footer className="bg-white border-t border-[#E8E2D8] p-3 px-4 flex flex-wrap items-center justify-between gap-2.5 shrink-0">
+          <footer className="bg-white border-t border-[var(--border-subtle,#E7DED5)] p-3 px-4 flex flex-wrap items-center justify-between gap-2.5 shrink-0">
             <div className="flex items-center gap-2 text-xs">
               <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
               <span className="font-bold text-stone-800">{salon.name} Pinned</span>
@@ -1448,7 +1448,7 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
       {showJoinQueueModal && (
         <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl p-6 sm:p-7 max-w-md w-full shadow-2xl border border-stone-200 animate-in fade-in zoom-in-95">
-            <div className="flex items-center justify-between pb-4 border-b border-[#E8E2D8]">
+            <div className="flex items-center justify-between pb-4 border-b border-[var(--border-subtle,#E7DED5)]">
               <div className="flex items-center gap-2.5">
                 <div className="w-9 h-9 rounded-2xl bg-orange-100 text-[#FF6422] flex items-center justify-center">
                   <Ticket className="w-5 h-5" />
@@ -1629,7 +1629,7 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
         <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl p-6 sm:p-7 max-w-lg w-full shadow-2xl border border-stone-200 animate-in fade-in zoom-in-95 max-h-[90vh] overflow-y-auto">
             {/* Modal Header */}
-            <div className="flex items-center justify-between pb-4 border-b border-[#E8E2D8]">
+            <div className="flex items-center justify-between pb-4 border-b border-[var(--border-subtle,#E7DED5)]">
               <div className="flex items-center gap-2.5">
                 <div className="w-10 h-10 rounded-2xl bg-orange-100 text-[#FF6422] flex items-center justify-center text-lg">
                   📍
@@ -1808,7 +1808,7 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
             </div>
 
             {/* Modal Actions */}
-            <div className="mt-6 pt-4 border-t border-[#E8E2D8] flex items-center justify-end gap-2.5">
+            <div className="mt-6 pt-4 border-t border-[var(--border-subtle,#E7DED5)] flex items-center justify-end gap-2.5">
               <button
                 type="button"
                 onClick={() => setShowCrowdModal(false)}

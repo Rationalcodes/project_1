@@ -15,8 +15,6 @@ import {
 } from 'lucide-react';
 import { useCustomer, POPULAR_LOCATIONS } from '../../context/CustomerContext';
 import logoWhite from '../../assets/logo-white.png';
-import logoTransparent from '../../assets/logo-transparent.png';
-import logoMen from '../../assets/logo-men.png';
 import logoFallback from '../../assets/logo.png';
 
 export const Header: React.FC = () => {
@@ -102,10 +100,10 @@ export const Header: React.FC = () => {
 
   return (
     <header className="sticky top-0 z-40 w-full max-w-full overflow-visible transition-colors duration-300">
-      {/* 1. TOP ROOF BAR (JioMart Warm Wine / Auburn base behind tabs) */}
+      {/* 1. TOP ROOF BAR */}
       <div
         className={`w-full px-3 pt-2 transition-colors duration-300 ${
-          isWomen ? 'bg-[#780A1C]' : 'bg-[#852210]'
+          isWomen ? 'bg-[#351329]' : 'bg-[#1C1917]'
         }`}
       >
         <div className="max-w-md mx-auto flex items-end justify-center gap-2">
@@ -115,8 +113,8 @@ export const Header: React.FC = () => {
             onClick={() => setGenderFilter('men')}
             className={`flex-1 py-2.5 px-3 flex items-center justify-center gap-1.5 transition-all duration-200 cursor-pointer select-none ${
               !isWomen
-                ? 'bg-[#FF723A] text-stone-950 font-black text-xs sm:text-sm tracking-wider rounded-t-2xl rounded-b-none border-none shadow-none translate-y-[1px] z-10'
-                : 'bg-white text-[#FF723A] font-black text-xs sm:text-sm tracking-wider rounded-full shadow-sm hover:bg-stone-50 mb-1 active:scale-95'
+                ? 'bg-[#FF6422] text-white font-black text-xs sm:text-sm tracking-wider rounded-t-2xl rounded-b-none border-none shadow-none translate-y-[1px] z-10'
+                : 'bg-white/10 text-white/70 hover:text-white hover:bg-white/15 font-bold text-xs sm:text-sm tracking-wider rounded-full shadow-sm mb-1 active:scale-95'
             }`}
           >
             <Scissors className="w-3.5 h-3.5 shrink-0" />
@@ -129,8 +127,8 @@ export const Header: React.FC = () => {
             onClick={() => setGenderFilter('women')}
             className={`flex-1 py-2.5 px-3 flex items-center justify-center gap-1.5 transition-all duration-200 cursor-pointer select-none ${
               isWomen
-                ? 'bg-[#FFDFD6] text-[#7A0D22] font-black text-xs sm:text-sm tracking-wider rounded-t-2xl rounded-b-none border-none shadow-none translate-y-[1px] z-10'
-                : 'bg-white text-[#C93B57] font-black text-xs sm:text-sm tracking-wider rounded-full shadow-sm hover:bg-stone-50 mb-1 active:scale-95'
+                ? 'bg-[#F47B70] text-white font-black text-xs sm:text-sm tracking-wider rounded-t-2xl rounded-b-none border-none shadow-none translate-y-[1px] z-10'
+                : 'bg-white/10 text-white/70 hover:text-white hover:bg-white/15 font-bold text-xs sm:text-sm tracking-wider rounded-full shadow-sm mb-1 active:scale-95'
             }`}
           >
             <User className="w-3.5 h-3.5 shrink-0" />
@@ -139,12 +137,12 @@ export const Header: React.FC = () => {
         </div>
       </div>
 
-      {/* 2. THE SEAMLESS CANOPY (Naturally fused with active tab, softly rounded at bottom) */}
+      {/* 2. THE SEAMLESS CANOPY */}
       <div
-        className={`w-full px-3 sm:px-6 pt-2 pb-3.5 rounded-b-3xl transition-colors duration-300 ${
+        className={`w-full px-3 sm:px-6 pt-2 pb-3.5 rounded-b-3xl transition-all duration-300 ${
           isWomen
-            ? 'bg-[#FFDFD6] shadow-[0_8px_24px_rgba(225,29,72,0.08)]'
-            : 'bg-[#FF723A] shadow-[0_8px_24px_rgba(255,114,58,0.18)]'
+            ? 'bg-gradient-to-b from-[#54203F] via-[#54203F] to-[#351329] border-b border-[#783653]/40 shadow-[0_12px_28px_rgba(53,19,41,0.25)]'
+            : 'bg-gradient-to-b from-[#292524] via-[#292524] to-[#1C1917] border-b border-[#783F0F]/40 shadow-[0_12px_28px_rgba(28,25,23,0.30)]'
         }`}
       >
         <div className="max-w-7xl mx-auto space-y-2.5">
@@ -162,7 +160,7 @@ export const Header: React.FC = () => {
                 title="SLOON Home"
               >
                 <img
-                  src={isWomen ? logoTransparent : logoMen}
+                  src={logoWhite}
                   alt="SLOON - Unisex Grooming Network"
                   className="h-10 xs:h-11 sm:h-12 md:h-13 w-auto max-w-[210px] sm:max-w-[260px] md:max-w-[300px] object-contain transition-transform group-hover:scale-102 drop-shadow-sm"
                   onError={(e) => {
@@ -171,23 +169,27 @@ export const Header: React.FC = () => {
                 />
               </button>
 
-              {/* Location Selector (Directly beneath logo like JioMart Delivery Address) */}
+              {/* Location Selector (Directly beneath logo) */}
               <div className="relative mt-0.5">
                 <button
                   type="button"
                   onClick={() => setLocationDropdownOpen(!locationDropdownOpen)}
-                  className={`flex items-center gap-1 text-[11px] sm:text-xs font-bold transition-opacity cursor-pointer ${
+                  className={`flex items-center gap-1.5 text-[11px] sm:text-xs font-semibold transition-opacity cursor-pointer ${
                     isWomen
-                      ? 'text-[#7A0D22] hover:text-[#520917]'
-                      : 'text-white/95 hover:text-white'
+                      ? 'text-[#FFF8F5]/90 hover:text-[#FFF8F5]'
+                      : 'text-[#FFF8F0]/90 hover:text-[#FFF8F0]'
                   }`}
                   title={userLocation ? `Location: ${userLocation.name}` : 'Set your location'}
                 >
-                  <MapPin className="w-3.5 h-3.5 shrink-0" />
+                  <MapPin
+                    className={`w-3.5 h-3.5 shrink-0 ${
+                      isWomen ? 'text-[#E9A0AA]' : 'text-[#D97706]'
+                    }`}
+                  />
                   <span className="truncate max-w-[170px] xs:max-w-[230px] sm:max-w-[340px]">
                     {userLocation ? userLocation.name : 'Set Location'}
                   </span>
-                  <ChevronDown className="w-3 h-3 opacity-80 shrink-0" />
+                  <ChevronDown className="w-3 h-3 opacity-70 shrink-0" />
                 </button>
 
                 {/* Location Picker Dropdown */}
@@ -202,8 +204,8 @@ export const Header: React.FC = () => {
                       }}
                       className={`w-full mb-2.5 p-2.5 rounded-xl border text-xs font-bold flex items-center justify-center gap-2 transition-all shadow-xs ${
                         isWomen
-                          ? 'bg-rose-50 border-rose-200 text-[#E11D48] hover:bg-rose-100'
-                          : 'bg-orange-50 border-orange-200 text-[#FF723A] hover:bg-orange-100'
+                          ? 'bg-[#FFF0F3] border-[#F1DDE3] text-[#F47B70] hover:bg-rose-100'
+                          : 'bg-[#FFF5ED] border-[#E7DED5] text-[#FF6422] hover:bg-orange-100'
                       }`}
                     >
                       <Navigation className="w-3.5 h-3.5 animate-pulse" />
@@ -219,7 +221,11 @@ export const Header: React.FC = () => {
                           value={customLocalityInput}
                           onChange={(e) => setCustomLocalityInput(e.target.value)}
                           placeholder="Search city, locality or PIN..."
-                          className="w-full pl-8 pr-3 py-1.5 bg-[#FAF7F2] border border-[#E2DDD5] rounded-xl text-xs text-stone-900 placeholder-stone-400 focus:outline-none focus:border-[#FF723A]"
+                          className={`w-full pl-8 pr-3 py-1.5 rounded-xl text-xs text-stone-900 placeholder-stone-400 focus:outline-none ${
+                            isWomen
+                              ? 'bg-[#FFFBF9] border border-[#F1DDE3] focus:border-[#F47B70]'
+                              : 'bg-[#FAF7F2] border border-[#E7DED5] focus:border-[#FF6422]'
+                          }`}
                         />
                       </div>
                     </form>
@@ -241,8 +247,10 @@ export const Header: React.FC = () => {
                             }}
                             className={`text-[11px] px-2 py-1 rounded-lg border transition-colors ${
                               userLocation?.name === loc.name
-                                ? 'bg-orange-500 text-white border-orange-500 font-bold'
-                                : 'bg-stone-50 border-stone-200 text-stone-700 hover:border-orange-300'
+                                ? isWomen
+                                  ? 'bg-[#F47B70] text-white border-[#F47B70] font-bold'
+                                  : 'bg-[#FF6422] text-white border-[#FF6422] font-bold'
+                                : 'bg-stone-50 border-stone-200 text-stone-700 hover:border-stone-400'
                             }`}
                           >
                             {loc.name.split(',')[0]}
@@ -252,10 +260,20 @@ export const Header: React.FC = () => {
                     </div>
 
                     {userLocation ? (
-                      <div className="p-2 rounded-xl bg-[#FAF7F2] border border-[#E2DDD5]">
+                      <div
+                        className={`p-2 rounded-xl border ${
+                          isWomen
+                            ? 'bg-[#FFFBF9] border-[#F1DDE3]'
+                            : 'bg-[#FAF7F2] border-[#E7DED5]'
+                        }`}
+                      >
                         <div className="flex items-center justify-between text-xs text-stone-800">
                           <div className="flex items-center gap-1.5 truncate">
-                            <MapPin className="w-3.5 h-3.5 text-[#FF723A] shrink-0" />
+                            <MapPin
+                              className={`w-3.5 h-3.5 shrink-0 ${
+                                isWomen ? 'text-[#F47B70]' : 'text-[#FF6422]'
+                              }`}
+                            />
                             <span className="font-bold truncate">{userLocation.name}</span>
                           </div>
                           <button
@@ -265,7 +283,7 @@ export const Header: React.FC = () => {
                               setLocationDropdownOpen(false);
                               triggerNotification('Location reset. Showing all salons.');
                             }}
-                            className="text-[11px] text-stone-500 hover:text-[#FF723A] transition-colors shrink-0 ml-2 underline"
+                            className="text-[11px] text-stone-500 hover:text-stone-800 transition-colors shrink-0 ml-2 underline"
                           >
                             Clear
                           </button>
@@ -288,10 +306,10 @@ export const Header: React.FC = () => {
                 setSelectedSalonForDetail(null);
                 setCustomerTab('profile');
               }}
-              className={`flex items-center gap-1.5 p-2 sm:px-3 sm:py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer shadow-xs ${
+              className={`flex items-center gap-1.5 p-2 sm:px-3 sm:py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer shadow-xs ${
                 isWomen
-                  ? 'bg-white/90 hover:bg-white text-[#7A0D22] border border-rose-200/60'
-                  : 'bg-white/20 hover:bg-white/30 text-white border border-white/25 backdrop-blur-xs'
+                  ? 'bg-white/10 hover:bg-white/20 text-[#FFF8F5] border border-white/15 backdrop-blur-xs'
+                  : 'bg-white/10 hover:bg-white/20 text-[#FFF8F0] border border-white/15 backdrop-blur-xs'
               }`}
               title={
                 isAuthenticated
@@ -305,12 +323,12 @@ export const Header: React.FC = () => {
                 <img
                   src={authUser.avatarUrl}
                   alt=""
-                  className="w-5 h-5 rounded-full object-cover shrink-0 ring-1 ring-black/10"
+                  className="w-5 h-5 rounded-full object-cover shrink-0 ring-1 ring-white/30"
                 />
               ) : (
                 <User
                   className={`w-4 h-4 shrink-0 ${
-                    isWomen ? 'text-[#7A0D22]' : 'text-white'
+                    isWomen ? 'text-[#E9A0AA]' : 'text-[#D97706]'
                   }`}
                 />
               )}
@@ -324,13 +342,19 @@ export const Header: React.FC = () => {
             </button>
           </div>
 
-          {/* Search Row: JioMart-Style Crisp White Pill Embedded in Canopy */}
+          {/* Search Row: Soft Ivory Pill Embedded in Canopy */}
           <div className="relative w-full">
-            <div className="relative flex items-center bg-white rounded-full shadow-md overflow-hidden transition-all focus-within:ring-2 focus-within:ring-black/10">
+            <div
+              className={`relative flex items-center rounded-full shadow-md overflow-hidden transition-all focus-within:ring-2 ${
+                isWomen
+                  ? 'bg-[#FFF8F5] border border-[#F1DDE3] focus-within:ring-[#F47B70]/30'
+                  : 'bg-[#FFF8F0] border border-[#E7DED5] focus-within:ring-[#FF6422]/30'
+              }`}
+            >
               <div className="pl-3.5 pr-2 flex items-center pointer-events-none">
                 <Search
                   className={`w-4 h-4 ${
-                    isWomen ? 'text-[#C93B57]' : 'text-[#FF723A]'
+                    isWomen ? 'text-[#F47B70]' : 'text-[#FF6422]'
                   }`}
                 />
               </div>
@@ -349,7 +373,7 @@ export const Header: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setSearchQuery('')}
-                  className="absolute right-2.5 p-1 rounded-full text-stone-400 hover:text-stone-700 hover:bg-stone-100"
+                  className="absolute right-2.5 p-1 rounded-full text-stone-400 hover:text-stone-700 hover:bg-stone-200/50"
                   title="Clear search"
                 >
                   <X className="w-3.5 h-3.5" />
@@ -358,7 +382,7 @@ export const Header: React.FC = () => {
             </div>
           </div>
 
-          {/* Quick Category Pills Bar: Scrollable Horizontal Strip inside Canopy - Only shown on Explore screen as requested */}
+          {/* Quick Category Pills Bar (Explore Screen) */}
           {customerTab === 'explore' && (
             <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pt-0.5 pb-0.5">
               {groomingCategories.map((cat) => {
@@ -373,11 +397,11 @@ export const Header: React.FC = () => {
                     className={`shrink-0 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
                       isWomen
                         ? isActive
-                          ? 'bg-[#E11D48] text-white shadow-xs scale-102'
-                          : 'bg-white/70 text-[#7A0D22] hover:bg-white border border-rose-200/50'
+                          ? 'bg-[#F47B70] text-white shadow-xs scale-102'
+                          : 'bg-white/15 text-[#FFF8F5] hover:bg-white/25 border border-white/10'
                         : isActive
-                          ? 'bg-white text-[#FF723A] font-black shadow-xs scale-102'
-                          : 'bg-white/20 text-white hover:bg-white/30 backdrop-blur-xs border border-white/15'
+                          ? 'bg-[#FF6422] text-white shadow-xs scale-102'
+                          : 'bg-white/15 text-[#FFF8F0] hover:bg-white/25 border border-white/10'
                     }`}
                   >
                     <Icon className="w-3 h-3 shrink-0" />

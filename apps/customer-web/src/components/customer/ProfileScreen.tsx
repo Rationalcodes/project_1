@@ -59,14 +59,14 @@ export const ProfileScreen: React.FC = () => {
       {/* Google Authentication Status Card */}
       {!isAuthenticated ? (
         <div className={`bg-white border rounded-3xl p-5 shadow-sm relative overflow-hidden ${
-          isWomen ? 'border-[#FED7CC]' : 'border-[#E8E2D8]'
+          isWomen ? 'border-[#F1DDE3]' : 'border-[#E7DED5]'
         }`}>
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <div className="flex items-center gap-2">
                 <span className={`text-[10px] uppercase font-extrabold tracking-widest px-2 py-0.5 rounded border ${
                   isWomen
-                    ? 'bg-rose-50 text-[#E11D48] border-rose-200'
+                    ? 'bg-rose-50 text-[#F47B70] border-rose-200'
                     : 'bg-orange-50 text-[#FF6422] border-orange-200'
                 }`}>
                   Google Account
@@ -123,7 +123,7 @@ export const ProfileScreen: React.FC = () => {
 
       {/* Customer Profile Header */}
       <div className={`bg-white border rounded-3xl p-5 shadow-sm relative overflow-hidden ${
-        isWomen ? 'border-[#FED7CC]' : 'border-[#E8E2D8]'
+        isWomen ? 'border-[#F1DDE3]' : 'border-[#E7DED5]'
       }`}>
         <div className="flex items-center gap-4">
           <div className="relative">
@@ -132,13 +132,13 @@ export const ProfileScreen: React.FC = () => {
                 src={authUser.avatarUrl}
                 alt={authUser.name}
                 className={`w-16 h-16 rounded-2xl object-cover border-2 shadow-sm ${
-                  isWomen ? 'border-[#E11D48]' : 'border-[#FF6422]'
+                  isWomen ? 'border-[#F47B70]' : 'border-[#FF6422]'
                 }`}
               />
             ) : (
               <div className={`w-16 h-16 rounded-2xl flex items-center justify-center text-white font-extrabold text-2xl shadow-sm border-2 ${
                 isWomen
-                  ? 'bg-gradient-to-br from-rose-400 to-[#E11D48] border-rose-300'
+                  ? 'bg-gradient-to-br from-rose-400 to-[#F47B70] border-rose-300'
                   : 'bg-gradient-to-br from-orange-400 to-[#FF6422] border-orange-300'
               }`}>
                 {userProfile.name ? userProfile.name.charAt(0).toUpperCase() : <User className="w-8 h-8" />}
@@ -159,13 +159,13 @@ export const ProfileScreen: React.FC = () => {
                   placeholder="Enter your name..."
                   autoFocus
                   className={`px-2.5 py-1 bg-[#FAF7F2] border rounded-xl text-sm font-bold text-stone-900 focus:outline-none ${
-                    isWomen ? 'border-[#E11D48]' : 'border-[#FF6422]'
+                    isWomen ? 'border-[#F47B70]' : 'border-[#FF6422]'
                   }`}
                 />
                 <button
                   type="submit"
                   className={`p-1.5 rounded-lg text-white font-bold ${
-                    isWomen ? 'bg-[#E11D48]' : 'bg-[#FF6422]'
+                    isWomen ? 'bg-[#F47B70]' : 'bg-[#FF6422]'
                   }`}
                 >
                   <Check className="w-3.5 h-3.5" />
@@ -183,7 +183,7 @@ export const ProfileScreen: React.FC = () => {
                   <button
                     onClick={() => setIsEditingName(true)}
                     className={`p-1 rounded-lg hover:bg-stone-100 text-stone-400 transition-colors ${
-                      isWomen ? 'hover:text-[#E11D48]' : 'hover:text-[#FF6422]'
+                      isWomen ? 'hover:text-[#F47B70]' : 'hover:text-[#FF6422]'
                     }`}
                     title="Edit your display name"
                   >
@@ -219,7 +219,7 @@ export const ProfileScreen: React.FC = () => {
 
         {/* Quick Stats Grid */}
         <div className={`grid grid-cols-3 gap-2 mt-5 pt-4 border-t text-center ${
-          isWomen ? 'border-[#FED7CC]' : 'border-[#E8E2D8]'
+          isWomen ? 'border-[#F1DDE3]' : 'border-[#E7DED5]'
         }`}>
           <div
             onClick={() => setCustomerTab('favourites')}
@@ -235,7 +235,7 @@ export const ProfileScreen: React.FC = () => {
               isWomen ? 'hover:bg-rose-50/50' : 'hover:bg-orange-50/50'
             }`}
           >
-            <div className={`text-lg font-black ${isWomen ? 'text-[#E11D48]' : 'text-[#FF6422]'}`}>
+            <div className={`text-lg font-black ${isWomen ? 'text-[#F47B70]' : 'text-[#FF6422]'}`}>
               {userProfile.savedSalons.length}
             </div>
             <div className="text-[10px] text-stone-500 uppercase font-semibold">Saved salons</div>
@@ -256,10 +256,10 @@ export const ProfileScreen: React.FC = () => {
       {/* Customer Name Setting Card */}
       {!authUser && (
         <section className={`bg-white border rounded-2xl p-4 space-y-3 shadow-xs ${
-          isWomen ? 'border-[#FED7CC]' : 'border-[#E8E2D8]'
+          isWomen ? 'border-[#F1DDE3]' : 'border-[#E7DED5]'
         }`}>
           <h3 className="text-xs font-bold text-stone-500 uppercase tracking-wider flex items-center gap-1.5">
-            <User className={`w-3.5 h-3.5 ${isWomen ? 'text-[#E11D48]' : 'text-[#FF6422]'}`} />
+            <User className={`w-3.5 h-3.5 ${isWomen ? 'text-[#F47B70]' : 'text-[#FF6422]'}`} />
             Your Display Name
           </h3>
 
@@ -273,8 +273,8 @@ export const ProfileScreen: React.FC = () => {
               onClick={() => setIsEditingName(true)}
               className={`px-3 py-1.5 rounded-xl bg-white border text-xs font-bold shadow-xs transition-colors ${
                 isWomen
-                  ? 'border-[#FED7CC] hover:border-[#E11D48] text-[#E11D48]'
-                  : 'border-[#E2DDD5] hover:border-[#FF6422] text-[#FF6422]'
+                  ? 'border-[#F1DDE3] hover:border-[#F47B70] text-[#F47B70]'
+                  : 'border-[#E7DED5] hover:border-[#FF6422] text-[#FF6422]'
               }`}
             >
               {userProfile.name || 'Set Name'}
@@ -285,21 +285,21 @@ export const ProfileScreen: React.FC = () => {
 
       {/* Location & Discovery Preferences */}
       <section className={`bg-white border rounded-2xl p-4 space-y-3 shadow-xs ${
-        isWomen ? 'border-[#FED7CC]' : 'border-[#E8E2D8]'
+        isWomen ? 'border-[#F1DDE3]' : 'border-[#E7DED5]'
       }`}>
         <h3 className="text-xs font-bold text-stone-500 uppercase tracking-wider flex items-center gap-1.5">
-          <MapPin className={`w-3.5 h-3.5 ${isWomen ? 'text-[#E11D48]' : 'text-[#FF6422]'}`} />
+          <MapPin className={`w-3.5 h-3.5 ${isWomen ? 'text-[#F47B70]' : 'text-[#FF6422]'}`} />
           Location & Discovery
         </h3>
 
         <div className={`flex items-center justify-between text-xs py-1 border-b ${
-          isWomen ? 'border-[#FED7CC]' : 'border-[#E8E2D8]'
+          isWomen ? 'border-[#F1DDE3]' : 'border-[#E7DED5]'
         }`}>
           <div>
             <div className="text-stone-900 font-semibold">Active Area</div>
             <div className="text-[10px] text-stone-500">{userLocation ? userLocation.name : 'Not set'}</div>
           </div>
-          <span className={`text-[11px] font-semibold ${isWomen ? 'text-[#E11D48]' : 'text-[#FF6422]'}`}>
+          <span className={`text-[11px] font-semibold ${isWomen ? 'text-[#F47B70]' : 'text-[#FF6422]'}`}>
             GPS Coordinates active
           </span>
         </div>
@@ -315,7 +315,7 @@ export const ProfileScreen: React.FC = () => {
               setPreferredRadius(e.target.value);
               triggerNotification(`Search radius set to ${e.target.value}`);
             }}
-            className="px-2.5 py-1 bg-[#FAF7F2] border border-[#E2DDD5] rounded-xl text-xs text-stone-900 focus:outline-none"
+            className="px-2.5 py-1 bg-[#FAF7F2] border border-[#E7DED5] rounded-xl text-xs text-stone-900 focus:outline-none"
           >
             <option value="2 km">Within 2 km (Walking distance)</option>
             <option value="5 km">Within 5 km (Nearby neighbourhood)</option>
@@ -327,9 +327,9 @@ export const ProfileScreen: React.FC = () => {
 
       {/* Transparency Guarantee */}
       <div className={`p-4 rounded-2xl bg-white border flex items-start gap-3 shadow-xs ${
-        isWomen ? 'border-[#FED7CC]' : 'border-[#E8E2D8]'
+        isWomen ? 'border-[#F1DDE3]' : 'border-[#E7DED5]'
       }`}>
-        <ShieldCheck className={`w-5 h-5 shrink-0 mt-0.5 ${isWomen ? 'text-[#E11D48]' : 'text-[#FF6422]'}`} />
+        <ShieldCheck className={`w-5 h-5 shrink-0 mt-0.5 ${isWomen ? 'text-[#F47B70]' : 'text-[#FF6422]'}`} />
         <div className="text-xs text-stone-600 space-y-1">
           <div className="font-bold text-stone-900">The SLOON Promise</div>
           <div>

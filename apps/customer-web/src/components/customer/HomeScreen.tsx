@@ -337,50 +337,50 @@ export const HomeScreen: React.FC = () => {
                   title: 'Skip the crowded waiting room',
                   desc: 'Check live parlour chairs from home and step in when ready.',
                   tag: 'Effortless Beauty Walk-Ins',
-                  bg: 'from-[#520917] via-[#7A0D22] to-[#9E1430]',
+                  bg: 'from-[#351329] via-[#54203F] to-[#783653]',
                 },
                 {
                   title: 'Know the wait before you head out',
                   desc: 'Real front-desk updates so you never sit around waiting.',
                   tag: 'Live Chair Updates',
-                  bg: 'from-[#6E1124] via-[#8E1730] to-[#B32442]',
+                  bg: 'from-[#54203F] via-[#783653] to-[#B66D86]',
                 },
                 {
                   title: 'Pay regular counter prices',
                   desc: 'Zero platform fees. Pay your stylist directly by cash or UPI.',
                   tag: 'Zero Booking Fees',
-                  bg: 'from-[#4D0B18] via-[#751227] to-[#A01B38]',
+                  bg: 'from-[#351329] via-[#4A1B38] to-[#6E2E4E]',
                 },
                 {
                   title: 'Getting ready together?',
                   desc: 'Grab a separate walk-in token for your friend or daughter.',
                   tag: 'Bring Friends Along',
-                  bg: 'from-[#5E0F20] via-[#85162E] to-[#AB223F]',
+                  bg: 'from-[#451834] via-[#66274B] to-[#8C3A64]',
                 },
               ] : [
                 {
                   title: 'Never sit in a crowded barber shop again',
                   desc: 'See how many people are in line right now before you leave home.',
                   tag: 'Walk In With Confidence',
-                  bg: 'from-[#5A190C] via-[#852210] to-[#B83818]',
+                  bg: 'from-[#1C1917] via-[#292524] to-[#783F0F]',
                 },
                 {
                   title: 'Hold your spot from your phone',
                   desc: 'Take a token on your way and walk in right as your chair is ready.',
                   tag: 'Zero Waiting Room Waste',
-                  bg: 'from-[#731E0E] via-[#A02D15] to-[#D94520]',
+                  bg: 'from-[#292524] via-[#442B1E] to-[#783F0F]',
                 },
                 {
                   title: 'Pay regular prices at the counter',
                   desc: 'No advance payments, no card commitments. Just honest local grooming.',
                   tag: '100% Free Service',
-                  bg: 'from-[#4A140A] via-[#701E0E] to-[#992C15]',
+                  bg: 'from-[#1C1917] via-[#2D231E] to-[#4D3325]',
                 },
                 {
                   title: 'Bringing a friend or family?',
                   desc: 'You can easily take separate tokens for them under their own name.',
                   tag: 'Tokens For Family',
-                  bg: 'from-[#661B0D] via-[#8F2713] to-[#BF3C1E]',
+                  bg: 'from-[#231E1B] via-[#3E281C] to-[#5C3620]',
                 },
               ];
               const slideInfo = editorialSlides[idx % editorialSlides.length];
@@ -456,7 +456,7 @@ export const HomeScreen: React.FC = () => {
               setCustomerTab('explore');
             }}
             className={`text-xs font-bold hover:underline cursor-pointer ${
-              isWomen ? 'text-rose-600 hover:text-rose-700' : 'text-blue-600 hover:text-blue-700'
+              isWomen ? 'text-[#F47B70] hover:text-[#d9665b]' : 'text-[#FF6422] hover:text-orange-700'
             }`}
           >
             View all
@@ -477,8 +477,8 @@ export const HomeScreen: React.FC = () => {
                   className={`w-16 h-16 sm:w-18 sm:h-18 rounded-full overflow-hidden border-2 transition-all p-0.5 ${
                     isSelected
                       ? isWomen
-                        ? 'border-rose-600 ring-2 ring-rose-500/30 scale-105 shadow-md'
-                        : 'border-blue-600 ring-2 ring-blue-500/30 scale-105 shadow-md'
+                        ? 'border-[#F47B70] ring-2 ring-[#F47B70]/30 scale-105 shadow-md'
+                        : 'border-[#FF6422] ring-2 ring-[#FF6422]/30 scale-105 shadow-md'
                       : 'border-white ring-1 ring-stone-200/80 shadow-xs group-hover:scale-105 group-hover:border-stone-300'
                   }`}
                 >
@@ -494,8 +494,8 @@ export const HomeScreen: React.FC = () => {
                   className={`text-[11px] sm:text-xs mt-2 font-bold transition-colors text-center max-w-[76px] leading-tight ${
                     isSelected
                       ? isWomen
-                        ? 'text-rose-600 font-black'
-                        : 'text-blue-600 font-black'
+                        ? 'text-[#F47B70] font-black'
+                        : 'text-[#FF6422] font-black'
                       : 'text-stone-700 group-hover:text-stone-900'
                   }`}
                 >
@@ -518,8 +518,8 @@ export const HomeScreen: React.FC = () => {
               <span
                 className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
                   isWomen
-                    ? 'bg-rose-50 text-rose-700 border-rose-200'
-                    : 'bg-orange-50 text-orange-700 border-orange-200'
+                    ? 'bg-[#FFF0F3] text-[#F47B70] border-[#F1DDE3]'
+                    : 'bg-[#FFF5ED] text-[#FF6422] border-[#E7DED5]'
                 }`}
               >
                 {selectedServiceFilter}
@@ -529,7 +529,7 @@ export const HomeScreen: React.FC = () => {
           <button
             onClick={() => setCustomerTab('explore')}
             className={`text-xs font-bold hover:underline cursor-pointer ${
-              isWomen ? 'text-rose-600 hover:text-rose-700' : 'text-blue-600 hover:text-blue-700'
+              isWomen ? 'text-[#F47B70] hover:text-[#d9665b]' : 'text-[#FF6422] hover:text-orange-700'
             }`}
           >
             View all
@@ -538,13 +538,15 @@ export const HomeScreen: React.FC = () => {
 
         {/* Salon Cards Grid / Vertical List matching the screenshot */}
         {displayedSalons.length === 0 ? (
-          <div className="bg-white border border-[#E8E2D8] rounded-3xl p-6 text-center space-y-2">
+          <div className={`bg-white rounded-3xl p-6 text-center space-y-2 border ${
+            isWomen ? 'border-[#F1DDE3]' : 'border-[#E7DED5]'
+          }`}>
             <Store className="w-8 h-8 text-stone-400 mx-auto" />
             <p className="text-xs font-bold text-stone-700">No salons found for this category</p>
             <button
               onClick={() => setSelectedServiceFilter('All')}
               className={`text-xs font-bold hover:underline ${
-                isWomen ? 'text-rose-600' : 'text-orange-600'
+                isWomen ? 'text-[#F47B70]' : 'text-[#FF6422]'
               }`}
             >
               Reset filter to see all salons
@@ -572,7 +574,9 @@ export const HomeScreen: React.FC = () => {
                                 <div
                   key={salon.id}
                   onClick={() => handleSalonCardClick(salon)}
-                  className="group bg-white rounded-3xl border border-stone-200/80 hover:border-stone-400/80 overflow-hidden shadow-xs hover:shadow-md transition-all duration-300 cursor-pointer flex flex-col"
+                  className={`group bg-white rounded-3xl border ${
+                    isWomen ? 'border-[#F1DDE3] hover:border-[#E9A0AA]' : 'border-[#E7DED5] hover:border-[#D97706]/40'
+                  } overflow-hidden shadow-xs hover:shadow-md transition-all duration-300 cursor-pointer flex flex-col`}
                 >
                   {/* Clean Salon Photography */}
                   <div className="h-48 sm:h-56 w-full relative overflow-hidden bg-stone-100">
@@ -668,7 +672,7 @@ export const HomeScreen: React.FC = () => {
                       </span>
 
                       <span className={`font-bold flex items-center gap-1 group-hover:translate-x-0.5 transition-transform ${
-                        isWomen ? 'text-[#E11D48]' : 'text-[#FF6422]'
+                        isWomen ? 'text-[#F47B70]' : 'text-[#FF6422]'
                       }`}>
                         <span>View chairs</span>
                         <ArrowRight className="w-3.5 h-3.5" />
@@ -683,9 +687,11 @@ export const HomeScreen: React.FC = () => {
       </section>
 
       {/* 4. FREQUENTLY ASKED QUESTIONS */}
-      <section className="bg-white rounded-3xl border border-[#E8E2D8] p-5 sm:p-6 shadow-xs">
+      <section className={`bg-white rounded-3xl p-5 sm:p-6 shadow-xs border ${
+        isWomen ? 'border-[#F1DDE3]' : 'border-[#E7DED5]'
+      }`}>
         <div className="flex items-center gap-2 mb-4">
-          <HelpCircle className="w-4 h-4 text-[#FF6422]" />
+          <HelpCircle className={`w-4 h-4 ${isWomen ? 'text-[#F47B70]' : 'text-[#FF6422]'}`} />
           <div>
             <h3 className="text-sm sm:text-base font-bold text-stone-900">
               Frequently asked questions
@@ -694,7 +700,7 @@ export const HomeScreen: React.FC = () => {
           </div>
         </div>
 
-        <div className="divide-y divide-[#E8E2D8]">
+        <div className={`divide-y ${isWomen ? 'divide-[#F1DDE3]' : 'divide-[#E7DED5]'}`}>
           {faqs.map((faq, index) => {
             const isOpen = openFaqIndex === index;
             return (

@@ -71,7 +71,7 @@ export const ExploreScreen: React.FC = () => {
   return (
     <div className="space-y-4 pb-28 text-stone-900 max-w-5xl mx-auto">
       {/* 1. TOP HEADER & TWO-WAY TOGGLE: [ 🏢 Explore Studios | 🗺️ Map ] */}
-      <header className="sticky top-0 z-30 pt-1 pb-2 bg-[#FAF7F2]/95 backdrop-blur-md space-y-2">
+      <header className="sticky top-0 z-30 pt-1 pb-2 bg-[var(--bg-main,#FAF7F2)]/95 backdrop-blur-md space-y-2">
         <div className="flex items-center justify-between px-1">
           <div>
             <h1 className="text-lg font-black tracking-tight text-stone-950 flex items-center gap-2">
@@ -129,7 +129,7 @@ export const ExploreScreen: React.FC = () => {
           {/* Search Bar */}
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-stone-400">
-              <Search className={`w-4 h-4 ${isWomen ? 'text-[#E11D48]' : 'text-[#FF6422]'}`} />
+              <Search className={`w-4 h-4 ${isWomen ? 'text-[#F47B70]' : 'text-[#FF6422]'}`} />
             </div>
             <input
               type="text"
@@ -142,8 +142,8 @@ export const ExploreScreen: React.FC = () => {
               }
               className={`w-full pl-10 pr-9 py-2.5 bg-white border ${
                 isWomen
-                  ? 'border-[#FED7CC] focus:border-[#E11D48]'
-                  : 'border-[#E2DDD5] focus:border-[#FF6422]'
+                  ? 'border-[#F1DDE3] focus:border-[#F47B70]'
+                  : 'border-[#E7DED5] focus:border-[#FF6422]'
               } rounded-2xl text-xs text-stone-900 placeholder-stone-400 focus:outline-none shadow-xs transition-colors`}
             />
             {searchQuery && (
@@ -163,8 +163,8 @@ export const ExploreScreen: React.FC = () => {
               className={`px-3 py-1.5 rounded-full font-bold whitespace-nowrap transition-all border cursor-pointer ${
                 activeFilter === 'all'
                   ? isWomen
-                    ? 'bg-[#E11D48] text-white border-rose-500 shadow-xs'
-                    : 'bg-[#FF6422] text-white border-orange-500 shadow-xs'
+                    ? 'bg-[#F47B70] text-white border-[#F47B70] shadow-xs'
+                    : 'bg-[#FF6422] text-white border-[#FF6422] shadow-xs'
                   : 'bg-white text-stone-700 border-stone-200 hover:border-stone-300'
               }`}
             >
@@ -176,8 +176,8 @@ export const ExploreScreen: React.FC = () => {
               className={`px-3 py-1.5 rounded-full font-bold whitespace-nowrap flex items-center gap-1.5 transition-all border cursor-pointer ${
                 activeFilter === 'queue'
                   ? isWomen
-                    ? 'bg-[#E11D48] text-white border-rose-500 shadow-xs'
-                    : 'bg-[#FF6422] text-white border-orange-500 shadow-xs'
+                    ? 'bg-[#F47B70] text-white border-[#F47B70] shadow-xs'
+                    : 'bg-[#FF6422] text-white border-[#FF6422] shadow-xs'
                   : 'bg-white text-stone-700 border-stone-200 hover:border-stone-300'
               }`}
             >
@@ -190,8 +190,8 @@ export const ExploreScreen: React.FC = () => {
               className={`px-3 py-1.5 rounded-full font-bold whitespace-nowrap flex items-center gap-1.5 transition-all border cursor-pointer ${
                 activeFilter === 'distance'
                   ? isWomen
-                    ? 'bg-[#E11D48] text-white border-rose-500 shadow-xs'
-                    : 'bg-[#FF6422] text-white border-orange-500 shadow-xs'
+                    ? 'bg-[#F47B70] text-white border-[#F47B70] shadow-xs'
+                    : 'bg-[#FF6422] text-white border-[#FF6422] shadow-xs'
                   : 'bg-white text-stone-700 border-stone-200 hover:border-stone-300'
               }`}
             >
@@ -204,8 +204,8 @@ export const ExploreScreen: React.FC = () => {
               className={`px-3 py-1.5 rounded-full font-bold whitespace-nowrap flex items-center gap-1.5 transition-all border cursor-pointer ${
                 activeFilter === 'rating'
                   ? isWomen
-                    ? 'bg-[#E11D48] text-white border-rose-500 shadow-xs'
-                    : 'bg-[#FF6422] text-white border-orange-500 shadow-xs'
+                    ? 'bg-[#F47B70] text-white border-[#F47B70] shadow-xs'
+                    : 'bg-[#FF6422] text-white border-[#FF6422] shadow-xs'
                   : 'bg-white text-stone-700 border-stone-200 hover:border-stone-300'
               }`}
             >
@@ -218,8 +218,8 @@ export const ExploreScreen: React.FC = () => {
               className={`px-3 py-1.5 rounded-full font-bold whitespace-nowrap flex items-center gap-1.5 transition-all border cursor-pointer ${
                 activeFilter === 'open'
                   ? isWomen
-                    ? 'bg-[#E11D48] text-white border-rose-500 shadow-xs'
-                    : 'bg-[#FF6422] text-white border-orange-500 shadow-xs'
+                    ? 'bg-[#F47B70] text-white border-[#F47B70] shadow-xs'
+                    : 'bg-[#FF6422] text-white border-[#FF6422] shadow-xs'
                   : 'bg-white text-stone-700 border-stone-200 hover:border-stone-300'
               }`}
             >
@@ -322,7 +322,7 @@ export const ExploreScreen: React.FC = () => {
                         >
                           <Heart
                             className={`w-4 h-4 ${
-                              isFav ? 'fill-rose-500 text-rose-500' : 'text-white'
+                              isFav ? 'fill-rose-500 text-[#F47B70]' : 'text-white'
                             }`}
                           />
                         </button>
@@ -384,7 +384,7 @@ export const ExploreScreen: React.FC = () => {
                             {salon.isVerified && (
                               <CheckCircle2
                                 className={`w-4 h-4 shrink-0 ${
-                                  isWomen ? 'text-rose-500' : 'text-[#FF6422]'
+                                  isWomen ? 'text-[#F47B70]' : 'text-[#FF6422]'
                                 }`}
                               />
                             )}

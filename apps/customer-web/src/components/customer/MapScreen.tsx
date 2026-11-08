@@ -48,8 +48,8 @@ export const MapScreen: React.FC = () => {
   } = useCustomer();
 
   const isWomen = genderFilter === 'women';
-  const primaryHex = isWomen ? '#E11D48' : '#FF6422';
-  const primaryHoverHex = isWomen ? '#BE123C' : '#E55215';
+  const primaryHex = isWomen ? '#F47B70' : '#FF6422';
+  const primaryHoverHex = isWomen ? '#E0665B' : '#E55215';
 
   const [selectedMarkerSalon, setSelectedMarkerSalon] = useState<Salon | null>(salons[0] || null);
   const [drivingRoute, setDrivingRoute] = useState<DrivingRouteResult | null>(null);
@@ -261,7 +261,7 @@ export const MapScreen: React.FC = () => {
         title: `${salon.name} • ${salon.currentQueue} waiting`,
         icon: {
           path: 'M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z',
-          fillColor: isSelected ? primaryHex : salon.isOpen ? (isWomen ? '#E11D48' : '#EA4335') : '#9CA3AF',
+          fillColor: isSelected ? primaryHex : salon.isOpen ? (isWomen ? '#F47B70' : '#EA4335') : '#9CA3AF',
           fillOpacity: 1,
           strokeColor: '#ffffff',
           strokeWeight: 1.5,
@@ -733,8 +733,8 @@ export const MapScreen: React.FC = () => {
     visibleSalons.forEach((salon) => {
       const isSelected = selectedMarkerSalon?.id === salon.id;
       const pinColor = isSelected
-        ? (isWomen ? '#E11D48' : '#FF6422')
-        : (isWomen ? '#E11D48' : '#EA4335');
+        ? (isWomen ? '#F47B70' : '#FF6422')
+        : (isWomen ? '#F47B70' : '#EA4335');
 
       const salonBadgeHtml = `
         <div style="display: inline-flex; align-items: center; cursor: pointer; user-select: none; transition: transform 0.15s ease; filter: drop-shadow(0 2px 5px rgba(0,0,0,0.3)); ${isSelected ? 'transform: scale(1.12); z-index: 999;' : ''}">
@@ -862,7 +862,7 @@ export const MapScreen: React.FC = () => {
           <div className="flex items-center gap-2">
             <span className={`text-[10px] uppercase tracking-widest font-extrabold px-2 py-0.5 rounded border flex items-center gap-1.5 ${
               isWomen
-                ? 'bg-rose-100/70 text-[#E11D48] border-rose-200'
+                ? 'bg-rose-100/70 text-[#F47B70] border-rose-200'
                 : 'bg-orange-100/70 text-[#FF6422] border-orange-200'
             }`}>
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
@@ -880,7 +880,7 @@ export const MapScreen: React.FC = () => {
         {/* Distance Entry Input & Filter Button */}
         <div className="flex items-center gap-2 flex-wrap">
           {/* Direct Distance Input */}
-          <div className="flex items-center bg-white border border-[#E2DDD5] rounded-xl px-2.5 py-1 shadow-2xs gap-1.5">
+          <div className="flex items-center bg-white border border-[#E7DED5] rounded-xl px-2.5 py-1 shadow-2xs gap-1.5">
             <Navigation className="w-3.5 h-3.5 text-stone-400" />
             <span className="text-[11px] font-bold text-stone-500">Radius:</span>
             <input
@@ -908,9 +908,9 @@ export const MapScreen: React.FC = () => {
             className={`px-3 py-1.5 rounded-xl border text-xs font-black transition-all flex items-center gap-1.5 shadow-2xs cursor-pointer ${
               showFilterDrawer || minRatingFilter > 0 || maxPriceFilter < 1500 || onlyOpenFilter || onlyVerifiedFilter
                 ? isWomen
-                  ? 'bg-rose-50 border-[#E11D48] text-[#E11D48]'
+                  ? 'bg-rose-50 border-[#F47B70] text-[#F47B70]'
                   : 'bg-orange-50 border-[#FF6422] text-[#FF6422]'
-                : 'bg-white border-[#E2DDD5] text-stone-700 hover:bg-stone-50'
+                : 'bg-white border-[#E7DED5] text-stone-700 hover:bg-stone-50'
             }`}
           >
             <SlidersHorizontal className="w-3.5 h-3.5" />
@@ -925,7 +925,7 @@ export const MapScreen: React.FC = () => {
 
       {/* FILTER DRAWER / EXPANDABLE BAR */}
       {showFilterDrawer && (
-        <div className="bg-white border border-[#E8E2D8] rounded-2xl p-4 shadow-sm animate-in slide-in-from-top-2 duration-150 space-y-3.5">
+        <div className="bg-white border border-[#E7DED5] rounded-2xl p-4 shadow-sm animate-in slide-in-from-top-2 duration-150 space-y-3.5">
           <div className="flex items-center justify-between border-b border-stone-100 pb-2">
             <span className="text-xs font-black text-stone-900 flex items-center gap-1.5">
               <SlidersHorizontal className="w-3.5 h-3.5 text-[#FF6422]" />
@@ -1015,7 +1015,7 @@ export const MapScreen: React.FC = () => {
 
       {/* Salon Searching Option Input Bar */}
       <div className="relative">
-        <Search className={`w-4 h-4 absolute left-3.5 top-3 ${isWomen ? 'text-[#E11D48]' : 'text-[#FF6422]'}`} />
+        <Search className={`w-4 h-4 absolute left-3.5 top-3 ${isWomen ? 'text-[#F47B70]' : 'text-[#FF6422]'}`} />
         <input
           type="text"
           value={mapSearch}
@@ -1023,8 +1023,8 @@ export const MapScreen: React.FC = () => {
           placeholder={isWomen ? "Search salon name, locality or PIN code on map..." : "Search salon name, locality or PIN code on map..."}
           className={`w-full pl-10 pr-4 py-2.5 bg-white border rounded-2xl text-xs text-stone-900 placeholder-stone-400 focus:outline-none shadow-sm transition-colors ${
             isWomen
-              ? 'border-[#FED7CC] focus:border-[#E11D48] focus:ring-1 focus:ring-[#E11D48]'
-              : 'border-[#E8E2D8] focus:border-[#FF6422] focus:ring-1 focus:ring-[#FF6422]'
+              ? 'border-[#F1DDE3] focus:border-[#F47B70] focus:ring-1 focus:ring-[#F47B70]'
+              : 'border-[#E7DED5] focus:border-[#FF6422] focus:ring-1 focus:ring-[#FF6422]'
           }`}
         />
         {mapSearch && (
@@ -1038,7 +1038,7 @@ export const MapScreen: React.FC = () => {
       </div>
 
       {/* Pure Full-Width Map Layout (No Sidebar Listing) */}
-      <div className="relative rounded-3xl overflow-hidden border shadow-md min-h-[520px] h-[72vh] lg:h-[700px] border-[#E8E2D8] bg-[#FAF7F2]">
+      <div className="relative rounded-3xl overflow-hidden border shadow-md min-h-[520px] h-[72vh] lg:h-[700px] border-[#E7DED5] bg-[#FAF7F2]">
         {/* Interactive Google Map / Leaflet Container */}
         <style>{`
           .osm-tiles {
@@ -1052,11 +1052,11 @@ export const MapScreen: React.FC = () => {
 
         {/* Real-time Distance Status Indicator & GPS Prompt */}
         {userLocation && selectedMarkerSalon ? (
-          <div className="absolute top-4 left-4 z-20 hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/95 backdrop-blur-md border border-[#E8E2D8] text-[11px] font-bold text-stone-800 shadow-md animate-in fade-in">
+          <div className="absolute top-4 left-4 z-20 hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/95 backdrop-blur-md border border-[#E7DED5] text-[11px] font-bold text-stone-800 shadow-md animate-in fade-in">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
             <span>
               Distance to <strong className="text-stone-900">{selectedMarkerSalon.name}</strong>:{' '}
-              <span className={isWomen ? 'text-[#E11D48]' : 'text-[#FF6422]'}>
+              <span className={isWomen ? 'text-[#F47B70]' : 'text-[#FF6422]'}>
                 {drivingRoute ? `${drivingRoute.distanceFormatted} (${drivingRoute.durationFormatted} ${drivingRoute.travelMode === 'walking' ? 'walk' : 'drive'})` : `${calculateHaversineDistance(
                   userLocation.lat,
                   userLocation.lng,
@@ -1083,7 +1083,7 @@ export const MapScreen: React.FC = () => {
             onClick={handleSearchThisArea}
             className={`absolute top-4 left-1/2 -translate-x-1/2 z-20 px-4 py-2 rounded-2xl text-white text-xs font-black shadow-lg flex items-center gap-2 transition-transform active:scale-95 animate-in fade-in cursor-pointer ${
               isWomen
-                ? 'bg-[#E11D48] shadow-rose-500/25 hover:bg-[#BE123C]'
+                ? 'bg-[#F47B70] shadow-rose-500/25 hover:bg-[#E0665B]'
                 : 'bg-[#FF6422] shadow-orange-500/25 hover:bg-[#E55215]'
             }`}
           >
@@ -1093,8 +1093,8 @@ export const MapScreen: React.FC = () => {
         )}
 
         {/* Google Maps Official Open in App shortcut badge */}
-        <div className="absolute top-4 right-4 z-20 hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/90 backdrop-blur-md border border-[#E8E2D8] text-[11px] font-bold text-stone-700 shadow-sm">
-          <span className={isWomen ? 'text-[#E11D48]' : 'text-[#FF6422]'}>Google Maps</span>
+        <div className="absolute top-4 right-4 z-20 hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/90 backdrop-blur-md border border-[#E7DED5] text-[11px] font-bold text-stone-700 shadow-sm">
+          <span className={isWomen ? 'text-[#F47B70]' : 'text-[#FF6422]'}>Google Maps</span>
           <button
             onClick={() => openGoogleMapsLocation(currentCoords.lat, currentCoords.lng)}
             className="text-stone-500 hover:text-stone-900 flex items-center gap-1 cursor-pointer"
@@ -1110,18 +1110,18 @@ export const MapScreen: React.FC = () => {
             onClick={handlePanToUser}
             className={`w-10 h-10 rounded-2xl bg-white/95 border flex items-center justify-center shadow-md backdrop-blur-md transition-all active:scale-90 cursor-pointer ${
               isWomen
-                ? 'border-[#FED7CC] text-[#E11D48] hover:bg-rose-50'
-                : 'border-[#E8E2D8] text-[#FF6422] hover:bg-orange-50'
+                ? 'border-[#F1DDE3] text-[#F47B70] hover:bg-rose-50'
+                : 'border-[#E7DED5] text-[#FF6422] hover:bg-orange-50'
             }`}
             title="Center on my location"
           >
             <Crosshair className="w-5 h-5" />
           </button>
-          <div className="bg-white/95 border border-[#E8E2D8] rounded-2xl flex flex-col shadow-md backdrop-blur-md overflow-hidden">
+          <div className="bg-white/95 border border-[#E7DED5] rounded-2xl flex flex-col shadow-md backdrop-blur-md overflow-hidden">
             <button
               onClick={() => handleZoom(1)}
               className={`w-10 h-10 flex items-center justify-center text-stone-700 hover:bg-stone-50 transition-colors cursor-pointer ${
-                isWomen ? 'hover:text-[#E11D48]' : 'hover:text-[#FF6422]'
+                isWomen ? 'hover:text-[#F47B70]' : 'hover:text-[#FF6422]'
               }`}
               title="Zoom in"
             >
@@ -1131,7 +1131,7 @@ export const MapScreen: React.FC = () => {
             <button
               onClick={() => handleZoom(-1)}
               className={`w-10 h-10 flex items-center justify-center text-stone-700 hover:bg-stone-50 transition-colors cursor-pointer ${
-                isWomen ? 'hover:text-[#E11D48]' : 'hover:text-[#FF6422]'
+                isWomen ? 'hover:text-[#F47B70]' : 'hover:text-[#FF6422]'
               }`}
               title="Zoom out"
             >
@@ -1162,7 +1162,7 @@ export const MapScreen: React.FC = () => {
               )}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5 text-[10px]">
-                  <span className={`font-bold ${isWomen ? 'text-[#E11D48]' : 'text-[#FF6422]'}`}>
+                  <span className={`font-bold ${isWomen ? 'text-[#F47B70]' : 'text-[#FF6422]'}`}>
                     {selectedMarkerSalon.rating} ★
                   </span>
                   <span className="text-stone-300">•</span>
@@ -1198,7 +1198,7 @@ export const MapScreen: React.FC = () => {
                     }
                     className={`px-2.5 py-1 rounded-lg text-white font-extrabold text-[10px] flex items-center gap-1 transition-colors shadow-sm cursor-pointer ${
                       isWomen
-                        ? 'bg-[#E11D48] hover:bg-[#BE123C]'
+                        ? 'bg-[#F47B70] hover:bg-[#E0665B]'
                         : 'bg-[#FF6422] hover:bg-[#E55215]'
                     }`}
                     title="Navigate turn-by-turn in Google Maps"
@@ -1212,7 +1212,7 @@ export const MapScreen: React.FC = () => {
                     onClick={() => setSelectedSalonForDetail(selectedMarkerSalon)}
                     className={`text-[10px] font-bold underline flex items-center gap-0.5 cursor-pointer ${
                       isWomen
-                        ? 'text-[#E11D48] hover:text-rose-700'
+                        ? 'text-[#F47B70] hover:text-rose-700'
                         : 'text-[#FF6422] hover:text-orange-700'
                     }`}
                   >
