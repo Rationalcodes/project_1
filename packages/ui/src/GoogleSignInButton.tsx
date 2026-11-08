@@ -36,9 +36,9 @@ export const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
     (typeof import.meta !== 'undefined' &&
       ((import.meta as any).env?.VITE_GOOGLE_CLIENT_ID ||
        (import.meta as any).env?.GOOGLE_CLIENT_ID)) ||
-    (typeof (globalThis as any).process !== 'undefined' &&
-      ((globalThis as any).process.env?.VITE_GOOGLE_CLIENT_ID ||
-       (globalThis as any).process.env?.GOOGLE_CLIENT_ID)) ||
+    (typeof process !== 'undefined' &&
+      (process.env?.VITE_GOOGLE_CLIENT_ID ||
+       process.env?.GOOGLE_CLIENT_ID)) ||
     '871471875670-l7e7llt3kviigohqmtip7t13kpp59nre.apps.googleusercontent.com';
 
   useEffect(() => {
