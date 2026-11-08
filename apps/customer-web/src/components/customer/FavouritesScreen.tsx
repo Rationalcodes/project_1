@@ -1,6 +1,7 @@
 import React from 'react';
 import { useSalon, getEstimatedWaitMinutes, getQueueDisplay, getQueueFreshness } from '../../context/CustomerContext';
-import { Heart, Bell, Trash2, ArrowRight, Users, Clock, Navigation, Star } from 'lucide-react';
+import { Heart, Bell, Trash2, ArrowRight, Users, Clock, Navigation, Star, Phone } from 'lucide-react';
+import { InstagramGradientIcon } from '../common/InstagramIcon';
 
 export const FavouritesScreen: React.FC = () => {
   const {
@@ -141,6 +142,33 @@ export const FavouritesScreen: React.FC = () => {
                   </div>
 
                   <div className="flex items-center gap-2">
+                    {salon.phone && (
+                      <a
+                        href={`tel:${salon.phone}`}
+                        onClick={(e) => e.stopPropagation()}
+                        className="p-2 rounded-xl bg-white border border-[#E7DED5] text-stone-700 hover:text-emerald-700 transition-colors shadow-xs"
+                        title="Call salon"
+                      >
+                        <Phone className="w-4 h-4 text-emerald-600" />
+                      </a>
+                    )}
+
+                    {(salon.instagramUrl || salon.instagramHandle) && (
+                      <a
+                        href={
+                          salon.instagramUrl?.startsWith('http')
+                            ? salon.instagramUrl
+                            : `https://instagram.com/${(salon.instagramHandle || salon.instagramUrl || '').replace(/^@/, '')}`
+                        }
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="p-2 rounded-xl bg-white border border-[#E7DED5] text-stone-700 hover:text-pink-600 transition-colors shadow-xs cursor-pointer"
+                        title={`Visit ${salon.name} on Instagram`}
+                      >
+                        <InstagramGradientIcon className="w-4 h-4" />
+                      </a>
+                    )}
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
