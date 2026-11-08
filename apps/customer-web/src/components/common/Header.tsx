@@ -299,47 +299,80 @@ export const Header: React.FC = () => {
               </div>
             </div>
 
-            {/* Right: Beside Logo -> User Profile Button */}
-            <button
-              type="button"
-              onClick={() => {
-                setSelectedSalonForDetail(null);
-                setCustomerTab('profile');
-              }}
-              className={`flex items-center gap-1.5 p-2 sm:px-3 sm:py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer shadow-xs ${
-                isWomen
-                  ? 'bg-white/10 hover:bg-white/20 text-[#FFF8F5] border border-white/15 backdrop-blur-xs'
-                  : 'bg-white/10 hover:bg-white/20 text-[#FFF8F0] border border-white/15 backdrop-blur-xs'
-              }`}
-              title={
-                isAuthenticated
-                  ? `Profile: ${authUser?.name}`
-                  : userProfile.name
-                  ? `Profile: ${userProfile.name}`
-                  : 'Profile & Settings'
-              }
-            >
-              {authUser?.avatarUrl ? (
-                <img
-                  src={authUser.avatarUrl}
-                  alt=""
-                  className="w-5 h-5 rounded-full object-cover shrink-0 ring-1 ring-white/30"
-                />
-              ) : (
-                <User
-                  className={`w-4 h-4 shrink-0 ${
-                    isWomen ? 'text-[#E9A0AA]' : 'text-[#D97706]'
-                  }`}
-                />
+            {/* Right: Beside Logo -> Welcome Greeting + User Profile Button */}
+            <div className="flex items-center gap-2.5 shrink-0">
+              {customerTab === 'home' && (
+                <div
+                  onClick={() => {
+                    setSelectedSalonForDetail(null);
+                    setCustomerTab('profile');
+                  }}
+                  className="flex flex-col items-end text-right leading-tight select-none cursor-pointer group"
+                >
+                  <span
+                    className={`text-[10px] sm:text-[11px] font-medium tracking-wide ${
+                      isWomen ? 'text-[#FFF8F5]/80' : 'text-[#FFF8F0]/80'
+                    }`}
+                  >
+                    Welcome
+                  </span>
+                  <span
+                    className={`text-xs sm:text-sm font-black truncate max-w-[100px] xs:max-w-[130px] sm:max-w-[170px] ${
+                      isWomen ? 'text-[#FFF8F5]' : 'text-[#FFF8F0]'
+                    }`}
+                  >
+                    {isAuthenticated && authUser?.name
+                      ? authUser.name.split(' ')[0]
+                      : userProfile.name
+                      ? userProfile.name.split(' ')[0]
+                      : 'Guest'}
+                  </span>
+                </div>
               )}
-              <span className="hidden sm:inline truncate max-w-[90px]">
-                {isAuthenticated
-                  ? authUser?.name?.split(' ')[0]
-                  : userProfile.name
-                  ? userProfile.name.split(' ')[0]
-                  : 'Profile'}
-              </span>
-            </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedSalonForDetail(null);
+                  setCustomerTab('profile');
+                }}
+                className={`flex items-center gap-1.5 p-2 sm:px-2.5 sm:py-2 rounded-full text-xs font-semibold transition-all cursor-pointer shadow-xs ${
+                  isWomen
+                    ? 'bg-white/10 hover:bg-white/20 text-[#FFF8F5] border border-white/15 backdrop-blur-xs'
+                    : 'bg-white/10 hover:bg-white/20 text-[#FFF8F0] border border-white/15 backdrop-blur-xs'
+                }`}
+                title={
+                  isAuthenticated
+                    ? `Profile: ${authUser?.name}`
+                    : userProfile.name
+                    ? `Profile: ${userProfile.name}`
+                    : 'Profile & Settings'
+                }
+              >
+                {authUser?.avatarUrl ? (
+                  <img
+                    src={authUser.avatarUrl}
+                    alt=""
+                    className="w-5 h-5 rounded-full object-cover shrink-0 ring-1 ring-white/30"
+                  />
+                ) : (
+                  <User
+                    className={`w-4 h-4 shrink-0 ${
+                      isWomen ? 'text-[#E9A0AA]' : 'text-[#D97706]'
+                    }`}
+                  />
+                )}
+                {customerTab !== 'home' && (
+                  <span className="hidden sm:inline truncate max-w-[90px]">
+                    {isAuthenticated
+                      ? authUser?.name?.split(' ')[0]
+                      : userProfile.name
+                      ? userProfile.name.split(' ')[0]
+                      : 'Profile'}
+                  </span>
+                )}
+              </button>
+            </div>
           </div>
 
           {/* Search Row: Soft Ivory Pill Embedded in Canopy */}
