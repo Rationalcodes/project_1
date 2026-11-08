@@ -385,8 +385,7 @@ export class QueueEngineService implements OnModuleInit, OnModuleDestroy {
       },
     });
 
-    const isPastClosing = isSalonPastClosingTime(salon?.openingHoursClose, salon?.openingHoursOpen);
-    const isClosed = salon?.isOpen === false || salon?.queueStatus === 'closed' || isPastClosing;
+    const isClosed = salon?.isOpen === false || salon?.queueStatus === 'closed';
 
     const activeBarbersCount = Math.max(1, salon?.activeBarbers || 2);
     const queueStatus: 'open' | 'paused' | 'closed' = isClosed

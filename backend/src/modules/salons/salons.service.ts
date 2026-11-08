@@ -576,12 +576,8 @@ export class SalonsService {
     const avgTime = salonData.avgServiceTimeMinutes || salonData.avg_service_time_minutes || 20;
     const currentQueue = salonData.currentQueue !== undefined ? salonData.currentQueue : salonData.current_queue || 0;
     const salonIsOpen = Boolean(salonData.isOpen !== undefined ? salonData.isOpen : salonData.is_open);
-    const isPastClosing = isSalonPastClosingTime(
-      salonData.openingHoursClose || salonData.opening_hours_close,
-      salonData.openingHoursOpen || salonData.opening_hours_open,
-    );
     const queueStatus: 'open' | 'paused' | 'closed' =
-      !salonIsOpen || salonData.queueStatus === 'closed' || salonData.queue_status === 'closed' || isPastClosing
+      !salonIsOpen || salonData.queueStatus === 'closed' || salonData.queue_status === 'closed'
         ? 'closed'
         : salonData.queueStatus === 'paused' || salonData.queue_status === 'paused'
           ? 'paused'
@@ -1677,8 +1673,7 @@ export class SalonsService {
     }
     if (
       salon.isOpen === false ||
-      salon.queueStatus === 'closed' ||
-      isSalonPastClosingTime(salon.openingHoursClose, salon.openingHoursOpen)
+      salon.queueStatus === 'closed'
     ) {
       const replay = await replayQueueRequest();
       if (replay) return replay;
@@ -1754,8 +1749,7 @@ export class SalonsService {
         }
         if (
           !lockedSalon.is_open ||
-          lockedSalon.queue_status === 'closed' ||
-          isSalonPastClosingTime(lockedSalon.opening_hours_close, lockedSalon.opening_hours_open)
+          lockedSalon.queue_status === 'closed'
         ) {
           throw new BadRequestException('This salon queue is currently closed.');
         }
