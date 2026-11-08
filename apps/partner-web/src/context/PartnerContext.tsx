@@ -1075,7 +1075,7 @@ export const getEstimatedWaitMinutes = (currentQueue: number, avgServiceTime: nu
 };
 
 export const getQueueDisplay = (currentQueue: number, isOpen: boolean, queueStatus?: Salon['queueStatus']) => {
-  if (!isOpen) {
+  if (!isOpen || queueStatus === 'closed') {
     return {
       label: 'Closed',
       shortLabel: 'Closed',

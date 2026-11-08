@@ -650,8 +650,9 @@ export class SalonsService {
             reviewsCount: Number(st.reviewsCount || 0),
             avatarUrl: st.photo || st.avatarUrl || st.avatar_url || '',
             photo: st.photo || st.avatarUrl || st.avatar_url || '',
-            status: st.status || 'active',
-            isAvailable: st.status === 'active' || st.isAvailable !== false,
+            status: st.availability === 'ON_BREAK' ? 'break' : (st.availability === 'OFFLINE' || st.status === 'inactive' ? 'off' : 'active'),
+            availability: st.availability || 'AVAILABLE',
+            isAvailable: st.availability === 'AVAILABLE',
           }))
         : [],
       ratingBreakdown: salonData.ratingBreakdown || {

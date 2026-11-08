@@ -333,26 +333,32 @@ export const ExploreScreen: React.FC = () => {
                         <div className="flex items-center gap-2">
                           <div
                             className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-bold backdrop-blur-md border ${
-                              salon.isOpen !== false
-                                ? 'bg-black/60 border-white/20'
-                                : 'bg-black/70 border-red-500/30'
+                              !salon.isOpen || salon.queueStatus === 'closed'
+                                ? 'bg-black/75 border-red-500/40 text-stone-300'
+                                : salon.queueStatus === 'paused'
+                                ? 'bg-black/75 border-amber-500/40 text-amber-200'
+                                : 'bg-black/60 border-white/20'
                             }`}
                           >
                             <span
                               className={`w-2 h-2 rounded-full ${
-                                salon.isOpen !== false
-                                  ? queueInfo.dotClass
-                                  : 'bg-stone-400'
+                                !salon.isOpen || salon.queueStatus === 'closed'
+                                  ? 'bg-rose-500'
+                                  : salon.queueStatus === 'paused'
+                                  ? 'bg-amber-400'
+                                  : queueInfo.dotClass
                               }`}
                             />
                             <span>
-                              {salon.isOpen !== false
-                                ? `${salon.currentQueue} in Queue`
-                                : 'Closed'}
+                              {!salon.isOpen || salon.queueStatus === 'closed'
+                                ? 'Closed'
+                                : salon.queueStatus === 'paused'
+                                ? 'Queue Paused'
+                                : `${salon.currentQueue} in Queue`}
                             </span>
                           </div>
 
-                          {salon.isOpen !== false && (
+                          {salon.isOpen && salon.queueStatus === 'open' && (
                             <div className="flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-bold bg-black/60 backdrop-blur-md border border-white/20">
                               <Clock className="w-3.5 h-3.5 text-amber-300" />
                               <span>~{waitTime}m wait</span>

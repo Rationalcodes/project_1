@@ -541,9 +541,7 @@ export const HomeScreen: React.FC = () => {
                         className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black shadow-md backdrop-blur-md ${queueInfo.badgeClass}`}
                       >
                         <span className={`w-2 h-2 rounded-full ${queueInfo.dotClass}`} />
-                        {salon.currentQueue === 0
-                          ? '0 Waiting • Immediate Chair'
-                          : `${salon.currentQueue} in line • ~${waitTime}m wait`}
+                        {queueInfo.label}
                       </span>
                     </div>
 

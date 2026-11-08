@@ -1210,19 +1210,50 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const unsubscribe = defaultApiClient.subscribeToSalonQueue(targetSalonId, (event) => {
       // Immediate synchronization on live WebSocket events
       fetchSalonQueue(targetSalonId);
-      if (event?.overview?.totalWaiting !== undefined) {
-        setSalons((prev) =>
-          prev.map((s) =>
-            s.id === targetSalonId
-              ? {
-                  ...s,
-                  currentQueue: event.overview.totalWaiting,
-                  estimatedWaitMinutes: event.overview.estimatedWaitMinutes ?? s.estimatedWaitMinutes,
-                }
-              : s,
-          ),
-        );
-      }
+
+      // Extract new queue metrics if present
+      const nextQueue = event?.overview?.totalWaiting !== undefined
+        ? event.overview.totalWaiting
+        : (event?.queueStatus === 'closed' || event?.isOpen === false ? 0 : undefined);
+      const nextEta = event?.overview?.estimatedWaitMinutes;
+      const nextQueueStatus = event?.queueStatus || (event?.isOpen !== undefined ? (event.isOpen ? 'open' : 'closed') : undefined);
+      const nextIsOpen = event?.isOpen !== undefined ? event.isOpen : (nextQueueStatus ? nextQueueStatus !== 'closed' : undefined);
+
+      setSalons((prev) =>
+        prev.map((s) => {
+          if (s.id !== targetSalonId) return s;
+          return {
+            ...s,
+            ...(nextQueue !== undefined ? { currentQueue: nextQueue } : {}),
+            ...(nextEta !== undefined ? { estimatedWaitMinutes: nextEta } : {}),
+            ...(nextQueueStatus !== undefined ? { queueStatus: nextQueueStatus } : {}),
+            ...(nextIsOpen !== undefined ? { isOpen: nextIsOpen } : {}),
+          };
+        }),
+      );
+
+      setSelectedSalonForDetail((prev) => {
+        if (!prev || prev.id !== targetSalonId) return prev;
+        const updatedStaff = (event?.staffId && event?.availability)
+          ? prev.staff.map((st) =>
+              st.id === event.staffId
+                ? {
+                    ...st,
+                    status: event.availability === 'ON_BREAK' ? ('break' as const) : (event.availability === 'OFFLINE' ? ('off' as const) : ('active' as const)),
+                  }
+                : st,
+            )
+          : prev.staff;
+
+        return {
+          ...prev,
+          staff: updatedStaff,
+          ...(nextQueue !== undefined ? { currentQueue: nextQueue } : {}),
+          ...(nextEta !== undefined ? { estimatedWaitMinutes: nextEta } : {}),
+          ...(nextQueueStatus !== undefined ? { queueStatus: nextQueueStatus } : {}),
+          ...(nextIsOpen !== undefined ? { isOpen: nextIsOpen } : {}),
+        };
+      });
     });
 
     return () => {
@@ -1580,7 +1611,7 @@ export const getQueueDisplay = (
   isOpen: boolean,
   queueStatus?: 'open' | 'paused' | 'closed',
 ) => {
-  if (!isOpen) {
+  if (!isOpen || queueStatus === 'closed') {
     return {
       label: 'Closed',
       shortLabel: 'Closed',

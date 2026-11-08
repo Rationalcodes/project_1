@@ -996,9 +996,25 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
                   className="w-16 h-16 rounded-2xl object-cover shrink-0 border border-[#E2DDD5]"
                 />
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-center justify-between">
-                    <h4 className="text-sm font-bold text-stone-900 truncate">{member.name}</h4>
-                    <span className="flex items-center gap-0.5 text-xs font-bold text-amber-800 bg-amber-50 border border-amber-200 px-1.5 py-0.2 rounded">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <h4 className="text-sm font-bold text-stone-900 truncate">{member.name}</h4>
+                      {member.status === 'break' ? (
+                        <span className="text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded-full shrink-0 flex items-center gap-0.5">
+                          ☕ On Break
+                        </span>
+                      ) : member.status === 'off' ? (
+                        <span className="text-[10px] font-bold text-stone-500 bg-stone-100 border border-stone-200 px-1.5 py-0.5 rounded-full shrink-0">
+                          ⚪ Off Duty
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded-full shrink-0 flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
+                          Available
+                        </span>
+                      )}
+                    </div>
+                    <span className="flex items-center gap-0.5 text-xs font-bold text-amber-800 bg-amber-50 border border-amber-200 px-1.5 py-0.2 rounded shrink-0">
                       <Star className="w-3 h-3 fill-amber-500 text-amber-500" /> {member.rating}
                     </span>
                   </div>
