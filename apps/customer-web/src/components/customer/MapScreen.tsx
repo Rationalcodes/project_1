@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   MapPin,
+  ArrowLeft,
   Search,
   Star,
   Navigation,
@@ -37,7 +38,12 @@ import {
   DrivingRouteResult,
 } from '@kumbhakaran/ui';
 
-export const MapScreen: React.FC = () => {
+export interface MapScreenProps {
+  onClose?: () => void;
+  isFullScreen?: boolean;
+}
+
+export const MapScreen: React.FC<MapScreenProps> = ({ onClose, isFullScreen = false }) => {
   const {
     salons,
     userLocation,
@@ -53,6 +59,32 @@ export const MapScreen: React.FC = () => {
 
   const [selectedMarkerSalon, setSelectedMarkerSalon] = useState<Salon | null>(salons[0] || null);
   const [drivingRoute, setDrivingRoute] = useState<DrivingRouteResult | null>(null);
+
+  // Resize map when entering full screen
+  useEffect(() => {
+    if (!isFullScreen) return;
+    const timer = setTimeout(() => {
+      if (googleMapRef.current && (window as any).google?.maps?.event) {
+        (window as any).google.maps.event.trigger(googleMapRef.current, 'resize');
+      }
+      if (leafletMapRef.current) {
+        leafletMapRef.current.invalidateSize();
+      }
+    }, 150);
+    return () => clearTimeout(timer);
+  }, [isFullScreen]);
+
+  // Escape key handler for full screen
+  useEffect(() => {
+    if (!isFullScreen || !onClose) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isFullScreen, onClose]);
 
   // Fetch real Google Maps / OSRM turn-by-turn road route
   useEffect(() => {
@@ -853,6 +885,311 @@ export const MapScreen: React.FC = () => {
       }
     }
   };
+
+  if (isFullScreen) {
+    return (
+      <div className="fixed inset-0 z-50 w-screen h-[100dvh] bg-[#FAF7F2] overflow-hidden flex flex-col animate-in fade-in duration-200 text-stone-900">
+        <style>{`
+          .osm-tiles {
+            filter: none !important;
+          }
+          .leaflet-container {
+            background-color: ${isWomen ? '#FFF8F5' : '#FAF7F2'} !important;
+          }
+        `}</style>
+
+        {/* 1. True Full Screen Map Viewport taking 100% */}
+        <div className="relative w-full h-full flex-1">
+          <div ref={mapContainerRef} className="w-full h-full absolute inset-0" style={{ zIndex: 1 }} />
+
+          {/* Top Floating Controls Bar */}
+          <div className="absolute top-3 left-3 right-3 z-30 flex items-center justify-between gap-2 pointer-events-none">
+            {/* Left: Back to List View Button */}
+            {onClose && (
+              <button
+                type="button"
+                onClick={onClose}
+                className="pointer-events-auto flex items-center gap-1.5 px-3.5 py-2.5 rounded-2xl bg-white/95 backdrop-blur-md border border-stone-200 shadow-md text-xs font-black text-stone-900 hover:bg-white active:scale-95 transition-all cursor-pointer"
+                title="Return to List View"
+              >
+                <ArrowLeft className="w-4 h-4 text-stone-700" />
+                <span>List View</span>
+              </button>
+            )}
+
+            {/* Middle: Map Search Input */}
+            <div className="pointer-events-auto flex-1 max-w-sm sm:max-w-md mx-auto relative hidden xs:block">
+              <Search className={`w-3.5 h-3.5 absolute left-3 top-3 ${isWomen ? 'text-[#F47B70]' : 'text-[#FF6422]'}`} />
+              <input
+                type="text"
+                value={mapSearch}
+                onChange={(e) => setMapSearch(e.target.value)}
+                placeholder="Search salon on map..."
+                className="w-full pl-9 pr-8 py-2 bg-white/95 backdrop-blur-md border border-stone-200 rounded-2xl text-xs text-stone-900 placeholder-stone-400 focus:outline-none shadow-md focus:ring-1 focus:ring-stone-400"
+              />
+              {mapSearch && (
+                <button
+                  type="button"
+                  onClick={() => setMapSearch('')}
+                  className="absolute right-2.5 top-2.5 text-stone-400 hover:text-stone-700 cursor-pointer"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+
+            {/* Right: Direct Google Maps External Launch + Filter Button */}
+            <div className="pointer-events-auto flex items-center gap-1.5 shrink-0">
+              <button
+                type="button"
+                onClick={() => openGoogleMapsLocation(currentCoords.lat, currentCoords.lng)}
+                className="flex items-center gap-1.5 px-3 py-2.5 rounded-2xl bg-white/95 backdrop-blur-md border border-stone-200 shadow-md text-xs font-bold text-stone-800 hover:bg-white active:scale-95 transition-all cursor-pointer"
+                title="Open in Google Maps Application"
+              >
+                <ExternalLink className={`w-3.5 h-3.5 ${isWomen ? 'text-[#F47B70]' : 'text-[#FF6422]'}`} />
+                <span className="hidden sm:inline">Google Maps</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setShowFilterDrawer(!showFilterDrawer)}
+                className={`p-2.5 rounded-2xl border text-xs font-bold shadow-md transition-all cursor-pointer ${
+                  showFilterDrawer || minRatingFilter > 0 || maxPriceFilter < 1500 || onlyOpenFilter || onlyVerifiedFilter
+                    ? isWomen
+                      ? 'bg-rose-50 border-[#F47B70] text-[#F47B70]'
+                      : 'bg-orange-50 border-[#FF6422] text-[#FF6422]'
+                    : 'bg-white/95 border-stone-200 text-stone-700 hover:bg-white'
+                }`}
+                title="Filters & Radius"
+              >
+                <SlidersHorizontal className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+
+          {/* Floating Filter Drawer (overlaid when open) */}
+          {showFilterDrawer && (
+            <div className="absolute top-16 left-3 right-3 sm:left-auto sm:right-3 sm:w-96 z-30 bg-white/95 backdrop-blur-md border border-stone-200 rounded-3xl p-4 shadow-2xl animate-in slide-in-from-top-2 duration-150 space-y-3">
+              <div className="flex items-center justify-between border-b border-stone-100 pb-2">
+                <span className="text-xs font-black text-stone-900 flex items-center gap-1.5">
+                  <SlidersHorizontal className={`w-3.5 h-3.5 ${isWomen ? 'text-[#F47B70]' : 'text-[#FF6422]'}`} />
+                  <span>Map Filters</span>
+                </span>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMinRatingFilter(0);
+                      setMaxPriceFilter(1500);
+                      setOnlyOpenFilter(false);
+                      setOnlyVerifiedFilter(false);
+                      setRadiusKm(10);
+                      setCustomDistanceInput('10');
+                    }}
+                    className="text-[11px] font-bold text-stone-500 hover:text-stone-800 flex items-center gap-1 cursor-pointer"
+                  >
+                    <RotateCcw className="w-3 h-3" />
+                    <span>Reset</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowFilterDrawer(false)}
+                    className="p-1 rounded-full text-stone-400 hover:text-stone-700 hover:bg-stone-100"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Radius Filter */}
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-bold text-stone-600">Search Radius</span>
+                <div className="flex items-center gap-1">
+                  {[5, 10, 20, 50].map((km) => (
+                    <button
+                      key={km}
+                      type="button"
+                      onClick={() => {
+                        setRadiusKm(km);
+                        setCustomDistanceInput(String(km));
+                      }}
+                      className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all ${
+                        radiusKm === km
+                          ? isWomen
+                            ? 'bg-[#F47B70] text-white shadow-xs'
+                            : 'bg-[#FF6422] text-white shadow-xs'
+                          : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
+                      }`}
+                    >
+                      {km}km
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Only Open Toggle */}
+              <label className="flex items-center justify-between text-xs font-bold text-stone-700 pt-1 cursor-pointer">
+                <span>Only Open Studios</span>
+                <input
+                  type="checkbox"
+                  checked={onlyOpenFilter}
+                  onChange={(e) => setOnlyOpenFilter(e.target.checked)}
+                  className="w-4 h-4 rounded text-[#FF6422] accent-[#FF6422] cursor-pointer"
+                />
+              </label>
+            </div>
+          )}
+
+          {/* Distance Indicator Badge */}
+          {userLocation && selectedMarkerSalon && (
+            <div className="absolute top-16 left-3 z-20 hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/95 backdrop-blur-md border border-stone-200 text-[11px] font-bold text-stone-800 shadow-md animate-in fade-in">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span>
+                Distance to <strong className="text-stone-900">{selectedMarkerSalon.name}</strong>:{' '}
+                <span className={isWomen ? 'text-[#F47B70]' : 'text-[#FF6422]'}>
+                  {drivingRoute
+                    ? `${drivingRoute.distanceFormatted} (${drivingRoute.durationFormatted} ${drivingRoute.travelMode === 'walking' ? 'walk' : 'drive'})`
+                    : `${calculateHaversineDistance(
+                        userLocation.lat,
+                        userLocation.lng,
+                        selectedMarkerSalon.coordinates.lat,
+                        selectedMarkerSalon.coordinates.lng,
+                      ).toFixed(1)} km`}
+                </span>
+              </span>
+            </div>
+          )}
+
+          {/* Floating Right Map Controls (GPS, Zoom) */}
+          <div className="absolute bottom-24 sm:bottom-28 right-3.5 z-20 flex flex-col gap-2">
+            <button
+              type="button"
+              onClick={handlePanToUser}
+              className={`w-10 h-10 rounded-2xl bg-white/95 border flex items-center justify-center shadow-lg backdrop-blur-md transition-all active:scale-90 cursor-pointer ${
+                isWomen
+                  ? 'border-[#F1DDE3] text-[#F47B70] hover:bg-rose-50'
+                  : 'border-[#E7DED5] text-[#FF6422] hover:bg-orange-50'
+              }`}
+              title="Recenter on my location"
+            >
+              <Crosshair className="w-5 h-5" />
+            </button>
+            <div className="bg-white/95 border border-[#E7DED5] rounded-2xl flex flex-col shadow-lg backdrop-blur-md overflow-hidden">
+              <button
+                type="button"
+                onClick={() => handleZoom(1)}
+                className={`w-10 h-10 flex items-center justify-center text-stone-700 hover:bg-stone-50 transition-colors cursor-pointer ${
+                  isWomen ? 'hover:text-[#F47B70]' : 'hover:text-[#FF6422]'
+                }`}
+                title="Zoom in"
+              >
+                <Plus className="w-4 h-4" />
+              </button>
+              <div className="w-full h-px bg-stone-200" />
+              <button
+                type="button"
+                onClick={() => handleZoom(-1)}
+                className={`w-10 h-10 flex items-center justify-center text-stone-700 hover:bg-stone-50 transition-colors cursor-pointer ${
+                  isWomen ? 'hover:text-[#F47B70]' : 'hover:text-[#FF6422]'
+                }`}
+                title="Zoom out"
+              >
+                <Minus className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+
+          {/* Floating Selected Salon Preview Card */}
+          {selectedMarkerSalon && (
+            <div className="absolute bottom-4 left-3 right-3 sm:right-auto sm:max-w-md z-20 animate-in slide-in-from-bottom-3 duration-200">
+              <div className={`bg-white/95 backdrop-blur-md border rounded-2xl p-3 shadow-2xl flex items-center gap-3 ${
+                isWomen ? 'border-rose-200' : 'border-orange-200'
+              }`}>
+                {selectedMarkerSalon.coverImage || selectedMarkerSalon.posterImage || (selectedMarkerSalon.locationImages && selectedMarkerSalon.locationImages[0]) || (selectedMarkerSalon.images && selectedMarkerSalon.images[0]) ? (
+                  <img
+                    src={selectedMarkerSalon.coverImage || selectedMarkerSalon.posterImage || (selectedMarkerSalon.locationImages && selectedMarkerSalon.locationImages[0]) || (selectedMarkerSalon.images && selectedMarkerSalon.images[0])}
+                    alt={selectedMarkerSalon.name}
+                    className="w-16 h-16 rounded-xl object-cover shrink-0 border border-stone-200"
+                    onError={(e) => {
+                      (e.currentTarget as HTMLImageElement).style.display = 'none';
+                    }}
+                  />
+                ) : (
+                  <div className="w-16 h-16 rounded-xl bg-orange-50 border border-orange-200 flex flex-col items-center justify-center shrink-0 text-[#FF6422]">
+                    <Store className="w-6 h-6" />
+                  </div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5 text-[10px]">
+                    <span className={`font-bold ${isWomen ? 'text-[#F47B70]' : 'text-[#FF6422]'}`}>
+                      {selectedMarkerSalon.rating} ★
+                    </span>
+                    <span className="text-stone-300">•</span>
+                    <span className="text-stone-600 font-semibold truncate">
+                      {userLocation
+                        ? drivingRoute
+                          ? `${drivingRoute.distanceFormatted} · ${drivingRoute.durationFormatted}`
+                          : `${calculateHaversineDistance(
+                              userLocation.lat,
+                              userLocation.lng,
+                              selectedMarkerSalon.coordinates.lat,
+                              selectedMarkerSalon.coordinates.lng,
+                            ).toFixed(1)} km away`
+                        : `${selectedMarkerSalon.distanceKm} km`}
+                    </span>
+                    <span className="text-stone-300">•</span>
+                    <span className={`font-bold ${selectedMarkerSalon.isOpen ? 'text-emerald-600' : 'text-stone-400'}`}>
+                      {selectedMarkerSalon.isOpen ? `${selectedMarkerSalon.currentQueue} in line` : 'Closed'}
+                    </span>
+                  </div>
+                  <h4 className="text-xs font-bold text-stone-900 truncate">{selectedMarkerSalon.name}</h4>
+                  <p className="text-[11px] text-stone-500 truncate">{selectedMarkerSalon.locality}</p>
+
+                  <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        redirectToGoogleMaps(
+                          {
+                            lat: selectedMarkerSalon.coordinates.lat,
+                            lng: selectedMarkerSalon.coordinates.lng,
+                            name: selectedMarkerSalon.name,
+                            address: selectedMarkerSalon.address,
+                          },
+                          userLocation || undefined,
+                        )
+                      }
+                      className={`px-3 py-1.5 rounded-xl text-white font-extrabold text-[11px] flex items-center gap-1.5 transition-colors shadow-sm cursor-pointer ${
+                        isWomen
+                          ? 'bg-[#F47B70] hover:bg-[#E0665B]'
+                          : 'bg-[#FF6422] hover:bg-[#E55215]'
+                      }`}
+                      title="Navigate turn-by-turn in Google Maps"
+                    >
+                      <Navigation className="w-3.5 h-3.5 fill-white" />
+                      <span>Directions in Google Maps ↗</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setSelectedSalonForDetail(selectedMarkerSalon)}
+                      className={`text-[11px] font-bold underline flex items-center gap-0.5 cursor-pointer ${
+                        isWomen
+                          ? 'text-[#F47B70] hover:text-rose-700'
+                          : 'text-[#FF6422] hover:text-orange-700'
+                      }`}
+                    >
+                      View Studio →
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4 pb-28 text-stone-900">

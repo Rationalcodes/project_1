@@ -118,9 +118,7 @@ export const ExploreScreen: React.FC = () => {
 
       {/* VIEW MODE 1: DEDICATED MAP VIEW ONLY */}
       {viewMode === 'map' && (
-        <div className="animate-in fade-in duration-200">
-          <MapScreen />
-        </div>
+        <MapScreen onClose={() => setViewMode('studios')} isFullScreen={true} />
       )}
 
       {/* VIEW MODE 2: STUDIOS DIRECTORY LIST */}
