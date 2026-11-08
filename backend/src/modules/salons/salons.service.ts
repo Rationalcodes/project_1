@@ -512,7 +512,7 @@ export class SalonsService {
 
     try {
       const rows: any[] = await this.prisma.$queryRawUnsafe(
-        `SELECT id, name, tagline, address, locality, city, state, pincode,
+        `SELECT id, name, tagline, address, locality, city, state, pincode, phone, email, instagram_handle, instagram_url,
                 latitude, longitude, cover_image, poster_image, loop_video_url,
                 location_images, work_images, opening_hours_formatted,
                 current_queue, avg_service_time_minutes, active_barbers,
@@ -658,8 +658,10 @@ export class SalonsService {
         staffHospitality: 4.9,
         valueForMoney: 4.8,
       },
-      phone: salonData.phone || '+91 98765 43210',
+      phone: salonData.phone || '',
       email: salonData.email || '',
+      instagramHandle: salonData.instagramHandle || salonData.instagram_handle || '',
+      instagramUrl: salonData.instagramUrl || salonData.instagram_url || '',
       ownerName: salonData.ownerName || salonData.owner_name || '',
       ownerId: salonData.ownerId || salonData.owner_id || '',
       todayCustomersServed: Number(salonData.todayCustomersServed || salonData.today_customers_served || 0),
@@ -895,6 +897,21 @@ export class SalonsService {
       if (dto.status) {
         await this.prisma.$executeRawUnsafe(`UPDATE salons SET status = $1 WHERE id = $2;`, dto.status, id);
       }
+      if (dto.phone) {
+        await this.prisma.$executeRawUnsafe(`UPDATE salons SET phone = $1 WHERE id = $2;`, dto.phone, id);
+      }
+      if (dto.address) {
+        await this.prisma.$executeRawUnsafe(`UPDATE salons SET address = $1 WHERE id = $2;`, dto.address, id);
+      }
+      if (dto.tagline !== undefined) {
+        await this.prisma.$executeRawUnsafe(`UPDATE salons SET tagline = $1 WHERE id = $2;`, dto.tagline, id);
+      }
+      if (dto.instagramHandle !== undefined) {
+        await this.prisma.$executeRawUnsafe(`UPDATE salons SET instagram_handle = $1 WHERE id = $2;`, dto.instagramHandle || null, id);
+      }
+      if (dto.instagramUrl !== undefined) {
+        await this.prisma.$executeRawUnsafe(`UPDATE salons SET instagram_url = $1 WHERE id = $2;`, dto.instagramUrl || null, id);
+      }
       let effectiveCover = dto.coverImage;
       if (!effectiveCover && dto.posterImage) {
         effectiveCover = dto.posterImage;
@@ -938,6 +955,8 @@ export class SalonsService {
       if (dto.name) salon.name = dto.name;
       if (dto.tagline) salon.tagline = dto.tagline;
       if (dto.phone) salon.phone = dto.phone;
+      if (dto.instagramHandle !== undefined) salon.instagramHandle = dto.instagramHandle;
+      if (dto.instagramUrl !== undefined) salon.instagramUrl = dto.instagramUrl;
       if (dto.address) salon.address = dto.address;
       if (dto.locality) salon.locality = dto.locality;
       if (dto.city) salon.city = dto.city;

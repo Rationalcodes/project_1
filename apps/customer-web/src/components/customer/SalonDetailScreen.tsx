@@ -1,3 +1,4 @@
+import { InstagramGradientIcon } from '../common/InstagramIcon';
 import React, { useState, useEffect } from 'react';
 import {
   ArrowLeft,
@@ -390,6 +391,22 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
           >
             <SlidersHorizontal className="w-4 h-4" />
           </button>
+
+          {(salon.instagramUrl || salon.instagramHandle) && (
+            <a
+              href={
+                salon.instagramUrl?.startsWith('http')
+                  ? salon.instagramUrl
+                  : `https://instagram.com/${(salon.instagramHandle || salon.instagramUrl || '').replace(/^@/, '')}`
+              }
+              target="_blank"
+              rel="noopener noreferrer"
+              className="p-2 rounded-xl bg-white border border-[var(--border-subtle,#E7DED5)] text-stone-600 hover:text-pink-600 shadow-xs transition-colors cursor-pointer"
+              title={`Visit ${salon.name} on Instagram`}
+            >
+              <InstagramGradientIcon className="w-4 h-4" />
+            </a>
+          )}
 
           <button
             onClick={handleShare}
@@ -1025,13 +1042,34 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
                 <span>Pinned Map</span>
               </button>
 
-              <a
-                href={`tel:${salon.phone}`}
-                className="flex items-center gap-1 px-3 py-2 rounded-xl bg-white border border-[var(--border-subtle,#E7DED5)] text-stone-700 hover:text-stone-900 shadow-xs text-xs font-semibold"
-              >
-                <Phone className="w-3.5 h-3.5 text-stone-500" />
-                <span>Call Studio</span>
-              </a>
+              {salon.phone && (
+                <a
+                  href={`tel:${salon.phone}`}
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white border border-[var(--border-subtle,#E7DED5)] text-stone-800 hover:text-stone-950 shadow-xs text-xs font-bold transition-all"
+                  title={`Call ${salon.name} at ${salon.phone}`}
+                >
+                  <Phone className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Call {salon.phone}</span>
+                </a>
+              )}
+
+              {(salon.instagramUrl || salon.instagramHandle) && (
+                <a
+                  href={
+                    salon.instagramUrl?.startsWith('http')
+                      ? salon.instagramUrl
+                      : `https://instagram.com/${(salon.instagramHandle || salon.instagramUrl || '').replace(/^@/, '')}`
+                  }
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white border border-[var(--border-subtle,#E7DED5)] text-stone-800 hover:text-pink-600 shadow-xs text-xs font-bold transition-all group cursor-pointer"
+                  title={`Visit ${salon.name} on Instagram`}
+                >
+                  <InstagramGradientIcon className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                  <span>Instagram</span>
+                  <ExternalLink className="w-3 h-3 text-stone-400 group-hover:text-pink-600" />
+                </a>
+              )}
 
               <button
                 onClick={() => redirectToGoogleMaps({

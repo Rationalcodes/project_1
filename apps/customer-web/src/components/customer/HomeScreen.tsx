@@ -1,3 +1,4 @@
+import { InstagramGradientIcon } from '../common/InstagramIcon';
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   Star,
@@ -14,6 +15,7 @@ import {
   Store,
   Info,
   Heart,
+  Phone,
   X,
   Navigation,
   Sparkles,
@@ -617,8 +619,25 @@ export const HomeScreen: React.FC = () => {
                       </span>
                     </div>
 
-                    {/* Top-Right: Clean Heart Save Button */}
-                    <div className="absolute top-3 right-3">
+                    {/* Top-Right: Action buttons (Instagram link + Heart Save) */}
+                    <div className="absolute top-3 right-3 flex items-center gap-1.5 z-10">
+                      {(salon.instagramUrl || salon.instagramHandle) && (
+                        <a
+                          href={
+                            salon.instagramUrl?.startsWith('http')
+                              ? salon.instagramUrl
+                              : `https://instagram.com/${(salon.instagramHandle || salon.instagramUrl || '').replace(/^@/, '')}`
+                          }
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className="w-9 h-9 rounded-full bg-white/95 text-stone-700 hover:text-pink-600 border border-stone-200/60 backdrop-blur-md flex items-center justify-center transition-all shadow-sm active:scale-90 cursor-pointer"
+                          title={`Visit ${salon.name} on Instagram`}
+                        >
+                          <InstagramGradientIcon className="w-4 h-4" />
+                        </a>
+                      )}
+
                       <button
                         type="button"
                         onClick={(e) => {
@@ -658,12 +677,25 @@ export const HomeScreen: React.FC = () => {
                         </div>
                       </div>
 
-                      <p className="text-xs text-stone-500 mt-1 flex items-center gap-1 truncate">
-                        <Navigation className="w-3.5 h-3.5 text-stone-400 shrink-0" />
-                        <span className="truncate">{salon.locality}</span>
-                        <span>•</span>
-                        <span className="font-medium text-stone-600">{salon.distanceKm.toFixed(1)} km away</span>
-                      </p>
+                      <div className="flex items-center justify-between gap-1.5 mt-1 text-xs text-stone-500">
+                        <p className="flex items-center gap-1 truncate">
+                          <Navigation className="w-3.5 h-3.5 text-stone-400 shrink-0" />
+                          <span className="truncate">{salon.locality}</span>
+                          <span>•</span>
+                          <span className="font-medium text-stone-600">{salon.distanceKm.toFixed(1)} km away</span>
+                        </p>
+                        {salon.phone && (
+                          <a
+                            href={`tel:${salon.phone}`}
+                            onClick={(e) => e.stopPropagation()}
+                            className="flex items-center gap-1 text-[11px] font-bold text-stone-700 hover:text-emerald-700 shrink-0 bg-stone-50 hover:bg-emerald-50 px-2 py-0.5 rounded-lg border border-stone-200/60 transition-colors"
+                            title={`Call ${salon.phone}`}
+                          >
+                            <Phone className="w-3 h-3 text-emerald-600" />
+                            <span>{salon.phone}</span>
+                          </a>
+                        )}
+                      </div>
                     </div>
 
                     <div className="pt-2.5 border-t border-stone-100 flex items-center justify-between text-xs">

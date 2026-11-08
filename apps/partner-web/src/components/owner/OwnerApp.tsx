@@ -562,6 +562,8 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
     name: activeSalon?.name || '',
     tagline: activeSalon?.tagline || '',
     phone: activeSalon?.phone || '',
+    instagramHandle: activeSalon?.instagramHandle || (activeSalon as any)?.instagram_handle || '',
+    instagramUrl: activeSalon?.instagramUrl || (activeSalon as any)?.instagram_url || '',
     address: activeSalon?.address || '',
     openingHours: activeSalon?.openingHours?.formatted || (activeSalon as any)?.openingHoursFormatted || '09:00 AM – 09:30 PM (All Days)',
     isOpen: activeSalon?.isOpen ?? true,
@@ -587,6 +589,8 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
         name: activeSalon.name || '',
         tagline: activeSalon.tagline || '',
         phone: activeSalon.phone || '',
+        instagramHandle: activeSalon.instagramHandle || (activeSalon as any)?.instagram_handle || '',
+        instagramUrl: activeSalon.instagramUrl || (activeSalon as any)?.instagram_url || '',
         address: activeSalon.address || '',
         openingHours: activeSalon.openingHours?.formatted || (activeSalon as any)?.openingHoursFormatted || '09:00 AM – 09:30 PM (All Days)',
         isOpen: activeSalon.isOpen ?? true,
@@ -826,6 +830,8 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
       name: salonForm.name,
       tagline: salonForm.tagline,
       phone: salonForm.phone,
+      instagramHandle: salonForm.instagramHandle,
+      instagramUrl: salonForm.instagramUrl,
       address: salonForm.address,
       isOpen: salonForm.isOpen,
       googlePlaceId: salonForm.googlePlaceId,
@@ -2633,16 +2639,38 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="text-stone-700 font-bold block mb-1">Phone Number</label>
+              <label className="text-stone-700 font-bold block mb-1">Contact Mobile Number</label>
               <input
                 type="text"
                 value={salonForm.phone}
                 onChange={(e) => setSalonForm({ ...salonForm, phone: e.target.value })}
-                className="w-full p-2.5 bg-[#FAF7F2] border border-[#E8E2D8] rounded-xl text-stone-900 focus:outline-none focus:border-[#E05326] focus:bg-white"
+                placeholder="e.g. +91 98450 12890"
+                className="w-full p-2.5 bg-[#FAF7F2] border border-[#E8E2D8] rounded-xl text-stone-900 focus:outline-none focus:border-[#E05326] focus:bg-white font-semibold"
               />
+              <p className="text-[10px] text-stone-500 mt-1">This phone number will be shown directly on your salon card for customer calls.</p>
             </div>
+            <div>
+              <label className="text-stone-700 font-bold block mb-1 flex items-center gap-1.5">
+                <span className="w-3.5 h-3.5 rounded-full bg-gradient-to-tr from-amber-500 via-rose-500 to-purple-600 inline-block shrink-0" />
+                <span>Instagram Profile / Handle</span>
+              </label>
+              <input
+                type="text"
+                value={salonForm.instagramHandle}
+                onChange={(e) => {
+                  const val = e.target.value.trim();
+                  const fullUrl = val.startsWith('http') ? val : val ? `https://instagram.com/${val.replace(/^@/, '')}` : '';
+                  setSalonForm({ ...salonForm, instagramHandle: val, instagramUrl: fullUrl });
+                }}
+                placeholder="e.g. @bladeandtimber or link"
+                className="w-full p-2.5 bg-[#FAF7F2] border border-[#E8E2D8] rounded-xl text-stone-900 focus:outline-none focus:border-[#E05326] focus:bg-white font-semibold"
+              />
+              <p className="text-[10px] text-stone-500 mt-1">Adds an Instagram icon on your salon card and details page to direct customers to your profile.</p>
+            </div>
+          </div>
+          <div>
             <div>
               <label className="text-stone-700 font-bold block mb-1">Operating Hours</label>
               <input

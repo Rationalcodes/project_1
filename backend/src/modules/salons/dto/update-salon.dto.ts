@@ -25,6 +25,16 @@ export class UpdateSalonDto {
   @IsString()
   phone?: string;
 
+  @ApiPropertyOptional({ example: '@bladeandtimber or https://instagram.com/bladeandtimber' })
+  @IsOptional()
+  @IsString()
+  instagramHandle?: string;
+
+  @ApiPropertyOptional({ example: 'https://instagram.com/bladeandtimber' })
+  @IsOptional()
+  @IsString()
+  instagramUrl?: string;
+
   @ApiPropertyOptional({ example: '42, 80 Feet Road' })
   @IsOptional()
   @IsString()

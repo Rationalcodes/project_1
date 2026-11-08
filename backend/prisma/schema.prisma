@@ -21,6 +21,8 @@ model Salon {
   ownerId                 String?  @map("owner_id") @db.VarChar(64)
   phone                   String   @db.VarChar(50)
   email                   String?  @db.VarChar(255)
+  instagramHandle         String?  @map("instagram_handle") @db.VarChar(100)
+  instagramUrl            String?  @map("instagram_url") @db.VarChar(255)
   address                 String
   locality                String   @db.VarChar(100)
   city                    String   @db.VarChar(100)

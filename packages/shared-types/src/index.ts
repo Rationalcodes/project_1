@@ -105,6 +105,8 @@ export interface Salon {
   };
   phone: string;
   email?: string;
+  instagramHandle?: string;
+  instagramUrl?: string;
   ownerName?: string;
   ownerId?: string;
   lastQueueUpdate: string;

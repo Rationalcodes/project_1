@@ -1,3 +1,4 @@
+import { InstagramGradientIcon } from '../common/InstagramIcon';
 import React, { useState, useMemo } from 'react';
 import {
   Search,
@@ -5,6 +6,7 @@ import {
   Users,
   Navigation,
   MapPin,
+  Phone,
   CheckCircle2,
   Heart,
   X,
@@ -386,18 +388,46 @@ export const ExploreScreen: React.FC = () => {
                                 }`}
                               />
                             )}
+                            {(salon.instagramUrl || salon.instagramHandle) && (
+                              <a
+                                href={
+                                  salon.instagramUrl?.startsWith('http')
+                                    ? salon.instagramUrl
+                                    : `https://instagram.com/${(salon.instagramHandle || salon.instagramUrl || '').replace(/^@/, '')}`
+                                }
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={(e) => e.stopPropagation()}
+                                className="p-1 rounded-lg hover:bg-pink-50 transition-colors text-stone-500 hover:text-pink-600 shrink-0 ml-1 cursor-pointer"
+                                title={`Visit ${salon.name} on Instagram`}
+                              >
+                                <InstagramGradientIcon className="w-4 h-4" />
+                              </a>
+                            )}
                           </div>
 
-                          <p className="text-xs text-stone-500 truncate flex items-center gap-1 mt-0.5">
-                            <MapPin className="w-3.5 h-3.5 text-stone-400 shrink-0" />
-                            <span>
-                              {salon.locality}
-                              {salon.city ? `, ${salon.city}` : ''}
-                              {salon.distanceKm ? ` • ${salon.distanceKm} km away` : ''}
-                            </span>
-                          </p>
+                          <div className="flex items-center justify-between gap-1.5 mt-0.5 text-xs text-stone-500">
+                            <p className="truncate flex items-center gap-1">
+                              <MapPin className="w-3.5 h-3.5 text-stone-400 shrink-0" />
+                              <span>
+                                {salon.locality}
+                                {salon.city ? `, ${salon.city}` : ''}
+                                {salon.distanceKm ? ` • ${salon.distanceKm} km away` : ''}
+                              </span>
+                            </p>
+                            {salon.phone && (
+                              <a
+                                href={`tel:${salon.phone}`}
+                                onClick={(e) => e.stopPropagation()}
+                                className="flex items-center gap-1 text-[11px] font-bold text-stone-700 hover:text-emerald-700 shrink-0 bg-stone-50 hover:bg-emerald-50 px-2 py-0.5 rounded-lg border border-stone-200/80 transition-colors"
+                                title={`Call ${salon.phone}`}
+                              >
+                                <Phone className="w-3 h-3 text-emerald-600" />
+                                <span>{salon.phone}</span>
+                              </a>
+                            )}
+                          </div>
                         </div>
-
                         {/* Rating */}
                         <div className="flex items-center gap-1 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-xl text-amber-900 font-black text-xs shrink-0">
                           <Star className="w-3.5 h-3.5 fill-amber-500 text-amber-500" />

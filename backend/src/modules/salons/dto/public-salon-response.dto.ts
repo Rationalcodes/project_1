@@ -167,6 +167,12 @@ export class PublicSalonResponseDto {
   phone?: string;
 
   @ApiPropertyOptional()
+  instagramHandle?: string;
+
+  @ApiPropertyOptional()
+  instagramUrl?: string;
+
+  @ApiPropertyOptional()
   email?: string;
 
   @ApiPropertyOptional()

@@ -1,3 +1,4 @@
+import { InstagramGradientIcon } from '../common/InstagramIcon';
 import React, { useState, useEffect, useRef } from 'react';
 import {
   MapPin,
@@ -19,6 +20,7 @@ import {
   SlidersHorizontal,
   Check,
   RotateCcw,
+  Phone,
 } from 'lucide-react';
 import {
   useCustomer,
@@ -1170,6 +1172,34 @@ export const MapScreen: React.FC<MapScreenProps> = ({ onClose, isFullScreen = fa
                       <span>Directions in Google Maps ↗</span>
                     </button>
 
+                    {(selectedMarkerSalon.instagramUrl || selectedMarkerSalon.instagramHandle) && (
+                      <a
+                        href={
+                          selectedMarkerSalon.instagramUrl?.startsWith('http')
+                            ? selectedMarkerSalon.instagramUrl
+                            : `https://instagram.com/${(selectedMarkerSalon.instagramHandle || selectedMarkerSalon.instagramUrl || '').replace(/^@/, '')}`
+                        }
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-2.5 py-1 rounded-lg border border-rose-200 text-stone-800 hover:text-pink-600 bg-white shadow-xs text-[10px] font-bold flex items-center gap-1 transition-all cursor-pointer"
+                        title="Visit Salon on Instagram"
+                      >
+                        <InstagramGradientIcon className="w-3.5 h-3.5" />
+                        <span>Insta</span>
+                      </a>
+                    )}
+
+                    {selectedMarkerSalon.phone && (
+                      <a
+                        href={`tel:${selectedMarkerSalon.phone}`}
+                        className="px-2.5 py-1 rounded-lg border border-stone-200 text-stone-700 hover:text-stone-900 bg-white shadow-xs text-[10px] font-bold flex items-center gap-1 transition-all"
+                        title={`Call ${selectedMarkerSalon.phone}`}
+                      >
+                        <Phone className="w-3 h-3 text-emerald-600" />
+                        <span>{selectedMarkerSalon.phone}</span>
+                      </a>
+                    )}
+
                     <button
                       type="button"
                       onClick={() => setSelectedSalonForDetail(selectedMarkerSalon)}
@@ -1545,6 +1575,34 @@ export const MapScreen: React.FC<MapScreenProps> = ({ onClose, isFullScreen = fa
                   </button>
 
                   {/* View Details button */}
+                  {(selectedMarkerSalon.instagramUrl || selectedMarkerSalon.instagramHandle) && (
+                    <a
+                      href={
+                        selectedMarkerSalon.instagramUrl?.startsWith('http')
+                          ? selectedMarkerSalon.instagramUrl
+                          : `https://instagram.com/${(selectedMarkerSalon.instagramHandle || selectedMarkerSalon.instagramUrl || '').replace(/^@/, '')}`
+                      }
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-2 py-1 rounded-lg border border-rose-200 text-stone-800 hover:text-pink-600 bg-white shadow-xs text-[10px] font-bold flex items-center gap-1 transition-all cursor-pointer"
+                      title="Visit Salon on Instagram"
+                    >
+                      <InstagramGradientIcon className="w-3.5 h-3.5" />
+                      <span>Insta</span>
+                    </a>
+                  )}
+
+                  {selectedMarkerSalon.phone && (
+                    <a
+                      href={`tel:${selectedMarkerSalon.phone}`}
+                      className="px-2 py-1 rounded-lg border border-stone-200 text-stone-700 hover:text-stone-900 bg-white shadow-xs text-[10px] font-bold flex items-center gap-1 transition-all"
+                      title={`Call ${selectedMarkerSalon.phone}`}
+                    >
+                      <Phone className="w-3 h-3 text-emerald-600" />
+                      <span>{selectedMarkerSalon.phone}</span>
+                    </a>
+                  )}
+
                   <button
                     onClick={() => setSelectedSalonForDetail(selectedMarkerSalon)}
                     className={`text-[10px] font-bold underline flex items-center gap-0.5 cursor-pointer ${

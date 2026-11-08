@@ -64,7 +64,7 @@ export class DiscoveryService {
         // Optimized PostGIS ST_DWithin query (omits heavy full gallery arrays on list views)
         dbRows = await this.prisma.$queryRawUnsafe(
           `SELECT 
-            id, name, tagline, locality, city, latitude, longitude,
+            id, name, tagline, locality, city, latitude, longitude, phone, address, instagram_handle, instagram_url,
             ROUND((ST_Distance(location, ST_SetSRID(ST_MakePoint($2, $1), 4326)::geography) / 1000)::numeric, 2) AS distance_km,
             rating, review_count, current_queue, avg_service_time_minutes, active_barbers,
             starting_price, is_open, queue_status, is_verified, cover_image, poster_image, loop_video_url,
@@ -85,7 +85,7 @@ export class DiscoveryService {
         // Query active verified salons across India (omits heavy gallery arrays on list view)
         dbRows = await this.prisma.$queryRawUnsafe(
           `SELECT 
-            id, name, tagline, locality, city, latitude, longitude,
+            id, name, tagline, locality, city, latitude, longitude, phone, address, instagram_handle, instagram_url,
             0.0 AS distance_km,
             rating, review_count, current_queue, avg_service_time_minutes, active_barbers,
             starting_price, is_open, queue_status, is_verified, cover_image, poster_image, loop_video_url,
@@ -126,6 +126,10 @@ export class DiscoveryService {
             isOpen: Boolean(row.is_open),
             queueStatus: row.is_open ? (row.queue_status || 'open') : 'closed',
             isVerified: Boolean(row.is_verified),
+            phone: row.phone || '',
+            address: row.address || '',
+            instagramHandle: row.instagram_handle || '',
+            instagramUrl: row.instagram_url || '',
             coverImage: effectiveCover,
             posterImage: (row.poster_image && row.poster_image !== effectiveCover) ? row.poster_image : '',
             loopVideoUrl: row.loop_video_url || '',
