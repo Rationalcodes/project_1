@@ -994,7 +994,7 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
           </div>
 
           {/* 4. Operational Status Bar (3-State Controls: Live Open | Paused | Closed) */}
-          <div className="bg-[#18181b] border border-stone-800 rounded-2xl sm:rounded-3xl p-3.5 sm:p-4 text-white shadow-xs flex flex-wrap items-center justify-between gap-3">
+          <div className="bg-[#1E130D] border border-[#3E2417] rounded-2xl sm:rounded-3xl p-3.5 sm:p-4 text-white shadow-xs flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-2.5">
               <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${
                 isQueuePaused
@@ -1004,7 +1004,7 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
                   : 'bg-rose-500 shadow-[0_0_8px_#F43F5E]'
               }`} />
               <div>
-                <span className="text-xs sm:text-sm font-bold tracking-tight block">
+                <span className="text-xs sm:text-sm font-bold tracking-tight block text-stone-100">
                   {isQueuePaused ? 'Walk-ins Paused' : activeSalon.isOpen ? 'Walk-ins Live' : 'Studio Closed'}
                 </span>
                 <span className="text-[10px] text-stone-400 font-medium">
@@ -1018,7 +1018,7 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
             </div>
 
             {/* 3-State Operational Segmented Control */}
-            <div className="flex items-center gap-1 bg-stone-900/90 p-1 rounded-xl border border-stone-800">
+            <div className="flex items-center gap-1 bg-[#291810] p-1 rounded-xl border border-[#3E2417]">
               <button
                 type="button"
                 disabled={isUpdatingQueueStatus}
@@ -1026,7 +1026,7 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
                 className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
                   activeSalon.isOpen && !isQueuePaused
                     ? 'bg-emerald-500 text-white shadow-sm font-black'
-                    : 'text-stone-400 hover:text-stone-200 hover:bg-stone-800/60'
+                    : 'text-stone-300 hover:text-white hover:bg-[#3E2417]/60'
                 }`}
                 title="Turn ON Walk-ins (Open Live Queue)"
               >
@@ -1041,7 +1041,7 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
                 className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
                   isQueuePaused
                     ? 'bg-amber-500 text-stone-950 shadow-sm font-black'
-                    : 'text-stone-400 hover:text-stone-200 hover:bg-stone-800/60'
+                    : 'text-stone-300 hover:text-white hover:bg-[#3E2417]/60'
                 }`}
                 title="Pause Walk-ins (Keeps current line, blocks new joins)"
               >
@@ -1064,7 +1064,7 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
                 className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
                   !activeSalon.isOpen
                     ? 'bg-rose-600 text-white shadow-sm font-black'
-                    : 'text-stone-400 hover:text-stone-200 hover:bg-stone-800/60'
+                    : 'text-stone-300 hover:text-white hover:bg-[#3E2417]/60'
                 }`}
                 title="Turn OFF Studio (Closes queue for the day)"
               >
@@ -1385,7 +1385,7 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
                 className={`py-3.5 px-5 rounded-2xl font-black text-base sm:text-lg shadow-2xs active:scale-95 transition-all flex items-center justify-center gap-2.5 cursor-pointer ${
                   activeSalon.currentQueue <= 0
                     ? 'bg-stone-100 text-stone-400 border border-stone-200 cursor-not-allowed'
-                    : 'bg-[#18181B] hover:bg-black text-white'
+                    : 'bg-[#24140A] hover:bg-[#1A0E07] text-white border border-[#3E2417]'
                 }`}
               >
                 <Minus className="w-5 h-5 stroke-[3]" />
@@ -3371,7 +3371,7 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
                       Generating QR...
                     </div>
                   )}
-                  <div className="mt-1.5 px-2 py-0.5 rounded-full bg-[#18181B] text-white text-[9px] font-bold tracking-wider uppercase inline-block">
+                  <div className="mt-1.5 px-2 py-0.5 rounded-full bg-[#24140A] text-white text-[9px] font-bold tracking-wider uppercase inline-block border border-[#3E2417]">
                     📸 Scan with phone camera
                   </div>
                 </div>
@@ -3466,7 +3466,7 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
                   a.download = `${activeSalon.name.toLowerCase().replace(/[^a-z0-9]/g, '_')}_qr.png`;
                   a.click();
                 }}
-                className="py-2.5 px-4 rounded-xl bg-[#18181B] hover:bg-black text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                className="py-2.5 px-4 rounded-xl bg-[#24140A] hover:bg-[#1A0E07] text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer border border-[#3E2417]"
               >
                 <Download className="w-4 h-4 text-emerald-400" />
                 <span>Download QR PNG</span>

@@ -261,56 +261,84 @@ export const ExploreScreen: React.FC = () => {
                   salon.avgServiceTimeMinutes || 20,
                   salon.activeBarbers || 2
                 );
-                const queueInfo = getQueueDisplay(
-                  salon.currentQueue,
-                  salon.isOpen,
-                  salon.queueStatus
-                );
                 const isFav = userProfile.savedSalons.includes(salon.id);
                 const salonType = getSalonType(salon);
+                const cover =
+                  salon.coverImage ||
+                  salon.posterImage ||
+                  (salon.images && salon.images[0]) ||
+                  (salon.locationImages && salon.locationImages[0]) ||
+                  '';
 
                 return (
                   <div
                     key={salon.id}
                     onClick={() => setSelectedSalonForDetail(salon)}
-                    className="bg-white rounded-3xl border border-[#E8E2D8] hover:border-orange-300 transition-all shadow-xs overflow-hidden cursor-pointer flex flex-col group"
+                    className={`group bg-white rounded-3xl border ${
+                      isWomen ? 'border-[#F1DDE3] hover:border-[#E9A0AA]' : 'border-[#E7DED5] hover:border-[#D97706]/40'
+                    } overflow-hidden shadow-xs hover:shadow-md transition-all duration-300 cursor-pointer flex flex-col`}
                   >
-                    {/* Top Image Banner */}
-                    <div className="relative h-44 w-full bg-stone-100 overflow-hidden">
-                      <img
-                        src={salon.coverImage}
-                        alt={salon.name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                        loading="lazy"
-                        decoding="async"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent" />
-
-                      {/* Top Badges */}
-                      <div className="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between">
-                        <div className="flex items-center gap-1.5">
-                          <span
-                            className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider backdrop-blur-md shadow-xs ${
-                              salonType === 'men'
-                                ? 'bg-black/60 text-orange-300 border border-orange-400/40'
-                                : salonType === 'women'
-                                ? 'bg-black/60 text-rose-300 border border-rose-400/40'
-                                : 'bg-black/60 text-purple-200 border border-purple-400/40'
-                            }`}
-                          >
-                            {salonType === 'men'
-                              ? 'Men Only'
-                              : salonType === 'women'
-                              ? 'Women Only'
-                              : 'Unisex Studio'}
-                          </span>
-
-                          {salon.featured && (
-                            <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-500 text-stone-950 flex items-center gap-1 shadow-xs">
-                              <Sparkles className="w-3 h-3 fill-current" /> Featured
-                            </span>
-                          )}
+                    {/* Clean Salon Photography */}
+                    <div className="h-48 sm:h-56 w-full relative overflow-hidden bg-stone-100">
+                      {cover ? (
+                        <img
+                          src={cover}
+                          alt={salon.name}
+                          loading="lazy"
+                          decoding="async"
+                          className="w-full h-full object-cover group-hover:scale-104 transition-transform duration-500 ease-out"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-stone-900 flex flex-col items-center justify-center text-white p-4 text-center">
+                          <Store className="w-8 h-8 text-stone-400 mb-1" />
+                          <span className="text-sm font-bold tracking-wider">{salon.name}</span>
                         </div>
+                      )}
+
+                      {/* Top-Left: Clean Live Status Pill */}
+                      <div className="absolute top-3 left-3 flex items-center gap-1.5">
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-white/95 text-stone-900 shadow-sm backdrop-blur-md border border-stone-200/60">
+                          <span className={`w-2 h-2 rounded-full ${
+                            !salon.isOpen || salon.queueStatus === 'closed'
+                              ? 'bg-stone-400'
+                              : salon.queueStatus === 'paused'
+                              ? 'bg-amber-400'
+                              : salon.currentQueue === 0
+                              ? 'bg-emerald-500'
+                              : salon.currentQueue <= 3
+                              ? 'bg-emerald-500'
+                              : 'bg-amber-500'
+                          }`} />
+                          <span>
+                            {!salon.isOpen || salon.queueStatus === 'closed'
+                              ? 'Closed'
+                              : salon.queueStatus === 'paused'
+                              ? 'Queue Paused'
+                              : salon.currentQueue === 0
+                              ? '0 in line • Open now'
+                              : `${salon.currentQueue} in line • ~${waitTime}m`}
+                          </span>
+                        </span>
+                      </div>
+
+                      {/* Top-Right: Action buttons (Instagram link + Heart Save) */}
+                      <div className="absolute top-3 right-3 flex items-center gap-1.5 z-10">
+                        {(salon.instagramUrl || salon.instagramHandle) && (
+                          <a
+                            href={
+                              salon.instagramUrl?.startsWith('http')
+                                ? salon.instagramUrl
+                                : `https://instagram.com/${(salon.instagramHandle || salon.instagramUrl || '').replace(/^@/, '')}`
+                            }
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="w-9 h-9 rounded-full bg-white/95 text-stone-700 hover:text-pink-600 border border-stone-200/60 backdrop-blur-md flex items-center justify-center transition-all shadow-sm active:scale-90 cursor-pointer"
+                            title={`Visit ${salon.name} on Instagram`}
+                          >
+                            <InstagramGradientIcon className="w-4 h-4" />
+                          </a>
+                        )}
 
                         <button
                           type="button"
@@ -318,67 +346,31 @@ export const ExploreScreen: React.FC = () => {
                             e.stopPropagation();
                             toggleFavorite(salon.id);
                           }}
-                          className="w-8 h-8 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center text-white hover:scale-110 active:scale-90 transition-transform cursor-pointer"
+                          className="w-9 h-9 rounded-full bg-white/95 text-stone-700 hover:text-rose-500 border border-stone-200/60 backdrop-blur-md flex items-center justify-center transition-all shadow-sm active:scale-90 cursor-pointer"
+                          title={isFav ? 'Remove from saved' : 'Save salon'}
                         >
                           <Heart
                             className={`w-4 h-4 ${
-                              isFav ? 'fill-rose-500 text-[#F47B70]' : 'text-white'
+                              isFav ? 'fill-rose-500 text-rose-500' : 'text-stone-700'
                             }`}
                           />
                         </button>
                       </div>
 
-                      {/* Queue & Wait Pill on Photo */}
-                      <div className="absolute bottom-2.5 left-2.5 right-2.5 flex items-center justify-between text-white">
-                        <div className="flex items-center gap-2">
-                          <div
-                            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-bold backdrop-blur-md border ${
-                              !salon.isOpen || salon.queueStatus === 'closed'
-                                ? 'bg-black/75 border-red-500/40 text-stone-300'
-                                : salon.queueStatus === 'paused'
-                                ? 'bg-black/75 border-amber-500/40 text-amber-200'
-                                : 'bg-black/60 border-white/20'
-                            }`}
-                          >
-                            <span
-                              className={`w-2 h-2 rounded-full ${
-                                !salon.isOpen || salon.queueStatus === 'closed'
-                                  ? 'bg-rose-500'
-                                  : salon.queueStatus === 'paused'
-                                  ? 'bg-amber-400'
-                                  : queueInfo.dotClass
-                              }`}
-                            />
-                            <span>
-                              {!salon.isOpen || salon.queueStatus === 'closed'
-                                ? 'Closed'
-                                : salon.queueStatus === 'paused'
-                                ? 'Queue Paused'
-                                : `${salon.currentQueue} in Queue`}
-                            </span>
-                          </div>
-
-                          {salon.isOpen && salon.queueStatus === 'open' && (
-                            <div className="flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-bold bg-black/60 backdrop-blur-md border border-white/20">
-                              <Clock className="w-3.5 h-3.5 text-amber-300" />
-                              <span>~{waitTime}m wait</span>
-                            </div>
-                          )}
-                        </div>
-
-                        <span className="text-white/80 font-bold text-xs flex items-center gap-1 bg-black/40 backdrop-blur-md px-2 py-1 rounded-xl">
-                          <span>View Studio</span>
-                          <ArrowRight className="w-3 h-3" />
+                      {/* Bottom-Left subtle salon type tag */}
+                      <div className="absolute bottom-2.5 left-3">
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-black/60 text-white backdrop-blur-md border border-white/20">
+                          {salonType === 'men' ? "Men's Studio" : salonType === 'women' ? "Women's Parlour" : 'Unisex'}
                         </span>
                       </div>
                     </div>
 
-                    {/* Card Body Details */}
-                    <div className="p-4 space-y-3">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-1.5">
-                            <h3 className="text-base font-black text-stone-900 truncate">
+                    {/* Clean Human Card Details (Like Airbnb/Fresha) */}
+                    <div className="p-4 sm:p-4.5 space-y-2 flex-1 flex flex-col justify-between">
+                      <div>
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <h3 className="text-base font-black text-stone-900 tracking-tight leading-snug truncate group-hover:text-stone-950">
                               {salon.name}
                             </h3>
                             {salon.isVerified && (
@@ -388,90 +380,46 @@ export const ExploreScreen: React.FC = () => {
                                 }`}
                               />
                             )}
-                            {(salon.instagramUrl || salon.instagramHandle) && (
-                              <a
-                                href={
-                                  salon.instagramUrl?.startsWith('http')
-                                    ? salon.instagramUrl
-                                    : `https://instagram.com/${(salon.instagramHandle || salon.instagramUrl || '').replace(/^@/, '')}`
-                                }
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                onClick={(e) => e.stopPropagation()}
-                                className="p-1 rounded-lg hover:bg-pink-50 transition-colors text-stone-500 hover:text-pink-600 shrink-0 ml-1 cursor-pointer"
-                                title={`Visit ${salon.name} on Instagram`}
-                              >
-                                <InstagramGradientIcon className="w-4 h-4" />
-                              </a>
-                            )}
                           </div>
-
-                          <div className="flex items-center justify-between gap-1.5 mt-0.5 text-xs text-stone-500">
-                            <p className="truncate flex items-center gap-1">
-                              <MapPin className="w-3.5 h-3.5 text-stone-400 shrink-0" />
-                              <span>
-                                {salon.locality}
-                                {salon.city ? `, ${salon.city}` : ''}
-                                {salon.distanceKm ? ` • ${salon.distanceKm} km away` : ''}
-                              </span>
-                            </p>
-                            {salon.phone && (
-                              <a
-                                href={`tel:${salon.phone}`}
-                                onClick={(e) => e.stopPropagation()}
-                                className="flex items-center gap-1 text-[11px] font-bold text-stone-700 hover:text-emerald-700 shrink-0 bg-stone-50 hover:bg-emerald-50 px-2 py-0.5 rounded-lg border border-stone-200/80 transition-colors"
-                                title="Call salon"
-                              >
-                                <Phone className="w-3 h-3 text-emerald-600" />
-                                <span>Call</span>
-                              </a>
-                            )}
+                          <div className="flex items-center gap-1 shrink-0 text-xs font-bold text-stone-900">
+                            <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
+                            <span>{salon.rating.toFixed(1)}</span>
+                            <span className="text-stone-400 font-normal">({salon.reviewCount})</span>
                           </div>
                         </div>
-                        {/* Rating */}
-                        <div className="flex items-center gap-1 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-xl text-amber-900 font-black text-xs shrink-0">
-                          <Star className="w-3.5 h-3.5 fill-amber-500 text-amber-500" />
-                          <span>{salon.rating || 5.0}</span>
-                          {salon.reviewCount ? (
-                            <span className="text-[10px] text-amber-700/80 font-normal">
-                              ({salon.reviewCount})
-                            </span>
-                          ) : null}
+
+                        <div className="flex items-center justify-between gap-1.5 mt-1 text-xs text-stone-500">
+                          <p className="flex items-center gap-1 truncate">
+                            <Navigation className="w-3.5 h-3.5 text-stone-400 shrink-0" />
+                            <span className="truncate">{salon.locality}</span>
+                            <span>•</span>
+                            <span className="font-medium text-stone-600">{salon.distanceKm.toFixed(1)} km away</span>
+                          </p>
+                          {salon.phone && (
+                            <a
+                              href={`tel:${salon.phone}`}
+                              onClick={(e) => e.stopPropagation()}
+                              className="flex items-center gap-1 text-[11px] font-bold text-stone-700 hover:text-emerald-700 shrink-0 bg-stone-50 hover:bg-emerald-50 px-2 py-0.5 rounded-lg border border-stone-200/60 transition-colors"
+                              title="Call salon"
+                            >
+                              <Phone className="w-3 h-3 text-emerald-600" />
+                              <span>Call</span>
+                            </a>
+                          )}
                         </div>
                       </div>
 
-                      {/* Bottom Footer: Price & Open status */}
                       <div className="pt-2.5 border-t border-stone-100 flex items-center justify-between text-xs">
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-[11px] text-stone-500">Starts at</span>
-                          <span className="text-sm font-black text-stone-900">
-                            ₹{salon.startingPrice || 150}
-                          </span>
-                        </div>
+                        <span className="text-stone-600 font-medium">
+                          Haircuts from <strong className="text-stone-900 font-black">₹{salon.startingPrice}</strong>
+                        </span>
 
-                        <div className="flex items-center gap-3">
-                          <span
-                            className={`text-[11px] font-bold flex items-center gap-1 ${
-                              salon.isOpen !== false
-                                ? 'text-emerald-700'
-                                : 'text-stone-400'
-                            }`}
-                          >
-                            <span
-                              className={`w-1.5 h-1.5 rounded-full ${
-                                salon.isOpen !== false
-                                  ? 'bg-emerald-500'
-                                  : 'bg-stone-300'
-                              }`}
-                            />
-                            {salon.isOpen !== false ? 'Open Now' : 'Closed'}
-                          </span>
-
-                          <span className="text-stone-400 font-bold group-hover:text-stone-900 group-hover:translate-x-0.5 transition-all flex items-center gap-0.5 text-xs">
-                            <span>Details</span>
-                            <ArrowRight className="w-3.5 h-3.5" />
-                          </span>
-                        </div>
+                        <span className={`font-bold flex items-center gap-1 group-hover:translate-x-0.5 transition-transform ${
+                          isWomen ? 'text-[#F47B70]' : 'text-[#FF6422]'
+                        }`}>
+                          <span>View chairs</span>
+                          <ArrowRight className="w-3.5 h-3.5" />
+                        </span>
                       </div>
                     </div>
                   </div>
