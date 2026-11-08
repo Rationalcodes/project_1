@@ -936,41 +936,85 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
             </div>
           )}
 
-          {/* 4. Operational Status Bar (Dark Glossy Card matching screenshot) */}
-          <div className="bg-[#18181b] border border-stone-800 rounded-2xl sm:rounded-3xl p-3.5 sm:p-4 text-white shadow-xs flex items-center justify-between">
+          {/* 4. Operational Status Bar (3-State Controls: Live Open | Paused | Closed) */}
+          <div className="bg-[#18181b] border border-stone-800 rounded-2xl sm:rounded-3xl p-3.5 sm:p-4 text-white shadow-xs flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-2.5">
-              <span className={`w-2.5 h-2.5 rounded-full ${
+              <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${
                 isQueuePaused
                   ? 'bg-amber-400 shadow-[0_0_8px_#FBBF24]'
                   : activeSalon.isOpen
                   ? 'bg-emerald-400 shadow-[0_0_8px_#34D399]'
                   : 'bg-rose-500 shadow-[0_0_8px_#F43F5E]'
               }`} />
-              <span className="text-xs sm:text-sm font-bold tracking-tight">
-                {isQueuePaused ? 'Walk-ins Paused' : activeSalon.isOpen ? 'Walk-ins Live' : 'Studio Closed'}
-              </span>
+              <div>
+                <span className="text-xs sm:text-sm font-bold tracking-tight block">
+                  {isQueuePaused ? 'Walk-ins Paused' : activeSalon.isOpen ? 'Walk-ins Live' : 'Studio Closed'}
+                </span>
+                <span className="text-[10px] text-stone-400 font-medium">
+                  {isQueuePaused
+                    ? 'Existing customers wait in line; new walk-ins blocked'
+                    : activeSalon.isOpen
+                    ? 'Accepting live walk-in entries'
+                    : 'Studio and walk-in queue shut down'}
+                </span>
+              </div>
             </div>
 
-            {/* iOS-Style Toggle inside Pill */}
-            <button
-              type="button"
-              disabled={isUpdatingQueueStatus}
-              onClick={() => updateQueueStatus(activeSalon.id, isQueuePaused ? 'open' : 'paused')}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
-                !isQueuePaused && activeSalon.isOpen
-                  ? 'bg-emerald-950/70 text-emerald-300 border border-emerald-500/40'
-                  : 'bg-stone-800 text-stone-300 border border-stone-700'
-              }`}
-            >
-              <span>{isQueuePaused ? 'Paused' : activeSalon.isOpen ? 'Open' : 'Closed'}</span>
-              <div className={`w-8 h-4 rounded-full transition-colors relative ${
-                !isQueuePaused && activeSalon.isOpen ? 'bg-emerald-500' : 'bg-stone-600'
-              }`}>
-                <div className={`w-3.5 h-3.5 rounded-full bg-white absolute top-0.25 transition-all ${
-                  !isQueuePaused && activeSalon.isOpen ? 'right-0.5' : 'left-0.5'
-                }`} />
-              </div>
-            </button>
+            {/* 3-State Operational Segmented Control */}
+            <div className="flex items-center gap-1 bg-stone-900/90 p-1 rounded-xl border border-stone-800">
+              <button
+                type="button"
+                disabled={isUpdatingQueueStatus}
+                onClick={() => updateQueueStatus(activeSalon.id, 'open')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                  activeSalon.isOpen && !isQueuePaused
+                    ? 'bg-emerald-500 text-white shadow-sm font-black'
+                    : 'text-stone-400 hover:text-stone-200 hover:bg-stone-800/60'
+                }`}
+                title="Turn ON Walk-ins (Open Live Queue)"
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-300 inline-block" />
+                <span>Live</span>
+              </button>
+
+              <button
+                type="button"
+                disabled={isUpdatingQueueStatus}
+                onClick={() => updateQueueStatus(activeSalon.id, 'paused')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                  isQueuePaused
+                    ? 'bg-amber-500 text-stone-950 shadow-sm font-black'
+                    : 'text-stone-400 hover:text-stone-200 hover:bg-stone-800/60'
+                }`}
+                title="Pause Walk-ins (Keeps current line, blocks new joins)"
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-300 inline-block" />
+                <span>Pause</span>
+              </button>
+
+              <button
+                type="button"
+                disabled={isUpdatingQueueStatus}
+                onClick={() => {
+                  if (activeSalon.currentQueue > 0) {
+                    if (window.confirm('Closing the studio will end active queue entries for the day. Are you sure you want to close?')) {
+                      updateQueueStatus(activeSalon.id, 'closed');
+                    }
+                  } else {
+                    updateQueueStatus(activeSalon.id, 'closed');
+                  }
+                }}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                  !activeSalon.isOpen
+                    ? 'bg-rose-600 text-white shadow-sm font-black'
+                    : 'text-stone-400 hover:text-stone-200 hover:bg-stone-800/60'
+                }`}
+                title="Turn OFF Studio (Closes queue for the day)"
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-rose-300 inline-block" />
+                <span>Close</span>
+              </button>
+            </div>
           </div>
 
           {/* 5. Live Queue Card (White card with People Waiting and Stepper) */}
