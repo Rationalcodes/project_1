@@ -103,7 +103,7 @@ export const Header: React.FC = () => {
       {/* 1. TOP ROOF BAR */}
       <div
         className={`w-full px-3 pt-2 transition-colors duration-300 ${
-          isWomen ? 'bg-[#351329]' : 'bg-[#24140A]'
+          isWomen ? 'bg-[#351329]' : 'bg-[#1E130D]'
         }`}
       >
         <div className="max-w-md mx-auto flex items-end justify-center gap-2">
@@ -113,7 +113,7 @@ export const Header: React.FC = () => {
             onClick={() => setGenderFilter('men')}
             className={`flex-1 py-2.5 px-3 flex items-center justify-center gap-1.5 transition-all duration-200 cursor-pointer select-none ${
               !isWomen
-                ? 'bg-[#FF6422] text-white font-black text-xs sm:text-sm tracking-wider rounded-t-2xl rounded-b-none border-none shadow-none translate-y-[1px] z-10'
+                ? 'bg-[#C85322] text-white font-black text-xs sm:text-sm tracking-wider rounded-t-2xl rounded-b-none border-none shadow-none translate-y-[1px] z-10'
                 : 'bg-white/10 text-white/70 hover:text-white hover:bg-white/15 font-bold text-xs sm:text-sm tracking-wider rounded-full shadow-sm mb-1 active:scale-95'
             }`}
           >
@@ -142,7 +142,7 @@ export const Header: React.FC = () => {
         className={`w-full px-3 sm:px-6 pt-2 pb-3.5 rounded-b-3xl transition-all duration-300 ${
           isWomen
             ? 'bg-gradient-to-b from-[#54203F] via-[#54203F] to-[#351329] border-b border-[#783653]/40 shadow-[0_12px_28px_rgba(53,19,41,0.25)]'
-            : 'bg-gradient-to-b from-[#381E10] via-[#2D180C] to-[#24140A] border-b border-[#85441E]/40 shadow-[0_12px_28px_rgba(36,20,10,0.30)]'
+            : 'bg-gradient-to-b from-[#2E1B10] via-[#24150D] to-[#1E130D] border-b border-[#763F22]/40 shadow-[0_12px_28px_rgba(30,19,13,0.35)]'
         }`}
       >
         <div className="max-w-7xl mx-auto space-y-2.5">

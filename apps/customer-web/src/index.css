@@ -3,25 +3,25 @@
 @layer base {
   :root,
   html[data-theme="men"] {
-    /* 1. PRIMARY BRAND IDENTITY — RICH ROASTED ESPRESSO & WARM LEATHER BROWN (MEN / BOYS) */
-    --color-roof: #24140A;
-    --color-canopy-main: #381E10;
-    --color-canopy-highlight: #4A2B18;
-    --color-canopy-gradient: #85441E;
-    --color-primary-accent: #FF6422;
-    --color-secondary-accent: #D97706;
-    --color-text-on-dark: #FFF8F0;
+    /* 1. BESPOKE HUMAN BRAND IDENTITY — ROASTED WALNUT ESPRESSO & ARTISAN TERRACOTTA */
+    --color-roof: #1E130D;
+    --color-canopy-main: #2E1B10;
+    --color-canopy-highlight: #442817;
+    --color-canopy-gradient: #763F22;
+    --color-primary-accent: #C85322;
+    --color-secondary-accent: #B46A36;
+    --color-text-on-dark: #FAF6F0;
     --color-bg-main: #FAF7F2;
     --color-bg-card: #FFFFFF;
-    --color-text-secondary: #78716C;
-    --color-border: #E7DED5;
+    --color-text-secondary: #7A6C60;
+    --color-border: #E8E0D5;
 
     --bg-main: #FAF7F2;
     --bg-card: #FFFFFF;
     --bg-card-hover: #FFFDF9;
-    --accent: #FF6422;
-    --accent-gold: #D97706;
-    --border-subtle: #E7DED5;
+    --accent: #C85322;
+    --accent-gold: #B46A36;
+    --border-subtle: #E8E0D5;
   }
 
   html[data-theme="women"] {
