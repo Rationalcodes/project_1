@@ -109,17 +109,23 @@ export const SalonRegistrationWizard: React.FC<SalonRegistrationWizardProps> = (
 
   return (
     <div className="max-w-3xl mx-auto bg-white border border-[#E8E2D8] rounded-3xl p-6 sm:p-8 shadow-xs text-stone-900">
-      {/* Wizard Header */}
-      <div className="text-center mb-6">
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#FFF3EC] border border-[#FED7CC] text-[#E05326] text-xs font-bold mb-2">
-          <Store className="w-3.5 h-3.5" />
-          <span>SLOON Partner Onboarding</span>
+      {/* Studio Registration Dossier Header */}
+      <div className="text-center mb-6 space-y-2">
+        <div className="flex items-center justify-center gap-2">
+          <img
+            src={logoFallback}
+            alt="SLOON"
+            className="h-8 sm:h-9 w-auto object-contain"
+          />
+          <span className="text-[10px] uppercase font-bold tracking-wider px-2.5 py-0.5 rounded-full bg-[#FFF5ED] text-[#C85322] border border-[#FED7CC]">
+            Partner Registration
+          </span>
         </div>
-        <h2 className="text-xl sm:text-2xl font-black text-stone-900 font-serif">
-          Register Your Salon
+        <h2 className="text-2xl sm:text-3xl font-black text-stone-900 font-serif tracking-tight">
+          Register Your Salon & Studio
         </h2>
-        <p className="text-xs text-stone-500 max-w-md mx-auto mt-1">
-          Join the walk-in transparency network. Pin your exact location, set prices, and let customers see your live waiting count.
+        <p className="text-xs sm:text-sm text-stone-500 max-w-md mx-auto leading-relaxed">
+          Join the live walk-in network. Pin your exact coordinates, publish service pricing, and give clients real-time chair visibility.
         </p>
       </div>
 
@@ -147,18 +153,6 @@ export const SalonRegistrationWizard: React.FC<SalonRegistrationWizardProps> = (
           </button>
         </div>
       )}
-
-      {/* Brand Header */}
-      <div className="flex items-center justify-center gap-2 mb-4">
-        <img
-          src={logoFallback}
-          alt="SLOON"
-          className="h-8 sm:h-9 w-auto object-contain"
-        />
-        <span className="text-[10px] uppercase font-black tracking-wider px-2 py-0.5 rounded-md bg-[#FFF3EC] text-[#E05326] border border-[#FED7CC]">
-          Partner Onboarding
-        </span>
-      </div>
 
       {/* 4 Step Progress Pills */}
       <div className="flex items-center justify-between gap-1 mb-8 max-w-md mx-auto text-[11px] font-bold">

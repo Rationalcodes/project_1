@@ -484,7 +484,7 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
         <body>
           <div class="no-print-bar no-print">
             <button class="btn btn-primary" onclick="window.print()">
-              🖨️ Print Standee (A4 / Tabletop)
+              Print Desk Standee (A4)
             </button>
             <button class="btn btn-secondary" onclick="window.close()">
               Close
@@ -496,14 +496,14 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
             <div class="salon-bg-overlay"></div>
 
             <div class="standee-body">
-              <div class="brand-badge">⚡ SLOON Live Pass</div>
+              <div class="brand-badge">SLOON Live Pass</div>
               <h1 class="salon-name">${activeSalon.name}</h1>
-              <p class="salon-locality">📍 ${localityText}</p>
+              <p class="salon-locality">${localityText}</p>
 
               <!-- Solid white container with padding & rounded borders for 100% camera visibility -->
               <div class="qr-card-wrapper">
                 <img src="${partnerQrDataUrl}" class="qr-code-img" alt="Counter QR Code" />
-                <div class="camera-label">📸 SCAN WITH ANY PHONE CAMERA</div>
+                <div class="camera-label">SCAN WITH ANY PHONE CAMERA</div>
               </div>
 
               <div class="cta-title">Scan to Check Wait & Join Queue</div>
@@ -512,9 +512,9 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
               </p>
 
               <div class="perks">
-                <span class="perk-item">⚡ Zero App Download</span>
-                <span class="perk-item">💈 Live Chair Turn</span>
-                <span class="perk-item">₹0 Extra Fee</span>
+                <span class="perk-item">Zero App Download</span>
+                <span class="perk-item">Live Chair Turn</span>
+                <span class="perk-item">Direct Cash & UPI</span>
               </div>
 
               <div class="footer-note">
@@ -906,10 +906,10 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
             <div>
               <h1 className="text-2xl sm:text-3xl font-serif font-black text-stone-900 tracking-tight leading-snug">
                 {timeGreeting},<br />
-                {activeSalon.name} 👋
+                {activeSalon.name}
               </h1>
               <p className="text-xs sm:text-sm text-stone-500 font-medium mt-1">
-                Command center for today.
+                Studio reception and daily walk-in command.
               </p>
             </div>
             <div className="flex items-center gap-1.5 shrink-0 bg-white border border-[#E8E2D8] px-2.5 py-1.5 rounded-2xl shadow-2xs">
@@ -1474,13 +1474,13 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
 
           {/* Live Customer Calling & Queue Roster */}
           <div className="bg-white border border-[#E8E2D8] rounded-3xl p-5 sm:p-7 shadow-xs">
-            {/* Small Barber Auto-Pilot Explainer Banner */}
-            <div className="mb-5 p-3.5 bg-[#FFF3EC] border border-[#FED7CC] rounded-2xl flex items-start gap-3 text-xs">
-              <span className="text-base shrink-0">🤖</span>
+            {/* Salon Reception & Standee Check-In Notice */}
+            <div className="mb-5 p-3.5 bg-[#FFF8F3] border border-[#FED7CC] rounded-2xl flex items-start gap-3 text-xs">
+              <Sparkles className="w-4 h-4 text-[#C85322] shrink-0 mt-0.5" />
               <div className="flex-1">
-                <span className="font-extrabold text-[#E05326]">Customer Self-Service Auto-Pilot Active:</span>
+                <span className="font-black text-[#C85322]">Self-Check-In Standee Active:</span>
                 <span className="text-stone-700 ml-1">
-                  Small barbers do not need to manually tally on the phone while cutting hair! Customers scan your counter QR standee to join, pick services, and tap "Done" when finished. Old tickets auto-expire after service time.
+                  Clients scan your counter standee QR, select their desired service, and receive their queue ticket without manual tallying. You stay focused on clients — the queue updates in real-time.
                 </span>
               </div>
             </div>
@@ -2404,20 +2404,20 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
                 {/* Quick Presets for Barber Studios */}
                 <div className="p-3 bg-[#FAF7F2] border border-[#E8E2D8] rounded-2xl space-y-2">
                   <span className="text-[10px] uppercase font-bold text-stone-500 tracking-wider block">
-                    ⚡ Quick Sample Studio Loops:
+                    Sample Studio Loops:
                   </span>
                   <div className="flex flex-wrap gap-1.5">
                     {[
                       {
-                        label: '✂️ Master Barber Scissors & Fade',
+                        label: 'Master Barber Scissors & Fade',
                         url: 'https://assets.mixkit.co/videos/preview/mixkit-barber-cutting-hair-with-scissors-and-comb-41544-large.mp4'
                       },
                       {
-                        label: '💈 Barber Styling & Comb',
+                        label: 'Barber Styling & Comb',
                         url: 'https://assets.mixkit.co/videos/preview/mixkit-barber-styling-a-mans-hair-41545-large.mp4'
                       },
                       {
-                        label: '✂️ Haircut Precision Cut',
+                        label: 'Haircut Precision Cut',
                         url: 'https://assets.mixkit.co/videos/preview/mixkit-hairdresser-brushing-a-womans-hair-41540-large.mp4'
                       }
                     ].map((preset) => (
@@ -2474,8 +2474,8 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
                   )}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20" />
                   <div className="absolute top-3 left-3 flex items-center gap-2">
-                    <span className="px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-black/80 text-amber-400 border border-amber-400/40">
-                      {loopVideoUrlInput ? '🎥 Loop Video Active' : '🖼️ Poster Active'}
+                    <span className="px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-black/80 text-amber-300 border border-amber-400/40">
+                      {loopVideoUrlInput ? 'Loop Video Active' : 'Poster Image Active'}
                     </span>
                   </div>
                   <div className="absolute bottom-3 left-3 right-3 text-white">
@@ -2656,8 +2656,8 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
-                      <span className="absolute bottom-2 left-2 text-[10px] font-bold text-amber-400 drop-shadow">
-                        💈 Style #{idx + 1}
+                      <span className="absolute bottom-2 left-2 text-[10px] font-bold text-amber-300 drop-shadow">
+                        Style #{idx + 1}
                       </span>
                     </div>
                   ))}
@@ -2735,8 +2735,9 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
                     <span className="text-emerald-700 font-bold">Haircuts from ₹{salonForm.startingPrice || 150}</span>
                   </p>
                   <div className="mt-2 pt-2 border-t border-stone-100 flex items-center justify-between text-[11px]">
-                    <span className="text-stone-500 font-mono text-[10px]">
-                      📍 {Number(salonForm.latitude).toFixed(4)}°, {Number(salonForm.longitude).toFixed(4)}°
+                    <span className="text-stone-500 font-mono text-[10px] flex items-center gap-1">
+                      <MapPin className="w-3 h-3 text-stone-400 shrink-0" />
+                      <span>{Number(salonForm.latitude).toFixed(4)}°, {Number(salonForm.longitude).toFixed(4)}°</span>
                     </span>
                     <span className="flex items-center gap-1 font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200/60">
                       <Phone className="w-3 h-3" />
@@ -2785,25 +2786,30 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
                 <label className="text-stone-700 font-bold block mb-1.5">Studio Category & Target Audience</label>
                 <div className="grid grid-cols-3 gap-2.5">
                   {[
-                    { id: 'men', label: "Men's Grooming", sub: 'Barbershop & Fades', icon: '✂️' },
-                    { id: 'women', label: "Women's Beauty", sub: 'Salon & Spa Studio', icon: '💇‍♀️' },
-                    { id: 'unisex', label: 'Unisex Studio', sub: 'All Genders Welcome', icon: '💈' }
-                  ].map((cat) => (
-                    <button
-                      key={cat.id}
-                      type="button"
-                      onClick={() => setSalonForm({ ...salonForm, salonType: cat.id as any })}
-                      className={`p-3 rounded-2xl border text-left transition-all cursor-pointer ${
-                        salonForm.salonType === cat.id
-                          ? 'border-[#E05326] bg-[#FFF3EC] shadow-xs ring-1 ring-[#E05326]/30'
-                          : 'border-stone-200 bg-white hover:bg-stone-50 text-stone-700'
-                      }`}
-                    >
-                      <div className="text-base mb-1">{cat.icon}</div>
-                      <div className="font-bold text-xs text-stone-900">{cat.label}</div>
-                      <div className="text-[10px] text-stone-500">{cat.sub}</div>
-                    </button>
-                  ))}
+                    { id: 'men', label: "Men's Grooming", sub: 'Barbershop & Fades', icon: Scissors },
+                    { id: 'women', label: "Women's Beauty", sub: 'Salon & Spa Studio', icon: Sparkles },
+                    { id: 'unisex', label: 'Unisex Studio', sub: 'All Genders Welcome', icon: Store }
+                  ].map((cat) => {
+                    const CatIcon = cat.icon;
+                    return (
+                      <button
+                        key={cat.id}
+                        type="button"
+                        onClick={() => setSalonForm({ ...salonForm, salonType: cat.id as any })}
+                        className={`p-3 rounded-2xl border text-left transition-all cursor-pointer ${
+                          salonForm.salonType === cat.id
+                            ? 'border-[#E05326] bg-[#FFF3EC] shadow-xs ring-1 ring-[#E05326]/30'
+                            : 'border-stone-200 bg-white hover:bg-stone-50 text-stone-700'
+                        }`}
+                      >
+                        <div className="w-7 h-7 rounded-lg bg-[#FAF7F2] border border-[#E8E2D8] flex items-center justify-center mb-1.5 text-[#E05326]">
+                          <CatIcon className="w-3.5 h-3.5" />
+                        </div>
+                        <div className="font-bold text-xs text-stone-900">{cat.label}</div>
+                        <div className="text-[10px] text-stone-500">{cat.sub}</div>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -3353,13 +3359,15 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
 
               <div className="relative z-10 flex flex-col items-center">
                 <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-[#FFF3EC] border border-[#FED7CC] text-[#E05326] text-[10px] font-black uppercase tracking-wider mb-1.5">
-                  <span>⚡ Official Walk-In Partner</span>
+                  <ShieldCheck className="w-3 h-3 text-[#E05326]" />
+                  <span>Verified Studio Partner</span>
                 </div>
                 <h3 className="text-base font-black text-white font-serif drop-shadow-md">
                   {activeSalon.name}
                 </h3>
-                <p className="text-[11px] text-zinc-300 mb-2 drop-shadow">
-                  📍 {activeSalon.locality || activeSalon.address}
+                <p className="text-[11px] text-zinc-300 mb-2 drop-shadow flex items-center gap-1">
+                  <MapPin className="w-3 h-3 text-stone-300 inline" />
+                  <span>{activeSalon.locality || activeSalon.address}</span>
                 </p>
 
                 {/* Solid White Padded Container with Rounded Borders for 100% Camera Scannability */}
@@ -3375,8 +3383,8 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
                       Generating QR...
                     </div>
                   )}
-                  <div className="mt-1.5 px-2 py-0.5 rounded-full bg-[#24140A] text-white text-[9px] font-bold tracking-wider uppercase inline-block border border-[#3E2417]">
-                    📸 Scan with phone camera
+                  <div className="mt-1.5 px-2.5 py-0.5 rounded-full bg-[#24140A] text-white text-[9px] font-bold tracking-wider uppercase inline-block border border-[#3E2417]">
+                    Scan with phone camera
                   </div>
                 </div>
 
