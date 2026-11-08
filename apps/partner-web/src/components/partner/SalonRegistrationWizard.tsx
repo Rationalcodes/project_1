@@ -17,6 +17,7 @@ import {
   ShieldCheck
 } from 'lucide-react';
 import { SalonRegistrationInput, SalonType } from '@kumbhakaran/shared-types';
+import logoFallback from '../../assets/logo.png';
 
 interface SalonRegistrationWizardProps {
   onSuccess: () => void;
@@ -146,6 +147,18 @@ export const SalonRegistrationWizard: React.FC<SalonRegistrationWizardProps> = (
           </button>
         </div>
       )}
+
+      {/* Brand Header */}
+      <div className="flex items-center justify-center gap-2 mb-4">
+        <img
+          src={logoFallback}
+          alt="SLOON"
+          className="h-8 sm:h-9 w-auto object-contain"
+        />
+        <span className="text-[10px] uppercase font-black tracking-wider px-2 py-0.5 rounded-md bg-[#FFF3EC] text-[#E05326] border border-[#FED7CC]">
+          Partner Onboarding
+        </span>
+      </div>
 
       {/* 4 Step Progress Pills */}
       <div className="flex items-center justify-between gap-1 mb-8 max-w-md mx-auto text-[11px] font-bold">

@@ -74,9 +74,20 @@ export const PartnerLandingPage: React.FC<PartnerLandingPageProps> = ({
         <div className="absolute top-0 right-1/4 w-80 h-80 bg-orange-500/5 rounded-full blur-3xl pointer-events-none" />
         
         <div className="relative z-10 max-w-3xl mx-auto text-center space-y-4">
+          <div className="flex items-center justify-center gap-2 pt-1">
+            <img
+              src={logoFallback}
+              alt="SLOON"
+              className="h-10 sm:h-12 w-auto object-contain"
+            />
+            <span className="text-[10px] uppercase font-black tracking-wider px-2.5 py-0.5 rounded-full bg-[#FFF3EC] text-[#E05326] border border-[#FED7CC]">
+              Partner
+            </span>
+          </div>
+
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#FFF3EC] border border-[#FED7CC] text-[#E05326] text-xs font-bold tracking-wide">
             <span className="w-2 h-2 rounded-full bg-[#E05326] animate-pulse" />
-            <span>SLOON • India's #1 Salon Queue Platform</span>
+            <span>India's #1 Salon Queue Platform</span>
           </div>
 
           <h1 className="text-2xl sm:text-4xl md:text-5xl font-black text-stone-900 tracking-tight leading-tight font-serif">

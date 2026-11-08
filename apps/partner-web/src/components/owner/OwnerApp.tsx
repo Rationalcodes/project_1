@@ -58,6 +58,8 @@ import { OwnerTab, Service, Staff, QueueEntry } from '@kumbhakaran/shared-types'
 import { openGoogleMapsLocation } from '@kumbhakaran/ui';
 import { SalonLocationPicker, LocationPickerResult } from '../partner/SalonLocationPicker';
 import { InstagramGradientIcon } from '../common/InstagramIcon';
+import logoFallback from '../../assets/logo.png';
+import logoTransparent from '../../assets/logo-transparent.png';
 import { defaultApiClient } from '@kumbhakaran/api-client';
 
 export interface OwnerAppProps {
@@ -894,14 +896,29 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
       {ownerTab === 'home' ? (
         <div className="space-y-4">
           {/* 1. Dynamic Greeting Header */}
-          <div className="pt-1 px-0.5">
-            <h1 className="text-2xl sm:text-3xl font-serif font-black text-stone-900 tracking-tight leading-snug">
-              {timeGreeting},<br />
-              {activeSalon.name} 👋
-            </h1>
-            <p className="text-xs sm:text-sm text-stone-500 font-medium mt-1">
-              Command center for today.
-            </p>
+          <div className="pt-1 px-0.5 flex items-start justify-between gap-3">
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-serif font-black text-stone-900 tracking-tight leading-snug">
+                {timeGreeting},<br />
+                {activeSalon.name} 👋
+              </h1>
+              <p className="text-xs sm:text-sm text-stone-500 font-medium mt-1">
+                Command center for today.
+              </p>
+            </div>
+            <div className="flex items-center gap-1.5 shrink-0 bg-white border border-[#E8E2D8] px-2.5 py-1.5 rounded-2xl shadow-2xs">
+              <img
+                src={logoFallback}
+                alt="SLOON"
+                className="h-6 sm:h-7 w-auto object-contain"
+                onError={(e) => {
+                  (e.currentTarget as HTMLImageElement).src = logoTransparent;
+                }}
+              />
+              <span className="text-[9px] uppercase font-black px-1.5 py-0.5 rounded bg-[#FFF3EC] text-[#E05326]">
+                Partner
+              </span>
+            </div>
           </div>
 
           {/* 2. Branch / Salon Selector Dropdown */}
