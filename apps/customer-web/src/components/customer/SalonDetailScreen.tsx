@@ -470,11 +470,11 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
 
           <div className="flex items-start justify-between gap-4">
             <div>
-              <div className="text-[11px] uppercase tracking-widest text-stone-500 font-semibold mb-1">Current Queue</div>
+              <div className="text-[11px] uppercase tracking-widest text-stone-500 font-semibold mb-1">Waiting right now</div>
               <div className="text-5xl font-black text-stone-900 tracking-tight leading-none">
                 {String(salon.currentQueue).padStart(2, '0')}
               </div>
-              <div className="text-xs font-bold text-stone-500 mt-1 uppercase tracking-wide">People in Queue</div>
+              <div className="text-xs font-bold text-stone-500 mt-1">people waiting in line</div>
               <div className={`mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${queueInfo.pillClass}`}>
                 <Users className="w-3.5 h-3.5" />
                 {queueInfo.label}
@@ -489,7 +489,7 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
                 ~{waitTime} <span className="text-xs font-normal text-stone-500">mins</span>
               </div>
               <p className="text-[10px] text-stone-500 mt-1 leading-snug">
-                Direct walk-in counter synced live.
+                Updated live by front desk staff.
               </p>
             </div>
           </div>
@@ -570,7 +570,7 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
                 className="w-full sm:w-auto flex-1 py-3 px-5 rounded-2xl bg-gradient-to-r from-[#FF6422] to-orange-600 text-white font-extrabold text-sm shadow-md shadow-orange-500/25 hover:from-orange-600 hover:to-orange-700 transition-all active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer"
               >
                 <Ticket className="w-4 h-4" />
-                <span>Join Live Walk-In Queue</span>
+                <span>Get in line from your phone</span>
               </button>
               <button
                 type="button"
@@ -578,7 +578,7 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
                 className="text-xs font-bold text-stone-600 hover:text-[#FF6422] px-3 py-2 rounded-xl bg-stone-50 border border-[#E2DDD5] hover:bg-orange-50 transition-colors flex items-center gap-1.5 cursor-pointer"
               >
                 <Users className="w-3.5 h-3.5 text-stone-500" />
-                <span>Report Live Crowd</span>
+                <span>Are you here? Share wait update</span>
               </button>
             </div>
           ) : (
@@ -886,7 +886,7 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-2xl bg-[#FF6422] text-white font-extrabold text-xs shadow-md shadow-orange-500/20 hover:bg-orange-600 active:scale-95 transition-all cursor-pointer"
                 >
                   <Ticket className="w-3.5 h-3.5" />
-                  <span>Join Live Queue</span>
+                  <span>Get in line</span>
                 </button>
               ) : null}
             </div>
@@ -922,7 +922,7 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
                   }}
                   className="text-xs text-stone-700 bg-white border border-stone-300 hover:border-stone-400 font-bold px-2.5 py-1.5 rounded-xl shadow-2xs hover:bg-stone-50 transition-colors cursor-pointer"
                 >
-                  👥 Book for Other
+                  👥 Token for someone else
                 </button>
                 <button
                   type="button"
@@ -934,7 +934,7 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
                   }}
                   className="text-xs text-amber-900 bg-amber-100/90 border border-amber-300 hover:bg-amber-200 font-bold px-2.5 py-1.5 rounded-xl transition-colors cursor-pointer"
                 >
-                  🔄 Rejoin Queue
+                  🔄 Move to back of line
                 </button>
                 <button
                   type="button"
@@ -1606,12 +1606,12 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
                   ) : bookingFor === 'self' && activeTicket ? (
                     <>
                       <RefreshCw className="w-4 h-4" />
-                      <span>Leave Earlier & Rejoin at Current Position</span>
+                      <span>Give up old spot & take new token at back of line</span>
                     </>
                   ) : (
                     <>
                       <Ticket className="w-4 h-4" />
-                      <span>{bookingFor === 'other' ? `Take Token for ${joinName.trim() || 'Guest'}` : 'Take Token & Join Queue'}</span>
+                      <span>{bookingFor === 'other' ? `Take Token for ${joinName.trim() || 'Guest'}` : 'Get my walk-in token'}</span>
                     </>
                   )}
                 </button>

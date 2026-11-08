@@ -81,7 +81,7 @@ export const ExploreScreen: React.FC = () => {
               </span>
             </h1>
             <p className="text-[11px] text-stone-500 font-medium">
-              Discover studios, check live waiting lines, and find locations on the map.
+              Browse salons, see current wait times, or tap Map to see what is around you.
             </p>
           </div>
         </div>
@@ -98,7 +98,7 @@ export const ExploreScreen: React.FC = () => {
             }`}
           >
             <Store className="w-4 h-4 text-[#FF6422]" />
-            <span>Explore Studios</span>
+            <span>List View</span>
           </button>
 
           <button
@@ -182,7 +182,7 @@ export const ExploreScreen: React.FC = () => {
               }`}
             >
               <Users className="w-3.5 h-3.5" />
-              <span>Lowest Queue</span>
+              <span>Shortest Wait</span>
             </button>
 
             <button
@@ -196,7 +196,7 @@ export const ExploreScreen: React.FC = () => {
               }`}
             >
               <Navigation className="w-3.5 h-3.5" />
-              <span>Nearest</span>
+              <span>Closest to Me</span>
             </button>
 
             <button

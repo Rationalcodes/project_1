@@ -202,8 +202,8 @@ export const ProfileScreen: React.FC = () => {
                 {isAuthenticated
                   ? 'Authenticated Customer'
                   : userProfile.name
-                  ? 'Device-Synced Walk-In Profile'
-                  : 'Walk-In Customer (No Sign-Up)'}
+                  ? 'Ready to explore'
+                  : 'Guest Explorer'}
               </span>
             </div>
 
@@ -212,7 +212,7 @@ export const ProfileScreen: React.FC = () => {
                 ? `Signed in as ${authUser?.email}`
                 : userProfile.name
                 ? 'Your name and saved salons are remembered on this device across visits.'
-                : 'No password required. Set your name so salons and reviews recognize you.'}
+                : 'No password or account needed. Just set your name so your salon knows who you are.'}
             </p>
           </div>
         </div>
@@ -307,7 +307,7 @@ export const ProfileScreen: React.FC = () => {
         <div className="flex items-center justify-between text-xs py-1">
           <div>
             <div className="text-stone-900 font-semibold">Default Search Radius</div>
-            <div className="text-[10px] text-stone-500">Distance limit for PostGIS ST_DWithin radius search</div>
+            <div className="text-[10px] text-stone-500">How far should we look for salons around you?</div>
           </div>
           <select
             value={preferredRadius}
@@ -317,10 +317,10 @@ export const ProfileScreen: React.FC = () => {
             }}
             className="px-2.5 py-1 bg-[#FAF7F2] border border-[#E2DDD5] rounded-xl text-xs text-stone-900 focus:outline-none"
           >
-            <option value="2 km">2 km (Ultra-local)</option>
-            <option value="5 km">5 km (Neighbourhood)</option>
-            <option value="10 km">10 km (City sector)</option>
-            <option value="25 km">25 km (Metro area)</option>
+            <option value="2 km">Within 2 km (Walking distance)</option>
+            <option value="5 km">Within 5 km (Nearby neighbourhood)</option>
+            <option value="10 km">Within 10 km (Across town)</option>
+            <option value="25 km">Within 25 km (Anywhere in the city)</option>
           </select>
         </div>
       </section>

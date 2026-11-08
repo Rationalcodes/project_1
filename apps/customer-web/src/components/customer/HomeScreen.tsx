@@ -331,21 +331,77 @@ export const HomeScreen: React.FC = () => {
                 );
               }
 
-              // BLANK POSTER SPACE OF THE SAME LENGTH AND WIDTH
+              // HELPFUL, FRIENDLY EDITORIAL CAROUSEL CARD
+              const editorialSlides = isWomen ? [
+                {
+                  title: 'Skip the crowded waiting room',
+                  desc: 'Check live parlour chairs from home and step in when ready.',
+                  tag: 'Effortless Beauty Walk-Ins',
+                  bg: 'from-[#520917] via-[#7A0D22] to-[#9E1430]',
+                },
+                {
+                  title: 'Know the wait before you head out',
+                  desc: 'Real front-desk updates so you never sit around waiting.',
+                  tag: 'Live Chair Updates',
+                  bg: 'from-[#6E1124] via-[#8E1730] to-[#B32442]',
+                },
+                {
+                  title: 'Pay regular counter prices',
+                  desc: 'Zero platform fees. Pay your stylist directly by cash or UPI.',
+                  tag: 'Zero Booking Fees',
+                  bg: 'from-[#4D0B18] via-[#751227] to-[#A01B38]',
+                },
+                {
+                  title: 'Getting ready together?',
+                  desc: 'Grab a separate walk-in token for your friend or daughter.',
+                  tag: 'Bring Friends Along',
+                  bg: 'from-[#5E0F20] via-[#85162E] to-[#AB223F]',
+                },
+              ] : [
+                {
+                  title: 'Never sit in a crowded barber shop again',
+                  desc: 'See how many people are in line right now before you leave home.',
+                  tag: 'Walk In With Confidence',
+                  bg: 'from-[#5A190C] via-[#852210] to-[#B83818]',
+                },
+                {
+                  title: 'Hold your spot from your phone',
+                  desc: 'Take a token on your way and walk in right as your chair is ready.',
+                  tag: 'Zero Waiting Room Waste',
+                  bg: 'from-[#731E0E] via-[#A02D15] to-[#D94520]',
+                },
+                {
+                  title: 'Pay regular prices at the counter',
+                  desc: 'No advance payments, no card commitments. Just honest local grooming.',
+                  tag: '100% Free Service',
+                  bg: 'from-[#4A140A] via-[#701E0E] to-[#992C15]',
+                },
+                {
+                  title: 'Bringing a friend or family?',
+                  desc: 'You can easily take separate tokens for them under their own name.',
+                  tag: 'Tokens For Family',
+                  bg: 'from-[#661B0D] via-[#8F2713] to-[#BF3C1E]',
+                },
+              ];
+              const slideInfo = editorialSlides[idx % editorialSlides.length];
+
               return (
                 <div
                   key={banner.id || idx}
-                  className="w-full shrink-0 flex-none aspect-[3/1] min-h-[160px] sm:min-h-[220px] md:min-h-[260px] rounded-3xl border-2 border-dashed border-stone-300/80 bg-stone-100/70 p-5 sm:p-6 flex flex-col items-center justify-center text-center relative overflow-hidden transition-all"
+                  onClick={() => setCustomerTab('explore')}
+                  className={`w-full shrink-0 flex-none aspect-[3/1] min-h-[160px] sm:min-h-[220px] md:min-h-[260px] rounded-3xl bg-gradient-to-r ${slideInfo.bg} p-6 sm:p-8 flex flex-col justify-end text-white relative overflow-hidden transition-all shadow-sm cursor-pointer`}
                 >
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-stone-200/80 flex items-center justify-center text-stone-400 mb-2 shadow-2xs">
-                    <ImageIcon className="w-5 h-5 sm:w-6 sm:h-6" />
+                  <div className="relative z-10 max-w-lg space-y-1 sm:space-y-1.5">
+                    <span className="inline-block text-[10px] sm:text-[11px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-white/20 backdrop-blur-xs text-white border border-white/25">
+                      {slideInfo.tag}
+                    </span>
+                    <h3 className="text-lg sm:text-2xl md:text-3xl font-black tracking-tight leading-tight drop-shadow-sm">
+                      {slideInfo.title}
+                    </h3>
+                    <p className="text-xs sm:text-sm text-stone-200 font-medium leading-snug drop-shadow-sm max-w-md">
+                      {slideInfo.desc}
+                    </p>
                   </div>
-                  <span className="text-[11px] font-extrabold uppercase tracking-wider text-stone-600 px-3 py-1 rounded-full bg-stone-200/70 mb-1">
-                    Poster Space #{banner.slot}
-                  </span>
-                  <p className="text-xs text-stone-400 font-medium">
-                    1200 × 400 px
-                  </p>
                 </div>
               );
             })}
