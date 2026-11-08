@@ -364,25 +364,25 @@ export const HomeScreen: React.FC = () => {
                   title: 'Never sit in a crowded barber shop again',
                   desc: 'See how many people are in line right now before you leave home.',
                   tag: 'Walk In With Confidence',
-                  bg: 'from-[#1C1917] via-[#292524] to-[#783F0F]',
+                  bg: 'from-[#24140A] via-[#381E10] to-[#85441E]',
                 },
                 {
                   title: 'Hold your spot from your phone',
                   desc: 'Take a token on your way and walk in right as your chair is ready.',
                   tag: 'Zero Waiting Room Waste',
-                  bg: 'from-[#292524] via-[#442B1E] to-[#783F0F]',
+                  bg: 'from-[#381E10] via-[#4A2B18] to-[#85441E]',
                 },
                 {
                   title: 'Pay regular prices at the counter',
                   desc: 'No advance payments, no card commitments. Just honest local grooming.',
                   tag: '100% Free Service',
-                  bg: 'from-[#1C1917] via-[#2D231E] to-[#4D3325]',
+                  bg: 'from-[#24140A] via-[#3D2111] to-[#633216]',
                 },
                 {
                   title: 'Bringing a friend or family?',
                   desc: 'You can easily take separate tokens for them under their own name.',
                   tag: 'Tokens For Family',
-                  bg: 'from-[#231E1B] via-[#3E281C] to-[#5C3620]',
+                  bg: 'from-[#2B180E] via-[#4A2612] to-[#7A3E1D]',
                 },
               ];
               const slideInfo = editorialSlides[idx % editorialSlides.length];

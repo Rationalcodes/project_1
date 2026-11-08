@@ -3,11 +3,11 @@
 @layer base {
   :root,
   html[data-theme="men"] {
-    /* 1. PRIMARY BRAND IDENTITY — DARK ESPRESSO / RICH LEATHER (MEN) */
-    --color-roof: #1C1917;
-    --color-canopy-main: #292524;
-    --color-canopy-highlight: #783F0F;
-    --color-canopy-gradient: #A67C5B;
+    /* 1. PRIMARY BRAND IDENTITY — RICH ROASTED ESPRESSO & WARM LEATHER BROWN (MEN / BOYS) */
+    --color-roof: #24140A;
+    --color-canopy-main: #381E10;
+    --color-canopy-highlight: #4A2B18;
+    --color-canopy-gradient: #85441E;
     --color-primary-accent: #FF6422;
     --color-secondary-accent: #D97706;
     --color-text-on-dark: #FFF8F0;
@@ -64,7 +64,7 @@
     overflow-x: hidden;
     position: relative;
     background-color: var(--bg-main, #FAF7F2);
-    color: #1C1917;
+    color: var(--color-roof, #24140A);
     font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;

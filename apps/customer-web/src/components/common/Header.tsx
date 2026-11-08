@@ -103,7 +103,7 @@ export const Header: React.FC = () => {
       {/* 1. TOP ROOF BAR */}
       <div
         className={`w-full px-3 pt-2 transition-colors duration-300 ${
-          isWomen ? 'bg-[#351329]' : 'bg-[#1C1917]'
+          isWomen ? 'bg-[#351329]' : 'bg-[#24140A]'
         }`}
       >
         <div className="max-w-md mx-auto flex items-end justify-center gap-2">
@@ -142,7 +142,7 @@ export const Header: React.FC = () => {
         className={`w-full px-3 sm:px-6 pt-2 pb-3.5 rounded-b-3xl transition-all duration-300 ${
           isWomen
             ? 'bg-gradient-to-b from-[#54203F] via-[#54203F] to-[#351329] border-b border-[#783653]/40 shadow-[0_12px_28px_rgba(53,19,41,0.25)]'
-            : 'bg-gradient-to-b from-[#292524] via-[#292524] to-[#1C1917] border-b border-[#783F0F]/40 shadow-[0_12px_28px_rgba(28,25,23,0.30)]'
+            : 'bg-gradient-to-b from-[#381E10] via-[#2D180C] to-[#24140A] border-b border-[#85441E]/40 shadow-[0_12px_28px_rgba(36,20,10,0.30)]'
         }`}
       >
         <div className="max-w-7xl mx-auto space-y-2.5">
