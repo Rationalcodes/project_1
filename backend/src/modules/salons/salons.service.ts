@@ -897,8 +897,8 @@ export class SalonsService {
       if (dto.status) {
         await this.prisma.$executeRawUnsafe(`UPDATE salons SET status = $1 WHERE id = $2;`, dto.status, id);
       }
-      if (dto.phone) {
-        await this.prisma.$executeRawUnsafe(`UPDATE salons SET phone = $1 WHERE id = $2;`, dto.phone, id);
+      if (dto.phone !== undefined) {
+        await this.prisma.$executeRawUnsafe(`UPDATE salons SET phone = $1 WHERE id = $2;`, dto.phone || null, id);
       }
       if (dto.address) {
         await this.prisma.$executeRawUnsafe(`UPDATE salons SET address = $1 WHERE id = $2;`, dto.address, id);
@@ -954,7 +954,7 @@ export class SalonsService {
     if (salon) {
       if (dto.name) salon.name = dto.name;
       if (dto.tagline) salon.tagline = dto.tagline;
-      if (dto.phone) salon.phone = dto.phone;
+      if (dto.phone !== undefined) salon.phone = dto.phone;
       if (dto.instagramHandle !== undefined) salon.instagramHandle = dto.instagramHandle;
       if (dto.instagramUrl !== undefined) salon.instagramUrl = dto.instagramUrl;
       if (dto.address) salon.address = dto.address;

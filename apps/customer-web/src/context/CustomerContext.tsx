@@ -250,7 +250,21 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       const cached = safeStorage.getItem('kumbhakaran_cached_salons');
       if (cached) {
         const parsed = JSON.parse(cached);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          // Invalidate legacy cached data containing stale dummy phone numbers
+          const hasStalePhone = parsed.some(
+            (s: any) =>
+              !s.phone ||
+              s.phone === '+91 98000 00000' ||
+              s.phone === '+91 98765 43210' ||
+              s.phone.includes('98000')
+          );
+          if (hasStalePhone) {
+            safeStorage.removeItem('kumbhakaran_cached_salons');
+            return INITIAL_SALONS;
+          }
+          return parsed;
+        }
       }
     } catch {}
     return INITIAL_SALONS;
@@ -1161,10 +1175,11 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
               if (!match) return prev;
               return {
                 ...prev,
-                currentQueue: match.currentQueue,
-                lastQueueUpdate: match.lastQueueUpdate,
-                isOpen: match.isOpen,
-                queueStatus: match.queueStatus,
+                ...match,
+                phone: match.phone || prev.phone,
+                instagramHandle: match.instagramHandle || prev.instagramHandle,
+                instagramUrl: match.instagramUrl || prev.instagramUrl,
+                reviews: prev.reviews && prev.reviews.length > 0 ? prev.reviews : match.reviews,
               };
             });
           }
