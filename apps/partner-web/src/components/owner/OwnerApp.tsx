@@ -1261,20 +1261,23 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
 
             <div className="flex items-center gap-2">
               <span className="text-xs text-stone-500 hidden sm:inline">{activeSalon.name}</span>
-              <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full border ${
+              <span className={`inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${
                 isQueuePaused
-                  ? 'bg-amber-50 text-amber-700 border-amber-200'
+                  ? 'bg-amber-50 text-amber-800 border-amber-200'
                   : activeSalon.isOpen
-                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                  : 'bg-rose-50 text-rose-700 border-rose-200'
+                  ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                  : 'bg-rose-50 text-rose-800 border-rose-200'
               }`}>
-                {isQueuePaused ? '⏸ Paused' : activeSalon.isOpen ? '🟢 Open' : '🔴 Closed'}
+                <span className={`w-1.5 h-1.5 rounded-full ${
+                  isQueuePaused ? 'bg-amber-500' : activeSalon.isOpen ? 'bg-emerald-500' : 'bg-rose-500'
+                }`} />
+                <span>{isQueuePaused ? 'Paused' : activeSalon.isOpen ? 'Live' : 'Closed'}</span>
               </span>
             </div>
           </div>
 
-          {/* Desktop Navigation Tabs for Sub-Pages */}
-          <div className="hidden md:flex items-center gap-1.5 overflow-x-auto pb-2 no-scrollbar border-b border-stone-200">
+          {/* Page-in-Page Operational Sub-Tabs (Clean, tactile, scrollable across all screen sizes) */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1.5 -mx-1 px-1 no-scrollbar border-b border-stone-200">
             {navTabs.map((tab) => {
               const Icon = tab.icon;
               const isActive = ownerTab === tab.id;
@@ -1282,14 +1285,15 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
               return (
                 <button
                   key={tab.id}
+                  type="button"
                   onClick={() => setOwnerTab(tab.id)}
-                  className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
+                  className={`flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
                     isActive
-                      ? 'bg-[#E05326] text-white shadow-md shadow-orange-500/20'
-                      : 'bg-white text-stone-600 border border-stone-200 hover:text-stone-900 hover:bg-stone-50'
+                      ? 'bg-[#E05326] text-white shadow-sm font-black'
+                      : 'bg-white text-stone-600 border border-stone-200/90 hover:text-stone-900 hover:bg-stone-50 hover:border-stone-300'
                   }`}
                 >
-                  <Icon className="w-4 h-4" />
+                  <Icon className="w-3.5 h-3.5" />
                   <span>{tab.label}</span>
                 </button>
               );

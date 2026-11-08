@@ -92,7 +92,7 @@ export const PartnerLandingPage: React.FC<PartnerLandingPageProps> = ({
 
           <h1 className="text-2xl sm:text-4xl md:text-5xl font-black text-stone-900 tracking-tight leading-tight font-serif">
             Stop Losing Customers to <br className="hidden sm:inline" />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#E05326] via-[#D4481D] to-orange-600">
+            <span className="text-[#C85322]">
               Crowded Waiting Benches.
             </span>
           </h1>

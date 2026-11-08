@@ -258,7 +258,7 @@ export const PartnerPortal: React.FC = () => {
   const isPendingAdminApproval = Boolean(activeSalon && (!activeSalon.isVerified || activeSalon.status === 'pending'));
 
   return (
-    <div className="space-y-6 pb-28 text-slate-100">
+    <div className="space-y-6 pb-28 text-stone-900">
       {/* Main Switcher View: Registration Wizard vs Pending Gate vs Studio Operating Dashboard */}
       {partnerView === 'register' || !activeSalon ? (
         <SalonRegistrationWizard onSuccess={() => setPartnerView('home')} />

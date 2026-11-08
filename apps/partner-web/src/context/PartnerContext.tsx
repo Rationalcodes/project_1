@@ -69,6 +69,9 @@ interface PartnerContextType {
   clearQueue: () => Promise<void>;
   latestCrowdReport: any | null;
   checkApprovalStatus: () => Promise<boolean>;
+  showOnboarding: boolean;
+  setShowOnboarding: (show: boolean) => void;
+  completeOnboarding: () => void;
 }
 
 export function normalizeSalon(raw: any): Salon {
@@ -200,6 +203,23 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const [memberships, setMemberships] = useState<SalonMembership[]>([]);
   const [notificationMessage, setNotificationMessage] = useState<string | null>(null);
+
+  // Partner Onboarding Flow state (Runs on first partner visit, replayable anytime)
+  const [showOnboarding, setShowOnboarding] = useState<boolean>(() => {
+    try {
+      const completed = safeStorage.getItem('sloon_partner_onboarding_completed');
+      return completed !== 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  const completeOnboarding = () => {
+    setShowOnboarding(false);
+    try {
+      safeStorage.setItem('sloon_partner_onboarding_completed', 'true');
+    } catch {}
+  };
   const [queueEntries, setQueueEntries] = useState<QueueEntry[]>([]);
   const [isLoadingQueue, setIsLoadingQueue] = useState<boolean>(false);
   const [isUpdatingQueueStatus, setIsUpdatingQueueStatus] = useState<boolean>(false);
@@ -1080,6 +1100,9 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
         clearQueue,
         latestCrowdReport,
         checkApprovalStatus,
+        showOnboarding,
+        setShowOnboarding,
+        completeOnboarding,
       }}
     >
       {children}
