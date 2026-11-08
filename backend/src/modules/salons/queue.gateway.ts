@@ -137,8 +137,13 @@ export class QueueGateway implements OnGatewayConnection, OnGatewayDisconnect {
         timestamp: new Date().toISOString(),
       };
 
-      // Broadcast exclusively to the designated salon room
+      // Broadcast to the designated salon room
       this.server.to(room).emit(eventName, eventEnvelope);
+
+      // Public operational status updates (Live/Paused/Closed) are broadcast globally to all active discovery screens
+      if (eventName === 'queue.status.updated') {
+        this.server.emit('salon.status.updated', eventEnvelope);
+      }
     } catch (err) {
       this.logger.warn(`Failed to broadcast ${eventName} to salon ${salonId}: ${err}`);
     }

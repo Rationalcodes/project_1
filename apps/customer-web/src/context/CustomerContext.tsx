@@ -1202,6 +1202,46 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     };
   }, [userLocation, lazyFilter]);
 
+  // Global Realtime WebSocket Subscription for Public Salon Status Updates (Live / Paused / Closed)
+  useEffect(() => {
+    const unsubscribeGlobal = defaultApiClient.subscribeToGlobalEvents((eventName, payload) => {
+      if (eventName === 'queue.status.updated' || eventName === 'salon.status.updated') {
+        const { salonId, queueStatus, isOpen } = payload;
+        if (!salonId) return;
+
+        setSalons((prev) =>
+          prev.map((s) => {
+            if (s.id !== salonId) return s;
+            const updatedQueueStatus = queueStatus || (isOpen !== undefined ? (isOpen ? 'open' : 'closed') : s.queueStatus);
+            const updatedIsOpen = isOpen !== undefined ? isOpen : (updatedQueueStatus !== 'closed');
+            return {
+              ...s,
+              queueStatus: updatedQueueStatus,
+              isOpen: updatedIsOpen,
+              ...(updatedQueueStatus === 'closed' ? { currentQueue: 0 } : {}),
+            };
+          }),
+        );
+
+        setSelectedSalonForDetail((prev) => {
+          if (!prev || prev.id !== salonId) return prev;
+          const updatedQueueStatus = queueStatus || (isOpen !== undefined ? (isOpen ? 'open' : 'closed') : prev.queueStatus);
+          const updatedIsOpen = isOpen !== undefined ? isOpen : (updatedQueueStatus !== 'closed');
+          return {
+            ...prev,
+            queueStatus: updatedQueueStatus,
+            isOpen: updatedIsOpen,
+            ...(updatedQueueStatus === 'closed' ? { currentQueue: 0 } : {}),
+          };
+        });
+      }
+    });
+
+    return () => {
+      unsubscribeGlobal();
+    };
+  }, []);
+
   // Realtime WebSocket Subscription for Active Ticket & Selected Salon (Phase 3 Optimization)
   useEffect(() => {
     const targetSalonId = activeTicket?.salonId || selectedSalonForDetail?.id;

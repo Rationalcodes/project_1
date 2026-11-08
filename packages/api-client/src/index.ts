@@ -145,6 +145,7 @@ export class KumbhakaranApiClient {
   private socketConnected = false;
   private activeSalonSubscriptions = new Map<string, Set<QueueEventListener>>();
   private salonLatestSequence = new Map<string, number>();
+  private globalEventListeners = new Set<(eventName: string, payload: any) => void>();
 
   // Short-lived API response cache and in-flight request deduplication (Phase 4 Optimization)
   private responseCache = new Map<string, { data: any; expiresAt: number }>();
@@ -264,6 +265,7 @@ export class KumbhakaranApiClient {
         'queue.service.completed',
         'queue.entry.called',
         'queue.status.updated',
+        'salon.status.updated',
         'queue.cleared',
         'queue.eta.updated',
         'staff.availability.updated',
@@ -314,6 +316,29 @@ export class KumbhakaranApiClient {
         }
       }
     }
+
+    // Notify global event listeners (for discovery and home screens)
+    if (this.globalEventListeners.size > 0) {
+      for (const listener of this.globalEventListeners) {
+        try {
+          listener(eventName, payload);
+        } catch (err) {
+          console.warn('[KumbhakaranApiClient] Error in global event listener:', err);
+        }
+      }
+    }
+  }
+
+  /**
+   * Subscribes a listener to global platform events (such as salon open/pause/close status changes).
+   * Returns an unsubscribe callback for React useEffect cleanup.
+   */
+  public subscribeToGlobalEvents(listener: (eventName: string, payload: any) => void): () => void {
+    this.globalEventListeners.add(listener);
+    this.getSocket(); // Ensure socket connection is initialized
+    return () => {
+      this.globalEventListeners.delete(listener);
+    };
   }
 
   /**

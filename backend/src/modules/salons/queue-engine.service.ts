@@ -269,12 +269,8 @@ export class QueueEngineService implements OnModuleInit, OnModuleDestroy {
         },
       });
 
-      // Filter in memory: only closed salons require closing reset verification
-      const closedSalons = salons.filter((s) => {
-        const isManuallyClosed = s.isOpen === false || s.queueStatus === 'closed';
-        const isPastClosingHours = isSalonPastClosingTime(s.openingHoursClose, s.openingHoursOpen);
-        return isManuallyClosed || isPastClosingHours;
-      });
+      // Only reset active queue for salons that were explicitly closed by the partner
+      const closedSalons = salons.filter((s) => s.isOpen === false || s.queueStatus === 'closed');
 
       for (const salon of closedSalons) {
         const isManuallyClosed = salon.isOpen === false || salon.queueStatus === 'closed';
