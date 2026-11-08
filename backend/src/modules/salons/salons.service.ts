@@ -1112,7 +1112,6 @@ export class SalonsService {
       id: entry.id,
       salonId: entry.salonId,
       position: entry.position,
-      ticketNumber: entry.ticketNumber,
       partySize: entry.partySize || 1,
       status: entry.status,
       serviceName: entry.serviceName,
@@ -1532,7 +1531,6 @@ export class SalonsService {
         entryId,
         status: 'cancelled',
         overview: queueData.overview,
-        entries: queueData.activeEntries,
       });
       return { success: true, status: 'cancelled', overview: queueData.overview };
     }
@@ -1583,7 +1581,6 @@ export class SalonsService {
       entryId,
       status: 'no_show',
       overview: queueData.overview,
-      entries: queueData.activeEntries,
     });
     return { success: true, status: 'no_show', overview: queueData.overview };
   }
@@ -1618,7 +1615,6 @@ export class SalonsService {
       entryId,
       status: 'cancelled',
       overview: queueData.overview,
-      entries: queueData.activeEntries,
     });
     return { success: true, status: 'cancelled', overview: queueData.overview };
   }
@@ -1898,15 +1894,16 @@ export class SalonsService {
       partySize: entry.partySize,
     };
 
-    // Broadcast real-time WebSockets
+    // Broadcast real-time WebSockets without leaking customer PII or raw active entries
     this.queueGateway.broadcastToSalon(salonId, 'queue.entry.created', {
-      entry: responseEntry,
+      entryId: responseEntry.id,
+      status: responseEntry.status,
+      currentQueue: queueData?.overview.totalWaiting ?? waitingCount,
       ...(queueData ? { overview: queueData.overview } : {}),
     });
     if (queueData) {
       this.queueGateway.broadcastToSalon(salonId, 'queue.eta.updated', {
         overview: queueData.overview,
-        entries: queueData.activeEntries,
       });
     }
 
@@ -2009,7 +2006,6 @@ export class SalonsService {
       staffId: targetStaffId,
       startedAt: now.toISOString(),
       overview: queueData.overview,
-      entries: queueData.activeEntries,
     });
 
     return {
@@ -2104,7 +2100,6 @@ export class SalonsService {
       actualDuration,
       price: finalPrice,
       overview: queueData.overview,
-      entries: queueData.activeEntries,
     });
 
     return {
@@ -2142,7 +2137,6 @@ export class SalonsService {
       entryId,
       calledAt: now.toISOString(),
       overview: queueData.overview,
-      entries: queueData.activeEntries,
     });
 
     return { success: true, entryId, status: 'called' };
@@ -2173,7 +2167,6 @@ export class SalonsService {
       entryId,
       status: 'skipped',
       overview: queueData.overview,
-      entries: queueData.activeEntries,
     });
 
     return { success: true, entryId, status: 'skipped' };
@@ -2222,7 +2215,6 @@ export class SalonsService {
       entryId,
       status: 'waiting',
       overview: queueData.overview,
-      entries: queueData.activeEntries,
     });
 
     return { success: true, entryId, status: 'waiting' };
@@ -2274,7 +2266,6 @@ export class SalonsService {
       entryId,
       status: 'cancelled',
       overview: queueData.overview,
-      entries: queueData.activeEntries,
     });
 
     return { success: true, entryId, status: 'cancelled' };
@@ -2310,7 +2301,6 @@ export class SalonsService {
 
     this.queueGateway.broadcastToSalon(salonId, 'queue.eta.updated', {
       overview: queueData.overview,
-      entries: queueData.activeEntries,
     });
 
     return { success: true, entryId, extendedMinutes: (entry.extendedMinutes || 0) + addedMins };
@@ -2362,7 +2352,6 @@ export class SalonsService {
       entryId,
       assignedStaffId: dto.staffId,
       overview: queueData.overview,
-      entries: queueData.activeEntries,
     });
 
     return { success: true, entryId, assignedStaffId: dto.staffId };
@@ -2541,7 +2530,6 @@ export class SalonsService {
       staffId,
       availability: dto.availability,
       overview: queueData.overview,
-      entries: queueData.activeEntries,
     });
 
     return updated;

@@ -40,7 +40,6 @@ export const LiveQueueTrackerView: React.FC<LiveQueueTrackerViewProps> = ({
     userLocation,
     genderFilter,
     activeTicket,
-    queueEntries,
     fetchSalonQueue,
     joinLiveQueue,
     leaveLiveQueue,
@@ -495,44 +494,19 @@ export const LiveQueueTrackerView: React.FC<LiveQueueTrackerViewProps> = ({
           </div>
         </div>
 
-        {/* LIVE WAITING CUSTOMER LIST */}
-        {queueEntries.length > 0 && (
+        {/* PRIVACY-COMPLIANT STUDIO QUEUE OVERVIEW */}
+        {salon.currentQueue > 0 && (
           <div className="mt-4 pt-3 border-t border-[#E8E2D8]">
-            <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-stone-800 flex items-center gap-1.5">
                 <Users className={`w-3.5 h-3.5 ${isWomen ? 'text-[#E11D48]' : 'text-[#FF6422]'}`} />
-                Waiting in Studio ({queueEntries.length})
+                Live Studio Queue ({salon.currentQueue} waiting)
               </span>
               <span className="text-[11px] text-stone-500 font-medium">Synced live</span>
             </div>
-            <div className="flex flex-wrap gap-2">
-              {queueEntries.map((entry, idx) => {
-                const isServing = entry.status === 'in_service';
-                const isMyEntry = activeTicket?.id === entry.id;
-                return (
-                  <div
-                    key={entry.id || idx}
-                    className={`text-xs px-2.5 py-1 rounded-xl border flex items-center gap-1.5 ${
-                      isMyEntry
-                        ? isWomen
-                          ? 'bg-[#E11D48] text-white border-rose-600 font-bold shadow-xs'
-                          : 'bg-[#FF6422] text-white border-orange-600 font-bold shadow-xs'
-                        : isServing
-                        ? 'bg-emerald-50 text-emerald-800 border-emerald-200 font-semibold'
-                        : 'bg-[#FAF7F2] text-stone-700 border-[#E8E2D8]'
-                    }`}
-                  >
-                    <span className="font-black">
-                      {entry.ticketNumber || `#0${idx + 1}`.slice(-3)}
-                    </span>
-                    <span className="text-[10px]">
-                      {isServing ? 'In service' : `Position ${entry.position || idx + 1}`}
-                    </span>
-                    {isMyEntry && <span className="text-[10px] bg-white/25 px-1 rounded font-bold">(You)</span>}
-                  </div>
-                );
-              })}
-            </div>
+            <p className="text-[11px] text-stone-500 mt-1">
+              Active tokens are called in sequence by studio staff. Take a token to reserve your position.
+            </p>
           </div>
         )}
 
