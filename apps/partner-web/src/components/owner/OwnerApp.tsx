@@ -24,6 +24,9 @@ import {
   Save,
   Check,
   MapPin,
+  Compass,
+  Navigation,
+  Crosshair,
   Phone,
   Info,
   ExternalLink,
@@ -53,6 +56,8 @@ import {
 import QRCode from 'qrcode';
 import { OwnerTab, Service, Staff, QueueEntry } from '@kumbhakaran/shared-types';
 import { openGoogleMapsLocation } from '@kumbhakaran/ui';
+import { SalonLocationPicker, LocationPickerResult } from '../partner/SalonLocationPicker';
+import { InstagramGradientIcon } from '../common/InstagramIcon';
 import { defaultApiClient } from '@kumbhakaran/api-client';
 
 export interface OwnerAppProps {
@@ -561,14 +566,29 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
   const [salonForm, setSalonForm] = useState(() => ({
     name: activeSalon?.name || '',
     tagline: activeSalon?.tagline || '',
+    salonType: (activeSalon as any)?.salonType || 'men',
+    startingPrice: activeSalon?.startingPrice || 150,
     phone: activeSalon?.phone || '',
     instagramHandle: activeSalon?.instagramHandle || (activeSalon as any)?.instagram_handle || '',
     instagramUrl: activeSalon?.instagramUrl || (activeSalon as any)?.instagram_url || '',
     address: activeSalon?.address || '',
+    locality: activeSalon?.locality || '',
+    city: activeSalon?.city || '',
+    state: activeSalon?.state || 'Chhattisgarh',
+    pincode: activeSalon?.pincode || '',
+    latitude: activeSalon?.coordinates?.lat || Number((activeSalon as any)?.latitude) || 28.6139,
+    longitude: activeSalon?.coordinates?.lng || Number((activeSalon as any)?.longitude) || 77.2090,
+    openingHoursOpen: activeSalon?.openingHours?.open || '09:00 AM',
+    openingHoursClose: activeSalon?.openingHours?.close || '09:30 PM',
+    openingDays: 'All Days',
     openingHours: activeSalon?.openingHours?.formatted || (activeSalon as any)?.openingHoursFormatted || '09:00 AM – 09:30 PM (All Days)',
     isOpen: activeSalon?.isOpen ?? true,
     googlePlaceId: (activeSalon as any)?.googlePlaceId || ''
   }));
+
+  const [showLocationModal, setShowLocationModal] = useState(false);
+  const [tempLocation, setTempLocation] = useState<LocationPickerResult | null>(null);
+  const [showPreviewCard, setShowPreviewCard] = useState(true);
 
   // Media & Showcase Studio state (declared unconditionally)
   const [mediaSubTab, setMediaSubTab] = useState<'poster-video' | 'location' | 'work'>('poster-video');
@@ -588,10 +608,21 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
       setSalonForm({
         name: activeSalon.name || '',
         tagline: activeSalon.tagline || '',
+        salonType: (activeSalon as any)?.salonType || 'men',
+        startingPrice: activeSalon.startingPrice || 150,
         phone: activeSalon.phone || '',
         instagramHandle: activeSalon.instagramHandle || (activeSalon as any)?.instagram_handle || '',
         instagramUrl: activeSalon.instagramUrl || (activeSalon as any)?.instagram_url || '',
         address: activeSalon.address || '',
+        locality: activeSalon.locality || '',
+        city: activeSalon.city || '',
+        state: activeSalon.state || 'Chhattisgarh',
+        pincode: activeSalon.pincode || '',
+        latitude: activeSalon.coordinates?.lat || Number((activeSalon as any)?.latitude) || 28.6139,
+        longitude: activeSalon.coordinates?.lng || Number((activeSalon as any)?.longitude) || 77.2090,
+        openingHoursOpen: activeSalon.openingHours?.open || '09:00 AM',
+        openingHoursClose: activeSalon.openingHours?.close || '09:30 PM',
+        openingDays: 'All Days',
         openingHours: activeSalon.openingHours?.formatted || (activeSalon as any)?.openingHoursFormatted || '09:00 AM – 09:30 PM (All Days)',
         isOpen: activeSalon.isOpen ?? true,
         googlePlaceId: (activeSalon as any)?.googlePlaceId || ''
@@ -826,21 +857,33 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
   const handleSaveSettings = (e: React.FormEvent) => {
     e.preventDefault();
     if (!activeSalon) return;
+    const formattedHours = `${salonForm.openingHoursOpen} – ${salonForm.openingHoursClose} (${salonForm.openingDays})`;
     updateSalonInfo(activeSalon.id, {
-      name: salonForm.name,
-      tagline: salonForm.tagline,
-      phone: salonForm.phone,
-      instagramHandle: salonForm.instagramHandle,
-      instagramUrl: salonForm.instagramUrl,
-      address: salonForm.address,
+      name: salonForm.name.trim(),
+      tagline: salonForm.tagline.trim(),
+      salonType: salonForm.salonType as any,
+      startingPrice: Number(salonForm.startingPrice) || 150,
+      phone: salonForm.phone.trim(),
+      instagramHandle: salonForm.instagramHandle.trim(),
+      instagramUrl: salonForm.instagramUrl.trim(),
+      address: salonForm.address.trim(),
+      locality: salonForm.locality.trim(),
+      city: salonForm.city.trim(),
+      state: salonForm.state.trim(),
+      pincode: salonForm.pincode.trim(),
+      coordinates: {
+        lat: Number(salonForm.latitude),
+        lng: Number(salonForm.longitude),
+      },
       isOpen: salonForm.isOpen,
-      googlePlaceId: salonForm.googlePlaceId,
+      googlePlaceId: salonForm.googlePlaceId.trim(),
       openingHours: {
-        open: activeSalon.openingHours?.open || '09:00 AM',
-        close: activeSalon.openingHours?.close || '09:30 PM',
-        formatted: salonForm.openingHours
+        open: salonForm.openingHoursOpen,
+        close: salonForm.openingHoursClose,
+        formatted: formattedHours,
       }
     });
+    triggerNotification('Salon profile & pinpoint location saved successfully!');
   };
 
   return (
@@ -2615,133 +2658,506 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
       )}
 
       {/* TAB 7: SALON SETTINGS */}
+            {/* TAB 7: ENHANCED SALON SETTINGS & PINPOINT LOCATION */}
       {ownerTab === 'settings' && (
-        <form onSubmit={handleSaveSettings} className="bg-white border border-[#E8E2D8] rounded-3xl p-6 space-y-4 max-w-2xl text-xs shadow-xs text-stone-900">
-          <h2 className="text-base font-bold text-stone-900 font-serif mb-2">Salon Profile Settings</h2>
-
-          <div>
-            <label className="text-stone-700 font-bold block mb-1">Salon Name</label>
-            <input
-              type="text"
-              value={salonForm.name}
-              onChange={(e) => setSalonForm({ ...salonForm, name: e.target.value })}
-              className="w-full p-2.5 bg-[#FAF7F2] border border-[#E8E2D8] rounded-xl text-stone-900 focus:outline-none focus:border-[#E05326] focus:bg-white"
-            />
-          </div>
-
-          <div>
-            <label className="text-stone-700 font-bold block mb-1">Tagline</label>
-            <input
-              type="text"
-              value={salonForm.tagline}
-              onChange={(e) => setSalonForm({ ...salonForm, tagline: e.target.value })}
-              className="w-full p-2.5 bg-[#FAF7F2] border border-[#E8E2D8] rounded-xl text-stone-900 focus:outline-none focus:border-[#E05326] focus:bg-white"
-            />
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="space-y-5 max-w-2xl mx-auto text-xs text-stone-900">
+          {/* Header Banner */}
+          <div className="bg-gradient-to-r from-stone-900 to-stone-800 text-white rounded-3xl p-5 sm:p-6 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
-              <label className="text-stone-700 font-bold block mb-1">Contact Mobile Number</label>
-              <input
-                type="text"
-                value={salonForm.phone}
-                onChange={(e) => setSalonForm({ ...salonForm, phone: e.target.value })}
-                placeholder="e.g. +91 98450 12890"
-                className="w-full p-2.5 bg-[#FAF7F2] border border-[#E8E2D8] rounded-xl text-stone-900 focus:outline-none focus:border-[#E05326] focus:bg-white font-semibold"
-              />
-              <p className="text-[10px] text-stone-500 mt-1">This phone number will be shown directly on your salon card for customer calls.</p>
-            </div>
-            <div>
-              <label className="text-stone-700 font-bold block mb-1 flex items-center gap-1.5">
-                <span className="w-3.5 h-3.5 rounded-full bg-gradient-to-tr from-amber-500 via-rose-500 to-purple-600 inline-block shrink-0" />
-                <span>Instagram Profile / Handle</span>
-              </label>
-              <input
-                type="text"
-                value={salonForm.instagramHandle}
-                onChange={(e) => {
-                  const val = e.target.value.trim();
-                  const fullUrl = val.startsWith('http') ? val : val ? `https://instagram.com/${val.replace(/^@/, '')}` : '';
-                  setSalonForm({ ...salonForm, instagramHandle: val, instagramUrl: fullUrl });
-                }}
-                placeholder="e.g. @bladeandtimber or link"
-                className="w-full p-2.5 bg-[#FAF7F2] border border-[#E8E2D8] rounded-xl text-stone-900 focus:outline-none focus:border-[#E05326] focus:bg-white font-semibold"
-              />
-              <p className="text-[10px] text-stone-500 mt-1">Adds an Instagram icon on your salon card and details page to direct customers to your profile.</p>
-            </div>
-          </div>
-          <div>
-            <div>
-              <label className="text-stone-700 font-bold block mb-1">Operating Hours</label>
-              <input
-                type="text"
-                value={salonForm.openingHours}
-                onChange={(e) => setSalonForm({ ...salonForm, openingHours: e.target.value })}
-                className="w-full p-2.5 bg-[#FAF7F2] border border-[#E8E2D8] rounded-xl text-stone-900 focus:outline-none focus:border-[#E05326] focus:bg-white"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="text-stone-700 font-bold block mb-1">Full Address</label>
-            <input
-              type="text"
-              value={salonForm.address}
-              onChange={(e) => setSalonForm({ ...salonForm, address: e.target.value })}
-              className="w-full p-2.5 bg-[#FAF7F2] border border-[#E8E2D8] rounded-xl text-stone-900 focus:outline-none focus:border-[#E05326] focus:bg-white"
-            />
-          </div>
-
-          <div>
-            <label className="text-stone-700 font-bold block mb-1">Google Maps Place ID or Review URL (Optional)</label>
-            <input
-              type="text"
-              value={salonForm.googlePlaceId}
-              onChange={(e) => setSalonForm({ ...salonForm, googlePlaceId: e.target.value })}
-              placeholder="e.g. ChIJN1t_tDeuEmsRUsoyG83frY4 or https://g.page/r/.../review"
-              className="w-full p-2.5 bg-[#FAF7F2] border border-[#E8E2D8] rounded-xl text-stone-900 placeholder-stone-400 focus:outline-none focus:border-[#E05326] focus:bg-white"
-            />
-            <p className="text-[10px] text-stone-500 mt-1">
-              Directs verified SLOON customers to your official Google Business Profile review dialog after leaving feedback.
-            </p>
-          </div>
-
-          {activeSalon.coordinates && (
-            <div className="p-3 rounded-xl bg-[#FAF7F2] border border-[#E8E2D8] flex items-center justify-between text-xs">
-              <div>
-                <span className="text-stone-500 block text-[10px] uppercase font-bold">GPS Coordinates</span>
-                <span className="text-stone-800 font-mono font-semibold">{activeSalon.coordinates.lat.toFixed(5)}, {activeSalon.coordinates.lng.toFixed(5)}</span>
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#E05326]/20 border border-[#E05326]/40 text-[#FFA384] text-[10px] font-bold tracking-wide uppercase mb-2">
+                <Sparkles className="w-3 h-3" />
+                <span>Verified Studio Customization</span>
               </div>
-              <button
-                type="button"
-                onClick={() => openGoogleMapsLocation(activeSalon.coordinates.lat, activeSalon.coordinates.lng)}
-                className="px-3 py-1.5 rounded-lg bg-white hover:bg-stone-50 text-[#E05326] font-bold flex items-center gap-1 border border-stone-200 transition-colors shadow-2xs cursor-pointer"
-                title="Open coordinates in Google Maps"
-              >
-                <ExternalLink className="w-3.5 h-3.5" />
-                <span>Verify on Google Maps ↗</span>
-              </button>
+              <h2 className="text-xl sm:text-2xl font-serif font-black tracking-tight">{salonForm.name || activeSalon.name}</h2>
+              <p className="text-stone-300 text-xs mt-0.5">Customize your profile, pinpoint your exact GPS location, timings, and contact links.</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowPreviewCard(!showPreviewCard)}
+              className="px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-white font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer shrink-0"
+            >
+              <Eye className="w-4 h-4 text-amber-400" />
+              <span>{showPreviewCard ? 'Hide Preview' : 'Customer View'}</span>
+            </button>
+          </div>
+
+          {/* Live Customer Card Preview (What customers actually see) */}
+          {showPreviewCard && (
+            <div className="bg-[#FAF7F2] border border-[#E8E2D8] rounded-3xl p-5 shadow-2xs space-y-2.5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 text-stone-500 font-bold text-[11px] uppercase tracking-wider">
+                  <Eye className="w-3.5 h-3.5 text-[#E05326]" />
+                  <span>Live Customer Preview (How your studio appears on customer-web)</span>
+                </div>
+                <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full">
+                  {salonForm.isOpen ? 'Open Now' : 'Closed'}
+                </span>
+              </div>
+
+              {/* Mock Customer Card */}
+              <div className="bg-white rounded-2xl border border-stone-200/80 p-3.5 flex items-start gap-3.5 shadow-xs">
+                <img
+                  src={activeSalon.coverImage || activeSalon.posterImage || 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=400'}
+                  alt={salonForm.name}
+                  className="w-20 h-20 rounded-xl object-cover shrink-0 border border-stone-100"
+                />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-start justify-between gap-2">
+                    <h4 className="font-bold text-sm text-stone-900 truncate flex items-center gap-1">
+                      <span>{salonForm.name || 'Your Studio Name'}</span>
+                      <CheckCircle2 className="w-3.5 h-3.5 text-[#E05326] shrink-0" />
+                    </h4>
+                    <div className="flex items-center gap-1 shrink-0">
+                      {(salonForm.instagramHandle || salonForm.instagramUrl) && (
+                        <span className="w-6 h-6 rounded-full bg-pink-50 text-pink-600 border border-pink-200 flex items-center justify-center">
+                          <InstagramGradientIcon className="w-3.5 h-3.5" />
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <p className="text-[11px] text-stone-500 truncate mt-0.5">{salonForm.tagline || 'Craft fades & expert grooming'}</p>
+                  <p className="text-[11px] text-stone-600 mt-1 flex items-center gap-1 truncate font-medium">
+                    <MapPin className="w-3 h-3 text-stone-400 shrink-0" />
+                    <span className="truncate">{salonForm.locality || 'Locality'}, {salonForm.city || 'City'}</span>
+                    <span>•</span>
+                    <span className="text-emerald-700 font-bold">Haircuts from ₹{salonForm.startingPrice || 150}</span>
+                  </p>
+                  <div className="mt-2 pt-2 border-t border-stone-100 flex items-center justify-between text-[11px]">
+                    <span className="text-stone-500 font-mono text-[10px]">
+                      📍 {Number(salonForm.latitude).toFixed(4)}°, {Number(salonForm.longitude).toFixed(4)}°
+                    </span>
+                    <span className="flex items-center gap-1 font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200/60">
+                      <Phone className="w-3 h-3" />
+                      <span>Call Studio</span>
+                    </span>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
 
-          <div className="pt-3 border-t border-stone-100 flex items-center justify-between">
-            <button
-              type="button"
-              onClick={() => setPartnerView('register')}
-              className="px-4 py-2.5 bg-[#FAF7F2] border border-stone-200 hover:border-orange-300 text-stone-700 font-bold rounded-xl text-xs flex items-center gap-2 transition-all cursor-pointer"
-            >
-              <Store className="w-4 h-4 text-[#E05326]" />
-              <span>Add Another Branch / Studio</span>
-            </button>
-            <button
-              type="submit"
-              className="px-5 py-2.5 bg-[#E05326] hover:bg-[#D0481E] text-white font-bold rounded-xl text-xs flex items-center gap-1.5 shadow-md shadow-orange-500/20 cursor-pointer"
-            >
-              <Save className="w-4 h-4" />
-              <span>Save Salon Profile</span>
-            </button>
-          </div>
-        </form>
+          {/* Settings Customization Form */}
+          <form onSubmit={handleSaveSettings} className="space-y-4">
+            {/* 1. Studio Identity & Category */}
+            <div className="bg-white border border-[#E8E2D8] rounded-3xl p-5 sm:p-6 space-y-4 shadow-xs">
+              <div className="flex items-center gap-2 pb-2 border-b border-stone-100">
+                <Store className="w-4 h-4 text-[#E05326]" />
+                <h3 className="text-sm font-bold text-stone-900 font-serif">1. Studio Identity & Categorization</h3>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                <div>
+                  <label className="text-stone-700 font-bold block mb-1">Salon / Studio Name *</label>
+                  <input
+                    type="text"
+                    required
+                    value={salonForm.name}
+                    onChange={(e) => setSalonForm({ ...salonForm, name: e.target.value })}
+                    className="w-full p-2.5 bg-[#FAF7F2] border border-[#E8E2D8] rounded-xl text-stone-900 focus:outline-none focus:border-[#E05326] focus:bg-white font-semibold"
+                  />
+                </div>
+                <div>
+                  <label className="text-stone-700 font-bold block mb-1">Tagline or Specialty</label>
+                  <input
+                    type="text"
+                    value={salonForm.tagline}
+                    onChange={(e) => setSalonForm({ ...salonForm, tagline: e.target.value })}
+                    placeholder="e.g. Precision fades, royal beard spa"
+                    className="w-full p-2.5 bg-[#FAF7F2] border border-[#E8E2D8] rounded-xl text-stone-900 focus:outline-none focus:border-[#E05326] focus:bg-white"
+                  />
+                </div>
+              </div>
+
+              {/* Studio Category Selection */}
+              <div>
+                <label className="text-stone-700 font-bold block mb-1.5">Studio Category & Target Audience</label>
+                <div className="grid grid-cols-3 gap-2.5">
+                  {[
+                    { id: 'men', label: "Men's Grooming", sub: 'Barbershop & Fades', icon: '✂️' },
+                    { id: 'women', label: "Women's Beauty", sub: 'Salon & Spa Studio', icon: '💇‍♀️' },
+                    { id: 'unisex', label: 'Unisex Studio', sub: 'All Genders Welcome', icon: '💈' }
+                  ].map((cat) => (
+                    <button
+                      key={cat.id}
+                      type="button"
+                      onClick={() => setSalonForm({ ...salonForm, salonType: cat.id as any })}
+                      className={`p-3 rounded-2xl border text-left transition-all cursor-pointer ${
+                        salonForm.salonType === cat.id
+                          ? 'border-[#E05326] bg-[#FFF3EC] shadow-xs ring-1 ring-[#E05326]/30'
+                          : 'border-stone-200 bg-white hover:bg-stone-50 text-stone-700'
+                      }`}
+                    >
+                      <div className="text-base mb-1">{cat.icon}</div>
+                      <div className="font-bold text-xs text-stone-900">{cat.label}</div>
+                      <div className="text-[10px] text-stone-500">{cat.sub}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Starting Service Price */}
+              <div className="pt-1">
+                <label className="text-stone-700 font-bold block mb-1">Starting Haircut / Service Price (₹) *</label>
+                <div className="relative max-w-xs">
+                  <span className="absolute left-3 top-2.5 font-black text-stone-500">₹</span>
+                  <input
+                    type="number"
+                    min="30"
+                    step="10"
+                    required
+                    value={salonForm.startingPrice}
+                    onChange={(e) => setSalonForm({ ...salonForm, startingPrice: Number(e.target.value) || 0 })}
+                    className="w-full pl-8 pr-3 py-2.5 bg-[#FAF7F2] border border-[#E8E2D8] rounded-xl text-stone-900 focus:outline-none focus:border-[#E05326] focus:bg-white font-bold"
+                  />
+                </div>
+                <p className="text-[10px] text-stone-500 mt-1">Highlighted prominently on customer search cards to attract nearby walk-ins.</p>
+              </div>
+            </div>
+
+            {/* 2. Exact Map Pinpoint Location (PINPOINT FEATURE) */}
+            <div className="bg-white border border-[#E8E2D8] rounded-3xl p-5 sm:p-6 space-y-4 shadow-xs">
+              <div className="flex items-center justify-between pb-2 border-b border-stone-100">
+                <div className="flex items-center gap-2">
+                  <Compass className="w-4 h-4 text-[#E05326]" />
+                  <h3 className="text-sm font-bold text-stone-900 font-serif">2. Exact Map Pinpoint & Address</h3>
+                </div>
+                <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-orange-100 text-[#E05326]">
+                  High Accuracy GPS
+                </span>
+              </div>
+
+              {/* Pinpoint Location Interactive Action Card */}
+              <div className="p-4 rounded-2xl bg-gradient-to-br from-[#FFF8F3] to-[#FAF7F2] border border-[#E8E2D8] space-y-3">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                  <div>
+                    <div className="text-xs font-bold text-stone-900 flex items-center gap-1.5">
+                      <MapPin className="w-4 h-4 text-[#E05326]" />
+                      <span>Pinpoint Studio Entrance on Interactive Map</span>
+                    </div>
+                    <p className="text-[11px] text-stone-500 mt-0.5">
+                      Ensure customers reach your exact shop front without calling for directions.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTempLocation(null);
+                      setShowLocationModal(true);
+                    }}
+                    className="px-4 py-2 bg-[#E05326] hover:bg-[#D0481E] text-white font-bold text-xs rounded-xl flex items-center gap-1.5 shadow-xs transition-all cursor-pointer shrink-0 active:scale-95"
+                  >
+                    <Crosshair className="w-3.5 h-3.5" />
+                    <span>Pinpoint on Map / GPS</span>
+                  </button>
+                </div>
+
+                <div className="pt-2 border-t border-stone-200/60 flex flex-wrap items-center justify-between gap-2 text-xs">
+                  <div className="flex items-center gap-2">
+                    <span className="text-stone-500 text-[10px] uppercase font-bold">Coordinates:</span>
+                    <span className="font-mono font-bold text-stone-800 bg-white px-2 py-0.5 rounded-md border border-stone-200">
+                      Lat: {Number(salonForm.latitude).toFixed(5)}, Lng: {Number(salonForm.longitude).toFixed(5)}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => openGoogleMapsLocation(Number(salonForm.latitude), Number(salonForm.longitude))}
+                    className="text-[#E05326] hover:underline font-bold text-[11px] flex items-center gap-1 cursor-pointer"
+                  >
+                    <ExternalLink className="w-3 h-3" />
+                    <span>Verify in Google Maps ↗</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Address Fields */}
+              <div className="space-y-3">
+                <div>
+                  <label className="text-stone-700 font-bold block mb-1">Street Address / Landmark *</label>
+                  <input
+                    type="text"
+                    required
+                    value={salonForm.address}
+                    onChange={(e) => setSalonForm({ ...salonForm, address: e.target.value })}
+                    placeholder="e.g. Shop No. 4, Ground Floor, Opposite Central Bank"
+                    className="w-full p-2.5 bg-[#FAF7F2] border border-[#E8E2D8] rounded-xl text-stone-900 focus:outline-none focus:border-[#E05326] focus:bg-white"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="text-stone-700 font-bold block mb-1">Locality / Area *</label>
+                    <input
+                      type="text"
+                      required
+                      value={salonForm.locality}
+                      onChange={(e) => setSalonForm({ ...salonForm, locality: e.target.value })}
+                      placeholder="e.g. Koramangala or Koni"
+                      className="w-full p-2.5 bg-[#FAF7F2] border border-[#E8E2D8] rounded-xl text-stone-900 focus:outline-none focus:border-[#E05326] focus:bg-white font-medium"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-stone-700 font-bold block mb-1">City *</label>
+                    <input
+                      type="text"
+                      required
+                      value={salonForm.city}
+                      onChange={(e) => setSalonForm({ ...salonForm, city: e.target.value })}
+                      placeholder="e.g. Bengaluru or Bilaspur"
+                      className="w-full p-2.5 bg-[#FAF7F2] border border-[#E8E2D8] rounded-xl text-stone-900 focus:outline-none focus:border-[#E05326] focus:bg-white font-medium"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-stone-700 font-bold block mb-1">Postal PIN Code *</label>
+                    <input
+                      type="text"
+                      required
+                      value={salonForm.pincode}
+                      onChange={(e) => setSalonForm({ ...salonForm, pincode: e.target.value })}
+                      placeholder="e.g. 560034"
+                      className="w-full p-2.5 bg-[#FAF7F2] border border-[#E8E2D8] rounded-xl text-stone-900 focus:outline-none focus:border-[#E05326] focus:bg-white font-mono"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* 3. Verified Contact & Social Redirects */}
+            <div className="bg-white border border-[#E8E2D8] rounded-3xl p-5 sm:p-6 space-y-4 shadow-xs">
+              <div className="flex items-center gap-2 pb-2 border-b border-stone-100">
+                <Phone className="w-4 h-4 text-[#E05326]" />
+                <h3 className="text-sm font-bold text-stone-900 font-serif">3. Contact Details & Direct Links</h3>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                <div>
+                  <label className="text-stone-700 font-bold block mb-1">Contact Mobile Number *</label>
+                  <input
+                    type="tel"
+                    required
+                    value={salonForm.phone}
+                    onChange={(e) => setSalonForm({ ...salonForm, phone: e.target.value })}
+                    placeholder="e.g. +91 98450 12890"
+                    className="w-full p-2.5 bg-[#FAF7F2] border border-[#E8E2D8] rounded-xl text-stone-900 focus:outline-none focus:border-[#E05326] focus:bg-white font-semibold"
+                  />
+                  <p className="text-[10px] text-stone-500 mt-1">
+                    Triggers native 1-tap phone dialer for customers. Raw digits are masked from web scrapers for privacy.
+                  </p>
+                </div>
+
+                <div>
+                  <label className="text-stone-700 font-bold block mb-1 flex items-center justify-between">
+                    <span className="flex items-center gap-1.5">
+                      <InstagramGradientIcon className="w-3.5 h-3.5" />
+                      <span>Instagram Profile or Handle</span>
+                    </span>
+                    {salonForm.instagramUrl && (
+                      <a
+                        href={salonForm.instagramUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[10px] text-pink-600 font-bold hover:underline flex items-center gap-0.5"
+                      >
+                        <span>Test Link</span> ↗
+                      </a>
+                    )}
+                  </label>
+                  <input
+                    type="text"
+                    value={salonForm.instagramHandle}
+                    onChange={(e) => {
+                      const val = e.target.value.trim();
+                      const fullUrl = val.startsWith('http') ? val : val ? `https://instagram.com/${val.replace(/^@/, '')}` : '';
+                      setSalonForm({ ...salonForm, instagramHandle: val, instagramUrl: fullUrl });
+                    }}
+                    placeholder="e.g. @bladeandtimber or link"
+                    className="w-full p-2.5 bg-[#FAF7F2] border border-[#E8E2D8] rounded-xl text-stone-900 focus:outline-none focus:border-[#E05326] focus:bg-white font-semibold"
+                  />
+                  <p className="text-[10px] text-stone-500 mt-1">
+                    Adds an Instagram gradient button directly on your studio cards for customers to follow and view portfolios.
+                  </p>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-stone-700 font-bold block mb-1">Google Maps Place ID or Review URL (Optional)</label>
+                <input
+                  type="text"
+                  value={salonForm.googlePlaceId}
+                  onChange={(e) => setSalonForm({ ...salonForm, googlePlaceId: e.target.value })}
+                  placeholder="e.g. ChIJN1t_tDeuEmsRUsoyG83frY4 or https://g.page/r/.../review"
+                  className="w-full p-2.5 bg-[#FAF7F2] border border-[#E8E2D8] rounded-xl text-stone-900 placeholder-stone-400 focus:outline-none focus:border-[#E05326] focus:bg-white"
+                />
+                <p className="text-[10px] text-stone-500 mt-1">
+                  Directs verified SLOON customers to your official Google Business Profile review dialog after leaving feedback.
+                </p>
+              </div>
+            </div>
+
+            {/* 4. Operating Hours & Schedule Customization */}
+            <div className="bg-white border border-[#E8E2D8] rounded-3xl p-5 sm:p-6 space-y-4 shadow-xs">
+              <div className="flex items-center justify-between pb-2 border-b border-stone-100">
+                <div className="flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-[#E05326]" />
+                  <h3 className="text-sm font-bold text-stone-900 font-serif">4. Operating Hours & Weekly Schedule</h3>
+                </div>
+                <span className="font-mono text-[11px] font-bold text-stone-700 bg-stone-100 px-2 py-0.5 rounded-lg border border-stone-200">
+                  {salonForm.openingHoursOpen} – {salonForm.openingHoursClose} ({salonForm.openingDays})
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                <div>
+                  <label className="text-stone-700 font-bold block mb-1">Opening Time *</label>
+                  <select
+                    value={salonForm.openingHoursOpen}
+                    onChange={(e) => setSalonForm({ ...salonForm, openingHoursOpen: e.target.value })}
+                    className="w-full p-2.5 bg-[#FAF7F2] border border-[#E8E2D8] rounded-xl text-stone-900 focus:outline-none focus:border-[#E05326] focus:bg-white font-semibold cursor-pointer"
+                  >
+                    {['06:00 AM', '07:00 AM', '08:00 AM', '08:30 AM', '09:00 AM', '09:30 AM', '10:00 AM', '10:30 AM', '11:00 AM'].map(t => (
+                      <option key={t} value={t}>{t}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-stone-700 font-bold block mb-1">Closing Time *</label>
+                  <select
+                    value={salonForm.openingHoursClose}
+                    onChange={(e) => setSalonForm({ ...salonForm, openingHoursClose: e.target.value })}
+                    className="w-full p-2.5 bg-[#FAF7F2] border border-[#E8E2D8] rounded-xl text-stone-900 focus:outline-none focus:border-[#E05326] focus:bg-white font-semibold cursor-pointer"
+                  >
+                    {['07:00 PM', '08:00 PM', '08:30 PM', '09:00 PM', '09:30 PM', '10:00 PM', '10:30 PM', '11:00 PM'].map(t => (
+                      <option key={t} value={t}>{t}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Days of Operation Chips */}
+              <div>
+                <label className="text-stone-700 font-bold block mb-1.5">Weekly Working Days / Off Day</label>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {[
+                    'All Days',
+                    'Tue Closed',
+                    'Mon Closed',
+                    'Mon – Sat'
+                  ].map((schedule) => (
+                    <button
+                      key={schedule}
+                      type="button"
+                      onClick={() => setSalonForm({ ...salonForm, openingDays: schedule })}
+                      className={`px-3 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer text-center ${
+                        salonForm.openingDays === schedule
+                          ? 'border-[#E05326] bg-[#FFF3EC] text-[#E05326] ring-1 ring-[#E05326]/30'
+                          : 'border-stone-200 bg-white text-stone-700 hover:bg-stone-50'
+                      }`}
+                    >
+                      {schedule}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Bottom Actions Bar */}
+            <div className="bg-white border border-[#E8E2D8] rounded-3xl p-4 sm:p-5 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3">
+              <button
+                type="button"
+                onClick={() => setPartnerView('register')}
+                className="w-full sm:w-auto px-4 py-2.5 bg-[#FAF7F2] border border-stone-200 hover:border-orange-300 text-stone-700 font-bold rounded-xl text-xs flex items-center justify-center gap-2 transition-all cursor-pointer"
+              >
+                <Store className="w-4 h-4 text-[#E05326]" />
+                <span>Add Another Studio Branch</span>
+              </button>
+
+              <button
+                type="submit"
+                className="w-full sm:w-auto px-6 py-3 bg-[#E05326] hover:bg-[#D0481E] text-white font-bold rounded-xl text-xs flex items-center justify-center gap-2 shadow-md shadow-orange-500/25 active:scale-95 transition-all cursor-pointer"
+              >
+                <Save className="w-4 h-4" />
+                <span>Save Salon Profile & Pinpoint</span>
+              </button>
+            </div>
+          </form>
+
+          {/* PINPOINT MODAL WITH INTERACTIVE MAP PICKER */}
+          {showLocationModal && (
+            <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+              <div className="bg-white rounded-3xl max-w-2xl w-full p-5 sm:p-6 shadow-2xl space-y-4 max-h-[92vh] overflow-y-auto border border-stone-200 text-stone-900">
+                <div className="flex items-start justify-between pb-3 border-b border-stone-100">
+                  <div>
+                    <h3 className="text-base font-bold text-stone-900 font-serif flex items-center gap-2">
+                      <Crosshair className="w-5 h-5 text-[#E05326]" />
+                      <span>Pinpoint Studio Entrance on Map</span>
+                    </h3>
+                    <p className="text-xs text-stone-500 mt-0.5">
+                      Drag the pin or tap anywhere on the map to set your exact storefront entrance coordinates for turn-by-turn customer directions.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowLocationModal(false)}
+                    className="p-2 rounded-xl text-stone-400 hover:text-stone-700 hover:bg-stone-100 transition-colors cursor-pointer shrink-0"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                {/* Embedded High-Accuracy Map & GPS Picker */}
+                <div className="rounded-2xl overflow-hidden border border-stone-200">
+                  <SalonLocationPicker
+                    value={{
+                      address: salonForm.address,
+                      locality: salonForm.locality,
+                      city: salonForm.city,
+                      state: salonForm.state,
+                      pincode: salonForm.pincode,
+                      latitude: Number(salonForm.latitude) || 28.6139,
+                      longitude: Number(salonForm.longitude) || 77.2090,
+                    }}
+                    onChange={(res) => {
+                      setTempLocation(res);
+                    }}
+                  />
+                </div>
+
+                {/* Modal Footer Confirmation */}
+                <div className="flex items-center justify-between pt-3 border-t border-stone-100">
+                  <button
+                    type="button"
+                    onClick={() => setShowLocationModal(false)}
+                    className="px-4 py-2 rounded-xl border border-stone-200 text-stone-700 hover:bg-stone-50 text-xs font-bold cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (tempLocation) {
+                        setSalonForm((prev) => ({
+                          ...prev,
+                          latitude: tempLocation.latitude,
+                          longitude: tempLocation.longitude,
+                          address: tempLocation.address || prev.address,
+                          locality: tempLocation.locality || prev.locality,
+                          city: tempLocation.city || prev.city,
+                          state: tempLocation.state || prev.state,
+                          pincode: tempLocation.pincode || prev.pincode,
+                        }));
+                        triggerNotification(`Location pinpointed! (${tempLocation.latitude.toFixed(4)}°, ${tempLocation.longitude.toFixed(4)}°)`);
+                      }
+                      setShowLocationModal(false);
+                    }}
+                    className="px-5 py-2.5 rounded-xl bg-[#E05326] hover:bg-[#D0481E] text-white text-xs font-bold shadow-md shadow-orange-500/20 flex items-center gap-1.5 cursor-pointer active:scale-95"
+                  >
+                    <Check className="w-4 h-4" />
+                    <span>Apply Pinpoint Location</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
       )}
 
       {/* Mobile Sticky Bottom Nav for Salon Owners on Smartphones (7 Primary Tabs with Home First) */}

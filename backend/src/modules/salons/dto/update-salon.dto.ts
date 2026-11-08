@@ -55,6 +55,11 @@ export class UpdateSalonDto {
   @IsString()
   pincode?: string;
 
+  @ApiPropertyOptional({ example: 'Chhattisgarh' })
+  @IsOptional()
+  @IsString()
+  state?: string;
+
   @ApiPropertyOptional({ example: 12.9344 })
   @IsOptional()
   @IsNumber()
@@ -68,6 +73,26 @@ export class UpdateSalonDto {
   @Min(-180)
   @Max(180)
   longitude?: number;
+
+  @ApiPropertyOptional({ example: '09:00 AM – 09:30 PM (All Days)' })
+  @IsOptional()
+  @IsString()
+  openingHoursFormatted?: string;
+
+  @ApiPropertyOptional({ example: 150 })
+  @IsOptional()
+  @IsNumber()
+  startingPrice?: number;
+
+  @ApiPropertyOptional({ example: 'men', enum: ['men', 'women', 'unisex'] })
+  @IsOptional()
+  @IsString()
+  salonType?: string;
+
+  @ApiPropertyOptional({ example: 'ChIJN1t_tDeuEmsRUsoyG83frY4' })
+  @IsOptional()
+  @IsString()
+  googlePlaceId?: string;
 
   @ApiPropertyOptional({ example: '09:00 AM' })
   @IsOptional()

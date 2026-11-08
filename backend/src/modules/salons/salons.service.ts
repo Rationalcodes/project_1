@@ -903,6 +903,30 @@ export class SalonsService {
       if (dto.address) {
         await this.prisma.$executeRawUnsafe(`UPDATE salons SET address = $1 WHERE id = $2;`, dto.address, id);
       }
+      if (dto.locality) {
+        await this.prisma.$executeRawUnsafe(`UPDATE salons SET locality = $1 WHERE id = $2;`, dto.locality, id);
+      }
+      if (dto.city) {
+        await this.prisma.$executeRawUnsafe(`UPDATE salons SET city = $1 WHERE id = $2;`, dto.city, id);
+      }
+      if (dto.state) {
+        await this.prisma.$executeRawUnsafe(`UPDATE salons SET state = $1 WHERE id = $2;`, dto.state, id);
+      }
+      if (dto.pincode) {
+        await this.prisma.$executeRawUnsafe(`UPDATE salons SET pincode = $1 WHERE id = $2;`, dto.pincode, id);
+      }
+      if (dto.startingPrice !== undefined) {
+        await this.prisma.$executeRawUnsafe(`UPDATE salons SET starting_price = $1 WHERE id = $2;`, dto.startingPrice, id);
+      }
+      if (dto.openingHoursOpen) {
+        await this.prisma.$executeRawUnsafe(`UPDATE salons SET opening_hours_open = $1 WHERE id = $2;`, dto.openingHoursOpen, id);
+      }
+      if (dto.openingHoursClose) {
+        await this.prisma.$executeRawUnsafe(`UPDATE salons SET opening_hours_close = $1 WHERE id = $2;`, dto.openingHoursClose, id);
+      }
+      if (dto.openingHoursFormatted) {
+        await this.prisma.$executeRawUnsafe(`UPDATE salons SET opening_hours_formatted = $1 WHERE id = $2;`, dto.openingHoursFormatted, id);
+      }
       if (dto.tagline !== undefined) {
         await this.prisma.$executeRawUnsafe(`UPDATE salons SET tagline = $1 WHERE id = $2;`, dto.tagline, id);
       }
@@ -960,6 +984,21 @@ export class SalonsService {
       if (dto.address) salon.address = dto.address;
       if (dto.locality) salon.locality = dto.locality;
       if (dto.city) salon.city = dto.city;
+      if (dto.state) salon.state = dto.state;
+      if (dto.pincode) salon.pincode = dto.pincode;
+      if (dto.startingPrice !== undefined) salon.startingPrice = dto.startingPrice;
+      if (dto.openingHoursFormatted) {
+        if (!salon.openingHours || typeof salon.openingHours !== 'object') salon.openingHours = {};
+        salon.openingHours.formatted = dto.openingHoursFormatted;
+      }
+      if (dto.openingHoursOpen) {
+        if (!salon.openingHours || typeof salon.openingHours !== 'object') salon.openingHours = {};
+        salon.openingHours.open = dto.openingHoursOpen;
+      }
+      if (dto.openingHoursClose) {
+        if (!salon.openingHours || typeof salon.openingHours !== 'object') salon.openingHours = {};
+        salon.openingHours.close = dto.openingHoursClose;
+      }
       if (dto.latitude !== undefined) salon.latitude = dto.latitude;
       if (dto.longitude !== undefined) salon.longitude = dto.longitude;
       if (dto.isOpen !== undefined) salon.isOpen = dto.isOpen;

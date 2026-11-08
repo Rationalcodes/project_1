@@ -806,7 +806,19 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
     );
 
     // 2. Safe background cloud sync (resilient against offline / network errors)
-    void defaultApiClient.updateSalon(salonId, updates).catch(() => {});
+    const cloudPayload: any = {
+      ...updates,
+      latitude: (updates as any).coordinates?.lat ?? (updates as any).latitude,
+      longitude: (updates as any).coordinates?.lng ?? (updates as any).longitude,
+      ...(updates.openingHours
+        ? {
+            openingHoursOpen: updates.openingHours.open,
+            openingHoursClose: updates.openingHours.close,
+            openingHoursFormatted: updates.openingHours.formatted,
+          }
+        : {}),
+    };
+    void defaultApiClient.updateSalon(salonId, cloudPayload).catch(() => {});
     if (effectiveIsOpen === false) {
       void defaultApiClient.clearQueueEntries(salonId).catch(() => {});
     }
