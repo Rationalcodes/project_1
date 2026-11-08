@@ -83,6 +83,7 @@ export interface Salon {
   reviewCount: number;
   currentQueue: number;
   avgServiceTimeMinutes: number;
+  estimatedWaitMinutes?: number;
   activeBarbers: number;
   distanceKm: number;
   startingPrice: number;

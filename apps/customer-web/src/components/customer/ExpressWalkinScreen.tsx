@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getTargetSalonFromUrl, useCustomer, getEstimatedWaitMinutes } from '../../context/CustomerContext';
+import { defaultApiClient } from '@kumbhakaran/api-client';
 import { Salon, QueueEntry } from '@kumbhakaran/shared-types';
 import {
   CheckCircle2,
