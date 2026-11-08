@@ -1154,7 +1154,7 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           if (discoveredSalons.length > 0) {
             // Only authorized and approved salons are discoverable to customers
             const mapped = mapApiSalons(discoveredSalons, userLocation).filter(
-              (s) => s.isVerified !== false && s.status !== 'pending' && s.status !== 'suspended'
+              (s) => Boolean(s.isVerified) && s.status === 'active'
             );
             setSalons(mapped);
             try {

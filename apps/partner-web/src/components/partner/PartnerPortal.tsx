@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useSalon } from '../../context/PartnerContext';
 import { useLanguage } from '../../i18n/LanguageContext';
 import { SalonRegistrationWizard } from './SalonRegistrationWizard';
+import { PendingApprovalScreen } from './PendingApprovalScreen';
 import { OwnerApp } from '../owner/OwnerApp';
 import { PartnerLandingPage } from './PartnerLandingPage';
 import { GoogleSignInButton } from '@kumbhakaran/ui';
@@ -253,11 +254,16 @@ export const PartnerPortal: React.FC = () => {
     );
   }
 
+  // Check if active salon is awaiting admin authorization before granting platform access
+  const isPendingAdminApproval = Boolean(activeSalon && (!activeSalon.isVerified || activeSalon.status === 'pending'));
+
   return (
     <div className="space-y-6 pb-28 text-slate-100">
-      {/* Main Switcher View: Registration Wizard vs Studio Operating Dashboard */}
+      {/* Main Switcher View: Registration Wizard vs Pending Gate vs Studio Operating Dashboard */}
       {partnerView === 'register' || !activeSalon ? (
         <SalonRegistrationWizard onSuccess={() => setPartnerView('home')} />
+      ) : isPendingAdminApproval ? (
+        <PendingApprovalScreen onEditDetails={() => setPartnerView('register')} />
       ) : (
         <OwnerApp onOpenWalkthrough={() => setShowWalkthroughWhenAuth(true)} />
       )}

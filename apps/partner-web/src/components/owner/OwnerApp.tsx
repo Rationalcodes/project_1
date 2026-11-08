@@ -57,6 +57,7 @@ import QRCode from 'qrcode';
 import { OwnerTab, Service, Staff, QueueEntry } from '@kumbhakaran/shared-types';
 import { openGoogleMapsLocation } from '@kumbhakaran/ui';
 import { SalonLocationPicker, LocationPickerResult } from '../partner/SalonLocationPicker';
+import { PendingApprovalScreen } from '../partner/PendingApprovalScreen';
 import { InstagramGradientIcon } from '../common/InstagramIcon';
 import logoFallback from '../../assets/logo.png';
 import logoTransparent from '../../assets/logo-transparent.png';
@@ -645,6 +646,11 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
     );
   }
 
+  // Gate platform access: new salons must be approved by an Admin before accessing the platform
+  if (!activeSalon.isVerified || activeSalon.status === 'pending') {
+    return <PendingApprovalScreen onEditDetails={() => setPartnerView('register')} />;
+  }
+
   const queueInfo = getQueueDisplay(activeSalon.currentQueue, activeSalon.isOpen, activeSalon.queueStatus);
   const isQueuePaused = activeSalon.queueStatus === 'paused';
   const freshness = getQueueFreshness(activeSalon.lastQueueUpdate);
@@ -986,21 +992,6 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
               </div>
             )}
           </div>
-
-          {/* 3. Admin Authorization Notice (if pending) */}
-          {(!activeSalon.isVerified || activeSalon.status === 'pending') && (
-            <div className="bg-amber-50 border border-amber-200/90 rounded-2xl p-3 sm:p-3.5 shadow-2xs flex items-center justify-between gap-3 text-xs">
-              <div className="flex items-center gap-2.5">
-                <Clock className="w-4 h-4 text-amber-600 shrink-0" />
-                <span className="font-semibold text-amber-900 text-xs">
-                  Awaiting Admin Authorization • In review at SLOON HQ
-                </span>
-              </div>
-              <span className="text-[10px] font-bold text-amber-700 bg-amber-100 border border-amber-300/60 px-2 py-0.5 rounded-full shrink-0">
-                Pending
-              </span>
-            </div>
-          )}
 
           {/* 4. Operational Status Bar (3-State Controls: Live Open | Paused | Closed) */}
           <div className="bg-[#18181b] border border-stone-800 rounded-2xl sm:rounded-3xl p-3.5 sm:p-4 text-white shadow-xs flex flex-wrap items-center justify-between gap-3">

@@ -283,13 +283,24 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     try {
       await defaultApiClient.verifyAdminSalon(salonId, isVerified);
       setSalons((prev) =>
-        prev.map((s) => (s.id === salonId ? { ...s, isVerified } : s)),
+        prev.map((s) => (s.id === salonId ? { ...s, isVerified, status: isVerified ? 'active' : 'pending' } : s)),
       );
       const salon = salons.find((s) => s.id === salonId);
+      try {
+        const bc = new BroadcastChannel('kumbhakaran_telemetry');
+        bc.postMessage({
+          type: 'SALON_VERIFIED',
+          salonId,
+          isVerified,
+          status: isVerified ? 'active' : 'pending',
+          timestamp: Date.now(),
+        });
+        bc.close();
+      } catch {}
       triggerNotification(
         isVerified
-          ? `✅ Salon "${salon?.name}" verified and discoverable to customers!`
-          : `Verification badge revoked for "${salon?.name}"`,
+          ? `✅ Salon "${salon?.name}" verified and platform access granted!`
+          : `Authorization revoked for "${salon?.name}"`,
       );
     } catch (err: any) {
       triggerNotification(err?.message || 'Verification update failed');

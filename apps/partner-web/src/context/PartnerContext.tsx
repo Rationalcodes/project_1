@@ -68,6 +68,7 @@ interface PartnerContextType {
   updateSmartQueueRadius: (radiusMeters: number) => Promise<void>;
   clearQueue: () => Promise<void>;
   latestCrowdReport: any | null;
+  checkApprovalStatus: () => Promise<boolean>;
 }
 
 export function normalizeSalon(raw: any): Salon {
@@ -350,6 +351,11 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
       bc.onmessage = (ev) => {
         if (ev?.data?.type === 'QUEUE_UPDATE' && (!ev.data.salonId || ev.data.salonId === activeSalonId)) {
           safeRefresh();
+        }
+        if (ev?.data?.type === 'SALON_VERIFIED' && (!ev.data.salonId || ev.data.salonId === activeSalonId)) {
+          if (partnerUser) {
+            loadUserSalon(partnerUser);
+          }
         }
       };
     } catch {}
@@ -1020,6 +1026,18 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   };
 
+  const checkApprovalStatus = async (): Promise<boolean> => {
+    if (!partnerUser) return false;
+    try {
+      const refreshed = await loadUserSalon(partnerUser);
+      if (refreshed && refreshed.isVerified && refreshed.status === 'active') {
+        triggerNotification(`🎉 Authorization Approved! Welcome to the SLOON Partner Platform.`);
+        return true;
+      }
+    } catch {}
+    return false;
+  };
+
   return (
     <PartnerContext.Provider
       value={{
@@ -1061,6 +1079,7 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
         updateSmartQueueRadius,
         clearQueue,
         latestCrowdReport,
+        checkApprovalStatus,
       }}
     >
       {children}

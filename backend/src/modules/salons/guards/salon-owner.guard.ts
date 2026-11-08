@@ -71,7 +71,7 @@ export class SalonOwnerGuard implements CanActivate {
     try {
       salon = await this.prisma.salon.findUnique({
         where: { id: salonId },
-        select: { id: true, ownerId: true, status: true, email: true },
+        select: { id: true, ownerId: true, status: true, isVerified: true, email: true },
       });
 
       if (salon) {
@@ -139,6 +139,13 @@ export class SalonOwnerGuard implements CanActivate {
     if (!isDirectOwner && !isMemberOwner) {
       throw new ForbiddenException(
         'Security Violation: You do not have owner authorization to modify or manage this salon',
+      );
+    }
+
+    // 4. Enforce Admin Authorization Gate: Salons must be approved by an Admin before accessing platform operations
+    if (salon.status === 'pending' || salon.isVerified === false) {
+      throw new ForbiddenException(
+        'Platform Access Locked: This salon is currently pending Administrator review and authorization. Operational platform features will unlock once approved by SLOON HQ.',
       );
     }
 
