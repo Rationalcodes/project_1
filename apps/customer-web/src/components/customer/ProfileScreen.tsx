@@ -15,6 +15,7 @@ import {
   Mail,
   CheckCircle2,
   ExternalLink,
+  Sparkles,
 } from 'lucide-react';
 
 export const ProfileScreen: React.FC = () => {
@@ -30,6 +31,7 @@ export const ProfileScreen: React.FC = () => {
     triggerNotification,
     userLocation,
     genderFilter,
+    setShowOnboarding,
   } = useSalon();
 
   const isWomen = genderFilter === 'women';
@@ -322,6 +324,30 @@ export const ProfileScreen: React.FC = () => {
             <option value="10 km">Within 10 km (Across town)</option>
             <option value="25 km">Within 25 km (Anywhere in the city)</option>
           </select>
+        </div>
+      </section>
+
+      {/* App Guide & Onboarding Tour */}
+      <section className={`bg-white border rounded-2xl p-4 space-y-2 shadow-xs ${
+        isWomen ? 'border-[#F1DDE3]' : 'border-[#E7DED5]'
+      }`}>
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <div className="text-xs font-bold text-stone-900">App Intro & Walkthrough</div>
+            <div className="text-[10px] text-stone-500">Replay the visual 3-step onboarding guide</div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowOnboarding(true)}
+            className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shrink-0 ${
+              isWomen
+                ? 'bg-rose-50 text-[#F47B70] border-rose-200 hover:bg-rose-100'
+                : 'bg-orange-50 text-[#FF6422] border-orange-200 hover:bg-orange-100'
+            }`}
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>Replay Tour</span>
+          </button>
         </div>
       </section>
 

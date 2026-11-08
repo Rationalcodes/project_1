@@ -155,6 +155,9 @@ interface CustomerContextType {
   ) => Promise<{ success: boolean; message: string; report?: any }>;
   isExpressWalkin: boolean;
   setIsExpressWalkin: (active: boolean) => void;
+  showOnboarding: boolean;
+  setShowOnboarding: (show: boolean) => void;
+  completeOnboarding: () => void;
 }
 
 const CustomerContext = createContext<CustomerContextType | undefined>(undefined);
@@ -289,6 +292,25 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const [selectedSalonForDetail, setSelectedSalonForDetail] = useState<Salon | null>(null);
   const [isExpressWalkin, setIsExpressWalkin] = useState<boolean>(() => getTargetSalonFromUrl().isExpressWalkin);
+
+  // Onboarding Screen state (Shows on first visit, replayable from profile)
+  const [showOnboarding, setShowOnboarding] = useState<boolean>(() => {
+    try {
+      const isDirectLink = window.location.search.includes('salon=') || window.location.search.includes('walkin=');
+      if (isDirectLink) return false;
+      const completed = safeStorage.getItem('sloon_onboarding_completed');
+      return completed !== 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  const completeOnboarding = () => {
+    setShowOnboarding(false);
+    try {
+      safeStorage.setItem('sloon_onboarding_completed', 'true');
+    } catch {}
+  };
 
 
   const [userProfile, setUserProfile] = useState<CustomerProfile>(loadStoredUserProfile);
@@ -1690,6 +1712,9 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         submitLocationCrowdReport,
         isExpressWalkin,
         setIsExpressWalkin,
+        showOnboarding,
+        setShowOnboarding,
+        completeOnboarding,
       }}
     >
       {children}

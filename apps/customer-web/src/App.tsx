@@ -4,6 +4,7 @@ import { Header } from './components/common/Header';
 import { BottomNav } from './components/common/BottomNav';
 import { NotificationToast } from './components/common/NotificationToast';
 import { HomeScreen } from './components/customer/HomeScreen';
+import { OnboardingScreen } from './components/customer/OnboardingScreen';
 import { LocationPermissionBanner } from './components/common/LocationPermissionBanner';
 
 // Code-split secondary screens & heavy modals (Phase 4 Optimization)
@@ -52,6 +53,8 @@ const CustomerMainContent: React.FC = () => {
     genderFilter,
     isExpressWalkin,
     setIsExpressWalkin,
+    showOnboarding,
+    completeOnboarding,
   } = useCustomer();
 
   const isWomen = genderFilter === 'women';
@@ -130,6 +133,14 @@ const CustomerMainContent: React.FC = () => {
           : 'bg-[#FAF7F2] text-stone-900 selection:bg-orange-500/20 selection:text-orange-950'
       }`}
     >
+      {/* Interactive Mobile Onboarding Experience (Matching Reference) */}
+      {showOnboarding && (
+        <OnboardingScreen
+          onFinish={completeOnboarding}
+          isWomen={isWomen}
+        />
+      )}
+
       {/* Universal Responsive Header */}
       <Header />
 
