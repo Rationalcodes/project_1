@@ -940,6 +940,7 @@ export class KumbhakaranApiClient {
     userId?: string;
     partySize?: number;
     checkInToken?: string;
+    bookingForSomeoneElse?: boolean;
   }): Promise<any> {
     const payload = {
       ...entry,

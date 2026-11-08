@@ -126,13 +126,15 @@ interface CustomerContextType {
   setGenderFilter: (filter: GenderFilter) => void;
   queueEntries: QueueEntry[];
   activeTicket: QueueEntry | null;
+  otherTickets: QueueEntry[];
+  removeOtherTicket: (ticketId: string) => void;
   fetchSalonQueue: (salonId: string) => Promise<QueueEntry[]>;
   joinLiveQueue: (
     salonId: string,
     name: string,
     phone?: string,
     serviceName?: string,
-    options?: { partySize?: number; checkInToken?: string | null },
+    options?: { partySize?: number; checkInToken?: string | null; bookingForSomeoneElse?: boolean },
   ) => Promise<QueueEntry>;
   confirmQueueArrival: (salonId: string, entryId: string, qrToken: string) => Promise<void>;
   setQueueLocationConsent: (salonId: string, entryId: string, enabled: boolean) => Promise<void>;
@@ -506,6 +508,22 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return null;
   });
 
+  const [otherTickets, setOtherTickets] = useState<QueueEntry[]>(() => {
+    try {
+      const saved = safeStorage.getItem('kumbhakaran_other_tickets');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return [];
+  });
+
+  const removeOtherTicket = (ticketId: string) => {
+    setOtherTickets((prev) => {
+      const next = prev.filter((t) => t.id !== ticketId);
+      safeStorage.setItem('kumbhakaran_other_tickets', JSON.stringify(next));
+      return next;
+    });
+  };
+
   const activeTicketRef = useRef<QueueEntry | null>(activeTicket);
   useEffect(() => {
     activeTicketRef.current = activeTicket;
@@ -579,12 +597,13 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     name: string,
     phone?: string,
     serviceName?: string,
-    options?: { partySize?: number; checkInToken?: string | null },
+    options?: { partySize?: number; checkInToken?: string | null; bookingForSomeoneElse?: boolean },
   ): Promise<QueueEntry> => {
+    const isBookingForOther = Boolean(options?.bookingForSomeoneElse);
     const deviceId = getOrCreateDeviceId();
     const requestFingerprint = await createQueueRequestFingerprint([
-      authUser?.id || deviceId,
-      deviceId,
+      isBookingForOther ? `other_${Date.now()}` : (authUser?.id || deviceId),
+      isBookingForOther ? `other_device_${Date.now()}` : deviceId,
       name.trim(),
       phone?.trim() || '',
       serviceName?.trim() || '',
@@ -598,9 +617,10 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       customerName: name,
       phone,
       serviceName,
-      deviceId,
+      deviceId: isBookingForOther ? undefined : deviceId,
       partySize: options?.partySize,
       checkInToken: options?.checkInToken || undefined,
+      bookingForSomeoneElse: isBookingForOther,
     });
     if (res?.entry) {
       safeStorage.removeItem(requestIdKey);
@@ -610,8 +630,19 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         queueAccessToken: res.queueAccessToken,
         ...res.smartQueue,
       };
-      setActiveTicket(entryWithSalon);
-      safeStorage.setItem('kumbhakaran_customer_ticket', JSON.stringify(entryWithSalon));
+
+      if (isBookingForOther) {
+        // Track tickets booked for friends/family without overriding user's own ticket
+        setOtherTickets((prev) => {
+          const next = [...prev.filter((t) => t.id !== entryWithSalon.id), entryWithSalon];
+          safeStorage.setItem('kumbhakaran_other_tickets', JSON.stringify(next));
+          return next;
+        });
+      } else {
+        setActiveTicket(entryWithSalon);
+        safeStorage.setItem('kumbhakaran_customer_ticket', JSON.stringify(entryWithSalon));
+      }
+
       setQueueEntries((prev) => [...prev, entryWithSalon]);
       const newCount = res.currentQueue ?? 1;
       // Update local salon currentQueue & selectedSalonForDetail instantly
@@ -625,7 +656,11 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       );
       broadcastTelemetryUpdate(salonId, newCount);
       fetchSalonQueue(salonId);
-      triggerNotification(`🎉 You joined the queue! Ticket #${entryWithSalon.ticketNumber || entryWithSalon.position}`);
+      triggerNotification(
+        isBookingForOther
+          ? `🎉 Token #${entryWithSalon.ticketNumber || entryWithSalon.position} booked for ${name}!`
+          : `🎉 You joined the queue! Ticket #${entryWithSalon.ticketNumber || entryWithSalon.position}`
+      );
       return entryWithSalon;
     }
     throw new Error('Failed to join queue');
@@ -1608,6 +1643,8 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         setGenderFilter,
         queueEntries,
         activeTicket,
+        otherTickets,
+        removeOtherTicket,
         fetchSalonQueue,
         joinLiveQueue,
         confirmQueueArrival,

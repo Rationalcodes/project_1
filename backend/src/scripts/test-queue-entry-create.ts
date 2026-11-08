@@ -187,6 +187,18 @@ async function main() {
     );
     console.log('PASS duplicate active ticket returns 409');
 
+    const delegateBooking = await createHarness().service.addQueueEntry(
+      salonId,
+      {
+        requestId: '2bb3db32-4e27-47e8-90e8-53e342e8b76b',
+        deviceId: 'test-device',
+        customerName: 'Friend Booking',
+        bookingForSomeoneElse: true,
+      } as CreateQueueEntryDto,
+    );
+    assert.equal(delegateBooking.success, true);
+    console.log('PASS booking for someone else succeeds without duplicate conflict');
+
     const retried = createHarness();
     const retryRequest = {
       requestId: '67e22351-5f18-460d-948e-183a99b73db2',

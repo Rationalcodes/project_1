@@ -70,6 +70,8 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
     userLocation,
     queueEntries = [],
     activeTicket,
+    otherTickets,
+    removeOtherTicket,
     fetchSalonQueue,
     joinLiveQueue,
     leaveLiveQueue,
@@ -82,6 +84,7 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
 
   // Join Live Queue & Token states
   const [showJoinQueueModal, setShowJoinQueueModal] = useState(false);
+  const [bookingFor, setBookingFor] = useState<'self' | 'other'>('self');
   const [joinName, setJoinName] = useState(userProfile.name || '');
   const [joinPhone, setJoinPhone] = useState(userProfile.phone || '');
   const [joinService, setJoinService] = useState('Haircut & Styling');
@@ -252,19 +255,34 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
   const handleJoinQueueSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedSalonForDetail) return;
-    const cleanName = joinName.trim() || 'Walk-in Guest';
-    if (!userProfile.name && cleanName !== 'Walk-in Guest') {
+    const isOther = bookingFor === 'other';
+    const cleanName = joinName.trim() || (isOther ? 'Guest' : 'Walk-in Guest');
+    if (!isOther && !userProfile.name && cleanName !== 'Walk-in Guest') {
       updateCustomerName(cleanName);
     }
     try {
       setIsJoining(true);
+      if (!isOther && activeTicket) {
+        // Customer leaves earlier booking first, then rejoins at current position
+        await leaveLiveQueue(activeTicket.salonId || selectedSalonForDetail.id, activeTicket.id);
+      }
       await joinLiveQueue(
         selectedSalonForDetail.id,
         cleanName,
         joinPhone.trim() || undefined,
-        joinService
+        joinService,
+        { bookingForSomeoneElse: isOther }
       );
       setShowJoinQueueModal(false);
+      setJoinName(userProfile.name || '');
+      setJoinPhone(userProfile.phone || '');
+      triggerNotification(
+        isOther
+          ? `Token booked for ${cleanName}!`
+          : activeTicket
+          ? `Left previous ticket and rejoined at current position (Position #${selectedSalonForDetail.currentQueue + 1})!`
+          : `Token issued for ${selectedSalonForDetail.name}!`
+      );
     } catch (err: any) {
       triggerNotification(err?.message || 'Failed to join queue');
     } finally {
@@ -866,8 +884,32 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
                   </div>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <SmartQueueAssist salon={salon} ticket={activeTicket} />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setBookingFor('other');
+                    setJoinName('');
+                    setJoinPhone('');
+                    setShowJoinQueueModal(true);
+                  }}
+                  className="text-xs text-stone-700 bg-white border border-stone-300 hover:border-stone-400 font-bold px-2.5 py-1.5 rounded-xl shadow-2xs hover:bg-stone-50 transition-colors cursor-pointer"
+                >
+                  👥 Book for Other
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setBookingFor('self');
+                    setJoinName(userProfile.name || '');
+                    setJoinPhone(userProfile.phone || '');
+                    setShowJoinQueueModal(true);
+                  }}
+                  className="text-xs text-amber-900 bg-amber-100/90 border border-amber-300 hover:bg-amber-200 font-bold px-2.5 py-1.5 rounded-xl transition-colors cursor-pointer"
+                >
+                  🔄 Rejoin Queue
+                </button>
                 <button
                   type="button"
                   onClick={() => {
@@ -879,6 +921,38 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
                 >
                   Leave
                 </button>
+              </div>
+            </div>
+          )}
+
+          {/* TICKETS BOOKED FOR OTHERS */}
+          {otherTickets.filter((t) => t.salonId === salon.id || !t.salonId).length > 0 && (
+            <div className="mt-2.5 bg-white/90 border border-amber-300/80 rounded-2xl p-2.5 shadow-2xs">
+              <div className="text-[11px] font-bold text-amber-900 mb-1 flex items-center gap-1.5">
+                <Users className="w-3.5 h-3.5 text-amber-700" />
+                <span>Tokens booked for others ({otherTickets.length}):</span>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {otherTickets.map((t) => (
+                  <div
+                    key={t.id}
+                    className="text-xs bg-amber-50/70 border border-amber-200 px-2.5 py-1 rounded-xl flex items-center gap-2"
+                  >
+                    <span className="font-black text-stone-900">
+                      #{(t.ticketNumber || String(t.position || '')).replace(/^#+/, '')}
+                    </span>
+                    <span className="text-stone-800 font-semibold">{t.customerName}</span>
+                    <span className="text-[10px] text-stone-500">({t.serviceName || 'Service'})</span>
+                    <button
+                      type="button"
+                      onClick={() => removeOtherTicket(t.id)}
+                      className="text-stone-400 hover:text-rose-600 text-xs font-bold ml-1 cursor-pointer"
+                      title="Dismiss"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))}
               </div>
             </div>
           )}
@@ -1364,15 +1438,76 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
               </button>
             </div>
 
+            {/* BOOKING TARGET SELECTOR */}
+            <div className="grid grid-cols-2 gap-2 p-1 bg-stone-100 rounded-2xl mt-4">
+              <button
+                type="button"
+                onClick={() => {
+                  setBookingFor('self');
+                  setJoinName(userProfile.name || '');
+                  setJoinPhone(userProfile.phone || '');
+                }}
+                className={`py-2 text-xs font-black rounded-xl transition-all cursor-pointer ${
+                  bookingFor === 'self'
+                    ? 'bg-white text-stone-900 shadow-xs'
+                    : 'text-stone-500 hover:text-stone-800'
+                }`}
+              >
+                👤 For Myself
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setBookingFor('other');
+                  setJoinName('');
+                  setJoinPhone('');
+                }}
+                className={`py-2 text-xs font-black rounded-xl transition-all cursor-pointer ${
+                  bookingFor === 'other'
+                    ? 'bg-white text-stone-900 shadow-xs'
+                    : 'text-stone-500 hover:text-stone-800'
+                }`}
+              >
+                👥 For Someone Else
+              </button>
+            </div>
+
+            {/* NOTICE: REJOIN / ACTIVE TICKET INVARIANT */}
+            {bookingFor === 'self' && activeTicket && (
+              <div className="bg-amber-50 border border-amber-300 rounded-2xl p-3.5 text-xs text-amber-950 space-y-1.5 mt-3">
+                <div className="flex items-center gap-2 font-black text-amber-900">
+                  <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                  <span>You already hold Token #{(activeTicket.ticketNumber || String(activeTicket.position || '')).replace(/^#+/, '')}</span>
+                </div>
+                <p className="text-[11px] text-amber-800 leading-relaxed">
+                  You can only hold one active token for yourself. Rejoining will cancel your earlier token and place you at the <strong>current end of the line (Position #{salon.currentQueue + 1})</strong>, not your old position.
+                </p>
+              </div>
+            )}
+
+            {bookingFor === 'other' && (
+              <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-3 text-xs text-emerald-900 flex items-start gap-2 mt-3">
+                <Users className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                <div>
+                  <span className="font-bold">Booking for a friend or family member</span>
+                  <p className="text-[11px] text-emerald-800 mt-0.5">
+                    {activeTicket
+                      ? `Your own token #${(activeTicket.ticketNumber || String(activeTicket.position || '')).replace(/^#+/, '')} remains active. A separate token will be issued for them.`
+                      : 'A separate walk-in token will be issued for them under their name.'}
+                  </p>
+                </div>
+              </div>
+            )}
+
             <form onSubmit={handleJoinQueueSubmit} className="space-y-4 mt-4">
               <div>
                 <label className="block text-xs font-bold text-stone-700 mb-1">
-                  Your Full Name <span className="text-[#FF6422]">*</span>
+                  {bookingFor === 'other' ? "Person's Full Name" : 'Your Full Name'} <span className="text-[#FF6422]">*</span>
                 </label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Rahul Sharma"
+                  placeholder={bookingFor === 'other' ? 'e.g. Priya Sharma' : 'e.g. Rahul Sharma'}
                   value={joinName}
                   onChange={(e) => setJoinName(e.target.value)}
                   className="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-300 rounded-xl text-sm text-stone-900 placeholder-stone-400 focus:outline-none focus:border-[#FF6422] focus:bg-white transition-all"
@@ -1381,11 +1516,11 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
 
               <div>
                 <label className="block text-xs font-bold text-stone-700 mb-1">
-                  Mobile Number <span className="text-stone-500">(So studio can call your turn)</span>
+                  {bookingFor === 'other' ? 'Their Mobile Number (Optional)' : 'Mobile Number (So studio can call your turn)'}
                 </label>
                 <input
                   type="tel"
-                  placeholder="e.g. 9876543210"
+                  placeholder={bookingFor === 'other' ? 'e.g. 9876543210 (Optional)' : 'e.g. 9876543210'}
                   value={joinPhone}
                   onChange={(e) => setJoinPhone(e.target.value)}
                   className="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-300 rounded-xl text-sm text-stone-900 placeholder-stone-400 focus:outline-none focus:border-[#FF6422] focus:bg-white transition-all"
@@ -1431,17 +1566,26 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
                 <button
                   type="submit"
                   disabled={isJoining}
-                  className="px-5 py-2.5 rounded-xl bg-[#FF6422] hover:bg-orange-600 text-white font-extrabold text-xs shadow-lg shadow-orange-500/25 active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                  className={`px-5 py-2.5 rounded-xl ${
+                    bookingFor === 'self' && activeTicket
+                      ? 'bg-amber-600 hover:bg-amber-700 shadow-amber-600/25'
+                      : 'bg-[#FF6422] hover:bg-orange-600 shadow-orange-500/25'
+                  } text-white font-extrabold text-xs shadow-lg active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50`}
                 >
                   {isJoining ? (
                     <>
                       <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                      <span>Joining...</span>
+                      <span>{bookingFor === 'self' && activeTicket ? 'Leaving & Rejoining...' : 'Joining...'}</span>
+                    </>
+                  ) : bookingFor === 'self' && activeTicket ? (
+                    <>
+                      <RefreshCw className="w-4 h-4" />
+                      <span>Leave Earlier & Rejoin at Current Position</span>
                     </>
                   ) : (
                     <>
                       <Ticket className="w-4 h-4" />
-                      <span>Take Token & Join Queue</span>
+                      <span>{bookingFor === 'other' ? `Take Token for ${joinName.trim() || 'Guest'}` : 'Take Token & Join Queue'}</span>
                     </>
                   )}
                 </button>

@@ -1780,14 +1780,17 @@ export class SalonsService {
         `;
         const nextPos = Number(maxRow?.max_pos || 0) + 1;
         const ticketNumber = `#${String(Number(maxRow?.max_ticket || 0) + 1).padStart(2, '0')}`;
+        const isBookingForOther = Boolean(dto.bookingForSomeoneElse);
         const phoneIdentity = cleanPhone?.replace(/\D/g, '') || null;
-        const identityConditions = [
-          ...(actorId ? [Prisma.sql`user_id = ${actorId}`] : []),
-          ...(cleanDeviceId ? [Prisma.sql`device_id = ${cleanDeviceId}`] : []),
-          ...(phoneIdentity
-            ? [Prisma.sql`regexp_replace(COALESCE(phone, ''), '[^0-9]', '', 'g') = ${phoneIdentity}`]
-            : []),
-        ];
+        const identityConditions = isBookingForOther
+          ? (phoneIdentity ? [Prisma.sql`regexp_replace(COALESCE(phone, ''), '[^0-9]', '', 'g') = ${phoneIdentity}`] : [])
+          : [
+              ...(actorId ? [Prisma.sql`user_id = ${actorId}`] : []),
+              ...(cleanDeviceId ? [Prisma.sql`device_id = ${cleanDeviceId}`] : []),
+              ...(phoneIdentity
+                ? [Prisma.sql`regexp_replace(COALESCE(phone, ''), '[^0-9]', '', 'g') = ${phoneIdentity}`]
+                : []),
+            ];
         if (identityConditions.length > 0) {
           const [existingEntry] = await tx.$queryRaw<Array<{ ticket_number: string | null; position: number }>>(
             Prisma.sql`
@@ -1804,7 +1807,9 @@ export class SalonsService {
             const existingTicket =
               existingEntry.ticket_number || `#${String(existingEntry.position).padStart(2, '0')}`;
             throw new ConflictException(
-              `You already have an active queue ticket (${existingTicket}). Leave that queue before joining again.`,
+              isBookingForOther
+                ? `This customer already has an active queue ticket (${existingTicket}) at this studio.`
+                : `You already have an active queue ticket (${existingTicket}). Leave that queue before joining again.`,
             );
           }
         }
@@ -1824,8 +1829,8 @@ export class SalonsService {
             assignedStaffId: dto.preferredStaffId || null,
             status: 'waiting',
             joinedAt,
-            deviceId: cleanDeviceId,
-            userId: actorId || null,
+            deviceId: isBookingForOther ? null : cleanDeviceId,
+            userId: isBookingForOther ? null : (actorId || null),
             notes: dto.notes || null,
             checkInMethod,
             partySize: dto.partySize || 1,

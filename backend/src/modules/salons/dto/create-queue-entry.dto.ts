@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsInt, IsOptional, IsString, IsUUID, Max, MaxLength, Min } from 'class-validator';
+import { IsBoolean, IsInt, IsOptional, IsString, IsUUID, Max, MaxLength, Min } from 'class-validator';
 
 export class CreateQueueEntryDto {
   @ApiPropertyOptional({ example: 'b6fca35f-2acf-4c64-8f66-477e0a4b4cd4', description: 'Client-generated ID reused when retrying the same queue join' })
@@ -67,4 +67,9 @@ export class CreateQueueEntryDto {
   @IsString()
   @MaxLength(128)
   checkInToken?: string;
+
+  @ApiPropertyOptional({ description: 'Set to true when booking a separate token on behalf of a friend or family member' })
+  @IsOptional()
+  @IsBoolean()
+  bookingForSomeoneElse?: boolean;
 }
