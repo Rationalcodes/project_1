@@ -444,37 +444,6 @@ export const HomeScreen: React.FC = () => {
         </div>
       </section>
 
-      {/* HUMAN TOUCH: WARM PERSONALIZED GREETING & NEIGHBORHOOD PULSE */}
-      <section className="bg-white/80 backdrop-blur-xs rounded-3xl p-4 sm:p-5 border border-[#E8E2D8] shadow-2xs">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <div className="flex items-center gap-1.5 text-xs text-stone-500 font-semibold">
-              <span>{greeting.icon}</span>
-              <span>{greeting.text}</span>
-              {userProfile.name ? (
-                <span className="text-stone-900 font-bold">• {userProfile.name.split(' ')[0]}</span>
-              ) : null}
-            </div>
-            <h2 className="text-base sm:text-lg font-black text-stone-950 tracking-tight mt-0.5">
-              {isWomen ? 'Ready for a fresh glow today?' : 'Looking for a clean cut today?'}
-            </h2>
-            <p className="text-xs text-stone-500 mt-0.5">
-              {isWomen
-                ? 'Check real-time beauty chairs in your neighborhood and walk in with ease.'
-                : 'Check live barber chairs in your neighborhood and walk in without the wait.'}
-            </p>
-          </div>
-
-          <div className="hidden xs:flex flex-col items-end shrink-0 text-right">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-[11px] font-bold text-emerald-800 shadow-2xs">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span>Chairs active live</span>
-            </span>
-            <span className="text-[10px] text-stone-400 mt-1">Real front-desk sync</span>
-          </div>
-        </div>
-      </section>
-
       {/* 2. CATEGORIES SECTION (ROUND PHOTO AVATARS) */}
       <section className="space-y-3">
         <div className="flex items-center justify-between px-1">
@@ -600,128 +569,109 @@ export const HomeScreen: React.FC = () => {
                 '';
 
               return (
-                <div
+                                <div
                   key={salon.id}
                   onClick={() => handleSalonCardClick(salon)}
-                  className={`group bg-white border overflow-hidden shadow-xs hover:shadow-md transition-all duration-200 cursor-pointer ${
-                    isWomen
-                      ? 'rounded-2xl border-[#FED7CC] hover:border-rose-400'
-                      : 'rounded-2xl border-[#E8E2D8] hover:border-blue-400'
-                  }`}
+                  className="group bg-white rounded-3xl border border-stone-200/80 hover:border-stone-400/80 overflow-hidden shadow-xs hover:shadow-md transition-all duration-300 cursor-pointer flex flex-col"
                 >
-                  {/* Salon Cover Card with Floating Pill & Heart */}
-                  <div className="h-44 sm:h-52 w-full relative overflow-hidden bg-stone-100">
+                  {/* Clean Salon Photography */}
+                  <div className="h-48 sm:h-56 w-full relative overflow-hidden bg-stone-100">
                     {cover ? (
                       <img
                         src={cover}
                         alt={salon.name}
                         loading="lazy"
                         decoding="async"
-                        className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-500"
+                        className="w-full h-full object-cover group-hover:scale-104 transition-transform duration-500 ease-out"
                       />
                     ) : (
-                      <div className="w-full h-full bg-gradient-to-br from-stone-900 to-black flex flex-col items-center justify-center text-white p-4 text-center">
-                        <Store className="w-8 h-8 text-white/80 mb-1" />
-                        <span className="text-base font-black tracking-wider uppercase">{salon.name}</span>
-                        <span className="text-xs text-stone-400">{salon.locality}</span>
+                      <div className="w-full h-full bg-stone-900 flex flex-col items-center justify-center text-white p-4 text-center">
+                        <Store className="w-8 h-8 text-stone-400 mb-1" />
+                        <span className="text-sm font-bold tracking-wider">{salon.name}</span>
                       </div>
                     )}
 
-                    {/* Gradient shadow for text & badge legibility */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/30 pointer-events-none" />
-
-                    {/* Top-Left: Live Queue Status Pill */}
-                    <div className="absolute top-3 left-3">
-                      <span
-                        className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black shadow-md backdrop-blur-md ${queueInfo.badgeClass}`}
-                      >
-                        <span className={`w-2 h-2 rounded-full ${queueInfo.dotClass}`} />
-                        {salon.currentQueue === 0
-                          ? '✨ No wait • 0 in line'
-                          : salon.currentQueue <= 3
-                          ? `⚡ Low queue • ${salon.currentQueue} waiting`
-                          : queueInfo.label}
+                    {/* Top-Left: Clean Live Status Pill */}
+                    <div className="absolute top-3 left-3 flex items-center gap-1.5">
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-white/95 text-stone-900 shadow-sm backdrop-blur-md border border-stone-200/60">
+                        <span className={`w-2 h-2 rounded-full ${
+                          !salon.isOpen
+                            ? 'bg-stone-400'
+                            : salon.currentQueue === 0
+                            ? 'bg-emerald-500'
+                            : salon.currentQueue <= 3
+                            ? 'bg-emerald-500'
+                            : 'bg-amber-500'
+                        }`} />
+                        <span>
+                          {!salon.isOpen
+                            ? 'Closed'
+                            : salon.currentQueue === 0
+                            ? '0 in line • Open now'
+                            : `${salon.currentQueue} in line • ~${waitTime}m`}
+                        </span>
                       </span>
                     </div>
 
-                    {/* Top-Right: Favorite Button (Matches Screenshot) */}
+                    {/* Top-Right: Clean Heart Save Button */}
                     <div className="absolute top-3 right-3">
                       <button
+                        type="button"
                         onClick={(e) => {
                           e.stopPropagation();
                           toggleFavorite(salon.id);
                         }}
-                        className="p-2 rounded-full bg-white/95 text-stone-700 hover:text-rose-500 border border-stone-200 backdrop-blur-md transition-colors shadow-sm cursor-pointer"
+                        className="w-9 h-9 rounded-full bg-white/95 text-stone-700 hover:text-rose-500 border border-stone-200/60 backdrop-blur-md flex items-center justify-center transition-all shadow-sm active:scale-90 cursor-pointer"
                         title={isSaved ? 'Remove from saved' : 'Save salon'}
                       >
                         <Heart
                           className={`w-4 h-4 ${
-                            isSaved ? 'fill-rose-500 text-rose-500' : ''
+                            isSaved ? 'fill-rose-500 text-rose-500' : 'text-stone-700'
                           }`}
                         />
                       </button>
                     </div>
 
-                    {/* Bottom overlay text on image */}
-                    <div className="absolute bottom-3 left-3 right-3 flex items-end justify-between text-white">
-                      <div>
-                        <div className="flex items-center gap-1.5">
-                          <span
-                            className={`px-2 py-0.5 rounded-md text-[10px] font-extrabold tracking-wide uppercase backdrop-blur-md border ${
-                              salonType === 'men'
-                                ? 'bg-blue-900/80 text-blue-100 border-blue-400/40'
-                                : salonType === 'women'
-                                ? 'bg-rose-900/80 text-rose-100 border-rose-400/40'
-                                : 'bg-stone-900/80 text-stone-100 border-stone-400/40'
-                            }`}
-                          >
-                            {salonType === 'men'
-                              ? 'Men Only'
-                              : salonType === 'women'
-                              ? 'Women Only'
-                              : 'Unisex'}
-                          </span>
-                          {!salon.isOpen && (
-                            <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-stone-900/80 text-stone-300">
-                              Closed
-                            </span>
-                          )}
-                        </div>
-                        <h3 className="text-lg sm:text-xl font-black text-white drop-shadow-md tracking-tight mt-1 line-clamp-1">
-                          {salon.name}
-                        </h3>
-                      </div>
-
-                      <div className="shrink-0 text-right">
-                        <span className="text-xs font-bold text-white/90 drop-shadow-sm">
-                          From ₹{salon.startingPrice}
-                        </span>
-                      </div>
+                    {/* Bottom-Left subtle salon type tag */}
+                    <div className="absolute bottom-2.5 left-3">
+                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-black/60 text-white backdrop-blur-md border border-white/20">
+                        {salonType === 'men' ? "Men's Studio" : salonType === 'women' ? "Women's Parlour" : 'Unisex'}
+                      </span>
                     </div>
                   </div>
 
-                  {/* Card Bottom Meta Bar */}
-                  <div className="px-4 py-3 bg-white flex items-center justify-between text-xs text-stone-600 border-t border-stone-100">
-                    <div className="flex items-center gap-1.5 truncate">
-                      <Navigation className="w-3.5 h-3.5 text-stone-400 shrink-0" />
-                      <span className="truncate">{salon.locality}</span>
-                      <span className="text-stone-300">•</span>
-                      <span className="font-semibold text-stone-500 shrink-0">
-                        {salon.distanceKm.toFixed(2)} km
-                      </span>
+                  {/* Clean Human Card Details (Like Airbnb/Fresha) */}
+                  <div className="p-4 sm:p-4.5 space-y-2 flex-1 flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-start justify-between gap-2">
+                        <h3 className="text-base font-black text-stone-900 tracking-tight leading-snug line-clamp-1 group-hover:text-stone-950">
+                          {salon.name}
+                        </h3>
+                        <div className="flex items-center gap-1 shrink-0 text-xs font-bold text-stone-900">
+                          <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
+                          <span>{salon.rating.toFixed(1)}</span>
+                          <span className="text-stone-400 font-normal">({salon.reviewCount})</span>
+                        </div>
+                      </div>
+
+                      <p className="text-xs text-stone-500 mt-1 flex items-center gap-1 truncate">
+                        <Navigation className="w-3.5 h-3.5 text-stone-400 shrink-0" />
+                        <span className="truncate">{salon.locality}</span>
+                        <span>•</span>
+                        <span className="font-medium text-stone-600">{salon.distanceKm.toFixed(1)} km away</span>
+                      </p>
                     </div>
 
-                    <div className="flex items-center gap-2 shrink-0">
-                      <span className="inline-flex items-center gap-1 font-bold text-stone-900">
-                        <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
-                        <span>{salon.rating.toFixed(1)}</span>
+                    <div className="pt-2.5 border-t border-stone-100 flex items-center justify-between text-xs">
+                      <span className="text-stone-600 font-medium">
+                        Haircuts from <strong className="text-stone-900 font-black">₹{salon.startingPrice}</strong>
                       </span>
-                      <span className="text-stone-300">•</span>
-                      <span className={`text-[11px] font-bold flex items-center gap-0.5 group-hover:translate-x-0.5 transition-transform ${
-                        isWomen ? 'text-rose-600' : 'text-blue-600'
+
+                      <span className={`font-bold flex items-center gap-1 group-hover:translate-x-0.5 transition-transform ${
+                        isWomen ? 'text-[#E11D48]' : 'text-[#FF6422]'
                       }`}>
-                        <span>Check chairs</span>
-                        <ArrowRight className="w-3 h-3" />
+                        <span>View chairs</span>
+                        <ArrowRight className="w-3.5 h-3.5" />
                       </span>
                     </div>
                   </div>
@@ -730,23 +680,6 @@ export const HomeScreen: React.FC = () => {
             })}
           </div>
         )}
-      </section>
-
-      {/* HUMAN TOUCH: COMMUNITY PROMISE & TRUST NOTE */}
-      <section className="bg-gradient-to-r from-amber-50/70 via-stone-50 to-orange-50/60 rounded-3xl p-5 border border-amber-200/70 text-stone-800 shadow-2xs">
-        <div className="flex items-start gap-3.5">
-          <div className="w-9 h-9 rounded-2xl bg-amber-100 text-amber-800 flex items-center justify-center font-bold text-lg shrink-0 mt-0.5 shadow-2xs">
-            🤝
-          </div>
-          <div className="space-y-1">
-            <h4 className="text-xs font-black uppercase tracking-wider text-amber-900">
-              The SLOON Neighborhood Promise
-            </h4>
-            <p className="text-xs text-stone-700 leading-relaxed">
-              We sync directly with independent local salon owners so you can glance at live chair counts from home. No awkward waiting around in packed waiting areas, no hidden booking fees, and no pressure.
-            </p>
-          </div>
-        </div>
       </section>
 
       {/* 4. FREQUENTLY ASKED QUESTIONS */}
