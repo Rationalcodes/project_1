@@ -155,7 +155,7 @@ export type CustomerTab = 'home' | 'explore' | 'map' | 'favourites' | 'offers' |
 export type PartnerView = 'dashboard' | 'register' | 'live-queue' | 'services' | 'staff' | 'reviews' | 'analytics' | 'settings' | 'gallery';
 export type OwnerTab = PartnerView;
 
-export type AdminTab = 'overview' | 'salons' | 'customers' | 'verification' | 'reviews' | 'subscriptions' | 'analytics' | 'settings';
+export type AdminTab = 'overview' | 'salons' | 'customers' | 'verification' | 'reviews' | 'subscriptions' | 'analytics' | 'banners' | 'settings';
 
 export interface CustomerProfile {
   name: string;

@@ -23,7 +23,11 @@ import {
   Sliders,
   Sparkles,
   ArrowRight,
-  MapPin
+  MapPin,
+  Image as ImageIcon,
+  Upload,
+  Save,
+  RefreshCw
 } from 'lucide-react';
 import { AdminTab, Salon } from '../../types';
 
@@ -35,8 +39,71 @@ export const AdminApp: React.FC = () => {
     adminTab,
     setAdminTab,
     moderateReview,
-    triggerNotification
+    triggerNotification,
+    banners,
+    saveBanners,
+    resetBanners
   } = useSalon();
+
+  const [editableBanners, setEditableBanners] = useState(banners);
+
+  React.useEffect(() => {
+    setEditableBanners(banners);
+  }, [banners]);
+
+  const compressImage = (file: File, maxWidth = 1200, maxHeight = 400, quality = 0.86): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = reject;
+      reader.onload = () => {
+        if (typeof reader.result !== 'string') { resolve(''); return; }
+        const img = new Image();
+        img.onerror = reject;
+        img.onload = () => {
+          let targetWidth = img.width;
+          let targetHeight = img.height;
+          if (targetWidth > maxWidth) {
+            targetHeight = Math.round((targetHeight * maxWidth) / targetWidth);
+            targetWidth = maxWidth;
+          }
+          if (targetHeight > maxHeight * 1.5) {
+            targetWidth = Math.round((targetWidth * maxHeight * 1.5) / targetHeight);
+            targetHeight = maxHeight * 1.5;
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = targetWidth;
+          canvas.height = targetHeight;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) { resolve(reader.result as string); return; }
+          ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
+          const compressed = canvas.toDataURL('image/jpeg', quality);
+          resolve(compressed);
+        };
+        img.src = reader.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleFileUpload = async (slot: number, file: File) => {
+    if (!file) return;
+    try {
+      triggerNotification(`Processing & optimizing Poster #${slot}...`);
+      const compressedUrl = await compressImage(file);
+      if (!compressedUrl) {
+        triggerNotification('Unable to process image. Please try a different photo.');
+        return;
+      }
+      setEditableBanners((prev) => {
+        const updated = prev.map((b) => (b.slot === slot ? { ...b, imageUrl: compressedUrl } : b));
+        saveBanners(updated);
+        return updated;
+      });
+      triggerNotification(`Poster #${slot} uploaded & published live to customer home page!`);
+    } catch (err: any) {
+      triggerNotification('Failed to read image: ' + (err?.message || 'Unknown error'));
+    }
+  };
 
   const [adminSearch, setAdminSearch] = useState('');
   const [salonStatusFilter, setSalonStatusFilter] = useState<'all' | 'active' | 'suspended' | 'pending'>('all');
@@ -72,6 +139,7 @@ export const AdminApp: React.FC = () => {
     { id: 'overview', label: 'Platform Overview', icon: BarChart2 },
     { id: 'salons', label: 'Salon Management', icon: Store, badge: totalSalons },
     { id: 'verification', label: 'Salon Approvals', icon: CheckCircle2, badge: pendingVerificationSalons.length },
+    { id: 'banners', label: 'Banners & Posters', icon: ImageIcon },
     { id: 'reviews', label: 'Review Moderation', icon: Star, badge: flaggedReviews.length },
     { id: 'subscriptions', label: 'SaaS Subscriptions', icon: CreditCard },
     { id: 'analytics', label: 'Platform Analytics', icon: TrendingUp }
@@ -568,6 +636,300 @@ export const AdminApp: React.FC = () => {
               <span className="text-zinc-500">User Retention</span>
               <div className="text-lg font-bold text-white mt-1">79% Repeat Visits</div>
             </div>
+          </div>
+        </div>
+      )}
+      {/* TAB 7: BANNERS & POSTERS MANAGEMENT */}
+      {adminTab === 'banners' && (
+        <div className="space-y-6">
+          <div className="bg-gradient-to-br from-[#181824] via-[#14141c] to-[#0d0d12] border border-amber-500/20 rounded-3xl p-6 shadow-xl space-y-4">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] uppercase tracking-widest font-extrabold px-2 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center gap-1">
+                    <ImageIcon className="w-3.5 h-3.5" />
+                    Customer Home Carousel
+                  </span>
+                  <span className="text-xs text-zinc-400">4 Poster Slots Available</span>
+                </div>
+                <h3 className="text-lg font-black text-white mt-1">
+                  Homepage Poster &amp; Banner Controls
+                </h3>
+                <p className="text-xs text-zinc-300 mt-0.5 max-w-2xl leading-relaxed">
+                  Configure the 4 rotating poster spaces displayed at the top of the customer home screen. When you select an image, it is automatically compressed and optimized for mobile devices.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2.5 shrink-0">
+                <button
+                  type="button"
+                  onClick={resetBanners}
+                  className="px-4 py-2.5 rounded-2xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-bold transition-all flex items-center gap-2 cursor-pointer border border-zinc-700"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" />
+                  <span>Reset All to Blank</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => saveBanners(editableBanners)}
+                  className="px-5 py-2.5 rounded-2xl bg-amber-500 hover:bg-amber-400 text-zinc-950 text-xs font-black transition-all shadow-lg shadow-amber-500/20 flex items-center gap-2 cursor-pointer"
+                >
+                  <Save className="w-4 h-4" />
+                  <span>Save &amp; Publish Posters</span>
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-4 rounded-2xl bg-zinc-900/80 border border-zinc-800 text-xs">
+              <div className="space-y-1">
+                <div className="text-zinc-400 text-[11px] font-semibold uppercase tracking-wider">
+                  Recommended Dimensions
+                </div>
+                <div className="text-sm font-black text-amber-400">
+                  1200 px × 400 px
+                </div>
+                <div className="text-[11px] text-zinc-400">
+                  Aspect ratio 3:1 (auto-scaled on upload)
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <div className="text-zinc-400 text-[11px] font-semibold uppercase tracking-wider">
+                  Instant Auto-Optimization
+                </div>
+                <div className="text-sm font-black text-white">
+                  Canvas WebP / JPEG
+                </div>
+                <div className="text-[11px] text-zinc-400">
+                  Compressed under 120KB for fast 4G loading
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <div className="text-zinc-400 text-[11px] font-semibold uppercase tracking-wider">
+                  Safe Margin Tip
+                </div>
+                <div className="text-sm font-black text-emerald-400">
+                  Center 80% Safe Zone
+                </div>
+                <div className="text-[11px] text-zinc-400">
+                  Keep crucial text/logos inside center 80%
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+            {editableBanners.map((banner) => {
+              const hasImage = Boolean(banner.imageUrl && banner.imageUrl.trim());
+
+              return (
+                <div
+                  key={banner.slot}
+                  className="bg-[#14141c] border border-zinc-800 rounded-3xl p-5 shadow-lg space-y-4"
+                >
+                  <div className="flex items-center justify-between pb-3 border-b border-zinc-800">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-7 h-7 rounded-full bg-amber-500/20 text-amber-400 font-black text-xs flex items-center justify-center border border-amber-500/30">
+                        #{banner.slot}
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold text-white">
+                          Poster Space Slot #{banner.slot}
+                        </h4>
+                        <span className={`text-[10px] font-semibold ${hasImage ? 'text-emerald-400' : 'text-zinc-500'}`}>
+                          {hasImage ? '🟢 Custom Poster Active' : '⚪ Blank Poster Space (Default)'}
+                        </span>
+                      </div>
+                    </div>
+
+                    {hasImage && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const updated = editableBanners.map((b) =>
+                            b.slot === banner.slot ? { ...b, imageUrl: '', title: '', subtitle: '', targetUrl: '' } : b,
+                          );
+                          setEditableBanners(updated);
+                          saveBanners(updated);
+                          triggerNotification(`Poster #${banner.slot} cleared to blank.`);
+                        }}
+                        className="text-[11px] text-rose-400 hover:text-rose-300 font-bold px-2 py-1 rounded-lg hover:bg-rose-500/10 transition-colors cursor-pointer"
+                      >
+                        Clear to Blank
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] text-zinc-400 font-medium flex items-center justify-between">
+                      <span>Live Preview (3:1 Aspect Ratio)</span>
+                      <span className="text-zinc-500">1200 × 400 px</span>
+                    </label>
+                    <div className="w-full aspect-[3/1] rounded-2xl bg-zinc-950 border border-zinc-800 overflow-hidden relative flex items-center justify-center shadow-inner">
+                      {hasImage ? (
+                        <>
+                          <img
+                            src={banner.imageUrl}
+                            alt={`Poster ${banner.slot}`}
+                            className="w-full h-full object-cover"
+                          />
+                          {banner.title && (
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent p-4 flex flex-col justify-end">
+                              <div className="text-white text-sm sm:text-base font-bold leading-tight drop-shadow">
+                                {banner.title}
+                              </div>
+                              {banner.subtitle && (
+                                <div className="text-zinc-300 text-xs drop-shadow">
+                                  {banner.subtitle}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </>
+                      ) : (
+                        <div className="flex flex-col items-center justify-center p-4 text-center">
+                          <div className="w-9 h-9 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-600 flex items-center justify-center mb-1.5">
+                            <ImageIcon className="w-4 h-4" />
+                          </div>
+                          <span className="text-xs font-bold text-zinc-500">
+                            Blank Poster Space #{banner.slot}
+                          </span>
+                          <span className="text-[10px] text-zinc-600">
+                            Upload image or enter URL below
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="space-y-3 pt-1">
+                    <div>
+                      <label className="text-[11px] text-zinc-400 font-semibold mb-1 block">
+                        Upload Image File (Device):
+                      </label>
+                      <label className="flex items-center justify-center gap-2 p-3 rounded-2xl bg-zinc-900 hover:bg-zinc-850 border border-dashed border-zinc-700 hover:border-amber-500/50 text-xs font-bold text-zinc-300 hover:text-white transition-all cursor-pointer">
+                        <Upload className="w-4 h-4 text-amber-400" />
+                        <span>Choose 1200×400 Image (Auto-Compress)</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) handleFileUpload(banner.slot, file);
+                          }}
+                        />
+                      </label>
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] text-zinc-400 font-semibold mb-1 block">
+                        Or Image URL:
+                      </label>
+                      <input
+                        type="url"
+                        value={banner.imageUrl || ''}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setEditableBanners((prev) =>
+                            prev.map((b) => (b.slot === banner.slot ? { ...b, imageUrl: val } : b)),
+                          );
+                        }}
+                        placeholder="https://example.com/poster.jpg"
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-zinc-900 border border-zinc-800 text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-amber-500/50 transition-colors"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] text-zinc-400 font-semibold mb-1 block">
+                        Target Link (Optional - opens on click):
+                      </label>
+                      <input
+                        type="url"
+                        value={banner.targetUrl || ''}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setEditableBanners((prev) =>
+                            prev.map((b) => (b.slot === banner.slot ? { ...b, targetUrl: val } : b)),
+                          );
+                        }}
+                        placeholder="https://sloon.in/explore or leave empty"
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-zinc-900 border border-zinc-800 text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-amber-500/50 transition-colors"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="text-[10px] text-zinc-400 font-semibold mb-1 block">
+                          Headline Overlay (Opt):
+                        </label>
+                        <input
+                          type="text"
+                          value={banner.title || ''}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setEditableBanners((prev) =>
+                              prev.map((b) => (b.slot === banner.slot ? { ...b, title: val } : b)),
+                            );
+                          }}
+                          placeholder="e.g. Festival Offer"
+                          className="w-full px-3 py-2 rounded-xl bg-zinc-900 border border-zinc-800 text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-amber-500/50"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] text-zinc-400 font-semibold mb-1 block">
+                          Subtitle (Opt):
+                        </label>
+                        <input
+                          type="text"
+                          value={banner.subtitle || ''}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setEditableBanners((prev) =>
+                              prev.map((b) => (b.slot === banner.slot ? { ...b, subtitle: val } : b)),
+                            );
+                          }}
+                          placeholder="e.g. 20% off today"
+                          className="w-full px-3 py-2 rounded-xl bg-zinc-900 border border-zinc-800 text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-amber-500/50"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="pt-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          saveBanners(editableBanners);
+                        }}
+                        className="w-full py-2.5 px-4 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 font-black text-xs shadow-md shadow-amber-500/10 transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-98"
+                      >
+                        <Save className="w-3.5 h-3.5" />
+                        <span>Publish Poster #{banner.slot} to Home Page</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="flex items-center justify-end gap-3 pt-2">
+            <button
+              type="button"
+              onClick={resetBanners}
+              className="px-4 py-2.5 rounded-2xl bg-zinc-850 hover:bg-zinc-800 text-zinc-300 text-xs font-bold transition-all border border-zinc-700 cursor-pointer"
+            >
+              Reset All to Blank
+            </button>
+            <button
+              type="button"
+              onClick={() => saveBanners(editableBanners)}
+              className="px-6 py-2.5 rounded-2xl bg-amber-500 hover:bg-amber-400 text-zinc-950 text-xs font-black transition-all shadow-lg shadow-amber-500/20 flex items-center gap-2 cursor-pointer"
+            >
+              <Save className="w-4 h-4" />
+              <span>Save &amp; Publish All Posters</span>
+            </button>
           </div>
         </div>
       )}

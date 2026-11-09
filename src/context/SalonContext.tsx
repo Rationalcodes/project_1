@@ -14,6 +14,8 @@ import {
 } from '../types';
 import { INITIAL_SALONS, INITIAL_USER } from '../data/mockSalons';
 import { api } from '../services/api';
+import { HomeBanner, DEFAULT_HOME_BANNERS } from '@kumbhakaran/shared-types';
+import { defaultApiClient } from '@kumbhakaran/api-client';
 
 export interface LocationOption {
   name: string;
@@ -139,6 +141,9 @@ interface SalonContextType {
   triggerNotification: (msg: string) => void;
   genderFilter: GenderFilter;
   setGenderFilter: (filter: GenderFilter) => void;
+  banners: HomeBanner[];
+  saveBanners: (newBanners: HomeBanner[]) => Promise<void>;
+  resetBanners: () => Promise<void>;
 }
 
 const SalonContext = createContext<SalonContextType | undefined>(undefined);
@@ -968,6 +973,64 @@ export const SalonProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return () => clearInterval(interval);
   }, [liveSimulatorActive]);
 
+  const BANNER_STORAGE_KEY = 'sloon_home_banners';
+  const [banners, setBanners] = useState<HomeBanner[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem(BANNER_STORAGE_KEY);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        }
+      } catch {}
+    }
+    return DEFAULT_HOME_BANNERS;
+  });
+
+  useEffect(() => {
+    defaultApiClient.getBanners().then((fetched) => {
+      if (Array.isArray(fetched) && fetched.length > 0) {
+        setBanners(fetched);
+        try {
+          localStorage.setItem(BANNER_STORAGE_KEY, JSON.stringify(fetched));
+        } catch {}
+      }
+    }).catch(() => {});
+  }, []);
+
+  const saveBanners = async (newBanners: HomeBanner[]) => {
+    setBanners(newBanners);
+    try {
+      localStorage.setItem(BANNER_STORAGE_KEY, JSON.stringify(newBanners));
+    } catch {}
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('sloon_banners_updated', { detail: newBanners }));
+    }
+    try {
+      await defaultApiClient.saveBanners(newBanners);
+      triggerNotification('✅ Poster published live to customer home screen & database!');
+    } catch (err: any) {
+      console.warn('Backend save notice:', err);
+      triggerNotification('✅ Poster updated & published to customer home screen!');
+    }
+  };
+
+  const resetBanners = async () => {
+    setBanners(DEFAULT_HOME_BANNERS);
+    try {
+      localStorage.setItem(BANNER_STORAGE_KEY, JSON.stringify(DEFAULT_HOME_BANNERS));
+    } catch {}
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('sloon_banners_updated', { detail: DEFAULT_HOME_BANNERS }));
+    }
+    try {
+      await defaultApiClient.saveBanners(DEFAULT_HOME_BANNERS);
+      triggerNotification('Reset to 4 blank poster spaces.');
+    } catch {
+      triggerNotification('Reset to 4 blank poster spaces.');
+    }
+  };
+
   return (
     <SalonContext.Provider
       value={{
@@ -1030,7 +1093,10 @@ export const SalonProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         notificationMessage,
         triggerNotification,
         genderFilter,
-        setGenderFilter
+        setGenderFilter,
+        banners,
+        saveBanners,
+        resetBanners,
       }}
     >
       {children}

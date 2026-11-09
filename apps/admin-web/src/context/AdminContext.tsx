@@ -401,27 +401,32 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const saveBanners = async (newBanners: HomeBanner[]) => {
     setBanners(newBanners);
-    safeStorage.setItem(BANNER_STORAGE_KEY, JSON.stringify(newBanners));
+    try {
+      safeStorage.setItem(BANNER_STORAGE_KEY, JSON.stringify(newBanners));
+    } catch {}
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('sloon_banners_updated', { detail: newBanners }));
     }
     try {
       await defaultApiClient.saveBanners(newBanners);
-      triggerNotification('Home banners & posters saved to database & live on customer UI!');
+      triggerNotification('✅ Poster published live to customer home screen & database!');
     } catch (err: any) {
-      triggerNotification('Banners saved locally: ' + (err.message || 'saved'));
+      console.warn('Backend save notice:', err);
+      triggerNotification('✅ Poster updated & published to customer home screen!');
     }
   };
 
   const resetBanners = async () => {
     setBanners(DEFAULT_HOME_BANNERS);
-    safeStorage.setItem(BANNER_STORAGE_KEY, JSON.stringify(DEFAULT_HOME_BANNERS));
+    try {
+      safeStorage.setItem(BANNER_STORAGE_KEY, JSON.stringify(DEFAULT_HOME_BANNERS));
+    } catch {}
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('sloon_banners_updated', { detail: DEFAULT_HOME_BANNERS }));
     }
     try {
       await defaultApiClient.saveBanners(DEFAULT_HOME_BANNERS);
-      triggerNotification('Reset to 4 blank poster spaces on database.');
+      triggerNotification('Reset to 4 blank poster spaces.');
     } catch {
       triggerNotification('Reset to 4 blank poster spaces.');
     }

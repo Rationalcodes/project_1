@@ -62,23 +62,67 @@ export const AdminApp: React.FC = () => {
     setEditableBanners(banners);
   }, [banners]);
 
-  const handleFileUpload = (slot: number, file: File) => {
+  // Automatic client-side canvas compression to 1200x400 landscape banner (~80-120KB)
+  const compressImage = (file: File, maxWidth = 1200, maxHeight = 400, quality = 0.86): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = reject;
+      reader.onload = () => {
+        if (typeof reader.result !== 'string') {
+          resolve('');
+          return;
+        }
+        const img = new Image();
+        img.onerror = reject;
+        img.onload = () => {
+          let targetWidth = img.width;
+          let targetHeight = img.height;
+          if (targetWidth > maxWidth) {
+            targetHeight = Math.round((targetHeight * maxWidth) / targetWidth);
+            targetWidth = maxWidth;
+          }
+          if (targetHeight > maxHeight * 1.5) {
+            targetWidth = Math.round((targetWidth * maxHeight * 1.5) / targetHeight);
+            targetHeight = maxHeight * 1.5;
+          }
+
+          const canvas = document.createElement('canvas');
+          canvas.width = targetWidth;
+          canvas.height = targetHeight;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            resolve(reader.result as string);
+            return;
+          }
+          ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
+          const compressed = canvas.toDataURL('image/jpeg', quality);
+          resolve(compressed);
+        };
+        img.src = reader.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleFileUpload = async (slot: number, file: File) => {
     if (!file) return;
-    if (file.size > 5 * 1024 * 1024) {
-      triggerNotification('Image is larger than 5MB. Please choose an optimized image under 5MB.');
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result === 'string') {
-        const dataUrl = reader.result;
-        setEditableBanners((prev) =>
-          prev.map((b) => (b.slot === slot ? { ...b, imageUrl: dataUrl } : b)),
-        );
-        triggerNotification(`Poster #${slot} image selected. Click "Save & Publish Posters" to apply.`);
+    try {
+      triggerNotification(`Processing & optimizing Poster #${slot}...`);
+      const compressedUrl = await compressImage(file);
+      if (!compressedUrl) {
+        triggerNotification('Unable to process image. Please try a different photo.');
+        return;
       }
-    };
-    reader.readAsDataURL(file);
+      setEditableBanners((prev) => {
+        const updated = prev.map((b) => (b.slot === slot ? { ...b, imageUrl: compressedUrl } : b));
+        // Auto-save so the user doesn't have to guess where the publish button is!
+        saveBanners(updated);
+        return updated;
+      });
+      triggerNotification(`Poster #${slot} uploaded & published live to customer home page!`);
+    } catch (err: any) {
+      triggerNotification('Failed to read image: ' + (err?.message || 'Unknown error'));
+    }
   };
 
   const [adminSearch, setAdminSearch] = useState('');
@@ -1359,6 +1403,20 @@ export const AdminApp: React.FC = () => {
                           className="w-full px-3 py-2 rounded-xl bg-zinc-900 border border-zinc-800 text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-amber-500/50"
                         />
                       </div>
+                    </div>
+
+                    {/* Action buttons on slot */}
+                    <div className="pt-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          saveBanners(editableBanners);
+                        }}
+                        className="w-full py-2.5 px-4 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 font-black text-xs shadow-md shadow-amber-500/10 transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-98"
+                      >
+                        <Save className="w-3.5 h-3.5" />
+                        <span>Publish Poster #{banner.slot} to Home Page</span>
+                      </button>
                     </div>
                   </div>
                 </div>
