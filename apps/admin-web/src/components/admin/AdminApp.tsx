@@ -35,6 +35,8 @@ import {
   Save,
   RefreshCw,
   Eye,
+  ArrowRight,
+  MapPin,
 } from 'lucide-react';
 import { AdminTab, Salon } from '@kumbhakaran/shared-types';
 import { openGoogleMapsLocation } from '@kumbhakaran/ui';
@@ -444,13 +446,18 @@ export const AdminApp: React.FC = () => {
 
   const filteredSalons = useMemo(() => {
     return salons.filter(s => {
-      if (salonStatusFilter !== 'all' && s.status !== salonStatusFilter) return false;
+      if (salonStatusFilter === 'pending') {
+        if (s.isVerified && s.status !== 'pending') return false;
+      } else if (salonStatusFilter !== 'all' && s.status !== salonStatusFilter) {
+        return false;
+      }
       if (adminSearch.trim()) {
         const q = adminSearch.toLowerCase();
         return (
           s.name.toLowerCase().includes(q) ||
           s.locality.toLowerCase().includes(q) ||
-          s.city.toLowerCase().includes(q)
+          s.city.toLowerCase().includes(q) ||
+          (s.ownerName && s.ownerName.toLowerCase().includes(q))
         );
       }
       return true;
@@ -460,7 +467,7 @@ export const AdminApp: React.FC = () => {
   const adminTabs: { id: AdminTab; label: string; icon: React.FC<{ className?: string }>; badge?: number }[] = [
     { id: 'overview', label: 'Platform Overview', icon: BarChart2 },
     { id: 'salons', label: 'Salon Management', icon: Store, badge: totalSalons },
-    { id: 'verification', label: 'Salon Verification', icon: CheckCircle2, badge: pendingVerificationSalons.length },
+    { id: 'verification', label: 'Salon Approvals', icon: CheckCircle2, badge: pendingVerificationSalons.length },
     { id: 'banners', label: 'Banners & Posters', icon: ImageIcon },
     { id: 'reviews', label: 'Review Moderation', icon: Star, badge: flaggedReviews.length },
     { id: 'subscriptions', label: 'SaaS Subscriptions', icon: CreditCard },
@@ -556,15 +563,21 @@ export const AdminApp: React.FC = () => {
               </div>
             </div>
 
-            <div className="bg-[#14141c] border border-zinc-800 rounded-2xl p-4">
-              <span className="text-[10px] text-zinc-400 uppercase font-bold flex items-center gap-1">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> Pending Verifications
+            <div
+              onClick={() => setAdminTab('verification')}
+              className="bg-[#14141c] border border-zinc-800 hover:border-amber-500/60 transition-all rounded-2xl p-4 cursor-pointer group"
+            >
+              <span className="text-[10px] text-zinc-400 group-hover:text-amber-400 uppercase font-bold flex items-center justify-between">
+                <span className="flex items-center gap-1">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-amber-400" /> Pending Approvals
+                </span>
+                <span className="text-[10px] text-amber-400/80 underline font-normal">View Desk &rarr;</span>
               </span>
               <div className="text-2xl sm:text-3xl font-black text-amber-400 mt-1">
                 {pendingVerificationSalons.length}
               </div>
-              <div className="text-[10px] text-amber-400 font-semibold mt-1">
-                Requires review
+              <div className="text-[10px] text-amber-300 font-semibold mt-1">
+                {pendingVerificationSalons.length > 0 ? 'Action required immediately' : 'All salons authorized'}
               </div>
             </div>
 
@@ -580,6 +593,96 @@ export const AdminApp: React.FC = () => {
               </div>
             </div>
           </div>
+
+          {/* URGENT ACTION: PENDING SALON APPROVAL REQUESTS */}
+          {pendingVerificationSalons.length > 0 && (
+            <div className="bg-gradient-to-r from-amber-500/15 via-orange-500/10 to-amber-500/5 border-2 border-amber-500/40 rounded-3xl p-5 sm:p-6 shadow-2xl space-y-4 animate-in fade-in">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 shrink-0">
+                    <ShieldCheck className="w-6 h-6 text-amber-400 stroke-[2.5]" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-500 text-black">
+                        Action Required
+                      </span>
+                      <h2 className="text-base sm:text-lg font-black text-white">
+                        {pendingVerificationSalons.length} New Partner Registration {pendingVerificationSalons.length === 1 ? 'Pending Approval' : 'Pending Approvals'}
+                      </h2>
+                    </div>
+                    <p className="text-xs text-zinc-300 mt-0.5">
+                      New partner studios are locked and hidden from customers until authorized by an administrator.
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setAdminTab('verification')}
+                  className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-black text-xs transition-colors shrink-0 flex items-center gap-1.5 self-start sm:self-center shadow-lg shadow-amber-500/20 cursor-pointer"
+                >
+                  <span>Open Full Approval Desk</span>
+                  <ArrowRight className="w-3.5 h-3.5 stroke-[2.5]" />
+                </button>
+              </div>
+
+              {/* Pending Salons Quick Review Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 pt-1">
+                {pendingVerificationSalons.map((salon) => (
+                  <div key={salon.id} className="bg-black/70 border border-amber-500/30 rounded-2xl p-4 flex flex-col justify-between gap-3 shadow-lg">
+                    <div className="flex items-start gap-3">
+                      <img
+                        src={salon.coverImage || 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=300&q=80'}
+                        alt={salon.name}
+                        className="w-13 h-13 rounded-xl object-cover shrink-0 border border-zinc-700"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-bold text-white text-sm truncate">{salon.name}</h4>
+                          <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 shrink-0">
+                            Awaiting Authorization
+                          </span>
+                        </div>
+                        <p className="text-xs text-zinc-400 truncate">{salon.locality}, {salon.city}</p>
+                        <div className="text-[11px] text-zinc-400 mt-1 flex flex-wrap gap-x-3 gap-y-0.5">
+                          <span>Owner: <strong className="text-zinc-200">{salon.ownerName || 'Partner'}</strong></span>
+                          <span>Phone: <strong className="text-zinc-200">{salon.phone || 'N/A'}</strong></span>
+                          <span>ID: <code className="text-amber-400 text-[10px]">{salon.id}</code></span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-2.5 border-t border-zinc-800/80 gap-2">
+                      <div className="flex items-center gap-2">
+                        {salon.coordinates && (
+                          <button
+                            type="button"
+                            onClick={() => openGoogleMapsLocation(salon.coordinates.lat, salon.coordinates.lng)}
+                            className="text-[11px] text-amber-400 hover:text-amber-300 font-bold flex items-center gap-1 cursor-pointer"
+                          >
+                            <MapPin className="w-3.5 h-3.5" />
+                            <span>Location Map</span>
+                          </button>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => verifySalon(salon.id, true)}
+                          className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-black text-xs shadow-lg shadow-emerald-500/20 flex items-center gap-1.5 transition-all transform active:scale-95 cursor-pointer"
+                        >
+                          <CheckCircle2 className="w-4 h-4 text-black stroke-[2.5]" />
+                          <span>APPROVE & AUTHORIZE</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Quick Action Tables */}
           <div className="bg-[#14141c] border border-zinc-800 rounded-3xl p-5 shadow-xl">
@@ -627,16 +730,34 @@ export const AdminApp: React.FC = () => {
                       </td>
                       <td className="py-3 font-semibold text-white">{salon.todayCustomersServed}</td>
                       <td className="py-3">
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                          salon.status === 'active'
-                            ? 'bg-emerald-500/20 text-emerald-400'
-                            : 'bg-rose-500/20 text-rose-400'
-                        }`}>
-                          {salon.status.toUpperCase()}
-                        </span>
+                        {!salon.isVerified || salon.status === 'pending' ? (
+                          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-black bg-amber-500/20 text-amber-300 border border-amber-500/40 animate-pulse">
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                            <span>PENDING APPROVAL</span>
+                          </span>
+                        ) : (
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                            salon.status === 'active'
+                              ? 'bg-emerald-500/20 text-emerald-400'
+                              : 'bg-rose-500/20 text-rose-400'
+                          }`}>
+                            {salon.status.toUpperCase()}
+                          </span>
+                        )}
                       </td>
                       <td className="py-3 text-right">
                         <div className="flex items-center justify-end gap-1.5">
+                          {!salon.isVerified && (
+                            <button
+                              type="button"
+                              onClick={() => verifySalon(salon.id, true)}
+                              className="px-2.5 py-1 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-black text-[11px] font-black flex items-center gap-1 shadow-md shadow-emerald-500/20 transition-all cursor-pointer transform active:scale-95"
+                              title="Approve and make salon live on customer app"
+                            >
+                              <CheckCircle2 className="w-3.5 h-3.5 stroke-[2.5]" />
+                              <span>Approve</span>
+                            </button>
+                          )}
                           <button
                             onClick={() => setWalkinQrSalon(salon)}
                             className="px-2 py-1 rounded-lg bg-orange-500/15 hover:bg-orange-500/25 text-orange-400 border border-orange-500/30 text-[11px] font-bold flex items-center gap-1 transition-colors cursor-pointer"
@@ -691,17 +812,20 @@ export const AdminApp: React.FC = () => {
             </div>
 
             <div className="flex items-center gap-1.5 text-xs">
-              {(['all', 'active', 'suspended'] as const).map((st) => (
+              {(['all', 'pending', 'active', 'suspended'] as const).map((st) => (
                 <button
                   key={st}
                   onClick={() => setSalonStatusFilter(st)}
-                  className={`px-3 py-1.5 rounded-xl capitalize font-semibold border ${
+                  className={`px-3 py-1.5 rounded-xl capitalize font-semibold border flex items-center gap-1.5 cursor-pointer transition-all ${
                     salonStatusFilter === st
-                      ? 'bg-amber-400 text-black border-amber-400'
-                      : 'bg-zinc-900 text-zinc-400 border-zinc-800'
+                      ? 'bg-amber-400 text-black border-amber-400 font-extrabold shadow-md shadow-amber-400/20'
+                      : 'bg-zinc-900 text-zinc-400 border-zinc-800 hover:text-white'
                   }`}
                 >
-                  {st}
+                  <span>{st === 'pending' ? 'Pending Approvals' : st}</span>
+                  {st === 'pending' && pendingVerificationSalons.length > 0 && (
+                    <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping" />
+                  )}
                 </button>
               ))}
             </div>
@@ -744,14 +868,16 @@ export const AdminApp: React.FC = () => {
                   </button>
 
                   <button
+                    type="button"
                     onClick={() => verifySalon(salon.id, !salon.isVerified)}
-                    className={`px-3 py-1.5 rounded-xl font-bold border ${
+                    className={`px-3.5 py-1.5 rounded-xl font-black border text-xs flex items-center gap-1.5 transition-all cursor-pointer ${
                       salon.isVerified
-                        ? 'bg-zinc-900 text-zinc-400 border-zinc-700'
-                        : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                        ? 'bg-zinc-900 text-zinc-400 border-zinc-700 hover:text-white hover:border-zinc-500'
+                        : 'bg-emerald-500 hover:bg-emerald-400 text-black shadow-md shadow-emerald-500/20 transform active:scale-95'
                     }`}
                   >
-                    {salon.isVerified ? 'Revoke Verified' : 'Verify Salon'}
+                    <CheckCircle2 className="w-3.5 h-3.5 stroke-[2.5]" />
+                    <span>{salon.isVerified ? 'Revoke Authorization' : 'APPROVE & AUTHORIZE'}</span>
                   </button>
 
                   <button
@@ -838,6 +964,15 @@ export const AdminApp: React.FC = () => {
           </div>
 
           <div className="space-y-3">
+            {salons.filter((s) => !s.isVerified).length === 0 && verificationFilter === 'pending' && (
+              <div className="bg-[#14141c] border border-zinc-800 rounded-2xl p-8 text-center space-y-3">
+                <CheckCircle2 className="w-12 h-12 text-emerald-400 mx-auto" />
+                <h4 className="text-white font-bold text-sm">All Salon Registrations Authorized!</h4>
+                <p className="text-zinc-400 text-xs max-w-sm mx-auto">
+                  There are currently no new salon partner registration requests awaiting authorization.
+                </p>
+              </div>
+            )}
             {salons
               .filter((salon) => {
                 if (verificationFilter === 'pending') return !salon.isVerified;

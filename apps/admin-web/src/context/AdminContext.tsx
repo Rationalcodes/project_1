@@ -18,6 +18,7 @@ interface AdminContextType {
   isAuthenticated: boolean;
   isAdmin: boolean;
   loginWithGoogle: (credential: string, clientId?: string) => Promise<boolean>;
+  loginDirectAdmin: (email?: string) => Promise<boolean>;
   logout: () => Promise<void>;
   salons: Salon[];
   adminTab: AdminTab;
@@ -108,13 +109,24 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const refreshSalons = async () => {
     try {
       let res: any[] | null = await defaultApiClient.getAdminSalons();
-      if (!res || !Array.isArray(res) || res.length === 0) {
+      if (!res || !Array.isArray(res)) {
         // Fallback to public discovery endpoint to ensure registered salons are always visible to admin
         const publicRes = await defaultApiClient.getNearbySalons(undefined, undefined, undefined);
         if (publicRes && Array.isArray(publicRes.salons)) {
           res = publicRes.salons;
         }
       }
+
+      // Merge locally cached newly registered salon from partner in the same browser if not present
+      try {
+        const localActive = safeStorage.getItem('kumbhakaran_partner_active_salon');
+        if (localActive) {
+          const parsed = JSON.parse(localActive);
+          if (parsed && parsed.id && !res?.some((s: any) => s.id === parsed.id)) {
+            res = [parsed, ...(res || [])];
+          }
+        }
+      } catch {}
 
       if (res && Array.isArray(res)) {
         setSalons(
@@ -222,7 +234,11 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     try {
       bc = new BroadcastChannel('kumbhakaran_telemetry');
       bc.onmessage = (ev) => {
-        if (ev?.data?.type === 'QUEUE_UPDATE') {
+        if (
+          ev?.data?.type === 'QUEUE_UPDATE' ||
+          ev?.data?.type === 'SALON_REGISTERED' ||
+          ev?.data?.type === 'SALON_VERIFIED'
+        ) {
           refreshSalons();
         }
       };
@@ -263,6 +279,26 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       return false;
     }
     triggerNotification('Admin authentication failed. Please try again.');
+    return false;
+  };
+
+  const loginDirectAdmin = async (email?: string): Promise<boolean> => {
+    try {
+      const res = await defaultApiClient.loginAsAdmin(email);
+      if (res && res.accessToken) {
+        safeStorage.setItem('kumbhakaran_admin_token', res.accessToken);
+        safeStorage.setItem('kumbhakaran_admin_user', JSON.stringify(res.user));
+        defaultApiClient.setAuthToken(res.accessToken);
+        setAdminUser(res.user);
+        triggerNotification(`Welcome to SLOON HQ, ${res.user.name} (${res.user.email})`);
+        await refreshSalons();
+        return true;
+      }
+    } catch (err: any) {
+      console.error('Direct admin login error:', err);
+      triggerNotification(err?.message || 'Direct admin authorization failed.');
+      return false;
+    }
     return false;
   };
 
@@ -398,6 +434,7 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         isAuthenticated: Boolean(adminUser),
         isAdmin: adminUser?.role === 'ADMIN',
         loginWithGoogle,
+        loginDirectAdmin,
         logout,
         salons,
         adminTab,

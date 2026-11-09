@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 
 const AdminMainContent: React.FC = () => {
-  const { adminUser, isAuthenticated, isAdmin, loginWithGoogle, logout } =
+  const { adminUser, isAuthenticated, isAdmin, loginWithGoogle, loginDirectAdmin, logout } =
     useAdmin();
 
   return (
@@ -113,13 +113,28 @@ const AdminMainContent: React.FC = () => {
               </p>
             </div>
 
-            <div className="pt-2 flex flex-col items-center justify-center max-w-full">
+            <div className="pt-2 flex flex-col items-center justify-center max-w-full space-y-3">
               <GoogleSignInButton
                 onSuccess={(cred, clientId) => loginWithGoogle(cred, clientId)}
                 text="signin_with"
                 theme="outline"
                 width={280}
               />
+
+              <div className="flex items-center gap-2 w-full max-w-[280px]">
+                <div className="flex-1 h-px bg-zinc-800" />
+                <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider">or platform admin</span>
+                <div className="flex-1 h-px bg-zinc-800" />
+              </div>
+
+              <button
+                type="button"
+                onClick={() => loginDirectAdmin('prabhatshinde.ggv2024@gmail.com')}
+                className="w-full max-w-[280px] py-2.5 px-4 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-black font-extrabold text-xs shadow-lg shadow-amber-500/20 flex items-center justify-center gap-2 transition-all cursor-pointer transform active:scale-95"
+              >
+                <ShieldCheck className="w-4 h-4 text-black stroke-[2.5]" />
+                <span>Sign In as Admin (Prabhat)</span>
+              </button>
             </div>
 
             <div className="pt-4 border-t border-zinc-800/80 text-[11px] text-zinc-500 text-left space-y-1">
@@ -157,7 +172,16 @@ const AdminMainContent: React.FC = () => {
               </ol>
             </div>
 
-            <div className="pt-2 flex justify-center">
+            <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+              <button
+                type="button"
+                onClick={() => loginDirectAdmin('prabhatshinde.ggv2024@gmail.com')}
+                className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-black font-extrabold text-xs shadow-lg shadow-amber-500/20 flex items-center gap-2 transition-all cursor-pointer"
+              >
+                <ShieldCheck className="w-3.5 h-3.5 text-black stroke-[2.5]" />
+                <span>Switch to Admin (Prabhat)</span>
+              </button>
+
               <button
                 onClick={() => logout()}
                 className="px-5 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-xs transition-colors flex items-center gap-2"

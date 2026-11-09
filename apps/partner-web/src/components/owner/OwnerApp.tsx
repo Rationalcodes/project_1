@@ -51,7 +51,8 @@ import {
   ChevronDown,
   PlusCircle,
   ArrowRight,
-  Tag
+  Tag,
+  ShieldCheck
 } from 'lucide-react';
 import QRCode from 'qrcode';
 import { OwnerTab, Service, Staff, QueueEntry } from '@kumbhakaran/shared-types';

@@ -213,4 +213,39 @@ export const api = {
       return null;
     }
   },
+
+  /**
+   * List all registered salons for admin (including pending ones)
+   */
+  async getAdminSalons(): Promise<any[] | null> {
+    try {
+      const res = await fetch(`${API_BASE}/admin/salons`, {
+        headers: { Accept: 'application/json' },
+      });
+      if (!res.ok) return null;
+      return await res.json();
+    } catch {
+      return null;
+    }
+  },
+
+  /**
+   * Verify or approve salon
+   */
+  async verifySalon(salonId: string, isVerified: boolean) {
+    try {
+      const res = await fetch(`${API_BASE}/admin/salons/${salonId}/verify`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify({ isVerified }),
+      });
+      if (!res.ok) return null;
+      return await res.json();
+    } catch {
+      return null;
+    }
+  },
 };

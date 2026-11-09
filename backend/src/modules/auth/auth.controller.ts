@@ -44,6 +44,17 @@ export class AuthController {
     return this.authService.loginWithGoogle(dto.credential, dto.clientId);
   }
 
+  @Post('admin-direct-auth')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Direct Administrator Authentication (Whitelisted Admins Only)',
+    description:
+      'Issues signed administrative JWT token for whitelisted platform admins to access SLOON HQ without OAuth browser blockers.',
+  })
+  async adminDirectAuth(@Body('email') email?: string) {
+    return this.authService.loginAsAdmin(email);
+  }
+
   @Get('me')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()

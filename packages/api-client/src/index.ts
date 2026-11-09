@@ -499,6 +499,35 @@ export class KumbhakaranApiClient {
   }
 
   /**
+   * Direct Administrator Login for whitelisted admins
+   */
+  async loginAsAdmin(email?: string): Promise<AuthResponse> {
+    const res = await fetch(`${this.baseUrl}/auth/admin-direct-auth`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify({ email }),
+    });
+
+    if (!res.ok) {
+      let serverMsg = `Admin authentication failed (HTTP ${res.status})`;
+      try {
+        const body = await res.json();
+        if (body?.message) serverMsg = body.message;
+      } catch {}
+      throw new Error(serverMsg);
+    }
+
+    const data: AuthResponse = await res.json();
+    if (data?.accessToken) {
+      this.setAuthToken(data.accessToken);
+    }
+    return data;
+  }
+
+  /**
    * Get current authenticated user profile and memberships
    */
   async getCurrentUser(): Promise<AuthResponse | null> {

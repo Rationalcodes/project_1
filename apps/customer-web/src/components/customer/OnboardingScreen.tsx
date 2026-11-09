@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ChevronLeft, ArrowRight, Sparkles, CheckCircle2, Clock, Users, ShieldCheck, Scissors } from 'lucide-react';
+import { ChevronLeft, ArrowRight, Sparkles, CheckCircle2, Clock, Users, ShieldCheck, Scissors, Wifi } from 'lucide-react';
 import logoFallback from '../../assets/logo.png';
 import logoTransparent from '../../assets/logo-transparent.png';
 import logoMen from '../../assets/logo-men.png';
@@ -160,7 +160,31 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish, is
       onTouchEnd={handleTouchEnd}
     >
       {/* Smartphone Viewport Card (Matches clean mobile mockup presentation) */}
-      <div className="relative w-full max-w-sm sm:max-w-md h-[94vh] max-h-[820px] bg-white rounded-3xl sm:rounded-[36px] shadow-2xl border border-stone-200/80 flex flex-col justify-between overflow-hidden">
+      <div className="relative w-full max-w-sm sm:max-w-md h-[95vh] max-h-[820px] bg-white rounded-3xl sm:rounded-[40px] shadow-2xl border border-stone-200/90 flex flex-col justify-between overflow-hidden">
+        {/* iOS-Style Status Bar (Matches 12:30 in reference) */}
+        <div className="pt-3 px-6 pb-1 flex items-center justify-between text-stone-900 text-xs font-bold shrink-0 select-none">
+          <span className="tracking-tight text-[13px] font-semibold text-stone-800">12:30</span>
+          
+          {/* Subtle Phone Speaker Pill */}
+          <div className="w-16 h-4 bg-stone-900/10 rounded-full mx-auto" />
+
+          <div className="flex items-center gap-1.5 text-stone-800">
+            {/* Cellular Bars */}
+            <div className="flex items-end gap-[1.5px] h-3">
+              <span className="w-[2.5px] h-1.5 bg-stone-800 rounded-xs" />
+              <span className="w-[2.5px] h-2 bg-stone-800 rounded-xs" />
+              <span className="w-[2.5px] h-2.5 bg-stone-800 rounded-xs" />
+              <span className="w-[2.5px] h-3 bg-stone-800 rounded-xs" />
+            </div>
+            {/* Wifi Icon */}
+            <Wifi className="w-3.5 h-3.5 stroke-[2.5]" />
+            {/* Battery Indicator */}
+            <div className="w-5 h-2.5 rounded-[3px] border border-stone-800 p-[1px] flex items-center">
+              <div className="w-3.5 h-full bg-[#10B981] rounded-[1.5px]" />
+            </div>
+          </div>
+        </div>
+
         {/* Top Header Bar: Back & Skip Controls */}
         <div className="pt-4 px-5 pb-2 flex items-center justify-between z-20 shrink-0">
           {currentStep > 1 ? (

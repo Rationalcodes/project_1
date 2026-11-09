@@ -794,7 +794,8 @@ export const SalonProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const verifySalon = (salonId: string, isVerified: boolean) => {
     setSalons(prev => prev.map(s => s.id === salonId ? { ...s, isVerified, status: isVerified ? 'active' : s.status } : s));
-    triggerNotification(isVerified ? "Salon officially verified! Badge issued" : "Salon verification revoked");
+    api.verifySalon(salonId, isVerified);
+    triggerNotification(isVerified ? "Salon officially authorized and live on customer app!" : "Salon authorization revoked");
   };
 
   const updateSalonStatus = (salonId: string, status: 'active' | 'suspended' | 'pending') => {
