@@ -293,22 +293,32 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [selectedSalonForDetail, setSelectedSalonForDetail] = useState<Salon | null>(null);
   const [isExpressWalkin, setIsExpressWalkin] = useState<boolean>(() => getTargetSalonFromUrl().isExpressWalkin);
 
-  // Onboarding Screen state (Shows on first visit, replayable from profile)
+  // Onboarding Screen state (Shows whenever someone visits the website or scans a salon QR code before writing name)
   const [showOnboarding, setShowOnboarding] = useState<boolean>(() => {
     try {
-      const isDirectLink = window.location.search.includes('salon=') || window.location.search.includes('walkin=');
-      if (isDirectLink) return false;
-      const completed = safeStorage.getItem('sloon_onboarding_completed');
-      return completed !== 'true';
+      const search = typeof window !== 'undefined' ? window.location.search : '';
+      const isQrScan =
+        search.includes('salon=') ||
+        search.includes('checkin=') ||
+        search.includes('walkin=') ||
+        search.includes('express=') ||
+        search.includes('counter=');
+
+      if (isQrScan) {
+        return sessionStorage.getItem('sloon_qr_onboarding_dismissed') !== 'true';
+      }
+
+      return sessionStorage.getItem('sloon_visit_onboarding_dismissed') !== 'true';
     } catch {
-      return false;
+      return true;
     }
   });
 
   const completeOnboarding = () => {
     setShowOnboarding(false);
     try {
-      safeStorage.setItem('sloon_onboarding_completed', 'true');
+      sessionStorage.setItem('sloon_visit_onboarding_dismissed', 'true');
+      sessionStorage.setItem('sloon_qr_onboarding_dismissed', 'true');
     } catch {}
   };
 

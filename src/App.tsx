@@ -63,9 +63,21 @@ const MainContent: React.FC = () => {
   const [isDirectionsModalOpen, setIsDirectionsModalOpen] = useState(false);
   const [showCustomerTour, setShowCustomerTour] = useState<boolean>(() => {
     try {
-      return !localStorage.getItem('sloon_customer_onboarding_seen');
+      const search = typeof window !== 'undefined' ? window.location.search : '';
+      const isQrScan =
+        search.includes('salon=') ||
+        search.includes('checkin=') ||
+        search.includes('walkin=') ||
+        search.includes('express=') ||
+        search.includes('counter=');
+
+      if (isQrScan) {
+        return sessionStorage.getItem('sloon_qr_onboarding_dismissed') !== 'true';
+      }
+
+      return sessionStorage.getItem('sloon_visit_onboarding_dismissed') !== 'true';
     } catch {
-      return false;
+      return true;
     }
   });
   const [showPartnerTour, setShowPartnerTour] = useState(false);
@@ -84,7 +96,8 @@ const MainContent: React.FC = () => {
   const handleFinishCustomerTour = () => {
     setShowCustomerTour(false);
     try {
-      localStorage.setItem('sloon_customer_onboarding_seen', 'true');
+      sessionStorage.setItem('sloon_visit_onboarding_dismissed', 'true');
+      sessionStorage.setItem('sloon_qr_onboarding_dismissed', 'true');
     } catch {}
   };
 

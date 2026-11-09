@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { openGoogleMapsLocation } from '@kumbhakaran/ui';
 import { SmartQueueAssist } from './SmartQueueAssist';
+import { OnboardingScreen } from './OnboardingScreen';
 
 interface ExpressWalkinScreenProps {
   salon: Salon | null;
@@ -50,6 +51,13 @@ export const ExpressWalkinScreen: React.FC<ExpressWalkinScreenProps> = ({
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [submittedTicket, setSubmittedTicket] = useState<QueueEntry | null>(activeTicket);
   const [checkInToken] = useState(() => getTargetSalonFromUrl().checkInToken);
+  const [showWalkinTour, setShowWalkinTour] = useState<boolean>(() => {
+    try {
+      return sessionStorage.getItem('sloon_qr_onboarding_dismissed') !== 'true';
+    } catch {
+      return true;
+    }
+  });
 
   // Sync ticket when activeTicket changes
   useEffect(() => {
@@ -176,6 +184,18 @@ export const ExpressWalkinScreen: React.FC<ExpressWalkinScreenProps> = ({
 
   return (
     <div className="w-full max-w-xl mx-auto py-3 sm:py-6 animate-in fade-in zoom-in-98 duration-200">
+      {/* 4-Page Entry Walkthrough Before Name Writing */}
+      {showWalkinTour && !currentTicket && (
+        <OnboardingScreen
+          onFinish={() => {
+            setShowWalkinTour(false);
+            try {
+              sessionStorage.setItem('sloon_qr_onboarding_dismissed', 'true');
+            } catch {}
+          }}
+        />
+      )}
+
       {/* Express Top Header / Brand Banner */}
       <div className="flex items-center justify-between mb-3 px-1">
         <div className="flex items-center gap-2">

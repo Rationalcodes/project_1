@@ -6,7 +6,6 @@ import {
   Scissors,
   Wifi,
   Eye,
-  Layers,
   X,
   Clock,
   ShieldCheck,
@@ -502,16 +501,6 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
           ) : (
             <div className="w-6" />
           )}
-
-          <button
-            type="button"
-            onClick={() => setViewMode('gallery')}
-            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/90 hover:bg-white border border-stone-200 text-stone-700 hover:text-orange-600 text-[10px] font-black uppercase tracking-wider shadow-xs transition-colors cursor-pointer"
-            title="View All 4 Screens Side-by-Side (Matching Reference)"
-          >
-            <Layers className="w-3 h-3 text-[#FF6422]" />
-            <span>All 4 Screens</span>
-          </button>
 
           <button
             type="button"
