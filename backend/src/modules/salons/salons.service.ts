@@ -3215,10 +3215,18 @@ export class SalonsService {
     return { report: null, history: [] };
   }
 
+  private cachedBanners: any[] | null = null;
+  private cachedBannersExpiresAt: number = 0;
+
   /**
-   * Retrieves active home banners and promotional posters
+   * Retrieves active home banners and promotional posters (Fast in-memory cache with DB fallback)
    */
   async getBanners(): Promise<any[]> {
+    const now = Date.now();
+    if (this.cachedBanners && this.cachedBannersExpiresAt > now) {
+      return this.cachedBanners;
+    }
+
     try {
       const latest = await this.prisma.adminAuditLog.findFirst({
         where: { targetType: 'SYSTEM_BANNERS', action: 'UPDATE_BANNERS' },
@@ -3226,13 +3234,16 @@ export class SalonsService {
       });
 
       if (latest && latest.details && Array.isArray((latest.details as any).banners)) {
-        return (latest.details as any).banners;
+        this.cachedBanners = (latest.details as any).banners;
+        this.cachedBannersExpiresAt = now + 60000;
+        return this.cachedBanners;
       }
     } catch (err) {
       this.logger.error('Failed to retrieve banners from database:', err);
+      if (this.cachedBanners) return this.cachedBanners;
     }
 
-    // Default 4 blank poster slots
+    // Default blank poster slots
     return [
       { id: 'slot-1', slot: 1, imageUrl: '', title: '', subtitle: '', targetUrl: '', isActive: true },
       { id: 'slot-2', slot: 2, imageUrl: '', title: '', subtitle: '', targetUrl: '', isActive: true },
@@ -3242,10 +3253,14 @@ export class SalonsService {
   }
 
   /**
-   * Saves updated home banners & posters with audit logging
+   * Saves updated home banners & posters with audit logging and immediate cache update
    */
   async saveBanners(banners: any[], actor: AuthenticatedUser): Promise<{ success: boolean; banners: any[] }> {
     try {
+      // Invalidate and update in-memory cache immediately so customers see it instantly
+      this.cachedBanners = banners;
+      this.cachedBannersExpiresAt = Date.now() + 60000;
+
       await this.prisma.adminAuditLog.create({
         data: {
           id: `audit-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,

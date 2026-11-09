@@ -34,11 +34,14 @@ import {
   Upload,
   Save,
   RefreshCw,
+  Plus,
+  ArrowUp,
+  ArrowDown,
   Eye,
   ArrowRight,
   MapPin,
 } from 'lucide-react';
-import { AdminTab, Salon } from '@kumbhakaran/shared-types';
+import { AdminTab, Salon, HomeBanner } from '@kumbhakaran/shared-types';
 import { openGoogleMapsLocation } from '@kumbhakaran/ui';
 
 export const AdminApp: React.FC = () => {
@@ -122,6 +125,55 @@ export const AdminApp: React.FC = () => {
       triggerNotification(`Poster #${slot} uploaded & published live to customer home page!`);
     } catch (err: any) {
       triggerNotification('Failed to read image: ' + (err?.message || 'Unknown error'));
+    }
+  };
+
+  const [dragActiveSlot, setDragActiveSlot] = useState<number | null>(null);
+
+  const handleAddFrame = () => {
+    const nextSlot = editableBanners.length + 1;
+    const newFrame: HomeBanner = {
+      id: `slot-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      slot: nextSlot,
+      imageUrl: '',
+      title: '',
+      subtitle: '',
+      targetUrl: '',
+      isActive: true,
+    };
+    const updated = [...editableBanners, newFrame];
+    setEditableBanners(updated);
+    saveBanners(updated);
+    triggerNotification(`Added Poster Frame #${nextSlot}! Choose an image to publish.`);
+  };
+
+  const handleDeleteFrame = (slot: number) => {
+    const filtered = editableBanners.filter((b) => b.slot !== slot);
+    const reindexed = filtered.map((b, idx) => ({ ...b, slot: idx + 1 }));
+    setEditableBanners(reindexed);
+    saveBanners(reindexed);
+    triggerNotification(`Poster Frame #${slot} deleted.`);
+  };
+
+  const handleMoveFrame = (index: number, direction: 'up' | 'down') => {
+    const targetIdx = direction === 'up' ? index - 1 : index + 1;
+    if (targetIdx < 0 || targetIdx >= editableBanners.length) return;
+    const copy = [...editableBanners];
+    const temp = copy[index];
+    copy[index] = copy[targetIdx];
+    copy[targetIdx] = temp;
+    const reindexed = copy.map((b, idx) => ({ ...b, slot: idx + 1 }));
+    setEditableBanners(reindexed);
+    saveBanners(reindexed);
+    triggerNotification(`Moved Poster Frame to position #${targetIdx + 1}.`);
+  };
+
+  const handleDrop = (slot: number, e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActiveSlot(null);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      handleFileUpload(slot, e.dataTransfer.files[0]);
     }
   };
 
@@ -1152,32 +1204,43 @@ export const AdminApp: React.FC = () => {
                     <ImageIcon className="w-3.5 h-3.5" />
                     Customer Home Carousel
                   </span>
-                  <span className="text-xs text-zinc-400">4 Poster Slots Available</span>
+                  <span className="text-xs font-bold text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded-full border border-amber-500/20">
+                    {editableBanners.length} Poster Frames Active
+                  </span>
                 </div>
                 <h3 className="text-lg font-black text-white mt-1">
                   Homepage Poster & Banner Controls
                 </h3>
                 <p className="text-xs text-zinc-300 mt-0.5 max-w-2xl leading-relaxed">
-                  Configure the 4 rotating poster spaces displayed at the top of the customer home screen. If a slot is left blank, a clean blank poster container of the exact same dimensions is displayed.
+                  Add as many poster frames as you want. Drag and drop images directly or upload from your device with automatic 1200×400 canvas optimization and zero DB bottleneck.
                 </p>
               </div>
 
-              <div className="flex items-center gap-2.5 shrink-0">
+              <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+                <button
+                  type="button"
+                  onClick={handleAddFrame}
+                  className="px-4 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all flex items-center gap-2 cursor-pointer shadow-md shadow-emerald-600/20 active:scale-95"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Add Frame</span>
+                </button>
                 <button
                   type="button"
                   onClick={resetBanners}
-                  className="px-4 py-2.5 rounded-2xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-bold transition-all flex items-center gap-2 cursor-pointer border border-zinc-700"
+                  className="px-3.5 py-2.5 rounded-2xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer border border-zinc-700"
+                  title="Reset to default blank slots"
                 >
                   <RefreshCw className="w-3.5 h-3.5" />
-                  <span>Reset All to Blank</span>
+                  <span>Reset</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => saveBanners(editableBanners)}
-                  className="px-5 py-2.5 rounded-2xl bg-amber-500 hover:bg-amber-400 text-zinc-950 text-xs font-black transition-all shadow-lg shadow-amber-500/20 flex items-center gap-2 cursor-pointer"
+                  className="px-5 py-2.5 rounded-2xl bg-amber-500 hover:bg-amber-400 text-zinc-950 text-xs font-black transition-all shadow-lg shadow-amber-500/20 flex items-center gap-2 cursor-pointer active:scale-95"
                 >
                   <Save className="w-4 h-4" />
-                  <span>Save & Publish Posters</span>
+                  <span>Save & Publish All</span>
                 </button>
               </div>
             </div>
@@ -1224,54 +1287,115 @@ export const AdminApp: React.FC = () => {
 
           {/* 4 Poster Slots Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-            {editableBanners.map((banner) => {
+            {editableBanners.map((banner, index) => {
               const hasImage = Boolean(banner.imageUrl && banner.imageUrl.trim());
+              const isDragOver = dragActiveSlot === banner.slot;
 
               return (
                 <div
-                  key={banner.slot}
-                  className="bg-[#14141c] border border-zinc-800 rounded-3xl p-5 shadow-lg space-y-4"
+                  key={banner.id || banner.slot}
+                  className={`bg-[#14141c] border transition-all rounded-3xl p-5 shadow-lg space-y-4 ${
+                    isDragOver ? 'border-amber-400 ring-2 ring-amber-400/30' : 'border-zinc-800'
+                  }`}
                 >
-                  {/* Slot Header */}
+                  {/* Slot Header with Reorder and Delete controls */}
                   <div className="flex items-center justify-between pb-3 border-b border-zinc-800">
                     <div className="flex items-center gap-2.5">
                       <div className="w-7 h-7 rounded-full bg-amber-500/20 text-amber-400 font-black text-xs flex items-center justify-center border border-amber-500/30">
                         #{banner.slot}
                       </div>
                       <div>
-                        <h4 className="text-sm font-bold text-white">
-                          Poster Space Slot #{banner.slot}
+                        <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                          <span>Frame #{banner.slot}</span>
+                          {index === 0 && (
+                            <span className="text-[10px] bg-amber-500/20 text-amber-300 px-1.5 py-0.2 rounded font-semibold border border-amber-500/30">
+                              First Slide
+                            </span>
+                          )}
                         </h4>
                         <span className={`text-[10px] font-semibold ${hasImage ? 'text-emerald-400' : 'text-zinc-500'}`}>
-                          {hasImage ? '🟢 Custom Poster Active' : '⚪ Blank Poster Space (Default)'}
+                          {hasImage ? '🟢 Custom Poster Active' : '⚪ Blank Poster Space'}
                         </span>
                       </div>
                     </div>
 
-                    {hasImage && (
+                    <div className="flex items-center gap-1.5">
+                      {/* Move Up */}
                       <button
                         type="button"
-                        onClick={() => {
-                          setEditableBanners((prev) =>
-                            prev.map((b) => (b.slot === banner.slot ? { ...b, imageUrl: '', title: '', subtitle: '', targetUrl: '' } : b)),
-                          );
-                          triggerNotification(`Poster #${banner.slot} cleared to blank.`);
-                        }}
-                        className="text-[11px] text-rose-400 hover:text-rose-300 font-bold px-2 py-1 rounded-lg hover:bg-rose-500/10 transition-colors cursor-pointer"
+                        disabled={index === 0}
+                        onClick={() => handleMoveFrame(index, 'up')}
+                        className="p-1.5 rounded-lg bg-zinc-800/80 hover:bg-zinc-700 disabled:opacity-30 disabled:cursor-not-allowed text-zinc-300 hover:text-white transition-colors"
+                        title="Move Up"
                       >
-                        Clear to Blank
+                        <ArrowUp className="w-3.5 h-3.5" />
                       </button>
-                    )}
+
+                      {/* Move Down */}
+                      <button
+                        type="button"
+                        disabled={index === editableBanners.length - 1}
+                        onClick={() => handleMoveFrame(index, 'down')}
+                        className="p-1.5 rounded-lg bg-zinc-800/80 hover:bg-zinc-700 disabled:opacity-30 disabled:cursor-not-allowed text-zinc-300 hover:text-white transition-colors"
+                        title="Move Down"
+                      >
+                        <ArrowDown className="w-3.5 h-3.5" />
+                      </button>
+
+                      {hasImage && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditableBanners((prev) =>
+                              prev.map((b) => (b.slot === banner.slot ? { ...b, imageUrl: '', title: '', subtitle: '', targetUrl: '' } : b)),
+                            );
+                            triggerNotification(`Poster #${banner.slot} cleared to blank.`);
+                          }}
+                          className="text-[11px] text-zinc-400 hover:text-zinc-200 font-bold px-2 py-1 rounded-lg hover:bg-zinc-800 transition-colors cursor-pointer"
+                          title="Clear image but keep frame"
+                        >
+                          Clear
+                        </button>
+                      )}
+
+                      {/* Delete Frame (allow if more than 1 frame) */}
+                      {editableBanners.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteFrame(banner.slot)}
+                          className="p-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 hover:text-rose-300 transition-colors"
+                          title="Delete this entire poster frame"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
                   </div>
 
-                  {/* Live Aspect-Ratio Preview (3:1) */}
+                  {/* Drag and Drop Zone + Live Aspect-Ratio Preview (3:1) */}
                   <div className="space-y-1.5">
                     <label className="text-[11px] text-zinc-400 font-medium flex items-center justify-between">
-                      <span>Live Preview (3:1 Aspect Ratio)</span>
+                      <span>Live Preview (3:1 Landscape)</span>
                       <span className="text-zinc-500">1200 × 400 px</span>
                     </label>
-                    <div className="w-full aspect-[3/1] rounded-2xl bg-zinc-950 border border-zinc-800 overflow-hidden relative flex items-center justify-center shadow-inner">
-                      {hasImage ? (
+                    <div
+                      onDragOver={(e) => {
+                        e.preventDefault();
+                        setDragActiveSlot(banner.slot);
+                      }}
+                      onDragLeave={() => setDragActiveSlot(null)}
+                      onDrop={(e) => handleDrop(banner.slot, e)}
+                      className={`w-full aspect-[3/1] rounded-2xl bg-zinc-950 border overflow-hidden relative flex items-center justify-center shadow-inner transition-colors ${
+                        isDragOver ? 'border-amber-400 bg-amber-500/10' : 'border-zinc-800'
+                      }`}
+                    >
+                      {isDragOver ? (
+                        <div className="flex flex-col items-center justify-center p-4 text-center pointer-events-none animate-pulse">
+                          <Upload className="w-8 h-8 text-amber-400 mb-1" />
+                          <span className="text-xs font-black text-amber-300">Drop image here!</span>
+                          <span className="text-[10px] text-zinc-400">Auto-crops & compresses to 1200×400</span>
+                        </div>
+                      ) : hasImage ? (
                         <>
                           <img
                             src={banner.imageUrl}
@@ -1296,11 +1420,11 @@ export const AdminApp: React.FC = () => {
                           <div className="w-9 h-9 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-600 flex items-center justify-center mb-1.5">
                             <ImageIcon className="w-4 h-4" />
                           </div>
-                          <span className="text-xs font-bold text-zinc-500">
+                          <span className="text-xs font-bold text-zinc-400">
                             Blank Poster Space #{banner.slot}
                           </span>
-                          <span className="text-[10px] text-zinc-600">
-                            Upload image or enter URL below
+                          <span className="text-[10px] text-zinc-500">
+                            Drag & drop image here or click upload below
                           </span>
                         </div>
                       )}
@@ -1316,7 +1440,7 @@ export const AdminApp: React.FC = () => {
                       </label>
                       <label className="flex items-center justify-center gap-2 p-3 rounded-2xl bg-zinc-900 hover:bg-zinc-850 border border-dashed border-zinc-700 hover:border-amber-500/50 text-xs font-bold text-zinc-300 hover:text-white transition-all cursor-pointer">
                         <Upload className="w-4 h-4 text-amber-400" />
-                        <span>Choose 1200×400 Image</span>
+                        <span>Choose or Drop 1200×400 Image</span>
                         <input
                           type="file"
                           accept="image/*"
@@ -1422,6 +1546,23 @@ export const AdminApp: React.FC = () => {
                 </div>
               );
             })}
+
+            {/* + Add Another Frame Large Button Card */}
+            <button
+              type="button"
+              onClick={handleAddFrame}
+              className="group min-h-[360px] rounded-3xl border-2 border-dashed border-zinc-800 hover:border-amber-500/60 bg-zinc-900/40 hover:bg-zinc-900/80 p-8 flex flex-col items-center justify-center text-center transition-all cursor-pointer active:scale-[0.99]"
+            >
+              <div className="w-16 h-16 rounded-2xl bg-zinc-800/80 group-hover:bg-amber-500/20 text-zinc-400 group-hover:text-amber-400 flex items-center justify-center transition-all mb-4 border border-zinc-700/50 group-hover:border-amber-500/40 shadow-inner">
+                <Plus className="w-8 h-8" />
+              </div>
+              <h4 className="text-base font-bold text-white group-hover:text-amber-300 transition-colors">
+                + Add Another Poster Frame
+              </h4>
+              <p className="text-xs text-zinc-400 mt-1 max-w-xs leading-relaxed">
+                Add Frame #{editableBanners.length + 1} to the customer homepage carousel. You can add unlimited frames!
+              </p>
+            </button>
           </div>
 
           {/* Bottom Save Bar */}
