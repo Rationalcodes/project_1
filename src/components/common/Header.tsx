@@ -14,6 +14,8 @@ import { useSalon, POPULAR_LOCATIONS } from '../../context/SalonContext';
 
 export const Header: React.FC = () => {
   const {
+    portal,
+    setPortal,
     userLocation,
     setUserLocation,
     clearUserLocation,
@@ -271,8 +273,45 @@ export const Header: React.FC = () => {
               </div>
             </div>
 
-            {/* Right: Tour Button + User Profile Button */}
+            {/* Right: Portal Switcher + Tour Button + User Profile Button */}
             <div className="flex items-center gap-2">
+              {/* Quick Portal Switcher */}
+              <div className="hidden sm:flex items-center gap-1 bg-black/25 p-0.5 rounded-full border border-white/15 text-[10px] font-bold">
+                <button
+                  type="button"
+                  onClick={() => setPortal('customer')}
+                  className={`px-2 py-0.5 rounded-full transition-all cursor-pointer ${
+                    portal === 'customer'
+                      ? isWomen ? 'bg-rose-500 text-white shadow-xs' : 'bg-orange-500 text-white shadow-xs'
+                      : 'text-white/70 hover:text-white'
+                  }`}
+                >
+                  Customer
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPortal('partner')}
+                  className={`px-2 py-0.5 rounded-full transition-all cursor-pointer ${
+                    portal === 'partner'
+                      ? 'bg-amber-600 text-white shadow-xs'
+                      : 'text-white/70 hover:text-white'
+                  }`}
+                >
+                  Partner
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPortal('admin')}
+                  className={`px-2 py-0.5 rounded-full transition-all cursor-pointer ${
+                    portal === 'admin'
+                      ? 'bg-red-600 text-white shadow-xs'
+                      : 'text-white/70 hover:text-white'
+                  }`}
+                >
+                  Admin HQ
+                </button>
+              </div>
+
               <button
                 type="button"
                 onClick={() => window.dispatchEvent(new CustomEvent('open-customer-tour'))}

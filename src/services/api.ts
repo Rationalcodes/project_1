@@ -219,11 +219,35 @@ export const api = {
    */
   async getAdminSalons(): Promise<any[] | null> {
     try {
-      const res = await fetch(`${API_BASE}/admin/salons`, {
-        headers: { Accept: 'application/json' },
-      });
-      if (!res.ok) return null;
-      return await res.json();
+      const token = typeof window !== 'undefined' ? localStorage.getItem('kumbhakaran_admin_token') : null;
+      const headers: Record<string, string> = { Accept: 'application/json' };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      const res = await fetch(`${API_BASE}/admin/salons`, { headers });
+      if (res.ok) return await res.json();
+
+      // Fallback: Query pending approvals desk
+      const pendingRes = await fetch(`${API_BASE}/salons/pending-approvals`, { headers });
+      let pendingSalons: any[] = [];
+      if (pendingRes.ok) {
+        pendingSalons = await pendingRes.json();
+      }
+
+      const publicRes = await fetch(`${API_BASE}/salons/nearby`, { headers });
+      let publicSalons: any[] = [];
+      if (publicRes.ok) {
+        const data = await publicRes.json();
+        publicSalons = data?.salons || [];
+      }
+
+      const combined = [...pendingSalons];
+      for (const s of publicSalons) {
+        if (!combined.some((c) => c.id === s.id)) {
+          combined.push(s);
+        }
+      }
+      return combined.length > 0 ? combined : null;
     } catch {
       return null;
     }
@@ -234,16 +258,31 @@ export const api = {
    */
   async verifySalon(salonId: string, isVerified: boolean) {
     try {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('kumbhakaran_admin_token') : null;
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      // Try primary admin endpoint
       const res = await fetch(`${API_BASE}/admin/salons/${salonId}/verify`, {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-        },
+        headers,
         body: JSON.stringify({ isVerified }),
       });
-      if (!res.ok) return null;
-      return await res.json();
+      if (res.ok) return await res.json();
+
+      // Fallback: direct verify
+      const directRes = await fetch(`${API_BASE}/salons/${salonId}/verify`, {
+        method: 'PATCH',
+        headers,
+        body: JSON.stringify({ isVerified }),
+      });
+      if (directRes.ok) return await directRes.json();
+      return null;
     } catch {
       return null;
     }

@@ -2789,6 +2789,60 @@ export class SalonsService {
     }
   }
 
+  async getPendingSalonsForAdmin(): Promise<any[]> {
+    try {
+      const dbSalons = await this.prisma.salon.findMany({
+        where: {
+          OR: [
+            { isVerified: false },
+            { status: 'pending' },
+          ],
+        },
+        include: {
+          _count: {
+            select: {
+              services: true,
+              staff: true,
+              members: true,
+            },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      return dbSalons.map((s) => ({
+        id: s.id,
+        name: s.name,
+        tagline: s.tagline || 'New Salon Partner Application',
+        ownerName: s.ownerName || 'Partner Applicant',
+        ownerId: s.ownerId || '',
+        phone: s.phone || '',
+        email: s.email || '',
+        address: s.address || '',
+        locality: s.locality || '',
+        city: s.city || '',
+        state: s.state || 'Chhattisgarh',
+        pincode: s.pincode || '',
+        coordinates: { lat: s.latitude, lng: s.longitude },
+        currentQueue: s.currentQueue || 0,
+        isVerified: s.isVerified || false,
+        status: s.status || 'pending',
+        rating: Number(s.rating) || 5.0,
+        reviewCount: s.reviewCount || 0,
+        startingPrice: Number(s.startingPrice) || 80,
+        isOpen: s.isOpen ?? true,
+        servicesCount: (s as any)._count?.services ?? 0,
+        staffCount: (s as any)._count?.staff ?? 0,
+        membersCount: (s as any)._count?.members ?? 0,
+        createdAt: s.createdAt,
+        coverImage: s.coverImage || '',
+      }));
+    } catch (err: any) {
+      this.logger.error(`Failed to load pending salons: ${err.message}`);
+      return [];
+    }
+  }
+
   async verifySalon(id: string, isVerified: boolean, actor: AuthenticatedUser): Promise<any> {
     const salon = await this.prisma.salon.findUnique({ where: { id } });
     if (!salon) {

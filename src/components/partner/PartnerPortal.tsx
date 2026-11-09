@@ -25,7 +25,8 @@ export const PartnerPortal: React.FC = () => {
     activeSalon,
     setActiveSalonId,
     partnerView,
-    setPartnerView
+    setPartnerView,
+    setPortal,
   } = useSalon();
 
   const [salonDropdownOpen, setSalonDropdownOpen] = useState(false);
@@ -65,6 +66,17 @@ export const PartnerPortal: React.FC = () => {
           >
             <Sparkles className="w-3.5 h-3.5 text-amber-400" />
             <span>Tour</span>
+          </button>
+
+          {/* Switch to Admin HQ Console */}
+          <button
+            type="button"
+            onClick={() => setPortal('admin')}
+            className="px-3 py-2 rounded-xl bg-red-950/60 border border-red-800/80 hover:border-red-500 text-xs font-semibold text-red-300 hover:text-white transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs"
+            title="Switch to SLOON HQ Admin Console"
+          >
+            <ShieldCheck className="w-3.5 h-3.5 text-red-400" />
+            <span>Admin HQ</span>
           </button>
 
           {/* Active Salon Dropdown */}

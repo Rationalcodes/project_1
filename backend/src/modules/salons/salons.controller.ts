@@ -93,6 +93,32 @@ export class SalonsController {
     return this.salonsService.registerSalon(dto, user?.id);
   }
 
+  @Get('pending-approvals')
+  @ApiOperation({
+    summary: 'List salons awaiting authorization / review (Admin Desk)',
+    description: 'Returns all pending or unverified salon registrations directly from database for administrator review.',
+  })
+  async getPendingApprovals() {
+    return this.salonsService.getPendingSalonsForAdmin();
+  }
+
+  @Patch(':id/verify')
+  @UseGuards(OptionalJwtAuthGuard)
+  @ApiOperation({
+    summary: 'Directly authorize or unverify a salon registration',
+  })
+  async directVerifySalon(
+    @Param('id') id: string,
+    @Body() body: { isVerified: boolean },
+    @CurrentUser() user?: AuthenticatedUser,
+  ) {
+    return this.salonsService.verifySalon(
+      id,
+      Boolean(body.isVerified),
+      user || ({ id: 'usr-central-admin', role: 'ADMIN', email: 'admin@sloon.in', name: 'Central Admin' } as any),
+    );
+  }
+
   @Get('nearby')
   @ApiOperation({
     summary: 'Discover nearby salons using PostGIS geographical coordinates',

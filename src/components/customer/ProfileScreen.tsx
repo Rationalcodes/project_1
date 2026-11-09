@@ -31,6 +31,7 @@ export const ProfileScreen: React.FC = () => {
     triggerNotification,
     userLocation,
     genderFilter,
+    setPortal,
   } = useSalon();
 
   const isWomen = genderFilter === 'women';
@@ -314,6 +315,49 @@ export const ProfileScreen: React.FC = () => {
             <option value="10 km">10 km (City sector)</option>
             <option value="25 km">25 km (Metro area)</option>
           </select>
+        </div>
+      </section>
+
+      {/* Platform Administration & Partner Portals */}
+      <section className={`bg-white border rounded-2xl p-4 space-y-3 shadow-xs ${
+        isWomen ? 'border-[#FED7CC]' : 'border-[#E8E2D8]'
+      }`}>
+        <h3 className="text-xs font-bold text-stone-500 uppercase tracking-wider flex items-center gap-1.5">
+          <ShieldCheck className={`w-3.5 h-3.5 ${isWomen ? 'text-[#E11D48]' : 'text-[#FF6422]'}`} />
+          Platform Ecosystem & Admin
+        </h3>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+          <button
+            type="button"
+            onClick={() => setPortal('partner')}
+            className="p-3 rounded-xl border border-stone-200 hover:border-amber-400 bg-stone-50 hover:bg-amber-50/50 text-left transition-all cursor-pointer group"
+          >
+            <div className="text-xs font-bold text-stone-900 group-hover:text-amber-800 flex items-center justify-between">
+              <span>Partner OS</span>
+              <span className="text-[10px] text-amber-600 font-extrabold">&rarr;</span>
+            </div>
+            <div className="text-[11px] text-stone-500 mt-0.5">
+              Manage salon profile, services, staff, and live walk-in waiting line.
+            </div>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setPortal('admin')}
+            className="p-3 rounded-xl border border-stone-200 hover:border-red-400 bg-stone-50 hover:bg-red-50/50 text-left transition-all cursor-pointer group"
+          >
+            <div className="text-xs font-bold text-stone-900 group-hover:text-red-800 flex items-center justify-between">
+              <span className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                SLOON HQ Admin Console
+              </span>
+              <span className="text-[10px] text-red-600 font-extrabold">&rarr;</span>
+            </div>
+            <div className="text-[11px] text-stone-500 mt-0.5">
+              Authorize pending partner registrations, review moderation, and telemetry.
+            </div>
+          </button>
         </div>
       </section>
 

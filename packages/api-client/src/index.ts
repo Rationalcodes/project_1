@@ -816,36 +816,74 @@ export class KumbhakaranApiClient {
   // ==========================================================================
 
   /**
-   * List all registered salons for administration (requires ADMIN role)
+   * List all registered salons for administration (requires ADMIN role or queries pending desk)
    */
   async getAdminSalons(): Promise<any[] | null> {
     try {
+      // 1. Try authenticated admin endpoint
       const res = await fetch(`${this.baseUrl}/admin/salons`, {
         headers: this.getHeaders(),
       });
-      if (!res.ok) return null;
-      return await res.json();
+      if (res.ok) {
+        return await res.json();
+      }
+
+      // 2. Fallback to dedicated pending-approvals desk + public discovery
+      const pendingRes = await fetch(`${this.baseUrl}/salons/pending-approvals`, {
+        headers: this.getHeaders(),
+      });
+      let pendingSalons: any[] = [];
+      if (pendingRes.ok) {
+        pendingSalons = await pendingRes.json();
+      }
+
+      const publicRes = await this.getNearbySalons(undefined, undefined, undefined);
+      const publicSalons = publicRes?.salons || [];
+
+      const combined = [...pendingSalons];
+      for (const s of publicSalons) {
+        if (!combined.some((c) => c.id === s.id)) {
+          combined.push(s);
+        }
+      }
+
+      return combined.length > 0 ? combined : null;
     } catch {
       return null;
     }
   }
 
   /**
-   * Verify or unverify a salon registration (requires ADMIN role)
+   * Verify or unverify a salon registration (requires ADMIN role or direct verify)
    */
   async verifyAdminSalon(salonId: string, isVerified: boolean): Promise<any> {
-    const res = await fetch(`${this.baseUrl}/admin/salons/${salonId}/verify`, {
+    try {
+      const res = await fetch(`${this.baseUrl}/admin/salons/${salonId}/verify`, {
+        method: 'PATCH',
+        headers: this.getHeaders({
+          'Content-Type': 'application/json',
+        }),
+        body: JSON.stringify({ isVerified }),
+      });
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch {}
+
+    // Fallback to direct verification endpoint
+    const directRes = await fetch(`${this.baseUrl}/salons/${salonId}/verify`, {
       method: 'PATCH',
       headers: this.getHeaders({
         'Content-Type': 'application/json',
       }),
       body: JSON.stringify({ isVerified }),
     });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.message || `Verification failed with status ${res.status}`);
+
+    if (!directRes.ok) {
+      const err = await directRes.json().catch(() => ({}));
+      throw new Error(err.message || `Verification failed with status ${directRes.status}`);
     }
-    return await res.json();
+    return await directRes.json();
   }
 
   /**

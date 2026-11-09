@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import {
   Salon,
   Service,
@@ -181,7 +181,18 @@ export const SalonProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     });
   });
   const [activeSalonId, setActiveSalonId] = useState<string>('salon-1');
-  const [portal, setPortal] = useState<AppPortal>('customer');
+  const [portal, setPortal] = useState<AppPortal>(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const p = params.get('portal');
+      if (p === 'admin' || p === 'partner' || p === 'customer') return p;
+      if (window.location.pathname.startsWith('/admin')) return 'admin';
+      if (window.location.pathname.startsWith('/partner')) return 'partner';
+      if (window.location.hash === '#admin') return 'admin';
+      if (window.location.hash === '#partner') return 'partner';
+    }
+    return 'customer';
+  });
   const [customerTab, setCustomerTab] = useState<CustomerTab>('home');
   const [partnerView, setPartnerView] = useState<PartnerView>('live-queue');
   const [adminTab, setAdminTab] = useState<AdminTab>('overview');
@@ -330,6 +341,41 @@ export const SalonProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                 rating: item.rating,
                 isOpen: item.isOpen,
               };
+            } else {
+              updated.push({
+                id: item.id,
+                name: item.name,
+                tagline: item.tagline || 'Verified Salon Partner',
+                ownerName: (item as any).ownerName || 'Partner',
+                phone: (item as any).phone || '',
+                address: (item as any).address || `${item.locality}, ${item.city}`,
+                locality: item.locality,
+                city: item.city,
+                state: 'Chhattisgarh',
+                pincode: (item as any).pincode || '',
+                coordinates: { lat: item.latitude, lng: item.longitude },
+                currentQueue: item.currentQueue,
+                avgServiceTimeMinutes: (item as any).avgServiceTimeMinutes || 20,
+                activeBarbers: (item as any).activeBarbers || 2,
+                distanceKm: item.distanceKm,
+                startingPrice: item.startingPrice,
+                isOpen: item.isOpen,
+                isVerified: (item as any).isVerified ?? true,
+                status: (item as any).status || 'active',
+                rating: item.rating,
+                reviewCount: item.reviewCount,
+                lastQueueUpdate: item.lastQueueUpdate,
+                coverImage: item.coverImage,
+                images: item.coverImage ? [item.coverImage] : [],
+                services: (item as any).services || [],
+                staff: (item as any).staff || [],
+                reviews: [],
+                ratingBreakdown: { haircutQuality: 5, staffBehaviour: 5, cleanliness: 5, pricing: 5, overallExperience: 5 },
+                openingHours: { open: '09:00 AM', close: '09:30 PM', formatted: '09:00 AM – 09:30 PM (All Days)' },
+                todayCustomersServed: 0,
+                todayRevenue: 0,
+                monthlyRevenue: 0,
+              });
             }
           }
           return updated;
@@ -338,6 +384,64 @@ export const SalonProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     });
     return () => { isMounted = false; };
   }, [userLocation, lazyFilter]);
+
+  // Synchronize admin salons (including pending approval requests)
+  const refreshAdminSalons = useCallback(() => {
+    api.getAdminSalons().then((adminSalons) => {
+      if (adminSalons && Array.isArray(adminSalons)) {
+        setSalons((prev) => {
+          const updated = [...prev];
+          for (const s of adminSalons) {
+            const idx = updated.findIndex((x) => x.id === s.id);
+            const salonObj: Salon = {
+              id: s.id,
+              name: s.name,
+              tagline: s.tagline || 'Salon Partner Application',
+              ownerName: s.ownerName || 'Partner Applicant',
+              phone: s.phone || '',
+              address: s.address || `${s.locality || ''}, ${s.city || ''}`,
+              locality: s.locality || '',
+              city: s.city || '',
+              state: s.state || 'Chhattisgarh',
+              pincode: s.pincode || '',
+              coordinates: s.coordinates || { lat: Number(s.latitude) || 22.1385, lng: Number(s.longitude) || 82.1437 },
+              currentQueue: Number(s.currentQueue) || 0,
+              avgServiceTimeMinutes: Number(s.avgServiceTimeMinutes) || 20,
+              activeBarbers: Number(s.activeBarbers ?? s.staffCount) || 2,
+              distanceKm: Number(s.distanceKm) || 0,
+              startingPrice: Number(s.startingPrice) || 80,
+              isOpen: s.isOpen ?? true,
+              isVerified: s.isVerified ?? false,
+              status: s.status || 'pending',
+              rating: Number(s.rating) || 5.0,
+              reviewCount: Number(s.reviewCount) || 0,
+              lastQueueUpdate: s.lastQueueUpdate || new Date().toISOString(),
+              coverImage: s.coverImage || '',
+              images: s.coverImage ? [s.coverImage] : [],
+              services: s.services || [],
+              staff: s.staff || [],
+              reviews: s.reviews || [],
+              ratingBreakdown: { haircutQuality: 5, staffBehaviour: 5, cleanliness: 5, pricing: 5, overallExperience: 5 },
+              openingHours: { open: '09:00 AM', close: '09:30 PM', formatted: '09:00 AM – 09:30 PM (All Days)' },
+              todayCustomersServed: 0,
+              todayRevenue: 0,
+              monthlyRevenue: 0,
+            };
+            if (idx !== -1) {
+              updated[idx] = { ...updated[idx], ...salonObj };
+            } else {
+              updated.unshift(salonObj);
+            }
+          }
+          return updated;
+        });
+      }
+    });
+  }, []);
+
+  useEffect(() => {
+    refreshAdminSalons();
+  }, [portal, refreshAdminSalons]);
 
   // Synchronize salon profile and public reviews from PostgreSQL database
   useEffect(() => {
@@ -794,7 +898,9 @@ export const SalonProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const verifySalon = (salonId: string, isVerified: boolean) => {
     setSalons(prev => prev.map(s => s.id === salonId ? { ...s, isVerified, status: isVerified ? 'active' : s.status } : s));
-    api.verifySalon(salonId, isVerified);
+    api.verifySalon(salonId, isVerified).then(() => {
+      refreshAdminSalons();
+    });
     triggerNotification(isVerified ? "Salon officially authorized and live on customer app!" : "Salon authorization revoked");
   };
 
