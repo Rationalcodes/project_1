@@ -271,37 +271,53 @@ export const Header: React.FC = () => {
               </div>
             </div>
 
-            {/* Right: Beside Logo -> User Profile Button */}
-            <button
-              type="button"
-              onClick={() => {
-                setSelectedSalonForDetail(null);
-                setCustomerTab('profile');
-              }}
-              className={`flex items-center gap-1.5 p-2 sm:px-3 sm:py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer shadow-xs ${
-                isWomen
-                  ? 'bg-white/90 hover:bg-white text-[#7A0D22] border border-rose-200/60'
-                  : 'bg-white/20 hover:bg-white/30 text-white border border-white/25 backdrop-blur-xs'
-              }`}
-              title="Customer Profile"
-            >
-              {userProfile?.avatar ? (
-                <img
-                  src={userProfile.avatar}
-                  alt=""
-                  className="w-5 h-5 rounded-full object-cover shrink-0 ring-1 ring-black/10"
-                />
-              ) : (
-                <User
-                  className={`w-4 h-4 shrink-0 ${
-                    isWomen ? 'text-[#7A0D22]' : 'text-white'
-                  }`}
-                />
-              )}
-              <span className="hidden sm:inline truncate max-w-[80px]">
-                {userProfile?.name?.split(' ')[0] || 'Profile'}
-              </span>
-            </button>
+            {/* Right: Tour Button + User Profile Button */}
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => window.dispatchEvent(new CustomEvent('open-customer-tour'))}
+                className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer shadow-xs ${
+                  isWomen
+                    ? 'bg-white/80 hover:bg-white text-[#7A0D22] border border-rose-200/60'
+                    : 'bg-white/20 hover:bg-white/30 text-white border border-white/25 backdrop-blur-xs'
+                }`}
+                title="View 4-Screen Onboarding Tour"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                <span className="hidden xs:inline">Tour</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedSalonForDetail(null);
+                  setCustomerTab('profile');
+                }}
+                className={`flex items-center gap-1.5 p-2 sm:px-3 sm:py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer shadow-xs ${
+                  isWomen
+                    ? 'bg-white/90 hover:bg-white text-[#7A0D22] border border-rose-200/60'
+                    : 'bg-white/20 hover:bg-white/30 text-white border border-white/25 backdrop-blur-xs'
+                }`}
+                title="Customer Profile"
+              >
+                {userProfile?.avatar ? (
+                  <img
+                    src={userProfile.avatar}
+                    alt=""
+                    className="w-5 h-5 rounded-full object-cover shrink-0 ring-1 ring-black/10"
+                  />
+                ) : (
+                  <User
+                    className={`w-4 h-4 shrink-0 ${
+                      isWomen ? 'text-[#7A0D22]' : 'text-white'
+                    }`}
+                  />
+                )}
+                <span className="hidden sm:inline truncate max-w-[80px]">
+                  {userProfile?.name?.split(' ')[0] || 'Profile'}
+                </span>
+              </button>
+            </div>
           </div>
 
           {/* Search Row: JioMart-Style Crisp White Pill Embedded in Canopy */}

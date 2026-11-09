@@ -1,9 +1,11 @@
-import React, { useState, Suspense, lazy } from 'react';
+import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { SalonProvider, useSalon } from './context/SalonContext';
 import { Header } from './components/common/Header';
 import { BottomNav } from './components/common/BottomNav';
 import { NotificationToast } from './components/common/NotificationToast';
 import { HomeScreen } from './components/customer/HomeScreen';
+import { OnboardingScreen } from './components/customer/OnboardingScreen';
+import { PartnerOnboardingScreen } from './components/partner/PartnerOnboardingScreen';
 
 // Code-split heavy portals, secondary screens and modals (Phase 4 Optimization)
 const PartnerPortal = lazy(() =>
@@ -59,6 +61,32 @@ const MainContent: React.FC = () => {
 
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [isDirectionsModalOpen, setIsDirectionsModalOpen] = useState(false);
+  const [showCustomerTour, setShowCustomerTour] = useState<boolean>(() => {
+    try {
+      return !localStorage.getItem('sloon_customer_onboarding_seen');
+    } catch {
+      return false;
+    }
+  });
+  const [showPartnerTour, setShowPartnerTour] = useState(false);
+
+  useEffect(() => {
+    const handleOpenCustomerTour = () => setShowCustomerTour(true);
+    const handleOpenPartnerTour = () => setShowPartnerTour(true);
+    window.addEventListener('open-customer-tour', handleOpenCustomerTour);
+    window.addEventListener('open-partner-tour', handleOpenPartnerTour);
+    return () => {
+      window.removeEventListener('open-customer-tour', handleOpenCustomerTour);
+      window.removeEventListener('open-partner-tour', handleOpenPartnerTour);
+    };
+  }, []);
+
+  const handleFinishCustomerTour = () => {
+    setShowCustomerTour(false);
+    try {
+      localStorage.setItem('sloon_customer_onboarding_seen', 'true');
+    } catch {}
+  };
 
   // Render Customer Screen based on current navigation or selected salon detail
   const renderCustomerContent = () => {
@@ -116,6 +144,20 @@ const MainContent: React.FC = () => {
           : 'bg-[#FAF7F2] text-stone-900 selection:bg-orange-500/20 selection:text-orange-950'
       }`}
     >
+      {/* 4-Step Interactive Mobile Onboarding Experience (Matching Reference) */}
+      {showCustomerTour && portal === 'customer' && (
+        <OnboardingScreen
+          onFinish={handleFinishCustomerTour}
+          isWomen={isWomen}
+        />
+      )}
+
+      {showPartnerTour && (
+        <PartnerOnboardingScreen
+          onFinish={() => setShowPartnerTour(false)}
+        />
+      )}
+
       {/* Universal Responsive Header */}
       <Header />
 

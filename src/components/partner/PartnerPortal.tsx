@@ -56,6 +56,17 @@ export const PartnerPortal: React.FC = () => {
 
         {/* Quick Action: Register New Salon & Switch Salon */}
         <div className="flex flex-wrap items-center gap-2">
+          {/* Replay Onboarding Tour */}
+          <button
+            type="button"
+            onClick={() => window.dispatchEvent(new CustomEvent('open-partner-tour'))}
+            className="px-3 py-2 rounded-xl bg-zinc-900 border border-zinc-700 hover:border-amber-400 text-xs font-semibold text-zinc-300 hover:text-white transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs"
+            title="View 4-Screen Partner Onboarding Tour"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+            <span>Tour</span>
+          </button>
+
           {/* Active Salon Dropdown */}
           <div className="relative">
             <button
