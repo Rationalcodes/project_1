@@ -37,7 +37,6 @@ export const Header: React.FC = () => {
     setSearchQuery,
     selectedServiceFilter,
     setSelectedServiceFilter,
-    setShowOnboarding,
   } = useCustomer();
 
   const [locationDropdownOpen, setLocationDropdownOpen] = useState(false);
@@ -331,21 +330,6 @@ export const Header: React.FC = () => {
                   </span>
                 </div>
               )}
-
-              {/* Tour / Onboarding Replay Button */}
-              <button
-                type="button"
-                onClick={() => setShowOnboarding(true)}
-                className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer shadow-xs ${
-                  isWomen
-                    ? 'bg-white/15 hover:bg-white/25 text-[#FFF8F5] border border-white/20'
-                    : 'bg-white/15 hover:bg-white/25 text-[#FFF8F0] border border-white/20'
-                }`}
-                title="View 4-Screen Onboarding Tour"
-              >
-                <Sparkles className="w-3.5 h-3.5" />
-                <span className="hidden xs:inline">Tour</span>
-              </button>
 
               <button
                 type="button"

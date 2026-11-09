@@ -907,18 +907,49 @@ export const MapScreen: React.FC<MapScreenProps> = ({ onClose, isFullScreen = fa
 
           {/* Top Floating Controls Bar */}
           <div className="absolute top-3 left-3 right-3 z-30 flex items-center justify-between gap-2 pointer-events-none">
-            {/* Left: Back to List View Button */}
-            {onClose && (
-              <button
-                type="button"
-                onClick={onClose}
-                className="pointer-events-auto flex items-center gap-1.5 px-3.5 py-2.5 rounded-2xl bg-white/95 backdrop-blur-md border border-stone-200 shadow-md text-xs font-black text-stone-900 hover:bg-white active:scale-95 transition-all cursor-pointer"
-                title="Return to List View"
-              >
-                <ArrowLeft className="w-4 h-4 text-stone-700" />
-                <span>List View</span>
-              </button>
-            )}
+            {/* Left: Back to List View Button + Zoom Out & Zoom In Controls */}
+            <div className="pointer-events-auto flex items-center gap-1.5 shrink-0">
+              {onClose && (
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-2xl bg-white/95 backdrop-blur-md border border-stone-200 shadow-md text-xs font-black text-stone-900 hover:bg-white active:scale-95 transition-all cursor-pointer"
+                  title="Return to List View"
+                >
+                  <ArrowLeft className="w-4 h-4 text-stone-700" />
+                  <span>List View</span>
+                </button>
+              )}
+
+              {/* Zoom Out & Zoom In Buttons beside List View */}
+              <div className="flex items-center bg-white/95 backdrop-blur-md border border-stone-200 rounded-2xl shadow-md overflow-hidden p-0.5">
+                <button
+                  type="button"
+                  onClick={() => handleZoom(-1)}
+                  className={`flex items-center gap-1 px-2.5 py-2 hover:bg-stone-100 text-stone-800 transition-colors cursor-pointer rounded-xl active:scale-95 ${
+                    isWomen ? 'hover:text-[#F47B70]' : 'hover:text-[#FF6422]'
+                  }`}
+                  title="Zoom Out"
+                  aria-label="Zoom Out"
+                >
+                  <Minus className="w-4 h-4 stroke-[2.5]" />
+                  <span className="hidden sm:inline text-xs font-bold">Zoom Out</span>
+                </button>
+                <div className="w-px h-5 bg-stone-200" />
+                <button
+                  type="button"
+                  onClick={() => handleZoom(1)}
+                  className={`flex items-center gap-1 px-2.5 py-2 hover:bg-stone-100 text-stone-800 transition-colors cursor-pointer rounded-xl active:scale-95 ${
+                    isWomen ? 'hover:text-[#F47B70]' : 'hover:text-[#FF6422]'
+                  }`}
+                  title="Zoom In"
+                  aria-label="Zoom In"
+                >
+                  <Plus className="w-4 h-4 stroke-[2.5]" />
+                  <span className="hidden sm:inline text-xs font-bold">Zoom In</span>
+                </button>
+              </div>
+            </div>
 
             {/* Middle: Map Search Input */}
             <div className="pointer-events-auto flex-1 max-w-sm sm:max-w-md mx-auto relative hidden xs:block">

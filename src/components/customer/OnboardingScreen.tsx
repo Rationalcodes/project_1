@@ -124,7 +124,7 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
 
           <div className="flex items-center gap-2">
             <img
-              src={isWomen ? '/logo.png' : '/logo-men.png'}
+              src="/logo.png"
               alt="SLOON"
               className="h-7 w-auto object-contain"
               onError={(e) => {
@@ -166,7 +166,7 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
             <div className="relative flex flex-col items-center justify-center p-6 text-center">
               <div className="w-44 h-44 sm:w-56 sm:h-56 rounded-full bg-white shadow-xl shadow-stone-800/5 border-4 border-white flex flex-col items-center justify-center p-6 transform transition-transform duration-500 hover:scale-105">
                 <img
-                  src={isWomen ? '/logo.png' : '/logo-men.png'}
+                  src="/logo.png"
                   alt="SLOON"
                   className="w-32 sm:w-36 h-auto object-contain"
                   onError={(e) => {

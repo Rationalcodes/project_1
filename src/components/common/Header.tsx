@@ -312,19 +312,7 @@ export const Header: React.FC = () => {
                 </button>
               </div>
 
-              <button
-                type="button"
-                onClick={() => window.dispatchEvent(new CustomEvent('open-customer-tour'))}
-                className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer shadow-xs ${
-                  isWomen
-                    ? 'bg-white/80 hover:bg-white text-[#7A0D22] border border-rose-200/60'
-                    : 'bg-white/20 hover:bg-white/30 text-white border border-white/25 backdrop-blur-xs'
-                }`}
-                title="View 4-Screen Onboarding Tour"
-              >
-                <Sparkles className="w-3.5 h-3.5" />
-                <span className="hidden xs:inline">Tour</span>
-              </button>
+              
 
               <button
                 type="button"
