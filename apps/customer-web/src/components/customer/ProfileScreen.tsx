@@ -18,7 +18,6 @@ import {
   Sliders,
   Scissors,
   Sparkles,
-  Building2,
 } from 'lucide-react';
 
 export const ProfileScreen: React.FC = () => {
@@ -78,16 +77,6 @@ export const ProfileScreen: React.FC = () => {
     const found = salons.find((s) => s.id === salonId);
     if (found) setSelectedSalonForDetail(found);
   };
-
-  const partnerPortalUrl =
-    typeof window !== 'undefined' && window.location.port === '5173'
-      ? 'http://localhost:5174'
-      : 'https://partner.sloon.in';
-
-  const adminPortalUrl =
-    typeof window !== 'undefined' && window.location.port === '5173'
-      ? 'http://localhost:5175'
-      : 'https://admin.sloon.in';
 
   return (
     <div className="max-w-2xl mx-auto space-y-6 pb-28 text-stone-900 font-sans">
@@ -432,61 +421,7 @@ export const ProfileScreen: React.FC = () => {
         </div>
       </div>
 
-      {/* GROUP 2: FOR SALON PROFESSIONALS & MANAGEMENT */}
-      <div className="space-y-2">
-        <div className="text-xs font-semibold uppercase tracking-wider text-stone-500 px-1">
-          Salon Management &amp; Portals
-        </div>
-        <div className="bg-white rounded-2xl border border-stone-200/80 divide-y divide-stone-100 shadow-xs overflow-hidden">
-          {/* Partner Portal */}
-          <a
-            href={partnerPortalUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="w-full p-4 flex items-center justify-between text-left hover:bg-stone-50/80 transition-colors group cursor-pointer block"
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-amber-50 border border-amber-200/80 flex items-center justify-center text-amber-700 shrink-0">
-                <Scissors className="w-4 h-4" />
-              </div>
-              <div>
-                <div className="text-xs font-semibold text-stone-900 group-hover:text-stone-950">
-                  SLOON Partner OS
-                </div>
-                <div className="text-[11px] text-stone-500">
-                  For salon owners and receptionists to manage queues, staff &amp; services
-                </div>
-              </div>
-            </div>
-            <ChevronRight className="w-4 h-4 text-stone-400 group-hover:translate-x-0.5 transition-transform" />
-          </a>
-
-          {/* Admin Portal */}
-          <a
-            href={adminPortalUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="w-full p-4 flex items-center justify-between text-left hover:bg-stone-50/80 transition-colors group cursor-pointer block"
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-stone-100 flex items-center justify-center text-stone-600 shrink-0">
-                <Building2 className="w-4 h-4" />
-              </div>
-              <div>
-                <div className="text-xs font-semibold text-stone-900 group-hover:text-stone-950">
-                  SLOON HQ Admin Console
-                </div>
-                <div className="text-[11px] text-stone-500">
-                  Authorize partner requests and view network metrics
-                </div>
-              </div>
-            </div>
-            <ChevronRight className="w-4 h-4 text-stone-400 group-hover:translate-x-0.5 transition-transform" />
-          </a>
-        </div>
-      </div>
-
-      {/* GROUP 3: TRUST & GUIDANCE */}
+      {/* GROUP 2: TRUST & GUIDANCE */}
       <div className="space-y-2">
         <div className="text-xs font-semibold uppercase tracking-wider text-stone-500 px-1">
           Trust &amp; Information
