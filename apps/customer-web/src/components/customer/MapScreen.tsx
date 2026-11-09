@@ -25,6 +25,7 @@ import {
 import {
   useCustomer,
   getEstimatedWaitMinutes,
+  formatDuration,
   matchesGenderFilter,
 } from '../../context/CustomerContext';
 import { Salon } from '@kumbhakaran/shared-types';
@@ -731,7 +732,7 @@ export const MapScreen: React.FC<MapScreenProps> = ({ onClose, isFullScreen = fa
         ">
           <span style="color: ${primaryHex};">🚗</span>
           <span>${distFormatted}</span>
-          <span style="color: #A1A1AA; font-size: 9px; font-weight: 600;">(~${estMins}m drive)</span>
+          <span style="color: #A1A1AA; font-size: 9px; font-weight: 600;">(~${formatDuration(estMins)} drive)</span>
         </div>
       `;
 

@@ -18,6 +18,8 @@ import {
 import {
   useCustomer,
   getEstimatedWaitMinutes,
+  formatDuration,
+  formatWaitTime,
   getQueueDisplay,
 } from '../../context/CustomerContext';
 import { Salon } from '@kumbhakaran/shared-types';
@@ -141,17 +143,17 @@ export const LiveQueueTrackerView: React.FC<LiveQueueTrackerViewProps> = ({
     );
     if (diffMin <= 15) {
       return {
-        text: diffMin <= 1 ? 'Updated just now' : `Updated ${diffMin}m ago`,
+        text: diffMin <= 1 ? 'Updated just now' : `Updated ${formatDuration(diffMin)} ago`,
         badgeClass: 'bg-emerald-50 text-emerald-700 border border-emerald-200',
       };
     } else if (diffMin <= 45) {
       return {
-        text: `Updated ${diffMin}m ago`,
+        text: `Updated ${formatDuration(diffMin)} ago`,
         badgeClass: 'bg-amber-50 text-amber-700 border border-amber-200',
       };
     } else {
       return {
-        text: `Updated ${diffMin}m ago • Stale`,
+        text: `Updated ${formatDuration(diffMin)} ago • Stale`,
         badgeClass: 'bg-orange-50 text-orange-800 border border-orange-200',
       };
     }
@@ -367,7 +369,7 @@ export const LiveQueueTrackerView: React.FC<LiveQueueTrackerViewProps> = ({
               <Clock className={`w-3.5 h-3.5 ${isWomen ? 'text-[#F47B70]' : 'text-[#FF6422]'}`} /> Estimated Wait Time
             </div>
             <div className="text-2xl font-black text-stone-900 mt-1">
-              ~{waitTime} <span className="text-xs font-normal text-stone-500">minutes</span>
+              ~{formatDuration(waitTime)}
             </div>
             <p className="text-[10px] text-stone-500 mt-1 leading-snug">
               Direct walk-in counter synced live with salon.
@@ -519,7 +521,7 @@ export const LiveQueueTrackerView: React.FC<LiveQueueTrackerViewProps> = ({
                   <span>📍 Update from a customer at the salon</span>
                 </div>
                 <div className="text-[11px] text-emerald-800 font-medium mt-0.5">
-                  A customer nearby shared: <strong>{latestCrowdReport.peopleCount} waiting</strong> • about <strong>{latestCrowdReport.estimatedWaitMinutes} min wait</strong>
+                  A customer nearby shared: <strong>{latestCrowdReport.peopleCount} waiting</strong> • about <strong>{formatDuration(latestCrowdReport.estimatedWaitMinutes)} wait</strong>
                   {latestCrowdReport.notes && <span className="italic text-emerald-700"> • "{latestCrowdReport.notes}"</span>}
                 </div>
               </div>
@@ -718,7 +720,7 @@ export const LiveQueueTrackerView: React.FC<LiveQueueTrackerViewProps> = ({
                   {salon.services.length > 0 ? (
                     salon.services.map((svc) => (
                       <option key={svc.id} value={svc.name}>
-                        {svc.name} — ₹{svc.price} ({svc.durationMinutes}m)
+                        {svc.name} — ₹{svc.price} ({formatDuration(svc.durationMinutes)})
                       </option>
                     ))
                   ) : (

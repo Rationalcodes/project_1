@@ -19,6 +19,8 @@ import {
 import {
   useSalon,
   getEstimatedWaitMinutes,
+  formatDuration,
+  formatWaitTime,
   getQueueDisplay,
   matchesGenderFilter,
   getSalonType,
@@ -316,7 +318,7 @@ export const ExploreScreen: React.FC = () => {
                               ? 'Queue Paused'
                               : salon.currentQueue === 0
                               ? '0 in line • Open now'
-                              : `${salon.currentQueue} in line • ~${waitTime}m`}
+                              : `${salon.currentQueue} in line • ~${formatDuration(waitTime)}`}
                           </span>
                         </span>
                       </div>

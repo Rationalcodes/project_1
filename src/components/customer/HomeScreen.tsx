@@ -21,7 +21,7 @@ import {
   Info,
   Image as ImageIcon,
 } from 'lucide-react';
-import { useSalon, getEstimatedWaitMinutes, getQueueDisplay, getQueueFreshness, matchesGenderFilter, getSalonType } from '../../context/SalonContext';
+import { useSalon, getEstimatedWaitMinutes, formatDuration, getQueueDisplay, getQueueFreshness, matchesGenderFilter, getSalonType } from '../../context/SalonContext';
 import { LazyModeSelector } from '../common/LazyModeSelector';
 import { Salon } from '../../types';
 import { HomeBanner, DEFAULT_HOME_BANNERS } from '@kumbhakaran/shared-types';
@@ -483,7 +483,7 @@ export const HomeScreen: React.FC = () => {
 
                       <div className="text-right">
                         <div className="text-[10px] text-stone-500">Est. Wait</div>
-                        <div className="font-bold text-emerald-700">~{waitTime} mins</div>
+                        <div className="font-bold text-emerald-700">~{formatDuration(waitTime)}</div>
                       </div>
 
                       <div className="text-right">
@@ -597,7 +597,7 @@ export const HomeScreen: React.FC = () => {
 
                     <div className="absolute bottom-2 left-2.5 right-2.5 flex items-center justify-between text-xs">
                       <span className="font-medium text-emerald-800 bg-white/90 px-2 py-0.5 rounded-full backdrop-blur-sm shadow-xs border border-emerald-200 text-[11px]">
-                        ~{waitTime}m est. wait
+                        ~{formatDuration(waitTime)} est. wait
                       </span>
                       <span className="text-[#FF6422] font-bold bg-white/95 px-2 py-0.5 rounded-full backdrop-blur-sm border border-orange-200 shadow-xs text-[11px]">
                         {salon.distanceKm} km

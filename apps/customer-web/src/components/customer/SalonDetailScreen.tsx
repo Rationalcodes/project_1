@@ -46,7 +46,7 @@ import {
   Map as MapIcon
 } from 'lucide-react';
 import QRCode from 'qrcode';
-import { useSalon, getEstimatedWaitMinutes, getQueueDisplay, getQueueFreshness, getTargetSalonFromUrl } from '../../context/CustomerContext';
+import { useSalon, getEstimatedWaitMinutes, formatDuration, formatWaitTime, getQueueDisplay, getQueueFreshness, getTargetSalonFromUrl } from '../../context/CustomerContext';
 import { Service, Staff } from '@kumbhakaran/shared-types';
 import { redirectToGoogleMaps, openGoogleMapsLocation, SalonMapboxView } from '@kumbhakaran/ui';
 import { SmartQueueAssist } from './SmartQueueAssist';
@@ -538,7 +538,7 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
               <span className="flex items-center gap-1.5 bg-black/60 backdrop-blur-md px-3 py-1 rounded-full text-xs font-semibold text-white border border-white/15">
                 <span className={`w-2 h-2 rounded-full ${queueInfo.dotClass} animate-pulse`} />
                 <span>{salon.currentQueue} waiting</span>
-                <span className="text-amber-300">· ~{waitTime} min wait</span>
+                <span className="text-amber-300">· ~{formatDuration(waitTime)} wait</span>
               </span>
             </div>
 
@@ -664,7 +664,7 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
 
                 <div className="text-xs text-stone-600 font-semibold flex items-center gap-1.5">
                   <Clock className="w-3.5 h-3.5 text-[#C85322]" />
-                  <span>Estimated Wait: ~{waitTime} mins</span>
+                  <span>Estimated Wait: ~{formatDuration(waitTime)}</span>
                 </div>
               </div>
 
@@ -676,7 +676,7 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
                 </div>
 
                 <div className="p-4 rounded-2xl bg-[#FAF7F2] border border-[#E8E0D5] text-center">
-                  <div className="text-3xl font-extrabold text-[#C85322] tracking-tight">~{waitTime}m</div>
+                  <div className="text-3xl font-extrabold text-[#C85322] tracking-tight">~{formatDuration(waitTime)}</div>
                   <div className="text-[11px] font-bold text-[#C85322] tracking-wider uppercase mt-1">Estimated Wait</div>
                 </div>
 
@@ -713,7 +713,7 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
                         <p className="text-[11px] text-stone-500 mt-0.5">
                           {activeTicket.status === 'in_service'
                             ? '✨ Your session is currently underway at the chair.'
-                            : `Estimated time until your chair: ~${waitTime} mins.`}
+                            : `Estimated time until your chair: ~${formatDuration(waitTime)}.`}
                         </p>
                       </div>
 
@@ -916,7 +916,7 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
 
                       <div className="flex items-center gap-2 text-[11px] text-stone-500 pt-0.5">
                         <span className="flex items-center gap-1 font-medium">
-                          <Clock className="w-3 h-3 text-stone-400" /> ~{service.durationMinutes} mins
+                          <Clock className="w-3 h-3 text-stone-400" /> ~{formatDuration(service.durationMinutes)}
                         </span>
                         <span>•</span>
                         <span>Standard counter rate</span>
@@ -1571,7 +1571,7 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
                   {salon.services.length > 0 ? (
                     salon.services.map((svc) => (
                       <option key={svc.id} value={svc.name}>
-                        {svc.name} — ₹{svc.price} ({svc.durationMinutes}m)
+                        {svc.name} — ₹{svc.price} ({formatDuration(svc.durationMinutes)})
                       </option>
                     ))
                   ) : (

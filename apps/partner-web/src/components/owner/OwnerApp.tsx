@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useSalon, getEstimatedWaitMinutes, getQueueDisplay, getQueueFreshness, DEFAULT_AVATAR } from '../../context/PartnerContext';
+import { useSalon, getEstimatedWaitMinutes, formatDuration, formatWaitTime, getQueueDisplay, getQueueFreshness, DEFAULT_AVATAR } from '../../context/PartnerContext';
 import { useLanguage } from '../../i18n/LanguageContext';
 import {
   LayoutDashboard,
@@ -1084,7 +1084,7 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
               </div>
               <div className="flex items-center gap-1.5 text-xs text-stone-600 font-semibold">
                 <Clock className="w-3.5 h-3.5 text-stone-500" />
-                <span>≈ {waitTime} min</span>
+                <span>≈ {formatDuration(waitTime)}</span>
               </div>
             </div>
 
@@ -1362,7 +1362,7 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
                         <span className="text-[10px] bg-emerald-100 text-emerald-800 px-1.5 py-0.2 rounded-md font-semibold">Verified Location</span>
                       </div>
                       <div className="mt-0.5 text-stone-600">
-                        <strong className="text-stone-900">{latestCrowdReport.peopleCount} waiting</strong> • ~<strong>{latestCrowdReport.estimatedWaitMinutes}m wait</strong>
+                        <strong className="text-stone-900">{latestCrowdReport.peopleCount} waiting</strong> • ~<strong>{formatDuration(latestCrowdReport.estimatedWaitMinutes)} wait</strong>
                         {latestCrowdReport.notes && <span className="text-stone-500 italic"> • "{latestCrowdReport.notes}"</span>}
                       </div>
                     </div>
@@ -1464,7 +1464,7 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
               </div>
 
               <div>
-                <span>Est. customer wait time: <strong className="text-emerald-700">~{waitTime} mins</strong></span>
+                <span>Est. customer wait time: <strong className="text-emerald-700">~{formatDuration(waitTime)}</strong></span>
               </div>
 
               <div>
@@ -1635,7 +1635,7 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
                               {minsAgo !== null && (
                                 <span className="text-stone-400 text-[11px] flex items-center gap-1">
                                   <Clock className="w-3 h-3 text-stone-400" />
-                                  {minsAgo === 0 ? 'Just joined' : `${minsAgo}m waiting`}
+                                  {minsAgo === 0 ? 'Just joined' : `${formatDuration(minsAgo)} waiting`}
                                 </span>
                               )}
                             </p>
@@ -1783,7 +1783,7 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
                 {activeSalon.currentQueue}
               </div>
               <div className="text-[10px] text-stone-500 mt-1">
-                ~{waitTime} min wait time
+                ~{formatDuration(waitTime)} wait time
               </div>
             </div>
 
@@ -1992,7 +1992,7 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
                   </div>
                   <p className="text-stone-500 mt-1">{svc.description}</p>
                   <span className="text-stone-400 text-[11px] mt-1 block">
-                    Duration: ~{svc.durationMinutes} mins
+                    Duration: ~{formatDuration(svc.durationMinutes)}
                   </span>
                 </div>
 

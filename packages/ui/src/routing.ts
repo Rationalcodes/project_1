@@ -1,4 +1,5 @@
 import { calculateHaversineDistance } from './googleMaps';
+import { formatDuration } from './timeFormat';
 
 export interface DrivingRouteResult {
   /** Array of [latitude, longitude] coordinates along the complete journey */
@@ -145,7 +146,7 @@ export async function fetchDrivingRoute(
         totalDurSec = Math.round(totalDistMeters / 1.25);
       }
       const durMins = Math.max(1, Math.round(totalDurSec / 60));
-      const durFormatted = durMins >= 60 ? `${Math.floor(durMins / 60)}h ${durMins % 60}m` : `${durMins} min`;
+      const durFormatted = formatDuration(durMins);
 
       let summaryLabel = mode === 'walking' ? 'Walking path' : 'Via Road';
       if (userDisplacement && shopDisplacement) {
@@ -184,7 +185,7 @@ export async function fetchDrivingRoute(
       distanceKm: Math.round((directMeters / 1000) * 10) / 10,
       distanceFormatted: directMeters < 1000 ? `${directMeters}m` : `${(directMeters / 1000).toFixed(1)} km`,
       durationMinutes: directMinutes,
-      durationFormatted: `${directMinutes} min`,
+      durationFormatted: formatDuration(directMinutes),
       isRoadRoute: false,
       hasUserDisplacement: false,
       hasShopDisplacement: false,

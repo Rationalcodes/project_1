@@ -1,5 +1,5 @@
 import React from 'react';
-import { useSalon, getEstimatedWaitMinutes, getQueueDisplay, getQueueFreshness } from '../../context/CustomerContext';
+import { useSalon, getEstimatedWaitMinutes, formatDuration, getQueueDisplay, getQueueFreshness } from '../../context/CustomerContext';
 import { X, Star, Users, Clock, Navigation, IndianRupee, Scissors } from 'lucide-react';
 
 export const CompareModal: React.FC = () => {
@@ -93,7 +93,7 @@ export const CompareModal: React.FC = () => {
                       <span className="text-xs font-normal text-stone-500">People</span>
                     </div>
                     <div className="text-[11px] font-semibold mt-1">
-                      ~{waitTime} min wait time
+                      ~{formatDuration(waitTime)} wait time
                     </div>
                     <div className="text-[10px] text-stone-500 mt-0.5">
                       {freshness.text}

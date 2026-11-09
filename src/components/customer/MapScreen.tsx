@@ -18,6 +18,7 @@ import {
 import {
   useSalon,
   getEstimatedWaitMinutes,
+  formatDuration,
   matchesGenderFilter,
 } from '../../context/SalonContext';
 import { Salon } from '../../types';
@@ -722,7 +723,7 @@ export const MapScreen: React.FC = () => {
                           <span className="font-semibold text-stone-700">{salon.distanceKm} km away</span>
                           <span>•</span>
                           <span className={`${salon.isOpen ? 'text-emerald-700 font-semibold' : 'text-stone-400'}`}>
-                            {salon.isOpen ? `${salon.currentQueue} in queue (${waitTime}m)` : 'Closed'}
+                            {salon.isOpen ? `${salon.currentQueue} in queue (${formatDuration(waitTime)})` : 'Closed'}
                           </span>
                         </div>
                       </div>

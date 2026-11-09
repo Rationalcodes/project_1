@@ -1053,6 +1053,33 @@ export const getEstimatedWaitMinutes = (currentQueue: number, avgServiceTime: nu
   return Math.max(5, Math.ceil((currentQueue * time) / barbers));
 };
 
+export const formatDuration = (minutes: number | string | null | undefined): string => {
+  const num = typeof minutes === 'string' ? parseFloat(minutes) : minutes;
+  if (num == null || isNaN(num) || num <= 0) {
+    return '0 min';
+  }
+  const total = Math.round(num);
+  const hours = Math.floor(total / 60);
+  const mins = total % 60;
+
+  if (hours === 0) {
+    return `${mins} min`;
+  }
+  if (mins === 0) {
+    return `${hours} hr`;
+  }
+  return `${hours} hr ${mins} min`;
+};
+
+export const formatWaitTime = (minutes: number | string | null | undefined): string => {
+  const num = typeof minutes === 'string' ? parseFloat(minutes) : minutes;
+  if (num == null || isNaN(num) || num <= 0) {
+    return '0 min';
+  }
+  return `~${formatDuration(num)}`;
+};
+
+
 export const getQueueDisplay = (currentQueue: number, isOpen: boolean) => {
   if (!isOpen) {
     return {
@@ -1121,24 +1148,16 @@ export const getQueueFreshness = (isoDate: string) => {
       badgeClass: 'text-emerald-700 bg-emerald-50 border border-emerald-200'
     };
   }
-  if (diffMins < 6) {
+  if (diffMins < 20) {
     return {
-      text: `Updated ${diffMins} mins ago`,
+      text: `Updated ${formatDuration(diffMins)} ago`,
       isStale: false,
       color: 'text-stone-700',
       badgeClass: 'text-stone-700 bg-stone-100 border border-stone-200'
     };
   }
-  if (diffMins < 20) {
-    return {
-      text: `Updated ${diffMins} mins ago`,
-      isStale: false,
-      color: 'text-stone-600',
-      badgeClass: 'text-stone-600 bg-stone-100 border border-stone-200'
-    };
-  }
   return {
-    text: `Updated ${diffMins}m ago • Stale`,
+    text: `Updated ${formatDuration(diffMins)} ago • Stale`,
     isStale: true,
     color: 'text-orange-700',
     badgeClass: 'text-orange-700 bg-orange-50 border border-orange-200'

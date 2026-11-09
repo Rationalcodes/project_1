@@ -1,5 +1,5 @@
 import React from 'react';
-import { useSalon } from '../../context/SalonContext';
+import { useSalon, formatDuration } from '../../context/SalonContext';
 import { X, Navigation, Car, Bike, Footprints, ExternalLink, MapPin } from 'lucide-react';
 
 interface DirectionsModalProps {
@@ -50,19 +50,19 @@ export const DirectionsModal: React.FC<DirectionsModalProps> = ({ isOpen, onClos
         <div className="grid grid-cols-3 gap-2.5 my-4">
           <div className="bg-[#FAF7F2] border border-[#E8E2D8] rounded-2xl p-3 text-center">
             <Bike className="w-5 h-5 text-[#FF6422] mx-auto mb-1" />
-            <div className="text-sm font-bold text-stone-900">{bikeMins} mins</div>
+            <div className="text-sm font-bold text-stone-900">{formatDuration(bikeMins)}</div>
             <div className="text-[10px] text-stone-500">Two-Wheeler</div>
           </div>
 
           <div className="bg-[#FAF7F2] border border-[#E8E2D8] rounded-2xl p-3 text-center">
             <Car className="w-5 h-5 text-emerald-700 mx-auto mb-1" />
-            <div className="text-sm font-bold text-stone-900">{carMins} mins</div>
+            <div className="text-sm font-bold text-stone-900">{formatDuration(carMins)}</div>
             <div className="text-[10px] text-stone-500">Car / Cab</div>
           </div>
 
           <div className="bg-[#FAF7F2] border border-[#E8E2D8] rounded-2xl p-3 text-center">
             <Footprints className="w-5 h-5 text-blue-600 mx-auto mb-1" />
-            <div className="text-sm font-bold text-stone-900">{walkMins} mins</div>
+            <div className="text-sm font-bold text-stone-900">{formatDuration(walkMins)}</div>
             <div className="text-[10px] text-stone-500">Walking</div>
           </div>
         </div>

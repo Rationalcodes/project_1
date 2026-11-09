@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getTargetSalonFromUrl, useCustomer, getEstimatedWaitMinutes } from '../../context/CustomerContext';
+import { getTargetSalonFromUrl, useCustomer, getEstimatedWaitMinutes, formatDuration } from '../../context/CustomerContext';
 import { defaultApiClient } from '@kumbhakaran/api-client';
 import { Salon, QueueEntry } from '@kumbhakaran/shared-types';
 import {
@@ -232,7 +232,7 @@ export const ExpressWalkinScreen: React.FC<ExpressWalkinScreenProps> = ({
               {queueCount > 0 && (
                 <span className="text-[11px] text-stone-500 font-semibold flex items-center gap-1">
                   <Clock className="w-3 h-3 text-stone-400" />
-                  ~{estWait}m wait
+                  ~{formatDuration(estWait)} wait
                 </span>
               )}
             </div>
@@ -284,7 +284,7 @@ export const ExpressWalkinScreen: React.FC<ExpressWalkinScreenProps> = ({
             <div className="bg-stone-50 p-3.5 rounded-2xl border border-stone-100 text-center">
               <div className="text-[10px] uppercase font-bold text-stone-400">Estimated Turn</div>
               <div className="text-base font-black text-stone-800 mt-0.5">
-                {currentTicket.status === 'in_service' ? 'Now' : currentTicket.position <= 1 ? 'Under 5m' : `~${estWait} mins`}
+                {currentTicket.status === 'in_service' ? 'Now' : currentTicket.position <= 1 ? 'Under 5 min' : `~${formatDuration(estWait)}`}
               </div>
             </div>
           </div>

@@ -16,6 +16,7 @@ import {
 import {
   useSalon,
   getEstimatedWaitMinutes,
+  formatDuration,
   getQueueDisplay,
   matchesGenderFilter,
   getSalonType,
@@ -289,7 +290,7 @@ export const ExploreScreen: React.FC = () => {
                       <span className={`w-2 h-2 rounded-full ${queueInfo.dotClass}`} />
                       {salon.currentQueue === 0
                         ? '0 Waiting • Immediate Chair'
-                        : `${salon.currentQueue} in line • ~${waitTime}m wait`}
+                        : `${salon.currentQueue} in line • ~${formatDuration(waitTime)} wait`}
                     </span>
                   </div>
 

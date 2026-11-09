@@ -1,5 +1,5 @@
 import React from 'react';
-import { useSalon, getEstimatedWaitMinutes, getQueueDisplay, getQueueFreshness } from '../../context/SalonContext';
+import { useSalon, getEstimatedWaitMinutes, formatDuration, getQueueDisplay, getQueueFreshness } from '../../context/SalonContext';
 import { Heart, Bell, Trash2, ArrowRight, Users, Clock, Navigation, Star } from 'lucide-react';
 
 export const FavouritesScreen: React.FC = () => {
@@ -136,7 +136,7 @@ export const FavouritesScreen: React.FC = () => {
                       <span>{salon.currentQueue}</span>
                     </div>
                     <div className="text-[10px] font-semibold text-emerald-700">
-                      ~{waitTime}m wait
+                      ~{formatDuration(waitTime)} wait
                     </div>
                   </div>
 

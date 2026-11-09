@@ -29,7 +29,7 @@ import {
   X,
   ChevronLeft
 } from 'lucide-react';
-import { useSalon, getEstimatedWaitMinutes, getQueueDisplay, getQueueFreshness } from '../../context/SalonContext';
+import { useSalon, getEstimatedWaitMinutes, formatDuration, getQueueDisplay, getQueueFreshness } from '../../context/SalonContext';
 import { Service, Staff } from '../../types';
 import { SalonMapboxView } from '@kumbhakaran/ui';
 
@@ -354,7 +354,7 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
               <Clock className="w-3.5 h-3.5 text-[#FF6422]" /> Estimated Wait Time
             </div>
             <div className="text-2xl font-black text-stone-900 mt-1">
-              ~{waitTime} <span className="text-xs font-normal text-stone-500">minutes</span>
+              ~{formatDuration(waitTime)}
             </div>
             <p className="text-[10px] text-stone-500 mt-1 leading-snug">
               Direct walk-in counter synced live with salon.
@@ -457,7 +457,7 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
                   </p>
                   <div className="flex items-center gap-3 mt-2 text-[11px] text-stone-500">
                     <span className="flex items-center gap-1">
-                      <Clock className="w-3 h-3 text-stone-400" /> ~{service.durationMinutes} mins
+                      <Clock className="w-3 h-3 text-stone-400" /> ~{formatDuration(service.durationMinutes)}
                     </span>
                     <span>•</span>
                     <span className="text-stone-500">Category: {service.category}</span>

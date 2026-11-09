@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useSalon, getEstimatedWaitMinutes, getQueueDisplay, getQueueFreshness } from '../../context/SalonContext';
+import { useSalon, getEstimatedWaitMinutes, formatDuration, getQueueDisplay, getQueueFreshness } from '../../context/SalonContext';
 import {
   LayoutDashboard,
   Users,
@@ -444,7 +444,7 @@ export const OwnerApp: React.FC = () => {
               </div>
 
               <div>
-                <span>Est. customer wait time: <strong className="text-emerald-400">~{waitTime} mins</strong></span>
+                <span>Est. customer wait time: <strong className="text-emerald-400">~{formatDuration(waitTime)}</strong></span>
               </div>
 
               <div>
@@ -480,7 +480,7 @@ export const OwnerApp: React.FC = () => {
                 {activeSalon.currentQueue}
               </div>
               <div className="text-[10px] text-zinc-400 mt-1">
-                ~{waitTime} min wait time
+                ~{formatDuration(waitTime)} wait time
               </div>
             </div>
 
@@ -689,7 +689,7 @@ export const OwnerApp: React.FC = () => {
                   </div>
                   <p className="text-zinc-400 mt-1">{svc.description}</p>
                   <span className="text-zinc-500 text-[11px] mt-1 block">
-                    Duration: ~{svc.durationMinutes} mins
+                    Duration: ~{formatDuration(svc.durationMinutes)}
                   </span>
                 </div>
 

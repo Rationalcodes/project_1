@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useSalon } from '../../context/PartnerContext';
+import { useSalon, formatDuration } from '../../context/PartnerContext';
 import { useLanguage } from '../../i18n/LanguageContext';
 import { SalonLocationPicker } from './SalonLocationPicker';
 import {
@@ -559,7 +559,7 @@ export const SalonRegistrationWizard: React.FC<SalonRegistrationWizardProps> = (
                 >
                   <div>
                     <span className="font-bold text-stone-900">{svc.name}</span>
-                    <span className="text-[10px] text-stone-400 ml-2">~{svc.durationMinutes} mins</span>
+                    <span className="text-[10px] text-stone-400 ml-2">~{formatDuration(svc.durationMinutes)}</span>
                     <p className="text-[11px] text-stone-500 line-clamp-1">{svc.description}</p>
                   </div>
 
