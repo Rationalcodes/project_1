@@ -1,0 +1,28 @@
+# SLOON / Kumbhakaran Caddyfile
+# Automatic HTTPS with Let's Encrypt for your domain, or HTTP for raw EC2 IP
+
+{
+    admin off
+    auto_https off # Set to 'on' or remove this line when you attach your domain
+}
+
+:80 {
+    # 1. API & WebSocket routes reverse proxied to NestJS Fastify backend
+    handle /api/* {
+        reverse_proxy backend:10000
+    }
+
+    handle /socket.io/* {
+        reverse_proxy backend:10000
+    }
+
+    # 2. Static Frontend Single Page Application (Customer Web)
+    handle {
+        root * /srv/frontend
+        try_files {path} /index.html
+        file_server
+    }
+
+    # Security & Compression Headers
+    encode zstd gzip
+}

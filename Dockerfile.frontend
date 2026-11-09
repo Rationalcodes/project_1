@@ -1,0 +1,24 @@
+# Production Frontend Build for AWS EC2 / S3
+FROM node:22-alpine AS build
+WORKDIR /app
+
+# Enable pnpm
+RUN corepack enable && corepack prepare pnpm@latest --activate
+
+# Copy root workspace configs
+COPY package.json pnpm-lock.yaml* pnpm-workspace.yaml* ./
+COPY packages ./packages
+COPY apps ./apps
+COPY src ./src
+COPY public ./public
+COPY index.html vite.config.ts tsconfig.json ./
+
+# Install dependencies and build frontend
+RUN pnpm install --frozen-lockfile || pnpm install
+RUN pnpm run build
+
+# Stage 2: Serve files
+FROM alpine:latest
+WORKDIR /dist
+COPY --from=build /app/dist /dist
+CMD ["sleep", "infinity"]

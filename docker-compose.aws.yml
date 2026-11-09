@@ -1,0 +1,39 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: sloon-backend
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - PORT=10000
+      - DATABASE_URL=${DATABASE_URL}
+      - JWT_SECRET=${JWT_SECRET:-sloon_super_secret_production_key_change_me}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
+    ports:
+      - "10000:10000"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:10000/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: sloon-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./dist:/srv/frontend:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - backend
+
+volumes:
+  caddy_data:
+  caddy_config:
