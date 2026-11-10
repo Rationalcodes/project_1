@@ -381,12 +381,33 @@ export class QueueEngineService implements OnModuleInit, OnModuleDestroy {
       },
     });
 
-    const isClosed = salon?.isOpen === false || salon?.queueStatus === 'closed';
+    if (!salon) {
+      return {
+        overview: {
+          salonId,
+          queueStatus: 'closed',
+          totalWaiting: 0,
+          inServiceCount: 0,
+          completedCount: 0,
+          skippedCount: 0,
+          cancelledCount: 0,
+          averageWaitMinutes: 0,
+          estimatedTotalQueueDurationMinutes: 0,
+          availableStaffCount: 0,
+          totalStaffCount: 0,
+          lastQueueUpdate: now.toISOString(),
+        },
+        activeEntries: [],
+        staffStates: [],
+      };
+    }
 
-    const activeBarbersCount = Math.max(1, salon?.activeBarbers || 2);
+    const isClosed = salon.isOpen === false || salon.queueStatus === 'closed';
+
+    const activeBarbersCount = Math.max(1, salon.activeBarbers || 2);
     const queueStatus: 'open' | 'paused' | 'closed' = isClosed
       ? 'closed'
-      : salon?.queueStatus === 'paused'
+      : salon.queueStatus === 'paused'
         ? 'paused'
         : 'open';
 

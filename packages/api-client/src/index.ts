@@ -985,14 +985,17 @@ export class KumbhakaranApiClient {
    * Get waiting customer entries in the live walk-in queue
    */
   async getQueueEntries(salonId: string): Promise<any[]> {
-    const res = await fetch(`${this.baseUrl}/salons/${salonId}/queue-entries`, {
-      headers: this.getHeaders(),
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.message || 'Could not load the salon queue');
+    try {
+      const res = await fetch(`${this.baseUrl}/salons/${encodeURIComponent(salonId)}/queue-entries`, {
+        headers: this.getHeaders(),
+      });
+      if (!res.ok) {
+        return [];
+      }
+      return await res.json();
+    } catch {
+      return [];
     }
-    return await res.json();
   }
 
   async getPartnerQueueEntries(salonId: string): Promise<any[]> {
