@@ -59,6 +59,7 @@ import {
 import QRCode from 'qrcode';
 import { OwnerTab, Service, Staff, QueueEntry, HOME_VISIT_CATEGORIES, HomeVisitBookingRequest, HomeVisitCategory, SalonMarketingConfig } from '@kumbhakaran/shared-types';
 import { SalonGrowthMarketingManager } from './SalonGrowthMarketingManager';
+import { SloonBusinessInsightsView } from './SloonBusinessInsightsView';
 import { openGoogleMapsLocation } from '@kumbhakaran/ui';
 import { SalonLocationPicker, LocationPickerResult } from '../partner/SalonLocationPicker';
 import { PendingApprovalScreen } from '../partner/PendingApprovalScreen';
@@ -2668,30 +2669,17 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
       )}
 
       {/* TAB 6: ANALYTICS & TRAFFIC REPORTS (Real-Time Dynamic Metrics) */}
+      {/* TAB 6: ANALYTICS & BUSINESS INSIGHTS (Fair Marketplace Intelligence) */}
       {ownerTab === 'analytics' && (
-        <div className="space-y-5">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div className="bg-[#14141c] border border-zinc-800 rounded-2xl p-4">
-              <span className="text-xs text-zinc-400">Customers Served Today</span>
-              <div className="text-2xl font-black text-white mt-1">{realCustomersServed} Customers</div>
-              <span className="text-[10px] text-emerald-400">
-                {realCustomersServed > 0 ? `${realCustomersServed} completed walk-ins` : 'Starts from first walk-in today'}
-              </span>
-            </div>
-            <div className="bg-[#14141c] border border-zinc-800 rounded-2xl p-4">
-              <span className="text-xs text-zinc-400">Total Revenue Tracked</span>
-              <div className="text-2xl font-black text-amber-400 mt-1">₹{realMonthlyRevenue.toLocaleString()}</div>
-              <span className="text-[10px] text-zinc-500">Based on live services completed</span>
-            </div>
-            <div className="bg-[#14141c] border border-zinc-800 rounded-2xl p-4">
-              <span className="text-xs text-zinc-400">Top In-Demand Service</span>
-              <div className="text-2xl font-black text-white mt-1 truncate">{popularServiceStats.name}</div>
-              <span className="text-[10px] text-zinc-500 truncate block">{popularServiceStats.note}</span>
-            </div>
-          </div>
-        </div>
+        <SloonBusinessInsightsView
+          salon={activeSalon}
+          queueEntries={queueEntries}
+          realCustomersServed={realCustomersServed}
+          realTodayRevenue={realTodayRevenue}
+          realMonthlyRevenue={realMonthlyRevenue}
+          onNavigateTab={(tab) => setOwnerTab(tab as OwnerTab)}
+        />
       )}
-
       {/* TAB: MEDIA & LOOP VIDEO SHOWCASE STUDIO */}
       {ownerTab === 'gallery' && (
         <div className="space-y-6 max-w-4xl">

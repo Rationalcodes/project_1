@@ -15,6 +15,15 @@ import {
   Sparkles,
   Map as MapIcon,
   ArrowRight,
+  Percent,
+  Home,
+  UserCheck,
+  Crown,
+  ShieldCheck,
+  Zap,
+  SlidersHorizontal,
+  Compass,
+  Info,
 } from 'lucide-react';
 import {
   useSalon,
@@ -25,10 +34,16 @@ import {
   matchesGenderFilter,
   getSalonType,
 } from '../../context/CustomerContext';
+import {
+  DiscoveryCategory,
+  DISCOVERY_CATEGORIES,
+  DEFAULT_RANKING_WEIGHTS,
+  Salon,
+} from '@kumbhakaran/shared-types';
 import { MapScreen } from './MapScreen';
 
 type ExploreViewMode = 'studios' | 'map';
-type SortOption = 'all' | 'queue' | 'distance' | 'rating' | 'open';
+type SortOption = 'smart_rank' | 'queue' | 'distance' | 'rating' | 'price_asc';
 
 export const ExploreScreen: React.FC = () => {
   const {
@@ -42,35 +57,130 @@ export const ExploreScreen: React.FC = () => {
   } = useSalon();
 
   const [viewMode, setViewMode] = useState<ExploreViewMode>('studios');
-  const [activeFilter, setActiveFilter] = useState<SortOption>('all');
+  const [selectedCategory, setSelectedCategory] = useState<DiscoveryCategory>('all');
+  const [activeSort, setActiveSort] = useState<SortOption>('smart_rank');
+  const [showFairRankingInfo, setShowFairRankingInfo] = useState(false);
 
   const isWomen = genderFilter === 'women';
 
-  // Filtered & Sorted Salon Records (Memoized for Phase 4 Optimization)
+  // Transparent multi-factor ranking scoring function (Sustainable marketplace - not price-only race)
+  const computeFairScore = (salon: Salon): number => {
+    // 1. Rating Quality & Credibility (30%)
+    const ratingScore = (Math.min(5, Math.max(0, salon.rating)) / 5.0) * DEFAULT_RANKING_WEIGHTS.ratingWeight;
+
+    // 2. Proximity to user (25%)
+    const distanceScore = Math.max(0, 1 - (salon.distanceKm / 15)) * DEFAULT_RANKING_WEIGHTS.distanceWeight;
+
+    // 3. Real-time availability & queue wait time (20%)
+    const isAvailable = salon.isOpen && salon.queueStatus !== 'closed' && salon.queueStatus !== 'paused';
+    const queueFactor = salon.currentQueue === 0 ? 1 : Math.max(0.2, 1 - (salon.currentQueue / 6));
+    const availScore = (isAvailable ? queueFactor : 0.05) * DEFAULT_RANKING_WEIGHTS.availabilityWeight;
+
+    // 4. Verification & KYC trust (15%)
+    const verifiedScore = (salon.isVerified ? 1.0 : 0.6) * DEFAULT_RANKING_WEIGHTS.verifiedWeight;
+
+    // 5. Pricing transparency & fairness (10%)
+    const priceScore = Math.max(0.4, 1 - (Math.max(0, salon.startingPrice - 100) / 1000)) * DEFAULT_RANKING_WEIGHTS.pricingFitWeight;
+
+    // 6. Transparent Sponsored / Featured Partner Boost (capped)
+    const sponsoredBonus = (salon.isSponsored || salon.featured) ? DEFAULT_RANKING_WEIGHTS.sponsoredBoost : 0;
+
+    return ratingScore + distanceScore + availScore + verifiedScore + priceScore + sponsoredBonus;
+  };
+
+  // Filtered & Sorted Salon Records
   const processedSalons = useMemo(() => {
     return salons
       .filter((salon) => {
+        // Gender match
         if (!matchesGenderFilter(salon, genderFilter)) return false;
-        if (activeFilter === 'open' && !salon.isOpen) return false;
 
+        // Search text matching
         if (searchQuery.trim()) {
           const q = searchQuery.toLowerCase();
-          return (
+          const matches =
             salon.name.toLowerCase().includes(q) ||
             salon.locality.toLowerCase().includes(q) ||
             salon.city.toLowerCase().includes(q) ||
-            (salon.tagline && salon.tagline.toLowerCase().includes(q))
+            (salon.tagline && salon.tagline.toLowerCase().includes(q));
+          if (!matches) return false;
+        }
+
+        // Category filter matching
+        if (selectedCategory === 'available_now') {
+          return salon.isOpen && salon.queueStatus !== 'closed' && salon.queueStatus !== 'paused' && salon.currentQueue <= 1;
+        }
+        if (selectedCategory === 'budget') {
+          return salon.startingPrice <= 249;
+        }
+        if (selectedCategory === 'top_rated') {
+          return salon.rating >= 4.8;
+        }
+        if (selectedCategory === 'professional') {
+          return !salon.providerType || salon.providerType === 'traditional_salon';
+        }
+        if (selectedCategory === 'home_services') {
+          return salon.hasHomeService || salon.providerType === 'freelance_pro' || (salon.serviceModes && salon.serviceModes.includes('home_visit'));
+        }
+        if (selectedCategory === 'home_studio') {
+          return salon.providerType === 'home_studio';
+        }
+        if (selectedCategory === 'independent') {
+          return salon.providerType === 'independent_pro' || salon.providerType === 'freelance_pro';
+        }
+        if (selectedCategory === 'bridal') {
+          return (
+            salon.homeServiceCategories?.includes('bridal') ||
+            salon.services?.some((s) => s.category === 'Combos' || s.name.toLowerCase().includes('bridal'))
           );
         }
+
         return true;
       })
       .sort((a, b) => {
-        if (activeFilter === 'queue') return a.currentQueue - b.currentQueue;
-        if (activeFilter === 'distance') return a.distanceKm - b.distanceKm;
-        if (activeFilter === 'rating') return b.rating - a.rating;
+        if (activeSort === 'smart_rank') {
+          return computeFairScore(b) - computeFairScore(a);
+        }
+        if (activeSort === 'queue') {
+          return a.currentQueue - b.currentQueue;
+        }
+        if (activeSort === 'distance') {
+          return a.distanceKm - b.distanceKm;
+        }
+        if (activeSort === 'rating') {
+          return b.rating - a.rating;
+        }
+        if (activeSort === 'price_asc') {
+          return a.startingPrice - b.startingPrice;
+        }
         return 0;
       });
-  }, [salons, genderFilter, activeFilter, searchQuery]);
+  }, [salons, genderFilter, selectedCategory, activeSort, searchQuery]);
+
+  // Icon mapping helper for categories
+  const renderCategoryIcon = (iconName: string, active: boolean) => {
+    const iconClass = `w-3.5 h-3.5 ${active ? 'text-white' : 'text-stone-600'}`;
+    switch (iconName) {
+      case 'Zap':
+        return <Zap className={iconClass} />;
+      case 'Percent':
+        return <Percent className={iconClass} />;
+      case 'Star':
+        return <Star className={`w-3.5 h-3.5 ${active ? 'fill-white text-white' : 'fill-amber-400 text-amber-500'}`} />;
+      case 'Store':
+        return <Store className={iconClass} />;
+      case 'Home':
+        return <Home className={iconClass} />;
+      case 'Sparkles':
+        return <Sparkles className={iconClass} />;
+      case 'UserCheck':
+        return <UserCheck className={iconClass} />;
+      case 'Crown':
+        return <Crown className={iconClass} />;
+      default:
+        return <Compass className={iconClass} />;
+    }
+  };
 
   return (
     <div className="space-y-4 pb-28 text-stone-900 max-w-5xl mx-auto">
@@ -79,16 +189,47 @@ export const ExploreScreen: React.FC = () => {
         <div className="flex items-center justify-between px-1">
           <div>
             <h1 className="text-lg font-black tracking-tight text-stone-950 flex items-center gap-2">
-              <span>Explore Salons</span>
+              <span>Fair Marketplace Discovery</span>
               <span className="text-[10px] uppercase font-black px-2 py-0.5 rounded-full bg-stone-200/80 text-stone-700">
                 {genderFilter === 'women' ? 'Women' : 'Men'}
               </span>
             </h1>
             <p className="text-[11px] text-stone-500 font-medium">
-              Browse salons, see current wait times, or tap Map to see what is around you.
+              Transparent local discovery for physical salons, studios, and home beauty pros.
             </p>
           </div>
+
+          <button
+            type="button"
+            onClick={() => setShowFairRankingInfo(!showFairRankingInfo)}
+            className="flex items-center gap-1 text-[11px] font-bold text-stone-600 hover:text-stone-900 bg-white border border-stone-200/80 px-2.5 py-1 rounded-full shadow-xs cursor-pointer transition-colors"
+          >
+            <Info className="w-3.5 h-3.5 text-[#FF6422]" />
+            <span className="hidden sm:inline">How Ranking Works</span>
+          </button>
         </div>
+
+        {/* Ranking Transparency Info Box */}
+        {showFairRankingInfo && (
+          <div className="bg-amber-50/90 border border-amber-200/80 rounded-2xl p-3 text-xs text-amber-900 space-y-1.5 animate-in fade-in duration-150">
+            <div className="flex items-center justify-between font-bold">
+              <span className="flex items-center gap-1.5 text-stone-900">
+                <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                Sloon Fair Marketplace Guarantee
+              </span>
+              <button
+                type="button"
+                onClick={() => setShowFairRankingInfo(false)}
+                className="text-stone-400 hover:text-stone-700 cursor-pointer"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+            <p className="text-[11px] text-stone-600 leading-relaxed">
+              We never promote salons solely based on price-gouging or who paid the most. Our fair ranking balances verified ratings (30%), real distance (25%), zero-wait availability (20%), verified identity checks (15%), and fair prices (10%).
+            </p>
+          </div>
+        )}
 
         {/* Clean 2-Way Segmented Control: [ Explore Studios | 🗺️ Map ] */}
         <div className="bg-stone-200/70 p-1 rounded-2xl flex items-center gap-1 max-w-md">
@@ -139,8 +280,8 @@ export const ExploreScreen: React.FC = () => {
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder={
                 isWomen
-                  ? 'Search parlours by name, locality or city...'
-                  : 'Search salons by name, locality or city...'
+                  ? 'Search parlours, home studios, or bridal artists...'
+                  : 'Search salons, barbers, or home grooming pros...'
               }
               className={`w-full pl-10 pr-9 py-2.5 bg-white border ${
                 isWomen
@@ -158,105 +299,83 @@ export const ExploreScreen: React.FC = () => {
             )}
           </div>
 
-          {/* Quick Filter Pills */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar text-xs">
-            <button
-              onClick={() => setActiveFilter('all')}
-              className={`px-3 py-1.5 rounded-full font-bold whitespace-nowrap transition-all border cursor-pointer ${
-                activeFilter === 'all'
-                  ? isWomen
-                    ? 'bg-[#F47B70] text-white border-[#F47B70] shadow-xs'
-                    : 'bg-[#FF6422] text-white border-[#FF6422] shadow-xs'
-                  : 'bg-white text-stone-700 border-stone-200 hover:border-stone-300'
-              }`}
-            >
-              All Salons
-            </button>
-
-            <button
-              onClick={() => setActiveFilter('queue')}
-              className={`px-3 py-1.5 rounded-full font-bold whitespace-nowrap flex items-center gap-1.5 transition-all border cursor-pointer ${
-                activeFilter === 'queue'
-                  ? isWomen
-                    ? 'bg-[#F47B70] text-white border-[#F47B70] shadow-xs'
-                    : 'bg-[#FF6422] text-white border-[#FF6422] shadow-xs'
-                  : 'bg-white text-stone-700 border-stone-200 hover:border-stone-300'
-              }`}
-            >
-              <Users className="w-3.5 h-3.5" />
-              <span>Shortest Wait</span>
-            </button>
-
-            <button
-              onClick={() => setActiveFilter('distance')}
-              className={`px-3 py-1.5 rounded-full font-bold whitespace-nowrap flex items-center gap-1.5 transition-all border cursor-pointer ${
-                activeFilter === 'distance'
-                  ? isWomen
-                    ? 'bg-[#F47B70] text-white border-[#F47B70] shadow-xs'
-                    : 'bg-[#FF6422] text-white border-[#FF6422] shadow-xs'
-                  : 'bg-white text-stone-700 border-stone-200 hover:border-stone-300'
-              }`}
-            >
-              <Navigation className="w-3.5 h-3.5" />
-              <span>Closest to Me</span>
-            </button>
-
-            <button
-              onClick={() => setActiveFilter('rating')}
-              className={`px-3 py-1.5 rounded-full font-bold whitespace-nowrap flex items-center gap-1.5 transition-all border cursor-pointer ${
-                activeFilter === 'rating'
-                  ? isWomen
-                    ? 'bg-[#F47B70] text-white border-[#F47B70] shadow-xs'
-                    : 'bg-[#FF6422] text-white border-[#FF6422] shadow-xs'
-                  : 'bg-white text-stone-700 border-stone-200 hover:border-stone-300'
-              }`}
-            >
-              <Star className="w-3.5 h-3.5 fill-current" />
-              <span>Top Rated</span>
-            </button>
-
-            <button
-              onClick={() => setActiveFilter(activeFilter === 'open' ? 'all' : 'open')}
-              className={`px-3 py-1.5 rounded-full font-bold whitespace-nowrap flex items-center gap-1.5 transition-all border cursor-pointer ${
-                activeFilter === 'open'
-                  ? isWomen
-                    ? 'bg-[#F47B70] text-white border-[#F47B70] shadow-xs'
-                    : 'bg-[#FF6422] text-white border-[#FF6422] shadow-xs'
-                  : 'bg-white text-stone-700 border-stone-200 hover:border-stone-300'
-              }`}
-            >
-              <Store className="w-3.5 h-3.5" />
-              <span>Open Now</span>
-            </button>
+          {/* 9 Fair Marketplace Discovery Categories */}
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar text-xs">
+            {DISCOVERY_CATEGORIES.map((cat) => {
+              const isActive = selectedCategory === cat.id;
+              return (
+                <button
+                  key={cat.id}
+                  onClick={() => setSelectedCategory(cat.id)}
+                  className={`px-3 py-1.5 rounded-full font-bold whitespace-nowrap flex items-center gap-1.5 transition-all border cursor-pointer ${
+                    isActive
+                      ? isWomen
+                        ? 'bg-[#F47B70] text-white border-[#F47B70] shadow-xs'
+                        : 'bg-[#FF6422] text-white border-[#FF6422] shadow-xs'
+                      : 'bg-white text-stone-700 border-stone-200 hover:border-stone-300'
+                  }`}
+                  title={cat.subtitle}
+                >
+                  {renderCategoryIcon(cat.iconName, isActive)}
+                  <span>{cat.label}</span>
+                  {cat.badge && (
+                    <span
+                      className={`text-[9px] px-1.5 py-0.2 rounded-full font-black ${
+                        isActive ? 'bg-white/20 text-white' : 'bg-stone-100 text-stone-600'
+                      }`}
+                    >
+                      {cat.badge}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
           </div>
 
-          {/* Subheader: Salon counter */}
-          <div className="flex items-center justify-between text-xs text-stone-500 px-1 pt-1">
-            <span>
-              Showing <strong className="text-stone-900">{processedSalons.length}</strong> studios
+          {/* Secondary Sorting Controls & Count */}
+          <div className="flex items-center justify-between text-xs text-stone-500 px-1 pt-0.5">
+            <span className="font-medium">
+              Showing <strong className="text-stone-900 font-black">{processedSalons.length}</strong> partners
             </span>
+
+            <div className="flex items-center gap-1.5">
+              <span className="text-[11px] text-stone-400 hidden sm:inline">Sort by:</span>
+              <select
+                value={activeSort}
+                onChange={(e) => setActiveSort(e.target.value as SortOption)}
+                aria-label="Sort salons by"
+                className="bg-white border border-stone-200 text-stone-800 text-[11px] font-bold rounded-xl px-2.5 py-1 focus:outline-none focus:border-[#FF6422] cursor-pointer shadow-xs"
+              >
+                <option value="smart_rank">✨ Smart Fair Rank</option>
+                <option value="queue">⏳ Shortest Wait Line</option>
+                <option value="distance">📍 Closest Distance</option>
+                <option value="rating">⭐ Highest Rated</option>
+                <option value="price_asc">💰 Pocket Friendly (Price)</option>
+              </select>
+            </div>
           </div>
 
           {/* Salon Card Directory */}
           {processedSalons.length === 0 ? (
             <div className="bg-white rounded-3xl p-8 text-center border border-stone-200 shadow-xs">
               <Store className="w-12 h-12 text-stone-300 mx-auto mb-3" />
-              <p className="text-stone-800 font-bold text-sm">No studios found</p>
+              <p className="text-stone-800 font-bold text-sm">No salons or studios found</p>
               <p className="text-stone-500 text-xs mt-1">
-                Try loosening your search query or filter.
+                Try switching categories or clearing search keywords.
               </p>
               <button
                 onClick={() => {
                   setSearchQuery('');
-                  setActiveFilter('all');
+                  setSelectedCategory('all');
+                  setActiveSort('smart_rank');
                 }}
                 className="mt-4 px-4 py-2 bg-stone-900 text-white rounded-xl text-xs font-bold cursor-pointer"
               >
-                Clear Filters
+                Reset All Filters
               </button>
             </div>
           ) : (
-            <div className="space-y-3.5">
+            <div className="space-y-4">
               {processedSalons.map((salon) => {
                 const waitTime = getEstimatedWaitMinutes(
                   salon.currentQueue,
@@ -271,6 +390,20 @@ export const ExploreScreen: React.FC = () => {
                   (salon.images && salon.images[0]) ||
                   (salon.locationImages && salon.locationImages[0]) ||
                   '';
+
+                const isSponsored = salon.isSponsored || salon.featured;
+                const isQuietHoursActive =
+                  salon.marketingConfig?.quietHours?.enabled &&
+                  salon.marketingConfig.quietHours.discountValue > 0;
+
+                const providerTypeLabel =
+                  salon.providerType === 'home_studio'
+                    ? 'Private Studio'
+                    : salon.providerType === 'freelance_pro'
+                    ? 'Freelance Stylist'
+                    : salon.providerType === 'independent_pro'
+                    ? 'Master Stylist'
+                    : 'Physical Salon';
 
                 return (
                   <div
@@ -297,20 +430,22 @@ export const ExploreScreen: React.FC = () => {
                         </div>
                       )}
 
-                      {/* Top-Left: Clean Live Status Pill */}
-                      <div className="absolute top-3 left-3 flex items-center gap-1.5">
+                      {/* Top-Left: Live Status Pill & Sponsored Badge */}
+                      <div className="absolute top-3 left-3 flex flex-wrap items-center gap-1.5 max-w-[75%]">
                         <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-white/95 text-stone-900 shadow-sm backdrop-blur-md border border-stone-200/60">
-                          <span className={`w-2 h-2 rounded-full ${
-                            !salon.isOpen || salon.queueStatus === 'closed'
-                              ? 'bg-stone-400'
-                              : salon.queueStatus === 'paused'
-                              ? 'bg-amber-400'
-                              : salon.currentQueue === 0
-                              ? 'bg-emerald-500'
-                              : salon.currentQueue <= 3
-                              ? 'bg-emerald-500'
-                              : 'bg-amber-500'
-                          }`} />
+                          <span
+                            className={`w-2 h-2 rounded-full ${
+                              !salon.isOpen || salon.queueStatus === 'closed'
+                                ? 'bg-stone-400'
+                                : salon.queueStatus === 'paused'
+                                ? 'bg-amber-400'
+                                : salon.currentQueue === 0
+                                ? 'bg-emerald-500'
+                                : salon.currentQueue <= 3
+                                ? 'bg-emerald-500'
+                                : 'bg-amber-500'
+                            }`}
+                          />
                           <span>
                             {!salon.isOpen || salon.queueStatus === 'closed'
                               ? 'Closed'
@@ -321,6 +456,20 @@ export const ExploreScreen: React.FC = () => {
                               : `${salon.currentQueue} in line • ~${formatDuration(waitTime)}`}
                           </span>
                         </span>
+
+                        {isSponsored && (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-500 text-white shadow-sm backdrop-blur-md">
+                            <Sparkles className="w-3 h-3" />
+                            <span>Featured</span>
+                          </span>
+                        )}
+
+                        {isQuietHoursActive && (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-600 text-white shadow-sm backdrop-blur-md">
+                            <Percent className="w-3 h-3" />
+                            <span>Happy Hour</span>
+                          </span>
+                        )}
                       </div>
 
                       {/* Top-Right: Action buttons (Instagram link + Heart Save) */}
@@ -359,16 +508,19 @@ export const ExploreScreen: React.FC = () => {
                         </button>
                       </div>
 
-                      {/* Bottom-Left subtle salon type tag */}
-                      <div className="absolute bottom-2.5 left-3">
+                      {/* Bottom-Left: Provider Archetype and Gender Model */}
+                      <div className="absolute bottom-2.5 left-3 flex items-center gap-1.5">
                         <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-black/60 text-white backdrop-blur-md border border-white/20">
+                          {providerTypeLabel}
+                        </span>
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-white/90 text-stone-800 backdrop-blur-md shadow-xs">
                           {salonType === 'men' ? "Men's Studio" : salonType === 'women' ? "Women's Parlour" : 'Unisex'}
                         </span>
                       </div>
                     </div>
 
-                    {/* Clean Human Card Details (Like Airbnb/Fresha) */}
-                    <div className="p-4 sm:p-4.5 space-y-2 flex-1 flex flex-col justify-between">
+                    {/* Human Details */}
+                    <div className="p-4 sm:p-4.5 space-y-3 flex-1 flex flex-col justify-between">
                       <div>
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex items-center gap-1.5 min-w-0">
@@ -376,14 +528,16 @@ export const ExploreScreen: React.FC = () => {
                               {salon.name}
                             </h3>
                             {salon.isVerified && (
-                              <CheckCircle2
-                                className={`w-4 h-4 shrink-0 ${
-                                  isWomen ? 'text-[#F47B70]' : 'text-[#FF6422]'
-                                }`}
-                              />
+                              <span title="Verified Partner with verified trade license">
+                                <CheckCircle2
+                                  className={`w-4 h-4 shrink-0 ${
+                                    isWomen ? 'text-[#F47B70]' : 'text-[#FF6422]'
+                                  }`}
+                                />
+                              </span>
                             )}
                           </div>
-                          <div className="flex items-center gap-1 shrink-0 text-xs font-bold text-stone-900">
+                          <div className="flex items-center gap-1 shrink-0 text-xs font-bold text-stone-900 bg-amber-50 px-2 py-0.5 rounded-lg border border-amber-200/60">
                             <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
                             <span>{salon.rating.toFixed(1)}</span>
                             <span className="text-stone-400 font-normal">({salon.reviewCount})</span>
@@ -402,24 +556,47 @@ export const ExploreScreen: React.FC = () => {
                               href={`tel:${salon.phone}`}
                               onClick={(e) => e.stopPropagation()}
                               className="flex items-center gap-1 text-[11px] font-bold text-stone-700 hover:text-emerald-700 shrink-0 bg-stone-50 hover:bg-emerald-50 px-2 py-0.5 rounded-lg border border-stone-200/60 transition-colors"
-                              title="Call salon"
+                              title="Call partner"
                             >
                               <Phone className="w-3 h-3 text-emerald-600" />
                               <span>Call</span>
                             </a>
                           )}
                         </div>
+
+                        {/* Supported Service Modes Pill */}
+                        <div className="flex flex-wrap items-center gap-1 mt-2.5">
+                          <span className="text-[10px] font-semibold text-stone-600 bg-stone-100 px-2 py-0.5 rounded-md flex items-center gap-1">
+                            <Store className="w-3 h-3 text-[#FF6422]" />
+                            <span>In-Salon Queue</span>
+                          </span>
+                          {(salon.hasHomeService || salon.serviceModes?.includes('home_visit')) && (
+                            <span className="text-[10px] font-semibold text-stone-600 bg-emerald-50 text-emerald-800 border border-emerald-200/60 px-2 py-0.5 rounded-md flex items-center gap-1">
+                              <Home className="w-3 h-3 text-emerald-600" />
+                              <span>Doorstep Available</span>
+                            </span>
+                          )}
+                        </div>
                       </div>
 
-                      <div className="pt-2.5 border-t border-stone-100 flex items-center justify-between text-xs">
-                        <span className="text-stone-600 font-medium">
-                          Haircuts from <strong className="text-stone-900 font-black">₹{salon.startingPrice}</strong>
-                        </span>
+                      {/* Transparent Price Breakdown Banner */}
+                      <div className="pt-2.5 border-t border-stone-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-stone-600 font-medium">
+                            Starts at <strong className="text-stone-900 font-black">₹{salon.startingPrice}</strong>
+                          </span>
+                          <span className="text-stone-300">•</span>
+                          <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
+                            ₹0 Platform Fee
+                          </span>
+                        </div>
 
-                        <span className={`font-bold flex items-center gap-1 group-hover:translate-x-0.5 transition-transform ${
-                          isWomen ? 'text-[#F47B70]' : 'text-[#FF6422]'
-                        }`}>
-                          <span>View chairs</span>
+                        <span
+                          className={`font-bold flex items-center gap-1 group-hover:translate-x-0.5 transition-transform ${
+                            isWomen ? 'text-[#F47B70]' : 'text-[#FF6422]'
+                          }`}
+                        >
+                          <span>View chairs & book</span>
                           <ArrowRight className="w-3.5 h-3.5" />
                         </span>
                       </div>

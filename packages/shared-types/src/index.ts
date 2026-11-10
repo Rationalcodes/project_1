@@ -402,6 +402,7 @@ export interface Salon {
   ratingBreakdown: ReviewCriteria;
   reviews: Review[];
   featured?: boolean;
+  isSponsored?: boolean;
   isVerified: boolean;
   status: 'active' | 'suspended' | 'pending';
   todayCustomersServed: number;
@@ -1098,4 +1099,159 @@ export interface UnifiedBooking {
   createdAt: string;
   updatedAt: string;
 }
+
+// ==============================================================================
+// Fair Discovery Engine & Multi-Factor Ranking
+// ==============================================================================
+
+export type DiscoveryCategory =
+  | 'all'
+  | 'budget'
+  | 'professional'
+  | 'premium'
+  | 'independent'
+  | 'home_studio'
+  | 'home_services'
+  | 'bridal'
+  | 'top_rated'
+  | 'available_now';
+
+export interface DiscoveryCategoryMeta {
+  id: DiscoveryCategory;
+  label: string;
+  iconName: string;
+  badge?: string;
+  subtitle: string;
+}
+
+export const DISCOVERY_CATEGORIES: DiscoveryCategoryMeta[] = [
+  {
+    id: 'all',
+    label: 'All Partners',
+    iconName: 'Compass',
+    subtitle: 'All trusted salons & beauty studios',
+  },
+  {
+    id: 'available_now',
+    label: 'Available Now',
+    iconName: 'Zap',
+    badge: 'Zero Wait',
+    subtitle: 'Under 15 mins queue or immediate slot',
+  },
+  {
+    id: 'budget',
+    label: 'Budget Friendly',
+    iconName: 'Percent',
+    badge: 'Under ₹249',
+    subtitle: 'High quality essential grooming at friendly prices',
+  },
+  {
+    id: 'top_rated',
+    label: 'Top Rated',
+    iconName: 'Star',
+    badge: '4.8+ ★',
+    subtitle: 'Loved by hundreds of local customers',
+  },
+  {
+    id: 'professional',
+    label: 'Salons & Parlours',
+    iconName: 'Store',
+    subtitle: 'Traditional brick-and-mortar salons',
+  },
+  {
+    id: 'home_services',
+    label: 'Home Service',
+    iconName: 'Home',
+    badge: 'Doorstep',
+    subtitle: 'Certified professionals visiting your doorstep',
+  },
+  {
+    id: 'home_studio',
+    label: 'Home Studios',
+    iconName: 'Sparkles',
+    subtitle: 'Private curated spaces & certified solo artists',
+  },
+  {
+    id: 'independent',
+    label: 'Independent Pros',
+    iconName: 'UserCheck',
+    subtitle: 'Freelance & master stylists',
+  },
+  {
+    id: 'bridal',
+    label: 'Bridal & Occasions',
+    iconName: 'Crown',
+    badge: 'Specialist',
+    subtitle: 'Weddings, sangeet, and festive styling packages',
+  },
+];
+
+export interface RankingWeights {
+  ratingWeight: number;       // default 0.30
+  distanceWeight: number;     // default 0.25
+  availabilityWeight: number; // default 0.20
+  verifiedWeight: number;     // default 0.15
+  pricingFitWeight: number;   // default 0.10
+  sponsoredBoost: number;     // capped bonus for sponsored listings
+}
+
+export const DEFAULT_RANKING_WEIGHTS: RankingWeights = {
+  ratingWeight: 0.30,
+  distanceWeight: 0.25,
+  availabilityWeight: 0.20,
+  verifiedWeight: 0.15,
+  pricingFitWeight: 0.10,
+  sponsoredBoost: 0.08,
+};
+
+// ==============================================================================
+// Sloon Business Intelligence & Operational Analytics
+// ==============================================================================
+
+export interface HourlyFootfallStat {
+  hour: number;          // 0 - 23
+  label: string;         // e.g. "11 AM"
+  customerCount: number;
+  isPeak: boolean;
+  isQuiet: boolean;
+  avgRevenue: number;
+}
+
+export interface ServiceDemandStat {
+  serviceName: string;
+  category: string;
+  orderCount: number;
+  totalRevenue: number;
+  marginTier: 'high' | 'medium' | 'standard';
+  growthPercent: number;
+}
+
+export interface BusinessMetricSummary {
+  totalCustomersToday: number;
+  totalCustomersMonth: number;
+  grossRevenueToday: number;
+  grossRevenueMonth: number;
+  averageTransactionValue: number; // ATV in INR
+  repeatCustomerRate: number;      // e.g. 68%
+  avgWaitTimeMinutes: number;
+  completedServicesCount: number;
+  queueNoShowRate: number;
+  walkInVsBookingRatio: {
+    walkIn: number;
+    appointment: number;
+    homeVisit: number;
+  };
+}
+
+export interface BusinessRecommendation {
+  id: string;
+  title: string;
+  category: 'quiet_hours' | 'loyalty' | 'upsell' | 'package' | 'retention';
+  description: string;
+  impactEstimate: string;
+  actionLabel: string;
+  actionTargetTab: 'offers' | 'services' | 'settings' | 'queue';
+  priority: 'high' | 'medium' | 'low';
+}
+
 
