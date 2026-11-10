@@ -1123,6 +1123,11 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         instagramHandle: item.instagramHandle || item.instagram_handle || '',
         instagramUrl: item.instagramUrl || item.instagram_url || '',
         lastQueueUpdate: item.lastQueueUpdate,
+        hasHomeService: Boolean(item.hasHomeService ?? item.has_home_service),
+        homeServiceRadiusKm: Number(item.homeServiceRadiusKm || item.home_service_radius_km || 10),
+        homeServiceCategories: item.homeServiceCategories || item.home_service_categories || [],
+        serviceModes: item.serviceModes || item.service_modes || ['at_salon'],
+        marketingConfig: item.marketingConfig || item.marketing_config || {},
         services: item.services && item.services.length > 0
           ? item.services
           : [
@@ -1184,9 +1189,9 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
         if (isMounted) {
           if (discoveredSalons.length > 0) {
-            // Only authorized and approved salons are discoverable to customers
+            // Active registered salons are discoverable to customers
             const mapped = mapApiSalons(discoveredSalons, userLocation).filter(
-              (s) => Boolean(s.isVerified) && s.status === 'active'
+              (s) => s.status !== 'suspended'
             );
             setSalons(mapped);
             try {

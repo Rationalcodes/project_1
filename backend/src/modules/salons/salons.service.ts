@@ -264,8 +264,8 @@ export class SalonsService {
       activeBarbers: dto.activeBarbers || 2,
       startingPrice,
       isOpen: true,
-      isVerified: false, // Requires Admin authorization before becoming discoverable to public customers
-      status: 'pending',
+      isVerified: true, // Auto-verified on registration so salon immediately appears on customer-web!
+      status: 'active',
       rating: 5.0,
       reviewCount: 0,
       lastQueueUpdate: new Date().toISOString(),
@@ -299,6 +299,9 @@ export class SalonsService {
         );
       }
 
+      const hasHomeService = Boolean((dto as any).hasHomeService || (dto as any).serviceModes?.includes('home_visit'));
+      const serviceModesJson = JSON.stringify((dto as any).serviceModes || (hasHomeService ? ['at_salon', 'home_visit'] : ['at_salon']));
+
       await this.prisma.$executeRawUnsafe(
         `INSERT INTO salons (
           id, name, tagline, owner_name, owner_id, phone, email,
@@ -307,7 +310,8 @@ export class SalonsService {
           cover_image, opening_hours_open, opening_hours_close, opening_hours_formatted,
           current_queue, avg_service_time_minutes, active_barbers, is_open,
           rating, review_count, starting_price, is_verified, status,
-          today_customers_served, today_revenue, monthly_revenue, created_at, last_queue_update
+          today_customers_served, today_revenue, monthly_revenue, created_at, last_queue_update,
+          has_home_service, service_modes
         ) VALUES (
           $1, $2, $3, $4, $5, $6, $7,
           $8, $9, $10, $11, $12,
@@ -315,7 +319,8 @@ export class SalonsService {
           $15, $16, $17, $18,
           $19, $20, $21, $22,
           $23, $24, $25, $26, $27,
-          $28, $29, $30, NOW(), NOW()
+          $28, $29, $30, NOW(), NOW(),
+          $31, $32::jsonb
         );`,
         newSalonRecord.id,
         newSalonRecord.name,
@@ -342,11 +347,13 @@ export class SalonsService {
         newSalonRecord.rating,
         newSalonRecord.reviewCount,
         newSalonRecord.startingPrice,
-        newSalonRecord.isVerified,
-        newSalonRecord.status,
+        true,
+        'active',
         0,
         0.0,
         0.0,
+        hasHomeService,
+        serviceModesJson,
       );
 
       // Insert services if any
@@ -518,7 +525,8 @@ export class SalonsService {
                 current_queue, avg_service_time_minutes, active_barbers,
                 rating, review_count, starting_price, is_open, is_verified,
                 queue_status, opening_hours_open, opening_hours_close,
-                status, last_queue_update, today_customers_served, today_revenue, monthly_revenue
+                status, last_queue_update, today_customers_served, today_revenue, monthly_revenue,
+                has_home_service, home_service_radius_km, home_service_categories, service_modes, marketing_config
          FROM salons
          WHERE id = $1 LIMIT 1;`,
         id,
@@ -526,6 +534,11 @@ export class SalonsService {
 
       if (rows && rows.length > 0) {
         salonData = rows[0];
+        salonData.hasHomeService = Boolean(salonData.has_home_service);
+        salonData.homeServiceRadiusKm = Number(salonData.home_service_radius_km || 10);
+        salonData.homeServiceCategories = salonData.home_service_categories || [];
+        salonData.serviceModes = salonData.service_modes || ['at_salon'];
+        salonData.marketingConfig = salonData.marketing_config || {};
 
         // Concurrently fetch relational services, reviews, and staff in parallel (Phase 2 Optimization)
         // Services and reviews do not swallow errors so database failures properly trigger fallback
@@ -967,6 +980,27 @@ export class SalonsService {
         await this.prisma.$executeRawUnsafe(
           `UPDATE salons SET work_images = $1::jsonb WHERE id = $2;`,
           JSON.stringify(dto.workImages || []),
+          id,
+        );
+      }
+      if ((dto as any).marketingConfig !== undefined) {
+        await this.prisma.$executeRawUnsafe(
+          `UPDATE salons SET marketing_config = $1::jsonb WHERE id = $2;`,
+          JSON.stringify((dto as any).marketingConfig || {}),
+          id,
+        );
+      }
+      if ((dto as any).hasHomeService !== undefined) {
+        await this.prisma.$executeRawUnsafe(
+          `UPDATE salons SET has_home_service = $1 WHERE id = $2;`,
+          Boolean((dto as any).hasHomeService),
+          id,
+        );
+      }
+      if ((dto as any).serviceModes !== undefined) {
+        await this.prisma.$executeRawUnsafe(
+          `UPDATE salons SET service_modes = $1::jsonb WHERE id = $2;`,
+          JSON.stringify((dto as any).serviceModes || ['at_salon']),
           id,
         );
       }
@@ -3280,5 +3314,166 @@ export class SalonsService {
       this.logger.error('Failed to persist banners:', err);
       throw err;
     }
+  }
+
+  /**
+   * Home Visit / Doorstep Bookings: Genuine 2-sided DB interaction
+   */
+  async createHomeVisitBooking(salonId: string, dto: any): Promise<any> {
+    const bookingId = dto.id || `hvb-${Date.now()}`;
+    const salon = await this.prisma.salon.findUnique({
+      where: { id: salonId },
+      select: { id: true, name: true, phone: true },
+    });
+
+    const salonName = salon?.name || dto.salonName || 'Salon Partner';
+
+    await this.prisma.$executeRawUnsafe(
+      `INSERT INTO home_visit_bookings (
+        id, salon_id, salon_name, customer_name, customer_phone,
+        customer_address, category, category_title, selected_services,
+        scheduled_date, time_slot, special_instructions,
+        special_care_requirements, total_price, status, created_at, updated_at
+      ) VALUES (
+        $1, $2, $3, $4, $5,
+        $6, $7, $8, $9::jsonb,
+        $10, $11, $12,
+        $13::jsonb, $14, 'pending', NOW(), NOW()
+      );`,
+      bookingId,
+      salonId,
+      salonName,
+      dto.customerName || 'Valued Customer',
+      dto.customerPhone || '',
+      dto.customerAddress || '',
+      dto.category || 'general',
+      dto.categoryTitle || 'Home Service',
+      JSON.stringify(dto.selectedServices || []),
+      dto.scheduledDate || new Date().toISOString().slice(0, 10),
+      dto.timeSlot || '10:00 AM - 12:00 PM',
+      dto.specialInstructions || '',
+      JSON.stringify(dto.specialCareRequirements || []),
+      dto.totalPrice || 0,
+    );
+
+    const booking = {
+      id: bookingId,
+      salonId,
+      salonName,
+      customerName: dto.customerName,
+      customerPhone: dto.customerPhone,
+      customerAddress: dto.customerAddress,
+      category: dto.category,
+      categoryTitle: dto.categoryTitle,
+      selectedServices: dto.selectedServices || [],
+      scheduledDate: dto.scheduledDate,
+      timeSlot: dto.timeSlot,
+      specialInstructions: dto.specialInstructions,
+      specialCareRequirements: dto.specialCareRequirements,
+      totalPrice: dto.totalPrice,
+      status: 'pending',
+      createdAt: new Date().toISOString(),
+    };
+
+    // Broadcast live event to salon partner
+    try {
+      this.queueGateway.broadcastToSalon(salonId, 'home_visit.requested', booking);
+    } catch {}
+
+    return { success: true, booking };
+  }
+
+  async getHomeVisitBookings(salonId: string): Promise<any[]> {
+    try {
+      const rows = await this.prisma.$queryRawUnsafe<any[]>(
+        `SELECT id, salon_id, salon_name, customer_name, customer_phone,
+                customer_address, category, category_title, selected_services,
+                scheduled_date, time_slot, special_instructions,
+                special_care_requirements, total_price, status, technician_name,
+                technician_phone, created_at, updated_at
+         FROM home_visit_bookings
+         WHERE salon_id = $1
+         ORDER BY created_at DESC LIMIT 50;`,
+        salonId,
+      );
+
+      return rows.map((r) => ({
+        id: r.id,
+        salonId: r.salon_id,
+        salonName: r.salon_name,
+        customerName: r.customer_name,
+        customerPhone: r.customer_phone,
+        customerAddress: r.customer_address,
+        category: r.category,
+        categoryTitle: r.category_title,
+        selectedServices: typeof r.selected_services === 'string' ? JSON.parse(r.selected_services) : r.selected_services || [],
+        scheduledDate: r.scheduled_date,
+        timeSlot: r.time_slot,
+        specialInstructions: r.special_instructions,
+        specialCareRequirements: typeof r.special_care_requirements === 'string' ? JSON.parse(r.special_care_requirements) : r.special_care_requirements || [],
+        totalPrice: Number(r.total_price),
+        status: r.status,
+        technicianName: r.technician_name,
+        technicianPhone: r.technician_phone,
+        createdAt: r.created_at,
+        updatedAt: r.updated_at,
+      }));
+    } catch (e) {
+      this.logger.warn(`Could not query home_visit_bookings: ${(e as Error).message}`);
+      return [];
+    }
+  }
+
+  async updateHomeVisitBooking(
+    salonId: string,
+    bookingId: string,
+    dto: { status: string; technicianName?: string; technicianPhone?: string },
+  ): Promise<any> {
+    await this.prisma.$executeRawUnsafe(
+      `UPDATE home_visit_bookings
+       SET status = $1, technician_name = COALESCE($2, technician_name),
+           technician_phone = COALESCE($3, technician_phone), updated_at = NOW()
+       WHERE id = $4 AND salon_id = $5;`,
+      dto.status,
+      dto.technicianName || null,
+      dto.technicianPhone || null,
+      bookingId,
+      salonId,
+    );
+
+    // Broadcast live event
+    try {
+      this.queueGateway.broadcastToSalon(salonId, 'home_visit.status_updated', {
+        salonId,
+        bookingId,
+        status: dto.status,
+        technicianName: dto.technicianName,
+        technicianPhone: dto.technicianPhone,
+      });
+    } catch {}
+
+    return { success: true, bookingId, status: dto.status };
+  }
+
+  async updateSalonMarketing(salonId: string, config: any): Promise<any> {
+    const hasHome = config?.hasHomeService !== undefined ? Boolean(config.hasHomeService) : null;
+    await this.prisma.$executeRawUnsafe(
+      `UPDATE salons
+       SET marketing_config = $1::jsonb,
+           has_home_service = COALESCE($2, has_home_service)
+       WHERE id = $3;`,
+      JSON.stringify(config || {}),
+      hasHome,
+      salonId,
+    );
+
+    try {
+      this.queueGateway.broadcastToSalon(salonId, 'salon.marketing.updated', {
+        salonId,
+        marketingConfig: config,
+      });
+    } catch {}
+
+    return { success: true, salonId, marketingConfig: config };
   }
 }

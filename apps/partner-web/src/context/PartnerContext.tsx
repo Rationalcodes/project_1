@@ -894,6 +894,7 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
         return updated;
       }),
     );
+    void defaultApiClient.addSalonService(salonId, newService).catch(() => {});
     triggerNotification(`Added service "${newService.name}" (₹${newService.price})`);
   };
 
@@ -909,6 +910,7 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
         return updated;
       }),
     );
+    void defaultApiClient.updateSalonService(salonId, serviceId, updates).catch(() => {});
     triggerNotification('Service updated successfully');
   };
 
@@ -924,6 +926,7 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
         return updated;
       }),
     );
+    void defaultApiClient.deleteSalonService(salonId, serviceId).catch(() => {});
     triggerNotification('Service removed');
   };
 

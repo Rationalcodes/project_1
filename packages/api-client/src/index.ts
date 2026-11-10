@@ -737,6 +737,8 @@ export class KumbhakaranApiClient {
         longitude: payload.coordinates.lng,
         coverImage: payload.coverImage,
         activeBarbers: payload.activeBarbers,
+        hasHomeService: (payload as any).serviceModes?.includes('home_visit') || (payload as any).hasHomeService,
+        serviceModes: (payload as any).serviceModes || ['at_salon'],
         services: payload.services.map((s) => ({
           name: s.name,
           category: s.category,
@@ -812,6 +814,125 @@ export class KumbhakaranApiClient {
       throw new Error(error.message || 'Could not update queue status');
     }
     return res.json();
+  }
+
+  /**
+   * Doorstep Home Visit Bookings: Customer submits booking to DB
+   */
+  async createHomeVisitBooking(salonId: string, bookingData: any): Promise<any> {
+    const res = await this.safeFetch(`${this.baseUrl}/salons/${salonId}/home-visit-bookings`, {
+      method: 'POST',
+      headers: this.getHeaders({
+        'Content-Type': 'application/json',
+      }),
+      body: JSON.stringify(bookingData),
+    });
+    if (!res || !res.ok) {
+      throw new Error(`Failed to submit home visit booking (HTTP ${res?.status || 'network error'})`);
+    }
+    return await res.json();
+  }
+
+  /**
+   * Doorstep Home Visit Bookings: Partner queries salon's bookings from DB
+   */
+  async getHomeVisitBookings(salonId: string): Promise<any[]> {
+    try {
+      const res = await this.safeFetch(`${this.baseUrl}/salons/${salonId}/home-visit-bookings`, {
+        method: 'GET',
+        headers: this.getHeaders(),
+      });
+      if (!res || !res.ok) return [];
+      return await res.json();
+    } catch {
+      return [];
+    }
+  }
+
+  /**
+   * Doorstep Home Visit Bookings: Partner updates booking status in DB
+   */
+  async updateHomeVisitBooking(
+    salonId: string,
+    bookingId: string,
+    updates: { status: string; technicianName?: string; technicianPhone?: string },
+  ): Promise<any> {
+    try {
+      const res = await this.safeFetch(`${this.baseUrl}/salons/${salonId}/home-visit-bookings/${bookingId}`, {
+        method: 'PATCH',
+        headers: this.getHeaders({
+          'Content-Type': 'application/json',
+        }),
+        body: JSON.stringify(updates),
+      });
+      if (!res || !res.ok) return null;
+      return await res.json();
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Partner updates marketing config (Happy Hours, Loyalty Stamp Card, Combos) in DB
+   */
+  async updateSalonMarketing(salonId: string, config: any): Promise<any> {
+    try {
+      const res = await this.safeFetch(`${this.baseUrl}/salons/${salonId}/marketing`, {
+        method: 'PATCH',
+        headers: this.getHeaders({
+          'Content-Type': 'application/json',
+        }),
+        body: JSON.stringify(config),
+      });
+      if (!res || !res.ok) return null;
+      return await res.json();
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Service Catalogue Management (DB Persisted)
+   */
+  async addSalonService(salonId: string, serviceData: any): Promise<any> {
+    try {
+      const res = await this.safeFetch(`${this.baseUrl}/salons/${salonId}/services`, {
+        method: 'POST',
+        headers: this.getHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify(serviceData),
+      });
+      if (!res || !res.ok) return null;
+      return await res.json();
+    } catch {
+      return null;
+    }
+  }
+
+  async updateSalonService(salonId: string, serviceId: string, updates: any): Promise<any> {
+    try {
+      const res = await this.safeFetch(`${this.baseUrl}/salons/${salonId}/services/${serviceId}`, {
+        method: 'PATCH',
+        headers: this.getHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify(updates),
+      });
+      if (!res || !res.ok) return null;
+      return await res.json();
+    } catch {
+      return null;
+    }
+  }
+
+  async deleteSalonService(salonId: string, serviceId: string): Promise<any> {
+    try {
+      const res = await this.safeFetch(`${this.baseUrl}/salons/${salonId}/services/${serviceId}`, {
+        method: 'DELETE',
+        headers: this.getHeaders(),
+      });
+      if (!res || !res.ok) return null;
+      return await res.json();
+    } catch {
+      return null;
+    }
   }
 
   // ==========================================================================

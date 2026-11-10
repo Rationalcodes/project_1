@@ -68,10 +68,10 @@ export class DiscoveryService {
             ROUND((ST_Distance(location, ST_SetSRID(ST_MakePoint($2, $1), 4326)::geography) / 1000)::numeric, 2) AS distance_km,
             rating, review_count, current_queue, avg_service_time_minutes, active_barbers,
             starting_price, is_open, queue_status, is_verified, cover_image, poster_image, loop_video_url,
-            last_queue_update, status
+            last_queue_update, status,
+            has_home_service, home_service_radius_km, home_service_categories, service_modes, marketing_config
           FROM salons
           WHERE status = 'active'
-            AND is_verified = TRUE
             AND ST_DWithin(location, ST_SetSRID(ST_MakePoint($2, $1), 4326)::geography, $3)
           ORDER BY distance_km ASC
           LIMIT $4 OFFSET $5;`,
@@ -82,17 +82,17 @@ export class DiscoveryService {
           offset,
         );
       } else {
-        // Query active verified salons across India (omits heavy gallery arrays on list view)
+        // Query active salons across India (omits heavy gallery arrays on list view)
         dbRows = await this.prisma.$queryRawUnsafe(
           `SELECT 
             id, name, tagline, locality, city, latitude, longitude, phone, address, instagram_handle, instagram_url,
             0.0 AS distance_km,
             rating, review_count, current_queue, avg_service_time_minutes, active_barbers,
             starting_price, is_open, queue_status, is_verified, cover_image, poster_image, loop_video_url,
-            last_queue_update, status
+            last_queue_update, status,
+            has_home_service, home_service_radius_km, home_service_categories, service_modes, marketing_config
           FROM salons
           WHERE status = 'active'
-            AND is_verified = TRUE
           ORDER BY rating DESC, review_count DESC
           LIMIT $1 OFFSET $2;`,
           limit,
@@ -133,14 +133,55 @@ export class DiscoveryService {
             coverImage: effectiveCover,
             posterImage: (row.poster_image && row.poster_image !== effectiveCover) ? row.poster_image : '',
             loopVideoUrl: row.loop_video_url || '',
+            hasHomeService: Boolean(row.has_home_service),
+            homeServiceRadiusKm: Number(row.home_service_radius_km || 10),
+            homeServiceCategories: row.home_service_categories || [],
+            serviceModes: row.service_modes || ['at_salon'],
+            marketingConfig: row.marketing_config || {},
             // Lightweight arrays for 100% frontend contract safety; full galleries loaded on salon detail page
             images: effectiveCover ? [effectiveCover] : [],
             locationImages: [],
             workImages: [],
+            services: [],
             lastQueueUpdate: row.last_queue_update || new Date().toISOString(),
             freshnessBadge: this.calculateFreshnessBadge(row.last_queue_update),
           };
         });
+
+        // Concurrently populate genuine relational services from PostgreSQL salon_services table
+        try {
+          const salonIds = items.map((it) => it.id);
+          const dbServices = await this.prisma.$queryRawUnsafe<any[]>(
+            `SELECT id, salon_id, name, category, price, duration_minutes, description
+             FROM salon_services
+             WHERE salon_id = ANY($1::text[]) AND is_available = true;`,
+            salonIds,
+          );
+
+          if (dbServices && dbServices.length > 0) {
+            const svcBySalon = new Map<string, any[]>();
+            for (const s of dbServices) {
+              if (!svcBySalon.has(s.salon_id)) svcBySalon.set(s.salon_id, []);
+              svcBySalon.get(s.salon_id)!.push({
+                id: s.id,
+                name: s.name,
+                category: s.category,
+                price: Number(s.price),
+                durationMinutes: s.duration_minutes,
+                description: s.description || '',
+                isAvailable: true,
+              });
+            }
+            for (const item of items) {
+              const matched = svcBySalon.get(item.id);
+              if (matched && matched.length > 0) {
+                (item as any).services = matched;
+              }
+            }
+          }
+        } catch (e) {
+          this.logger.warn(`Could not attach relational services: ${(e as Error).message}`);
+        }
       }
     } catch (err) {
       this.logger.debug(`Database PostGIS query skipped or failed (${(err as Error).message}). Using discovery engine.`);

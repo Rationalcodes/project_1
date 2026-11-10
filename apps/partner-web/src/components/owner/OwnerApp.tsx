@@ -560,7 +560,7 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
     return DEFAULT_SALON_OFFERS;
   }, [activeSalon.offers]);
 
-  // Doorstep & Home Visit booking requests state
+  // Doorstep & Home Visit booking requests state (Database Synchronized)
   const [doorstepRequests, setDoorstepRequests] = useState<HomeVisitBookingRequest[]>(() => {
     try {
       const saved = localStorage.getItem('sloon_home_visit_bookings');
@@ -571,6 +571,16 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
     } catch {}
     return [];
   });
+
+  // Query live doorstep bookings from Database via API
+  useEffect(() => {
+    if (!activeSalon?.id) return;
+    defaultApiClient.getHomeVisitBookings(activeSalon.id).then((dbList) => {
+      if (Array.isArray(dbList) && dbList.length > 0) {
+        setDoorstepRequests(dbList);
+      }
+    });
+  }, [activeSalon?.id]);
 
   const [showOfferModal, setShowOfferModal] = useState(false);
   const [editingOffer, setEditingOffer] = useState<SalonOffer | null>(null);
@@ -690,6 +700,7 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
 
   const handleUpdateMarketingConfig = (newConfig: SalonMarketingConfig) => {
     updateSalonInfo(activeSalon.id, { marketingConfig: newConfig });
+    void defaultApiClient.updateSalonMarketing(activeSalon.id, newConfig).catch(() => {});
     try {
       safeStorage.setItem(`sloon_salon_marketing_${activeSalon.id}`, JSON.stringify(newConfig));
     } catch {}
@@ -2133,6 +2144,10 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
                           setDoorstepRequests((prev) =>
                             prev.map((r) => (r.id === req.id ? { ...r, status: 'confirmed' } : r)),
                           );
+                          if (activeSalon?.id) {
+                            void defaultApiClient.updateHomeVisitBooking(activeSalon.id, req.id, { status: 'confirmed' }).catch(() => {});
+                          }
+                          triggerNotification(`Confirmed doorstep visit for ${req.customerName}`);
                         }}
                         className="px-3 py-1.5 rounded-xl bg-stone-900 hover:bg-stone-800 text-white font-bold transition"
                       >

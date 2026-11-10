@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { defaultApiClient } from '@kumbhakaran/api-client';
 import {
   X,
   Sparkles,
@@ -109,7 +110,7 @@ export const HomeVisitModal: React.FC<HomeVisitModalProps> = ({
     }
   };
 
-  const handleBookingSubmit = (e: React.FormEvent) => {
+  const handleBookingSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!customerName || !customerPhone || !customerAddress || selectedServices.length === 0) {
       return;
@@ -133,6 +134,15 @@ export const HomeVisitModal: React.FC<HomeVisitModalProps> = ({
       status: 'pending',
       createdAt: new Date().toISOString(),
     };
+
+    // Save to Database via Backend API
+    if (salon?.id) {
+      try {
+        await defaultApiClient.createHomeVisitBooking(salon.id, booking);
+      } catch (err) {
+        console.warn('Could not post doorstep booking to database:', err);
+      }
+    }
 
     try {
       const existingStr = localStorage.getItem('sloon_home_visit_bookings') || '[]';

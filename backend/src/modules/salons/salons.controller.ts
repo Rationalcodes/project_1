@@ -119,6 +119,40 @@ export class SalonsController {
     );
   }
 
+  @Post(':id/home-visit-bookings')
+  @ApiOperation({ summary: 'Customer creates doorstep home visit booking (DB Persisted)' })
+  async createHomeVisitBooking(
+    @Param('id') salonId: string,
+    @Body() body: any,
+  ) {
+    return this.salonsService.createHomeVisitBooking(salonId, body);
+  }
+
+  @Get(':id/home-visit-bookings')
+  @ApiOperation({ summary: 'Partner queries doorstep home visit bookings from DB' })
+  async getHomeVisitBookings(@Param('id') salonId: string) {
+    return this.salonsService.getHomeVisitBookings(salonId);
+  }
+
+  @Patch(':id/home-visit-bookings/:bookingId')
+  @ApiOperation({ summary: 'Partner updates doorstep booking status in DB' })
+  async updateHomeVisitBooking(
+    @Param('id') salonId: string,
+    @Param('bookingId') bookingId: string,
+    @Body() body: any,
+  ) {
+    return this.salonsService.updateHomeVisitBooking(salonId, bookingId, body);
+  }
+
+  @Patch(':id/marketing')
+  @ApiOperation({ summary: 'Partner updates marketing config (Happy Hours, Loyalty, Combos) in DB' })
+  async updateSalonMarketing(
+    @Param('id') salonId: string,
+    @Body() body: any,
+  ) {
+    return this.salonsService.updateSalonMarketing(salonId, body);
+  }
+
   @Get('nearby')
   @ApiOperation({
     summary: 'Discover nearby salons using PostGIS geographical coordinates',
