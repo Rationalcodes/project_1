@@ -308,9 +308,54 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
                 <Navigation className="w-3.5 h-3.5 fill-white" />
                 <span>{salon.distanceKm} km • Navigate ↗</span>
               </button>
+
+              <button
+                type="button"
+                onClick={() => setShowOffersModal(true)}
+                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-stone-950 font-black text-xs shadow-md shadow-amber-500/20 hover:from-amber-400 hover:to-orange-400 transition-all active:scale-95 cursor-pointer"
+                title="Spin the Fortune Wheel & View Offers"
+              >
+                <Sparkles className="w-3.5 h-3.5 fill-stone-950" />
+                <span>Spin & Deals 🎁</span>
+              </button>
             </div>
           </div>
         </div>
+      </div>
+
+      {/* LUXURY STUDIO VIP DEALS & FORTUNE WHEEL TEASER */}
+      <div
+        onClick={() => setShowOffersModal(true)}
+        className="relative overflow-hidden p-4 rounded-3xl bg-gradient-to-r from-[#1C120C] via-[#2A180F] to-[#1C120C] border-2 border-amber-500/40 hover:border-amber-400 text-white cursor-pointer shadow-lg transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 group"
+      >
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-amber-600 to-yellow-300 p-0.5 shadow-md shrink-0 group-hover:scale-105 transition-transform">
+            <div className="w-full h-full bg-[#18100C] rounded-[14px] flex items-center justify-center">
+              <Sparkles className="w-5 h-5 text-amber-400 fill-amber-400 animate-pulse" />
+            </div>
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                Fortune Spin Wheel
+              </span>
+              <span className="text-xs text-amber-300 font-extrabold">
+                Instant VIP Deals
+              </span>
+            </div>
+            <h4 className="text-sm font-black text-white mt-0.5 group-hover:text-amber-300 transition-colors">
+              Spin to Win Flat ₹100 Off, 50% Jackpot & Free Beard Care
+            </h4>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-stone-950 text-xs font-black shadow-md flex items-center justify-center gap-1.5 shrink-0"
+        >
+          <Sparkles className="w-3.5 h-3.5 fill-stone-950" />
+          <span>Spin Fortune Wheel ➔</span>
+        </button>
       </div>
 
       {/* PROMINENT LIVE QUEUE CARD */}

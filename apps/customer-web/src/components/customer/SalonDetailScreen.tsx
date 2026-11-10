@@ -615,44 +615,61 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
               <button
                 type="button"
                 onClick={() => setShowOffersModal(true)}
-                className="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-zinc-950 font-black text-xs shadow-md shadow-amber-500/20 transition-all cursor-pointer active:scale-95 animate-pulse hover:animate-none"
-                title="Spin to Win & View Salon Offers"
+                className="relative group flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-400 hover:to-orange-400 text-stone-950 font-black text-xs shadow-md shadow-orange-500/25 transition-all cursor-pointer active:scale-95 border border-amber-300/40"
+                title="Spin the Fortune Wheel & View VIP Salon Offers"
               >
-                <Sparkles className="w-3.5 h-3.5 fill-zinc-950" />
-                <span>Offers & Spin 🎁</span>
+                <Sparkles className="w-3.5 h-3.5 fill-stone-950" />
+                <span>Spin & Deals 🎁</span>
+                <span className="bg-stone-950 text-amber-300 text-[9px] px-1.5 py-0.2 rounded-full font-extrabold uppercase">
+                  Win 50%
+                </span>
               </button>
             </div>
           </div>
         </div>
       </div>
 
-      {/* 2.5 EXCLUSIVE SALON DEALS & LUCKY SPIN TEASER */}
+      {/* 2.5 LUXURY STUDIO VIP DEALS & FORTUNE WHEEL TEASER */}
       <div
         onClick={() => setShowOffersModal(true)}
-        className="p-3 sm:p-3.5 rounded-2xl bg-gradient-to-r from-[#24140A] via-[#331C0E] to-[#24140A] border border-amber-500/30 hover:border-amber-400 text-white cursor-pointer shadow-sm transition-all flex items-center justify-between gap-3 group"
+        className="relative overflow-hidden p-4 sm:p-4.5 rounded-3xl bg-gradient-to-r from-[#1C120C] via-[#2A180F] to-[#1C120C] border-2 border-amber-500/40 hover:border-amber-400 text-white cursor-pointer shadow-lg shadow-black/20 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4 group"
       >
-        <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-xl bg-amber-500/20 border border-amber-500/30 text-amber-400 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-            <Sparkles className="w-4 h-4 fill-amber-400" />
+        <div className="absolute right-0 top-1/2 -translate-y-1/2 w-48 h-48 bg-amber-500/10 rounded-full blur-2xl pointer-events-none" />
+
+        <div className="flex items-center gap-3.5 relative z-10">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-600 via-amber-400 to-yellow-200 p-0.5 shadow-md shadow-amber-500/30 shrink-0 group-hover:scale-105 transition-transform">
+            <div className="w-full h-full bg-[#18100C] rounded-[14px] flex items-center justify-center">
+              <Sparkles className="w-6 h-6 text-amber-400 fill-amber-400 animate-pulse" />
+            </div>
           </div>
           <div>
-            <div className="flex items-center gap-1.5">
-              <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                Lucky Spin Available
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-1">
+                <Sparkles className="w-3 h-3 text-amber-400" />
+                Fortune Spin Wheel Available
               </span>
-              <span className="text-xs text-amber-200 font-bold">Up to 50% OFF & Free Perks</span>
+              <span className="text-xs text-amber-300 font-extrabold hidden sm:inline">
+                Instant Coupons Available
+              </span>
             </div>
+            <h4 className="text-sm sm:text-base font-black text-white mt-1 group-hover:text-amber-300 transition-colors">
+              Spin to Win Flat ₹100 Off, 50% Jackpot & Free Beard Care
+            </h4>
             <p className="text-xs text-stone-300 font-medium mt-0.5">
-              Tap to spin the fortune wheel or claim studio discount coupons
+              Available for all walk-in and live queue customers at {salon.name}.
             </p>
           </div>
         </div>
-        <button
-          type="button"
-          className="px-3.5 py-1.5 rounded-full bg-amber-500 group-hover:bg-amber-400 text-zinc-950 text-xs font-black shadow-xs flex items-center gap-1 shrink-0 cursor-pointer"
-        >
-          <span>Spin Wheel ➔</span>
-        </button>
+
+        <div className="flex items-center gap-2 shrink-0 relative z-10">
+          <button
+            type="button"
+            className="w-full sm:w-auto px-5 py-2.5 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 group-hover:from-amber-400 group-hover:to-orange-400 text-stone-950 text-xs font-black shadow-md shadow-amber-500/20 flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-95"
+          >
+            <Sparkles className="w-4 h-4 fill-stone-950" />
+            <span>Spin Fortune Wheel ➔</span>
+          </button>
+        </div>
       </div>
 
       {/* 3. HUMAN EDITORIAL PAGE-IN-PAGE NAVIGATION BAR */}
