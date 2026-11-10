@@ -1,10 +1,16 @@
 import React, { useEffect, useRef, useState } from 'react';
 import './types/google.d';
 
-// Global GIS singleton registry across all mounted button instances
+// Global GIS singleton registry on window to survive multi-bundle evaluation & HMR
 // Google Identity Services warns when google.accounts.id.initialize() is called multiple times
-let globalGsiInitializedClientId: string | null = null;
-const activeGsiListeners = new Set<(credential: string, clientId?: string) => void>();
+const getGlobalGsiListeners = (): Set<(credential: string, clientId?: string) => void> => {
+  if (typeof window === 'undefined') return new Set();
+  const win = window as any;
+  if (!win.__sloon_gsi_listeners) {
+    win.__sloon_gsi_listeners = new Set<(credential: string, clientId?: string) => void>();
+  }
+  return win.__sloon_gsi_listeners;
+};
 
 export interface GoogleSignInButtonProps {
   clientId?: string;
@@ -44,14 +50,15 @@ export const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
 
   // Register this button's success listener in the global GIS dispatcher
   useEffect(() => {
+    const listeners = getGlobalGsiListeners();
     const listener = (credential: string, clientId?: string) => {
       if (onSuccessRef.current) {
         onSuccessRef.current(credential, clientId);
       }
     };
-    activeGsiListeners.add(listener);
+    listeners.add(listener);
     return () => {
-      activeGsiListeners.delete(listener);
+      listeners.delete(listener);
     };
   }, []);
 
@@ -116,13 +123,15 @@ export const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
     }
 
     try {
-      // Initialize GIS exactly ONCE globally to prevent "[GSI_LOGGER]: google.accounts.id.initialize() is called multiple times"
-      if (globalGsiInitializedClientId !== effectiveClientId) {
+      const win = typeof window !== 'undefined' ? (window as any) : {};
+      // Initialize GIS exactly ONCE globally across all components, mounts, and bundles
+      if (win.__sloon_gsi_initialized_client_id !== effectiveClientId) {
         window.google!.accounts.id.initialize({
           client_id: effectiveClientId,
           callback: (response) => {
             if (response?.credential) {
-              activeGsiListeners.forEach((cb) => {
+              const listeners = getGlobalGsiListeners();
+              listeners.forEach((cb) => {
                 try {
                   cb(response.credential, effectiveClientId);
                 } catch (e) {
@@ -138,7 +147,7 @@ export const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
           auto_select: false,
           cancel_on_tap_outside: true,
         });
-        globalGsiInitializedClientId = effectiveClientId;
+        win.__sloon_gsi_initialized_client_id = effectiveClientId;
       }
 
       // Clear any previous render inside container

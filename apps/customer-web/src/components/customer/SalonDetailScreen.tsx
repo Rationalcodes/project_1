@@ -51,6 +51,7 @@ import { Service, Staff } from '@kumbhakaran/shared-types';
 import { redirectToGoogleMaps, openGoogleMapsLocation, SalonMapboxView } from '@kumbhakaran/ui';
 import { SmartQueueAssist } from './SmartQueueAssist';
 import { SalonOffersModal } from './SalonOffersModal';
+import { HomeVisitModal } from './HomeVisitModal';
 
 interface SalonDetailScreenProps {
   onBack: () => void;
@@ -95,6 +96,7 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
   // Sub-page tab state (Page-in-Page human architecture)
   const [activeTab, setActiveTab] = useState<SalonSubPageTab>('queue');
   const [showOffersModal, setShowOffersModal] = useState(false);
+  const [showHomeVisitModal, setShowHomeVisitModal] = useState(false);
 
   // Join Live Queue & Token states
   const [showJoinQueueModal, setShowJoinQueueModal] = useState(false);
@@ -611,6 +613,15 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
               >
                 <Navigation className="w-3.5 h-3.5 fill-white" />
                 <span>Navigate ↗</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setShowHomeVisitModal(true)}
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-stone-900 hover:bg-stone-800 text-amber-300 border border-amber-500/40 text-xs font-black shadow-xs transition-all cursor-pointer active:scale-95"
+                title="Book Doorstep Stylist / Home Visit"
+              >
+                <span>🏠 At-Home Visit</span>
               </button>
 
               <button
@@ -1921,6 +1932,13 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
         salon={salon}
         isOpen={showOffersModal}
         onClose={() => setShowOffersModal(false)}
+      />
+
+      {/* 9. DOORSTEP SALON & AT-HOME SERVICE MODAL */}
+      <HomeVisitModal
+        isOpen={showHomeVisitModal}
+        onClose={() => setShowHomeVisitModal(false)}
+        salon={salon}
       />
     </div>
   );

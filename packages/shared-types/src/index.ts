@@ -220,6 +220,10 @@ export interface Salon {
   queueStatusNote?: string;
   googlePlaceId?: string;
   googleReviewUrl?: string;
+  hasHomeService?: boolean;
+  homeServiceRadiusKm?: number;
+  homeServiceMinOrder?: number;
+  homeServiceCategories?: HomeVisitCategory[];
 }
 
 export interface SalonRegistrationInput {
@@ -281,7 +285,8 @@ export type PartnerView =
   | 'billing'
   | 'settings'
   | 'help'
-  | 'gallery';
+  | 'gallery'
+  | 'doorstep';
 export type OwnerTab = PartnerView;
 
 export type AdminTab = 'overview' | 'salons' | 'customers' | 'verification' | 'reviews' | 'subscriptions' | 'analytics' | 'banners' | 'settings';
@@ -372,4 +377,328 @@ export function formatWaitTime(minutes: number | string | null | undefined): str
   }
   return `~${formatDuration(num)}`;
 }
+
+// ==============================================================================
+// Doorstep Salon & Home Visit Service Types (Salon Industry Standard Taxonomy)
+// ==============================================================================
+
+export type HomeVisitCategory =
+  | 'bridal'         // Bridal & Trousseau Styling
+  | 'senior_care'    // Senior Citizen & Assisted Care (Geriatric Grooming)
+  | 'kids'           // Kids & Toddlers Gentle Care (Pediatric Grooming)
+  | 'mens_grooming'  // Men's Executive & Classic Grooming
+  | 'womens_spa'     // Women's Salon, Spa & Esthetics
+  | 'festive_group'; // Festive, Party & Group Makeovers
+
+export interface HomeVisitCategoryMeta {
+  id: HomeVisitCategory;
+  title: string;
+  subtitle: string;
+  industryTag: string;
+  badge: string;
+  iconName: string;
+  accentColor: string;
+  gradient: string;
+  description: string;
+  hygieneGuarantees: string[];
+}
+
+export interface HomeVisitServiceItem {
+  id: string;
+  categoryId: HomeVisitCategory;
+  name: string;
+  tagline: string;
+  price: number;
+  durationMinutes: number;
+  features: string[];
+  hygieneKit: string;
+  recommendedFor?: string;
+  popular?: boolean;
+}
+
+export interface HomeVisitBookingRequest {
+  id: string;
+  salonId: string;
+  salonName: string;
+  customerName: string;
+  customerPhone: string;
+  customerAddress: string;
+  category: HomeVisitCategory;
+  categoryTitle: string;
+  selectedServices: HomeVisitServiceItem[];
+  scheduledDate: string; // YYYY-MM-DD
+  timeSlot: string;      // e.g. "10:00 AM - 12:00 PM"
+  specialInstructions?: string;
+  specialCareRequirements?: string[]; // e.g. "Bed-Bound / Low-Mobility", "Low-Noise Clipper", "Diabetic Foot Care"
+  totalPrice: number;
+  status: 'pending' | 'confirmed' | 'technician_assigned' | 'completed' | 'cancelled';
+  technicianName?: string;
+  technicianPhone?: string;
+  createdAt: string;
+}
+
+export const HOME_VISIT_CATEGORIES: HomeVisitCategoryMeta[] = [
+  {
+    id: 'bridal',
+    title: 'Bridal & Trousseau Styling',
+    subtitle: 'High-Definition Bridal, Draping & Pre-Bridal Rituals',
+    industryTag: 'Bridal & Trousseau Artistry',
+    badge: 'Luxury Suite',
+    iconName: 'Crown',
+    accentColor: '#E11D48',
+    gradient: 'from-rose-500 via-pink-600 to-rose-700',
+    description: 'Bespoke bridal styling delivered to your residence or bridal suite. Includes premium HD cosmetics, luxury hair updos, and expert saree/dupatta draping.',
+    hygieneGuarantees: ['100% Sealed Single-Use Brushes & Sponges', 'Sterilized Artistry Tools', 'Airbrushed Precision Hygiene'],
+  },
+  {
+    id: 'senior_care',
+    title: 'Senior Citizen & Assisted Care',
+    subtitle: 'Gentle Grooming for Elders, Low-Mobility & Bed-Bound Loved Ones',
+    industryTag: 'Geriatric & Assisted Grooming',
+    badge: 'Compassionate Care',
+    iconName: 'HeartHandshake',
+    accentColor: '#059669',
+    gradient: 'from-emerald-600 via-teal-600 to-emerald-800',
+    description: 'Patient, compassionate grooming performed by trained specialists for elders, bed-bound parents, or recovery patients in the comfort of their favorite chair or bed.',
+    hygieneGuarantees: ['Ultra-Gentle Whisper Clippers', 'Diabetic-Safe Antiseptic Foot Care', 'Hospital-Grade Sanitized Gear'],
+  },
+  {
+    id: 'kids',
+    title: 'Kids & Toddlers Gentle Care',
+    subtitle: 'Tear-Free First Haircuts, Mundan Ceremonies & Playful Styles',
+    industryTag: 'Pediatric Hair Care',
+    badge: 'Tear-Free Certified',
+    iconName: 'Smile',
+    accentColor: '#D97706',
+    gradient: 'from-amber-500 via-orange-500 to-amber-700',
+    description: 'Zero stress, zero tears. Our kid-whisperer barbers bring cartoon bibs, rounded safety blades, and patient soothing techniques right into your living room.',
+    hygieneGuarantees: ['Rounded Safety Blade Shears', 'Hypoallergenic Baby Shampoo', 'Single-Use Colorful Cape'],
+  },
+  {
+    id: 'mens_grooming',
+    title: "Men's Executive Grooming",
+    subtitle: 'Precision Fade, Hot Towel Beard Sculpting & Charcoal De-Tan',
+    industryTag: "Gentleman's Doorstep Barber",
+    badge: 'Executive Express',
+    iconName: 'Scissors',
+    accentColor: '#C85322',
+    gradient: 'from-[#C85322] via-amber-700 to-stone-900',
+    description: 'Transform your space into a high-end barbershop. Complete with cordless precision fades, beard geometry, hot steamed towels, and skin detox.',
+    hygieneGuarantees: ['Fresh Disinfected Blades & Razors', 'Barbershop Floor Shield Mat', 'Vacuum Cleanup Guarantee'],
+  },
+  {
+    id: 'womens_spa',
+    title: "Women's Salon, Spa & Skincare",
+    subtitle: 'Hygienic Waxing, Herbal Facials, Hair Spa & Manicure-Pedicure',
+    industryTag: 'Esthetics & Holistic Spa',
+    badge: 'Organic & Gentle',
+    iconName: 'Sparkles',
+    accentColor: '#7C3AED',
+    gradient: 'from-purple-600 via-indigo-600 to-violet-800',
+    description: 'Full-service doorstep beauty parlour. Single-use waxing cartridges, organic facials, and luxury spa pedicures performed with disposable sheets and mats.',
+    hygieneGuarantees: ['100% Disposable Bed & Floor Sheets', 'Single-Use Waxing Spatulas & Strips', 'Autoclaved Manicure Tools'],
+  },
+  {
+    id: 'festive_group',
+    title: 'Festive & Family Group Styling',
+    subtitle: 'Celebrations, Sangeet, Mehendi & Family Gatherings (2+ Guests)',
+    industryTag: 'Group Occasion Makeover',
+    badge: 'Family Savings',
+    iconName: 'Users',
+    accentColor: '#2563EB',
+    gradient: 'from-blue-600 via-cyan-600 to-indigo-800',
+    description: 'Coordinated hair styling, makeup, and draping for entire families and bridal entourages before weddings, festivals, or family photoshoots.',
+    hygieneGuarantees: ['Multi-Artist Team Deployment', 'Individual Fresh Toolkits per Guest', 'On-Time Guaranteed Readiness'],
+  },
+];
+
+export const HOME_VISIT_SERVICE_CATALOG: HomeVisitServiceItem[] = [
+  // Bridal
+  {
+    id: 'hvs-bridal-hd',
+    categoryId: 'bridal',
+    name: 'HD Signature Bridal Makeover',
+    tagline: 'Flawless high-definition bridal glam with contour, lashes & setting',
+    price: 6999,
+    durationMinutes: 150,
+    features: ['High-Definition Waterproof Makeup', 'Custom Mink Lashes', 'Contour & Highlight', 'Touch-Up Kit Included'],
+    hygieneKit: '100% Brand-new disposable sponges & sanitized brush set',
+    recommendedFor: 'Bride on Main Wedding Ceremony',
+    popular: true,
+  },
+  {
+    id: 'hvs-bridal-pre',
+    categoryId: 'bridal',
+    name: 'Pre-Bridal Radiance Glow Ritual',
+    tagline: 'Full body de-tan, herbal polish, brightening facial & gold peel',
+    price: 3499,
+    durationMinutes: 120,
+    features: ['Diamond Radiance Facial', 'Full Arms & Legs Fruit Wax', 'De-Tan Body Polish', 'Hydrating Scalp Spa'],
+    hygieneKit: 'Single-use sterilized kit with disposable gowns',
+    recommendedFor: '2-3 days before wedding rituals',
+  },
+  {
+    id: 'hvs-bridal-drape',
+    categoryId: 'bridal',
+    name: 'Luxury Saree & Dupatta Draping with Hair Updo',
+    tagline: 'Traditional or contemporary draping plus ornate floral hairstyle',
+    price: 1999,
+    durationMinutes: 60,
+    features: ['Pleat Perfect Saree Draping', 'Double Dupatta Setting', 'Floral Bun or Braid', 'Setting Spray Hold'],
+    hygieneKit: 'Clean styling kit with pearl pins and hair cushion',
+    recommendedFor: 'Reception, Sangeet & Bridal Entourage',
+    popular: true,
+  },
+
+  // Senior Citizen & Assisted Care
+  {
+    id: 'hvs-senior-haircut',
+    categoryId: 'senior_care',
+    name: 'Gentle Senior Gentleman Haircut & Warm Shave',
+    tagline: 'Patient, quiet trim and warm foam shave in comfort of favorite chair',
+    price: 449,
+    durationMinutes: 45,
+    features: ['Low-Vibration Quiet Trimmer', 'Warm Lather Shave / Trim', 'Ear & Eyebrow Neatening', 'Gentle Witch Hazel Wipe'],
+    hygieneKit: 'Freshly sterilized stainless tools + disposable neck cape',
+    recommendedFor: 'Elders & Senior Gentlemen',
+    popular: true,
+  },
+  {
+    id: 'hvs-senior-bedbound',
+    categoryId: 'senior_care',
+    name: 'Assisted Low-Mobility / Bed-Bound Grooming',
+    tagline: 'Specialized compassionate grooming for bed-bound or wheelchair elders',
+    price: 699,
+    durationMinutes: 60,
+    features: ['No-Rinse Scalp Cleansing', 'Gentle Bedside Haircut', 'Nail Trim & Buffing', 'Moisturizing Skin Shield'],
+    hygieneKit: 'Waterproof bed protector mat + hospital-grade antiseptics',
+    recommendedFor: 'Bed-bound elders, post-surgery recovery, Parkinson/Alzheimer care',
+    popular: true,
+  },
+  {
+    id: 'hvs-senior-footcare',
+    categoryId: 'senior_care',
+    name: 'Diabetic-Safe Senior Pedicure & Calming Head Massage',
+    tagline: 'Safe non-invasive nail shaping and 20-min Ayurvedic oil champi',
+    price: 649,
+    durationMinutes: 50,
+    features: ['Blunt Safety Nail Trimming', 'Epsom Salt Warm Soak', 'Antiseptic Foot Balm', '20-Min Herbal Champi'],
+    hygieneKit: 'Disposable foot bath liner + single-use nail file',
+    recommendedFor: 'Senior citizens needing diabetic foot hygiene & stress relief',
+  },
+
+  // Kids & Toddlers
+  {
+    id: 'hvs-kids-first',
+    categoryId: 'kids',
+    name: 'Tear-Free Toddler & Kids Haircut',
+    tagline: 'Fun, gentle hair cut with animated cape, rounded clippers & treat',
+    price: 349,
+    durationMinutes: 30,
+    features: ['Ultra-Quiet Ceramic Blade Clipper', 'Tear-Free Finishing Mist', 'Superhero / Princess Cape', 'Post-Haircut Surprise Sticker'],
+    hygieneKit: 'Single-use sanitized toddler cape & sterilized comb',
+    recommendedFor: 'Babies (1 yr+) & Kids up to 12 years',
+    popular: true,
+  },
+  {
+    id: 'hvs-kids-mundan',
+    categoryId: 'kids',
+    name: 'Traditional First Baby Head Shave (Mundan Ceremony)',
+    tagline: 'Sacred ceremonial head shave by experienced baby specialist',
+    price: 799,
+    durationMinutes: 45,
+    features: ['Traditional Fresh Razor Ceremony', 'Turmeric & Sandalwood Soothing Balm', 'Parent Lap Support Protocol', 'Clean Hair Collection Pouch'],
+    hygieneKit: 'Brand new razor blade opened in front of parents + antiseptic kit',
+    recommendedFor: 'Newborns and infants for religious Mundan / Tonsure',
+    popular: true,
+  },
+
+  // Men's Executive
+  {
+    id: 'hvs-men-executive',
+    categoryId: 'mens_grooming',
+    name: "Executive Haircut & Hot Towel Beard Sculpting",
+    tagline: 'Sharp precision fade, scissor work, steamed towel and beard oil',
+    price: 599,
+    durationMinutes: 50,
+    features: ['Custom Skin Fade / Taper', 'Straight Razor Beard Outline', 'Steamed Peppermint Towel', 'Matte Styling Clay Finish'],
+    hygieneKit: 'Disinfected professional clippers + single-use neck roll',
+    recommendedFor: 'Busy executives and grooming connoisseurs',
+    popular: true,
+  },
+  {
+    id: 'hvs-men-detan',
+    categoryId: 'mens_grooming',
+    name: 'Charcoal De-Tan Facial & Scalp Oil Revival',
+    tagline: 'Deep pore detox, blackhead extraction, tan removal & head massage',
+    price: 799,
+    durationMinutes: 55,
+    features: ['Activated Bamboo Charcoal Scrub', 'Steam Pore Cleanse', 'Detox Peel-Off Mask', '15-Min Stress-Relief Head Massage'],
+    hygieneKit: 'Single-use applicator sponges & steam mask',
+    recommendedFor: 'Sun-tanned skin and weekend relaxation',
+  },
+
+  // Women's Spa & Esthetics
+  {
+    id: 'hvs-women-glow',
+    categoryId: 'womens_spa',
+    name: 'Organic Radiance Facial & Threading Combo',
+    tagline: 'Deep herbal cleanse, enzyme peel, glow massage & eyebrow shaping',
+    price: 999,
+    durationMinutes: 65,
+    features: ['Organic Rose & Saffron Cleanser', 'Ultrasonic Blackhead Cleanse', 'Brightening Algae Rubber Mask', 'Eyebrow & Upper Lip Threading'],
+    hygieneKit: '100% disposable bed cover & sealed organic product sachets',
+    recommendedFor: 'Instant skin luminosity before parties or events',
+    popular: true,
+  },
+  {
+    id: 'hvs-women-wax',
+    categoryId: 'womens_spa',
+    name: 'Full Body Rica Liposoluble Waxing Suite',
+    tagline: 'Painless Italian Rica wax for arms, full legs & underarms',
+    price: 1199,
+    durationMinutes: 70,
+    features: ['Colophony-Free Italian Rica Wax', 'Pre-Wax Soothing Gel', 'Post-Wax Calming Coconut Oil', 'Zero In-Grown Hair Technique'],
+    hygieneKit: 'Disposable wooden spatulas & disposable waxing bed runner',
+    recommendedFor: 'Smooth, irritation-free hair removal',
+    popular: true,
+  },
+  {
+    id: 'hvs-women-pedi',
+    categoryId: 'womens_spa',
+    name: 'Aromatherapy Candle Pedicure & Manicure',
+    tagline: 'Warm soy candle oil massage, cuticle care, scrub & gel polish',
+    price: 899,
+    durationMinutes: 60,
+    features: ['Dead Sea Salt Soak', 'Callus Smoothing', 'Warm Melted Candle Massage', 'Long-Lasting High Shine Top Coat'],
+    hygieneKit: 'Sterilized stainless cuticle nippers + fresh nail buffer',
+    recommendedFor: 'Tired feet, soft hands and salon-grade polish',
+  },
+
+  // Festive & Group
+  {
+    id: 'hvs-festive-duo',
+    categoryId: 'festive_group',
+    name: 'Celebration Duo Styling Package (2 Persons)',
+    tagline: 'Hair styling, light makeup / beard groom & touch-up for two guests',
+    price: 1899,
+    durationMinutes: 80,
+    features: ['Two Complete Event Hairdos', 'Quick Glow Makeup / Beard Groom', 'Hair Floral Placement', 'Setting Spray Long Hold'],
+    hygieneKit: 'Two independent sanitized toolkits',
+    recommendedFor: 'Couples, Mother & Daughter, Sisters going to an event',
+    popular: true,
+  },
+  {
+    id: 'hvs-festive-family',
+    categoryId: 'festive_group',
+    name: 'Family Event Grooming Platoon (Up to 4 Persons)',
+    tagline: 'Complete home salon takeover for 4 family members before celebration',
+    price: 3499,
+    durationMinutes: 140,
+    features: ['4x Custom Haircuts / Hairstyles', '2x Beard Styling or Saree Drapes', 'Express Glow Touch-ups', 'Floor Cleanup Guaranteed'],
+    hygieneKit: 'Complete salon mobile station with floor drop sheets',
+    recommendedFor: 'Festivals (Diwali, Eid, Puja), Weddings & Housewarmings',
+    popular: true,
+  },
+];
 

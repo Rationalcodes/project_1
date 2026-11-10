@@ -176,6 +176,9 @@ export class KumbhakaranApiClient {
       .then((data) => {
         if (data !== null && data !== undefined) {
           this.responseCache.set(cacheKey, { data, expiresAt: Date.now() + ttlMs });
+        } else {
+          // Cooldown for empty / failed responses: prevents immediate console spam during network/SSL errors
+          this.responseCache.set(cacheKey, { data: null as any, expiresAt: Date.now() + Math.min(30000, ttlMs) });
         }
         return data;
       })
