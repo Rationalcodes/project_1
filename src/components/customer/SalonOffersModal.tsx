@@ -10,6 +10,7 @@ import {
   Clock,
   RotateCw,
   Flame,
+  Lock,
 } from 'lucide-react';
 import { Salon, SalonOffer, DEFAULT_SALON_OFFERS } from '@kumbhakaran/shared-types';
 
@@ -31,6 +32,32 @@ const LUXURY_COLORS = [
   '#0D9488', // Persian Teal
 ];
 
+// 15 days in milliseconds
+const FIFTEEN_DAYS_MS = 15 * 24 * 60 * 60 * 1000;
+
+interface SpinRecord {
+  lastSpinTimestamp: number;
+  wonOffer: SalonOffer;
+  wonAtDate: string;
+}
+
+const getStorageItem = (key: string): string | null => {
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      return window.localStorage.getItem(key);
+    }
+  } catch {}
+  return null;
+};
+
+const setStorageItem = (key: string, value: string): void => {
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      window.localStorage.setItem(key, value);
+    }
+  } catch {}
+};
+
 export const SalonOffersModal: React.FC<SalonOffersModalProps> = ({
   salon,
   isOpen,
@@ -41,9 +68,44 @@ export const SalonOffersModal: React.FC<SalonOffersModalProps> = ({
   const [isSpinning, setIsSpinning] = useState(false);
   const [rotationAngle, setRotationAngle] = useState(0);
   const [wonOffer, setWonOffer] = useState<SalonOffer | null>(null);
+  const [wonDate, setWonDate] = useState<string | null>(null);
+  const [canSpin, setCanSpin] = useState<boolean>(true);
+  const [remainingCooldownText, setRemainingCooldownText] = useState<string>('');
   const [showConfetti, setShowConfetti] = useState(false);
   const [activeFilter, setActiveFilter] = useState<'all' | 'wheel' | 'percent' | 'flat'>('all');
   const [viewTab, setViewTab] = useState<'wheel' | 'all'>('wheel');
+
+  const storageKey = `sloon_spin_cooldown_v1_${salon.id}`;
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const stored = getStorageItem(storageKey);
+    if (stored) {
+      try {
+        const record: SpinRecord = JSON.parse(stored);
+        if (record && record.lastSpinTimestamp) {
+          const elapsed = Date.now() - record.lastSpinTimestamp;
+          if (elapsed < FIFTEEN_DAYS_MS) {
+            const remainingMs = FIFTEEN_DAYS_MS - elapsed;
+            const daysLeft = Math.floor(remainingMs / (24 * 60 * 60 * 1000));
+            const hoursLeft = Math.ceil((remainingMs % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000));
+
+            const timeText = daysLeft > 0 ? `${daysLeft}d ${hoursLeft}h` : `${hoursLeft} hours`;
+
+            setCanSpin(false);
+            setRemainingCooldownText(timeText);
+            setWonOffer(record.wonOffer);
+            setWonDate(record.wonAtDate || 'Recent spin');
+            return;
+          }
+        }
+      } catch {}
+    }
+
+    setCanSpin(true);
+    setRemainingCooldownText('');
+  }, [isOpen, salon.id, storageKey]);
 
   const allOffers: SalonOffer[] = useMemo(() => {
     if (Array.isArray(salon.offers) && salon.offers.length > 0) {
@@ -75,7 +137,7 @@ export const SalonOffersModal: React.FC<SalonOffersModalProps> = ({
   }, [allOffers, activeFilter]);
 
   const handleSpin = () => {
-    if (isSpinning) return;
+    if (isSpinning || !canSpin) return;
     setIsSpinning(true);
     setWonOffer(null);
     setShowConfetti(false);
@@ -99,6 +161,22 @@ export const SalonOffersModal: React.FC<SalonOffersModalProps> = ({
       setIsSpinning(false);
       setWonOffer(winningSlice);
       setShowConfetti(true);
+
+      const now = Date.now();
+      const formattedDate = new Date().toLocaleDateString('en-IN', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+      });
+      const record: SpinRecord = {
+        lastSpinTimestamp: now,
+        wonOffer: winningSlice,
+        wonAtDate: formattedDate,
+      };
+      setStorageItem(storageKey, JSON.stringify(record));
+      setCanSpin(false);
+      setRemainingCooldownText('15 days');
+      setWonDate(formattedDate);
     }, 4500);
   };
 
@@ -171,7 +249,7 @@ export const SalonOffersModal: React.FC<SalonOffersModalProps> = ({
                 </span>
               </div>
               <p className="text-xs text-stone-400">
-                Exclusive in-studio offers & Fortune Spin Wheel
+                1 Fortune Spin every 15 days · Exclusive in-studio vouchers
               </p>
             </div>
           </div>
@@ -214,9 +292,18 @@ export const SalonOffersModal: React.FC<SalonOffersModalProps> = ({
             </button>
           </div>
 
-          <div className="hidden sm:flex items-center gap-1 text-[11px] text-amber-400/90 font-medium">
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>100% Free to Spin Today</span>
+          <div className="hidden sm:flex items-center gap-1.5 text-[11px] font-bold">
+            {canSpin ? (
+              <span className="text-emerald-400 flex items-center gap-1">
+                <Sparkles className="w-3.5 h-3.5" />
+                Spin Ready Today!
+              </span>
+            ) : (
+              <span className="text-amber-400 flex items-center gap-1">
+                <Clock className="w-3.5 h-3.5" />
+                Next spin in {remainingCooldownText}
+              </span>
+            )}
           </div>
         </div>
 
@@ -227,15 +314,27 @@ export const SalonOffersModal: React.FC<SalonOffersModalProps> = ({
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(245,158,11,0.08)_0%,_transparent_70%)] pointer-events-none" />
 
                 <div className="space-y-1 relative z-10">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-amber-400 bg-amber-400/10 px-3 py-1 rounded-full border border-amber-400/30 inline-flex items-center gap-1.5">
-                    <Sparkles className="w-3 h-3 text-amber-400" />
-                    LUCKY SPIN & WIN
-                  </span>
-                  <h4 className="text-xl sm:text-2xl font-black text-white tracking-tight">
-                    Spin for Instant In-Studio Perks!
+                  <div className="flex items-center justify-center gap-2">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-amber-400 bg-amber-400/10 px-3 py-1 rounded-full border border-amber-400/30 inline-flex items-center gap-1.5">
+                      <Sparkles className="w-3 h-3 text-amber-400" />
+                      1 SPIN IN 15 DAYS
+                    </span>
+
+                    {!canSpin && (
+                      <span className="text-[10px] font-black uppercase tracking-wider text-rose-300 bg-rose-500/20 px-2.5 py-1 rounded-full border border-rose-500/30 inline-flex items-center gap-1">
+                        <Lock className="w-3 h-3" />
+                        Cooldown Active
+                      </span>
+                    )}
+                  </div>
+
+                  <h4 className="text-xl sm:text-2xl font-black text-white tracking-tight mt-1">
+                    {canSpin ? 'Spin for Instant In-Studio Perks!' : 'Your Exclusive 15-Day Prize'}
                   </h4>
                   <p className="text-xs text-stone-300 max-w-sm mx-auto leading-relaxed">
-                    Land on jackpot cuts, ₹100 off vouchers, or free beard treatments for your visit today.
+                    {canSpin
+                      ? 'Customers are allowed 1 spin every 15 days. Win jackpot cuts, ₹100 off vouchers, or free beard treatments!'
+                      : `You claimed your spin on ${wonDate || 'recently'}. Your active won deal is displayed below! Next spin unlocks in ${remainingCooldownText}.`}
                   </p>
                 </div>
 
@@ -346,40 +445,70 @@ export const SalonOffersModal: React.FC<SalonOffersModalProps> = ({
 
                   <button
                     type="button"
-                    disabled={isSpinning}
+                    disabled={!canSpin || isSpinning}
                     onClick={handleSpin}
-                    className="absolute z-20 w-18 h-18 rounded-full bg-gradient-to-tr from-amber-700 via-amber-400 to-yellow-100 p-0.5 shadow-2xl flex items-center justify-center cursor-pointer hover:scale-105 active:scale-95 transition-transform disabled:opacity-85 disabled:cursor-not-allowed group"
+                    className={`absolute z-20 w-18 h-18 rounded-full p-0.5 shadow-2xl flex items-center justify-center transition-transform ${
+                      !canSpin
+                        ? 'bg-gradient-to-tr from-stone-700 to-stone-500 opacity-80 cursor-not-allowed'
+                        : 'bg-gradient-to-tr from-amber-700 via-amber-400 to-yellow-100 hover:scale-105 active:scale-95 cursor-pointer'
+                    }`}
                   >
                     <div className="w-full h-full rounded-full bg-gradient-to-b from-[#2B1B13] to-[#120B07] border-2 border-amber-400/80 flex flex-col items-center justify-center text-amber-300 font-black shadow-inner">
-                      <RotateCw
-                        className={`w-5 h-5 ${isSpinning ? 'animate-spin text-amber-200' : 'text-amber-400 group-hover:rotate-45'} transition-transform`}
-                      />
-                      <span className="text-[9px] font-black uppercase tracking-wider mt-0.5 text-amber-200">
-                        {isSpinning ? 'SPINNING' : 'TAP SPIN'}
-                      </span>
+                      {!canSpin ? (
+                        <>
+                          <Clock className="w-5 h-5 text-stone-400" />
+                          <span className="text-[8px] font-black uppercase tracking-wider text-stone-400 mt-0.5">
+                            1 IN 15D
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <RotateCw
+                            className={`w-5 h-5 ${isSpinning ? 'animate-spin text-amber-200' : 'text-amber-400 group-hover:rotate-45'} transition-transform`}
+                          />
+                          <span className="text-[9px] font-black uppercase tracking-wider mt-0.5 text-amber-200">
+                            {isSpinning ? 'SPINNING' : 'TAP SPIN'}
+                          </span>
+                        </>
+                      )}
                     </div>
                   </button>
                 </div>
 
-                <div className="pt-2 relative z-10">
-                  <button
-                    type="button"
-                    disabled={isSpinning}
-                    onClick={handleSpin}
-                    className="w-full sm:w-auto min-w-[240px] py-3.5 px-8 rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-400 hover:to-orange-400 text-stone-950 font-black text-sm tracking-wide shadow-lg shadow-amber-500/25 active:scale-98 transition-all cursor-pointer disabled:opacity-50"
-                  >
-                    {isSpinning ? (
-                      <span className="flex items-center justify-center gap-2">
-                        <RotateCw className="w-4 h-4 animate-spin text-stone-950" />
-                        Spinning the Wheel...
+                <div className="pt-2 relative z-10 flex flex-col items-center gap-2">
+                  {!canSpin ? (
+                    <div className="w-full flex flex-col items-center gap-2">
+                      <div className="w-full sm:w-auto min-w-[300px] py-3.5 px-6 rounded-2xl bg-stone-900/90 border border-amber-500/40 text-stone-300 font-bold text-xs shadow-md flex items-center justify-center gap-2.5">
+                        <Clock className="w-4 h-4 text-amber-400 animate-pulse" />
+                        <span>
+                          1 spin allowed every 15 days · Next spin in{' '}
+                          <strong className="text-amber-300 font-black">{remainingCooldownText}</strong>
+                        </span>
+                      </div>
+                      <span className="text-[11px] text-stone-400">
+                        Your won prize is active below! Show coupon at billing desk.
                       </span>
-                    ) : (
-                      <span className="flex items-center justify-center gap-2">
-                        <Sparkles className="w-4 h-4 fill-stone-950" />
-                        SPIN THE WHEEL
-                      </span>
-                    )}
-                  </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      disabled={isSpinning}
+                      onClick={handleSpin}
+                      className="w-full sm:w-auto min-w-[260px] py-3.5 px-8 rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-400 hover:to-orange-400 text-stone-950 font-black text-sm tracking-wide shadow-lg shadow-amber-500/25 active:scale-98 transition-all cursor-pointer disabled:opacity-50"
+                    >
+                      {isSpinning ? (
+                        <span className="flex items-center justify-center gap-2">
+                          <RotateCw className="w-4 h-4 animate-spin text-stone-950" />
+                          Spinning the Wheel...
+                        </span>
+                      ) : (
+                        <span className="flex items-center justify-center gap-2">
+                          <Sparkles className="w-4 h-4 fill-stone-950" />
+                          SPIN THE WHEEL (1x in 15 Days)
+                        </span>
+                      )}
+                    </button>
+                  )}
                 </div>
 
                 {wonOffer && !isSpinning && (
@@ -391,7 +520,7 @@ export const SalonOffersModal: React.FC<SalonOffersModalProps> = ({
                         </div>
                         <div>
                           <span className="text-[10px] font-black uppercase tracking-widest text-amber-300">
-                            🎉 WINNER PRIZE UNLOCKED!
+                            {canSpin ? '🎉 WINNER PRIZE UNLOCKED!' : 'ACTIVE 15-DAY DEAL'}
                           </span>
                           <h5 className="text-base sm:text-lg font-black text-white">
                             {wonOffer.title}
@@ -400,7 +529,7 @@ export const SalonOffersModal: React.FC<SalonOffersModalProps> = ({
                       </div>
 
                       <span className="text-xs font-black px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                        Ready to Use
+                        {canSpin ? 'Just Won' : 'Saved Deal'}
                       </span>
                     </div>
 
@@ -441,14 +570,10 @@ export const SalonOffersModal: React.FC<SalonOffersModalProps> = ({
                     </div>
 
                     <div className="flex items-center justify-between text-[11px] text-stone-400 pt-2.5">
-                      <span>💡 Show this code at the salon checkout desk</span>
-                      <button
-                        type="button"
-                        onClick={handleSpin}
-                        className="text-amber-400 hover:text-amber-300 font-bold underline cursor-pointer"
-                      >
-                        Spin Again ➔
-                      </button>
+                      <span>💡 Show this code at salon checkout desk</span>
+                      <span className="text-stone-400 font-semibold">
+                        {!canSpin ? `Next spin in ${remainingCooldownText}` : '1 spin allowed in 15 days'}
+                      </span>
                     </div>
                   </div>
                 )}
