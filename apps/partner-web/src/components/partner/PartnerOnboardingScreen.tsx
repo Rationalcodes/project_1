@@ -8,38 +8,35 @@ import {
   QrCode,
   ShieldCheck,
   Store,
-  Wifi,
-  Eye,
-  Layers,
-  X
+  Users,
+  CheckCircle2,
+  TrendingUp,
 } from 'lucide-react';
+import { SalonToolsWheel } from '@kumbhakaran/ui';
 import logoFallback from '../../assets/logo.png';
 import logoTransparent from '../../assets/logo-transparent.png';
 
 export interface PartnerOnboardingScreenProps {
   onFinish: () => void;
-  initialMode?: 'interactive' | 'gallery';
 }
 
 export const PartnerOnboardingScreen: React.FC<PartnerOnboardingScreenProps> = ({
   onFinish,
-  initialMode = 'interactive'
 }) => {
-  // Step 0 = Splash, Steps 1..3 = Carousel slides
+  // Step 0 = Welcome Splash, Steps 1..3 = Partner Pillars
   const [currentStep, setCurrentStep] = useState<number>(0);
-  const [viewMode, setViewMode] = useState<'interactive' | 'gallery'>(initialMode);
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
   const [touchDeltaX, setTouchDeltaX] = useState<number>(0);
 
-  // Auto-advance from splash screen after 2.4s in interactive mode
+  // Auto-advance from splash screen after 2.6s if untouched
   useEffect(() => {
-    if (viewMode === 'interactive' && currentStep === 0) {
+    if (currentStep === 0) {
       const timer = setTimeout(() => {
         setCurrentStep(1);
-      }, 2400);
+      }, 2600);
       return () => clearTimeout(timer);
     }
-  }, [currentStep, viewMode]);
+  }, [currentStep]);
 
   // Keyboard navigation
   useEffect(() => {
@@ -48,8 +45,6 @@ export const PartnerOnboardingScreen: React.FC<PartnerOnboardingScreenProps> = (
         onFinish();
         return;
       }
-      if (viewMode === 'gallery') return;
-
       if (currentStep === 0) {
         if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowRight') {
           setCurrentStep(1);
@@ -64,7 +59,7 @@ export const PartnerOnboardingScreen: React.FC<PartnerOnboardingScreenProps> = (
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [currentStep, viewMode]);
+  }, [currentStep]);
 
   const handleNext = () => {
     if (currentStep < 3) {
@@ -77,12 +72,14 @@ export const PartnerOnboardingScreen: React.FC<PartnerOnboardingScreenProps> = (
   const handleBack = () => {
     if (currentStep > 1) {
       setCurrentStep((prev) => prev - 1);
+    } else if (currentStep === 1) {
+      setCurrentStep(0);
     }
   };
 
   // Touch Swipe Handlers for mobile gestures
   const handleTouchStart = (e: React.TouchEvent) => {
-    if (currentStep === 0 || viewMode === 'gallery') return;
+    if (currentStep === 0) return;
     setTouchStartX(e.touches[0].clientX);
     setTouchDeltaX(0);
   };
@@ -105,574 +102,310 @@ export const PartnerOnboardingScreen: React.FC<PartnerOnboardingScreenProps> = (
   };
 
   const accentColor = '#E05326';
-  const accentHoverColor = '#C8441B';
   const bgLightIllustration = '#FFF9F5';
 
-  /* -------------------------------------------------------------
-     PHONE TOP BAR (Matches 12:30 & Icons in User Reference)
-  ------------------------------------------------------------- */
-  const renderPhoneTopBar = (dark = false) => (
-    <div
-      className={`pt-3 px-6 pb-2 flex items-center justify-between text-xs font-bold shrink-0 select-none ${
-        dark ? 'text-white/90' : 'text-stone-800'
-      }`}
-    >
-      <span className="tracking-tight text-[12px] font-bold">12:30</span>
-
-      {/* Camera / Speaker Pill */}
-      <div
-        className={`w-16 h-3.5 rounded-full mx-auto ${
-          dark ? 'bg-black/30' : 'bg-stone-900/15'
-        }`}
-      />
-
-      <div className="flex items-center gap-1.5">
-        {/* Cellular Signal */}
-        <div className="flex items-end gap-[1.5px] h-2.5">
-          <span
-            className={`w-[2.5px] h-1 rounded-xs ${
-              dark ? 'bg-white' : 'bg-stone-800'
-            }`}
-          />
-          <span
-            className={`w-[2.5px] h-1.5 rounded-xs ${
-              dark ? 'bg-white' : 'bg-stone-800'
-            }`}
-          />
-          <span
-            className={`w-[2.5px] h-2 rounded-xs ${
-              dark ? 'bg-white' : 'bg-stone-800'
-            }`}
-          />
-          <span
-            className={`w-[2.5px] h-2.5 rounded-xs ${
-              dark ? 'bg-white' : 'bg-stone-800'
-            }`}
-          />
-        </div>
-        {/* Wifi Icon */}
-        <Wifi className="w-3.5 h-3.5 stroke-[2.5]" />
-        {/* Battery */}
-        <div
-          className={`w-5 h-2.5 rounded-[3px] border p-[1px] flex items-center ${
-            dark ? 'border-white' : 'border-stone-800'
-          }`}
-        >
-          <div className="w-3.5 h-full bg-[#10B981] rounded-[1.5px]" />
-        </div>
-      </div>
-    </div>
-  );
-
-  /* -------------------------------------------------------------
-     SCREEN 1: SPLASH SCREEN (Matches Phone 1 in Reference)
-  ------------------------------------------------------------- */
-  const renderPhone1Splash = () => (
-    <div
-      className="relative w-full h-full flex flex-col justify-between overflow-hidden cursor-pointer select-none"
-      style={{
-        background: 'linear-gradient(180deg, #FDF7F2 0%, #FAECE1 45%, #F4DDCB 100%)',
-      }}
-      onClick={() => setCurrentStep(1)}
-    >
-      {renderPhoneTopBar(false)}
-
-      {/* Decorative Grooming Line Art Motif Background */}
-      <div className="absolute inset-0 opacity-[0.08] pointer-events-none flex flex-wrap gap-8 p-6 justify-around items-center">
-        {Array.from({ length: 16 }).map((_, i) => (
-          <div key={i} className="transform rotate-12 text-[#783F0F]">
-            {i % 4 === 0 ? (
-              <Scissors className="w-10 h-10" />
-            ) : i % 4 === 1 ? (
-              <Store className="w-10 h-10" />
-            ) : i % 4 === 2 ? (
-              <QrCode className="w-9 h-9" />
-            ) : (
-              <Sparkles className="w-9 h-9" />
-            )}
-          </div>
-        ))}
-      </div>
-
-      {/* Center White Circular Emblem (Exact match to Phone 1) */}
-      <div className="relative z-10 flex-1 flex flex-col items-center justify-center p-6 text-center">
-        <div className="w-44 h-44 sm:w-48 sm:h-48 rounded-full bg-white shadow-2xl shadow-stone-800/15 border-4 border-white/90 flex flex-col items-center justify-center p-5 transform transition-transform duration-500 hover:scale-105">
-          <img
-            src={logoFallback}
-            alt="SLOON Partner"
-            className="w-28 sm:w-32 h-auto object-contain"
-            onError={(e) => {
-              (e.currentTarget as HTMLImageElement).src = logoTransparent;
-            }}
-          />
-          <div className="mt-2.5 inline-flex items-center gap-1 px-3 py-0.5 rounded-full bg-[#FFF3EC] text-[#E05326] border border-[#FED7CC]">
-            <span className="text-[10px] font-black tracking-widest uppercase">
-              PARTNER OS
-            </span>
-          </div>
-        </div>
-
-        <div className="mt-6 space-y-1">
-          <p className="text-[11px] font-black tracking-widest text-[#783F0F] uppercase">
-            Smart Walk-In Queue System
-          </p>
-          <p className="text-[11px] text-stone-500 font-medium">Tap to continue</p>
-        </div>
-      </div>
-
-      {/* Bottom Spacer */}
-      <div className="pb-6 text-center">
-        <span className="text-[10px] text-stone-400 font-bold uppercase tracking-widest">
-          SLOON FOR SALONS
-        </span>
-      </div>
-    </div>
-  );
-
-  /* -------------------------------------------------------------
-     SCREEN 2: WALK-IN QUEUE CONTROL (Matches Phone 2 in Reference)
-  ------------------------------------------------------------- */
-  const renderPhone2Queue = () => (
-    <div className="relative w-full h-full bg-white flex flex-col justify-between overflow-hidden">
-      {renderPhoneTopBar(false)}
-
-      {/* Illustration Area */}
-      <div className="flex-1 flex flex-col items-center justify-center px-6 py-2 text-center">
-        <div className="w-full max-w-[260px] aspect-square rounded-full flex items-center justify-center relative">
-          {/* Soft Pastel Circular Tint */}
-          <div
-            className="absolute inset-0 rounded-full"
-            style={{ background: bgLightIllustration }}
-          />
-
-          {/* Clean Vector Character / Scene */}
-          <svg
-            viewBox="0 0 280 280"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-            className="w-full h-full relative z-10"
-          >
-            {/* Salon Counter */}
-            <rect x="30" y="185" width="220" height="38" rx="8" fill="#291F18" />
-            <rect x="42" y="195" width="196" height="18" rx="4" fill="#3D2D23" />
-
-            {/* Receptionist Character */}
-            <path
-              d="M115 82C115 62 128 52 140 52C155 52 165 62 165 82C165 92 162 100 158 106H122C118 100 115 92 115 82Z"
-              fill="#1C1917"
-            />
-            <ellipse cx="140" cy="88" rx="18" ry="20" fill="#FCD5B5" />
-            <path
-              d="M135 96C138 99 142 99 145 96"
-              stroke="#8C4A28"
-              strokeWidth="2"
-              strokeLinecap="round"
-            />
-            <circle cx="134" cy="86" r="2" fill="#1C1917" />
-            <circle cx="146" cy="86" r="2" fill="#1C1917" />
-            {/* Apron */}
-            <path
-              d="M120 115C120 107 130 105 140 105C150 105 160 107 160 115L170 185H110L120 115Z"
-              fill={accentColor}
-            />
-            <path d="M132 105L140 120L148 105" fill="#FFFFFF" />
-
-            {/* Queue Counter Terminal on Desk */}
-            <g filter="drop-shadow(0px 8px 16px rgba(0,0,0,0.18))">
-              <rect x="65" y="145" width="85" height="58" rx="10" fill="#FFFFFF" stroke="#E7DED5" strokeWidth="2.5" />
-              <rect x="72" y="152" width="71" height="44" rx="6" fill="#FAF7F2" />
-              <text x="107" y="166" textAnchor="middle" fill="#78716C" fontSize="7.5" fontWeight="800" fontFamily="sans-serif">
-                WALK-IN QUEUE
-              </text>
-              <text x="107" y="186" textAnchor="middle" fill={accentColor} fontSize="18" fontWeight="900" fontFamily="sans-serif">
-                03
-              </text>
-            </g>
-
-            {/* +1 Quick Stepper Badge */}
-            <g filter="drop-shadow(0px 6px 12px rgba(224,83,38,0.35))">
-              <circle cx="45" cy="148" r="20" fill={accentColor} />
-              <text x="45" y="155" textAnchor="middle" fill="#FFFFFF" fontSize="15" fontWeight="900" fontFamily="sans-serif">
-                +1
-              </text>
-            </g>
-
-            {/* Speech Bubble: "3 Waiting in Line" */}
-            <g filter="drop-shadow(0px 6px 12px rgba(0,0,0,0.08))">
-              <rect x="165" y="60" width="105" height="34" rx="10" fill="#FFFFFF" stroke="#F0EBE4" strokeWidth="1.5" />
-              <polygon points="172,94 180,94 170,102" fill="#FFFFFF" />
-              <text x="217" y="76" textAnchor="middle" fill="#1C1917" fontSize="9" fontWeight="800" fontFamily="sans-serif">
-                3 Waiting in Line
-              </text>
-              <text x="217" y="87" textAnchor="middle" fill="#059669" fontSize="7.5" fontWeight="700" fontFamily="sans-serif">
-                • Live Transparency
-              </text>
-            </g>
-          </svg>
-        </div>
-
-        {/* Copy (Matches Reference Layout: 1 Clear Sentence with Accent Highlight) */}
-        <div className="mt-6 space-y-2 max-w-[270px]">
-          <h2 className="text-lg sm:text-[19px] font-black text-stone-900 tracking-tight leading-snug">
-            Take Complete Control Of Your{' '}
-            <span style={{ color: accentColor }}>Walk-In Rush</span> In 1 Tap
-          </h2>
-          <p className="text-xs text-stone-500 font-medium leading-relaxed">
-            Eliminate crowded salon benches and let neighbourhood clients track waiting turns live.
-          </p>
-        </div>
-      </div>
-
-      {/* Pagination & Continue Button */}
-      <div className="p-6 pt-2 space-y-4 shrink-0">
-        <div className="flex items-center justify-center gap-1.5">
-          <div className="w-7 h-2 rounded-full" style={{ backgroundColor: accentColor }} />
-          <div className="w-2 h-2 rounded-full bg-stone-300" />
-          <div className="w-2 h-2 rounded-full bg-stone-300" />
-        </div>
-
-        <button
-          type="button"
-          onClick={handleNext}
-          className="w-full py-3.5 px-6 rounded-full text-white font-black text-sm tracking-wide shadow-md transition-all transform active:scale-98 cursor-pointer flex items-center justify-center gap-2"
-          style={{ backgroundColor: accentColor }}
-        >
-          <span>Continue</span>
-          <ArrowRight className="w-4 h-4 stroke-[2.5]" />
-        </button>
-      </div>
-    </div>
-  );
-
-  /* -------------------------------------------------------------
-     SCREEN 3: 0% COMMISSION & STAND-EE (Matches Phone 3 in Reference)
-  ------------------------------------------------------------- */
-  const renderPhone3Commission = () => (
-    <div className="relative w-full h-full bg-white flex flex-col justify-between overflow-hidden">
-      {renderPhoneTopBar(false)}
-
-      {/* Illustration Area */}
-      <div className="flex-1 flex flex-col items-center justify-center px-6 py-2 text-center">
-        <div className="w-full max-w-[260px] aspect-square rounded-full flex items-center justify-center relative">
-          <div
-            className="absolute inset-0 rounded-full"
-            style={{ background: bgLightIllustration }}
-          />
-
-          <svg
-            viewBox="0 0 280 280"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-            className="w-full h-full relative z-10"
-          >
-            {/* Acrylic Desk Standee Mockup */}
-            <g filter="drop-shadow(0px 10px 20px rgba(0,0,0,0.14))">
-              <rect x="42" y="55" width="95" height="140" rx="12" fill="#FFFFFF" stroke="#E7DED5" strokeWidth="2.5" />
-              <rect x="52" y="68" width="75" height="75" rx="6" fill="#1C1917" />
-              
-              {/* QR Pattern */}
-              <rect x="59" y="75" width="16" height="16" fill="#FFFFFF" />
-              <rect x="63" y="79" width="8" height="8" fill="#1C1917" />
-              <rect x="102" y="75" width="16" height="16" fill="#FFFFFF" />
-              <rect x="106" y="79" width="8" height="8" fill="#1C1917" />
-              <rect x="59" y="118" width="16" height="16" fill="#FFFFFF" />
-              <rect x="63" y="122" width="8" height="8" fill="#1C1917" />
-              <rect x="88" y="100" width="10" height="10" fill="#FFFFFF" />
-
-              <text x="89" y="160" textAnchor="middle" fill="#1C1917" fontSize="7" fontWeight="800" fontFamily="sans-serif">
-                SCAN TO CHECK QUEUE
-              </text>
-              <text x="89" y="174" textAnchor="middle" fill={accentColor} fontSize="6.5" fontWeight="800" fontFamily="sans-serif">
-                Free Standee PDF
-              </text>
-
-              {/* Standee Base */}
-              <path d="M35 195H144L139 203H40L35 195Z" fill="#D6C7B8" />
-            </g>
-
-            {/* Happy Salon Owner Character */}
-            <path
-              d="M185 85C185 68 196 58 210 58C224 58 235 68 235 85C235 94 231 102 227 106H190C187 102 185 94 185 85Z"
-              fill="#2E1C12"
-            />
-            <ellipse cx="210" cy="92" rx="16" ry="18" fill="#FCD5B5" />
-            {/* Beard */}
-            <path d="M198 94C198 108 206 114 210 114C214 114 222 108 222 94H198Z" fill="#2E1C12" />
-            <path d="M205 101C207 103 213 103 215 101" stroke="#FFFFFF" strokeWidth="1.5" strokeLinecap="round" />
-            <circle cx="204" cy="88" r="1.8" fill="#1C1917" />
-            <circle cx="216" cy="88" r="1.8" fill="#1C1917" />
-            {/* Shirt */}
-            <path d="M188 118C188 110 198 108 210 108C222 108 232 110 232 118L240 205H180L188 118Z" fill="#1C1917" />
-
-            {/* 0% Commission Badge */}
-            <g filter="drop-shadow(0px 8px 18px rgba(16,185,129,0.35))">
-              <rect x="120" y="155" width="130" height="42" rx="12" fill="#10B981" />
-              <text x="185" y="174" textAnchor="middle" fill="#FFFFFF" fontSize="12" fontWeight="900" fontFamily="sans-serif">
-                0% COMMISSION
-              </text>
-              <text x="185" y="187" textAnchor="middle" fill="#D1FAE5" fontSize="7.5" fontWeight="800" fontFamily="sans-serif">
-                Keep 100% Cash & Direct UPI
-              </text>
-            </g>
-          </svg>
-        </div>
-
-        {/* Copy */}
-        <div className="mt-6 space-y-2 max-w-[270px]">
-          <h2 className="text-lg sm:text-[19px] font-black text-stone-900 tracking-tight leading-snug">
-            Keep 100% Of Your Revenue With{' '}
-            <span style={{ color: accentColor }}>0% Commission</span>
-          </h2>
-          <p className="text-xs text-stone-500 font-medium leading-relaxed">
-            No expensive POS rentals. Just print your counter standee and operate directly on your phone.
-          </p>
-        </div>
-      </div>
-
-      {/* Pagination & Continue Button */}
-      <div className="p-6 pt-2 space-y-4 shrink-0">
-        <div className="flex items-center justify-center gap-1.5">
-          <div className="w-2 h-2 rounded-full bg-stone-300" />
-          <div className="w-7 h-2 rounded-full" style={{ backgroundColor: accentColor }} />
-          <div className="w-2 h-2 rounded-full bg-stone-300" />
-        </div>
-
-        <button
-          type="button"
-          onClick={handleNext}
-          className="w-full py-3.5 px-6 rounded-full text-white font-black text-sm tracking-wide shadow-md transition-all transform active:scale-98 cursor-pointer flex items-center justify-center gap-2"
-          style={{ backgroundColor: accentColor }}
-        >
-          <span>Continue</span>
-          <ArrowRight className="w-4 h-4 stroke-[2.5]" />
-        </button>
-      </div>
-    </div>
-  );
-
-  /* -------------------------------------------------------------
-     SCREEN 4: MASTER STYLISTS & VERIFICATION (Matches Phone 4)
-  ------------------------------------------------------------- */
-  const renderPhone4Chairs = () => (
-    <div className="relative w-full h-full bg-white flex flex-col justify-between overflow-hidden">
-      {renderPhoneTopBar(false)}
-
-      {/* Illustration Area */}
-      <div className="flex-1 flex flex-col items-center justify-center px-6 py-2 text-center">
-        <div className="w-full max-w-[260px] aspect-square rounded-full flex items-center justify-center relative">
-          <div
-            className="absolute inset-0 rounded-full"
-            style={{ background: bgLightIllustration }}
-          />
-
-          <svg
-            viewBox="0 0 280 280"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-            className="w-full h-full relative z-10"
-          >
-            {/* Salon Chair Motif */}
-            <g filter="drop-shadow(0px 8px 16px rgba(0,0,0,0.12))">
-              <rect x="55" y="145" width="80" height="16" rx="5" fill="#1C1917" />
-              <path d="M62 105C62 98 68 92 76 92H118C126 92 132 98 132 105V145H62V105Z" fill="#783F0F" />
-              <rect x="80" y="78" width="28" height="18" rx="4" fill="#1C1917" />
-              <rect x="91" y="161" width="9" height="26" fill="#78716C" />
-              <ellipse cx="95" cy="190" rx="38" ry="7" fill="#1C1917" />
-            </g>
-
-            {/* Master Stylist */}
-            <path
-              d="M175 80C175 62 188 50 205 50C222 50 234 62 234 80C234 90 230 98 226 102H182C178 98 175 90 175 80Z"
-              fill="#1C1917"
-            />
-            <ellipse cx="204" cy="88" rx="16" ry="18" fill="#FCD5B5" />
-            <path d="M200 96C202 99 207 99 209 96" stroke="#8C4A28" strokeWidth="1.8" strokeLinecap="round" />
-            <circle cx="199" cy="86" r="1.8" fill="#1C1917" />
-            <circle cx="210" cy="86" r="1.8" fill="#1C1917" />
-            {/* Polo Shirt */}
-            <path d="M180 114C180 106 190 104 204 104C218 104 228 106 228 114L238 198H170L180 114Z" fill="#1C1917" />
-
-            {/* Golden Shears in Hand */}
-            <circle cx="162" cy="138" r="3.5" stroke="#F59E0B" strokeWidth="1.6" fill="none" />
-            <circle cx="168" cy="138" r="3.5" stroke="#F59E0B" strokeWidth="1.6" fill="none" />
-            <line x1="163" y1="135" x2="157" y2="122" stroke="#F59E0B" strokeWidth="1.8" strokeLinecap="round" />
-            <line x1="167" y1="135" x2="161" y2="122" stroke="#F59E0B" strokeWidth="1.8" strokeLinecap="round" />
-
-            {/* Verified Studio Badge */}
-            <g filter="drop-shadow(0px 8px 18px rgba(0,0,0,0.14))">
-              <rect x="145" y="32" width="112" height="38" rx="10" fill="#FFFFFF" stroke="#F0EBE4" strokeWidth="1.5" />
-              <circle cx="163" cy="51" r="8" fill="#10B981" />
-              <path d="M160 51L162 53L167 48" stroke="#FFFFFF" strokeWidth="1.8" strokeLinecap="round" />
-              <text x="178" y="48" fill="#1C1917" fontSize="9" fontWeight="900" fontFamily="sans-serif">
-                VERIFIED
-              </text>
-              <text x="178" y="59" fill="#78716C" fontSize="7.5" fontWeight="700" fontFamily="sans-serif">
-                ★ 4.9 Neighbourhood Salon
-              </text>
-            </g>
-          </svg>
-        </div>
-
-        {/* Copy */}
-        <div className="mt-6 space-y-2 max-w-[270px]">
-          <h2 className="text-lg sm:text-[19px] font-black text-stone-900 tracking-tight leading-snug">
-            Attract High-Value Clients To{' '}
-            <span style={{ color: accentColor }}>Your Chairs</span>
-          </h2>
-          <p className="text-xs text-stone-500 font-medium leading-relaxed">
-            Get verified by our team, showcase your master barbers, and turn one-time walk-ins into regulars.
-          </p>
-        </div>
-      </div>
-
-      {/* Pagination & Continue Button */}
-      <div className="p-6 pt-2 space-y-4 shrink-0">
-        <div className="flex items-center justify-center gap-1.5">
-          <div className="w-2 h-2 rounded-full bg-stone-300" />
-          <div className="w-2 h-2 rounded-full bg-stone-300" />
-          <div className="w-7 h-2 rounded-full" style={{ backgroundColor: accentColor }} />
-        </div>
-
-        <button
-          type="button"
-          onClick={onFinish}
-          className="w-full py-3.5 px-6 rounded-full text-white font-black text-sm tracking-wide shadow-md transition-all transform active:scale-98 cursor-pointer flex items-center justify-center gap-2"
-          style={{ backgroundColor: accentColor }}
-        >
-          <span>Continue to Partner Desk</span>
-          <ArrowRight className="w-4 h-4 stroke-[2.5]" />
-        </button>
-      </div>
-    </div>
-  );
-
-  /* -------------------------------------------------------------
-     VIEW MODE 1: ALL 4 PHONES SIDE-BY-SIDE (Exact Reference Match)
-  ------------------------------------------------------------- */
-  if (viewMode === 'gallery') {
-    return (
-      <div className="fixed inset-0 z-50 flex flex-col bg-stone-950/90 backdrop-blur-md select-none overflow-y-auto p-4 sm:p-6 animate-in fade-in duration-300">
-        {/* Gallery Top Navigation Header */}
-        <div className="max-w-7xl mx-auto w-full flex items-center justify-between pb-4 border-b border-stone-800 text-white shrink-0">
-          <div className="flex items-center gap-3">
-            <span className="text-xs uppercase font-black tracking-widest px-2.5 py-1 rounded bg-[#E05326] text-white">
-              SLOON PARTNER ONBOARDING
-            </span>
-            <span className="text-xs text-stone-400 font-medium hidden sm:inline">
-              4-Screen Walkthrough Specification
-            </span>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => {
-                setViewMode('interactive');
-                setCurrentStep(1);
-              }}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-stone-800 hover:bg-stone-700 text-stone-200 text-xs font-bold transition-colors cursor-pointer"
-            >
-              <Eye className="w-3.5 h-3.5 text-orange-400" />
-              <span>Interactive Mode</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={onFinish}
-              className="p-1.5 rounded-full bg-stone-800 hover:bg-stone-700 text-stone-300 hover:text-white transition-colors cursor-pointer"
-              title="Close and Enter App"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-        </div>
-
-        {/* Horizontal Row of 4 Phones (Matches user's uploaded reference image layout) */}
-        <div className="flex-1 max-w-7xl mx-auto w-full py-8 flex items-center justify-start xl:justify-center overflow-x-auto gap-5 sm:gap-6 px-2 no-scrollbar">
-          {/* Phone 1: Splash Screen */}
-          <div className="w-[280px] sm:w-[295px] h-[590px] rounded-[36px] bg-white border-[6px] border-stone-900 shadow-2xl overflow-hidden shrink-0 flex flex-col">
-            {renderPhone1Splash()}
-          </div>
-
-          {/* Phone 2: Walk-In Queues */}
-          <div className="w-[280px] sm:w-[295px] h-[590px] rounded-[36px] bg-white border-[6px] border-stone-900 shadow-2xl overflow-hidden shrink-0 flex flex-col">
-            {renderPhone2Queue()}
-          </div>
-
-          {/* Phone 3: 0% Commission */}
-          <div className="w-[280px] sm:w-[295px] h-[590px] rounded-[36px] bg-white border-[6px] border-stone-900 shadow-2xl overflow-hidden shrink-0 flex flex-col">
-            {renderPhone3Commission()}
-          </div>
-
-          {/* Phone 4: Master Chairs */}
-          <div className="w-[280px] sm:w-[295px] h-[590px] rounded-[36px] bg-white border-[6px] border-stone-900 shadow-2xl overflow-hidden shrink-0 flex flex-col">
-            {renderPhone4Chairs()}
-          </div>
-        </div>
-
-        {/* Gallery Footer Note */}
-        <div className="text-center pt-2 pb-2 text-stone-400 text-xs font-medium">
-          Scroll horizontally to view all 4 screens • Click "Interactive Mode" to experience the animated flow
-        </div>
-      </div>
-    );
-  }
-
-  /* -------------------------------------------------------------
-     VIEW MODE 2: INTERACTIVE STEP-BY-STEP PHONE MODAL
-  ------------------------------------------------------------- */
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-stone-950/70 backdrop-blur-sm select-none overflow-hidden animate-in fade-in duration-300"
+      className="fixed inset-0 z-50 flex flex-col justify-between bg-[#FAF7F2] text-stone-900 overflow-y-auto select-none animate-in fade-in duration-300"
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
     >
-      {/* Smartphone Device Frame */}
-      <div className="relative w-full max-w-[340px] sm:max-w-[370px] h-[92vh] max-h-[740px] bg-white rounded-[40px] shadow-2xl border-[7px] border-stone-900 flex flex-col justify-between overflow-hidden">
-        {/* Top Controls Overlay: Mode Switch & Skip */}
-        <div className="absolute top-8 left-0 right-0 px-4 flex items-center justify-between z-30 pointer-events-auto">
-          {currentStep > 1 ? (
-            <button
-              type="button"
-              onClick={handleBack}
-              className="p-1 rounded-full bg-white/80 hover:bg-white text-stone-700 shadow-xs transition-colors cursor-pointer"
-              aria-label="Previous slide"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-          ) : (
-            <div className="w-6" />
-          )}
-
-          {/* Gallery View Toggle Pill */}
+      {/* Universal Top Bar */}
+      <header className="w-full max-w-4xl mx-auto px-4 py-3 sm:py-4 flex items-center justify-between z-10 shrink-0">
+        {currentStep > 1 ? (
           <button
             type="button"
-            onClick={() => setViewMode('gallery')}
-            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/90 hover:bg-white border border-stone-200 text-stone-700 hover:text-orange-600 text-[10px] font-black uppercase tracking-wider shadow-xs transition-colors cursor-pointer"
-            title="View All 4 Screens Side-by-Side (Matching Reference)"
+            onClick={handleBack}
+            className="p-2 -ml-2 rounded-full text-stone-600 hover:text-stone-900 hover:bg-stone-200/60 transition-colors cursor-pointer"
+            aria-label="Previous step"
           >
-            <Layers className="w-3 h-3 text-[#E05326]" />
-            <span>All 4 Screens</span>
+            <ChevronLeft className="w-5 h-5 stroke-[2.5]" />
           </button>
+        ) : (
+          <div className="w-9" />
+        )}
 
+        {/* Brand Center Pill */}
+        <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-white border border-[#E8E2D8] shadow-2xs">
+          <img
+            src={logoFallback}
+            alt="SLOON"
+            className="h-4 sm:h-4.5 w-auto object-contain"
+            onError={(e) => {
+              (e.currentTarget as HTMLImageElement).src = logoTransparent;
+            }}
+          />
+          <span className="text-[9px] font-black tracking-widest text-[#E05326] uppercase">
+            PARTNER DESK
+          </span>
+        </div>
+
+        {/* Skip to Main App */}
+        <button
+          type="button"
+          onClick={onFinish}
+          className="text-xs sm:text-sm font-bold text-stone-500 hover:text-stone-900 transition-colors px-2 py-1 cursor-pointer"
+        >
+          Skip
+        </button>
+      </header>
+
+      {/* Main Dynamic Step Area */}
+      <main className="flex-1 w-full max-w-2xl mx-auto px-4 py-2 sm:py-6 flex flex-col items-center justify-center text-center">
+        {/* =========================================================
+            STEP 0: LUXURY SPLASH SCREEN WITH ANIMATED SALON TOOLS WHEEL
+            ========================================================= */}
+        {currentStep === 0 && (
+          <div
+            className="flex-1 w-full flex flex-col items-center justify-center p-4 sm:p-8 cursor-pointer animate-in zoom-in-95 duration-500"
+            onClick={() => setCurrentStep(1)}
+          >
+            {/* The Animated Rotating Salon Tools Wheel with SLOON Logo */}
+            <div className="transform transition-transform hover:scale-105 duration-300">
+              <SalonToolsWheel
+                size={290}
+                autoRotateWhenIdle={true}
+                showPointer={false}
+                showSlices={false}
+                badgeSubtitle="PARTNER OS"
+                logoSrc={logoFallback}
+              />
+            </div>
+
+            <div className="mt-8 space-y-2">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#FFF3EC] text-[#E05326] border border-[#FED7CC]">
+                <Sparkles className="w-3.5 h-3.5" />
+                <span className="text-xs font-black tracking-widest uppercase">
+                  SMART SALON PLATFORM
+                </span>
+              </div>
+              <h1 className="text-2xl sm:text-3xl font-black text-stone-900 tracking-tight">
+                Welcome to SLOON Partner
+              </h1>
+              <p className="text-xs sm:text-sm text-stone-600 font-medium max-w-sm mx-auto">
+                Real-time walk-in queue control, zero commissions, and seamless client flow for modern salons.
+              </p>
+            </div>
+
+            <div className="mt-8">
+              <span className="text-[11px] font-bold text-stone-400 tracking-wider uppercase animate-pulse">
+                Tap anywhere or press Enter to begin
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* =========================================================
+            STEP 1: LIVE WALK-IN QUEUE CONTROL
+            ========================================================= */}
+        {currentStep === 1 && (
+          <div className="w-full flex flex-col items-center justify-center animate-in fade-in duration-300">
+            <div className="w-full max-w-[280px] sm:max-w-[320px] aspect-square rounded-full flex items-center justify-center relative p-4">
+              <div
+                className="absolute inset-0 rounded-full"
+                style={{ background: bgLightIllustration }}
+              />
+
+              {/* Clean Vector Queue Desk Scene */}
+              <svg viewBox="0 0 280 280" className="w-full h-full relative z-10" fill="none">
+                <circle cx="140" cy="140" r="120" fill="#FFF2E8" />
+                <path d="M 40 210 Q 140 240 240 210" stroke="#FED7CC" strokeWidth="3" fill="none" />
+
+                {/* Counter / Reception Stand */}
+                <rect x="75" y="165" width="130" height="42" rx="10" fill="#E8E2D8" stroke="#D6CEC2" strokeWidth="2" />
+                <rect x="90" y="145" width="100" height="22" rx="6" fill="#1C1917" />
+                <text x="140" y="160" textAnchor="middle" fill="#FFFFFF" fontSize="10" fontWeight="900" fontFamily="sans-serif">
+                  LIVE QUEUE DESK
+                </text>
+
+                {/* Queue Display Monitor */}
+                <rect x="95" y="70" width="90" height="60" rx="8" fill="#FFFFFF" stroke="#E05326" strokeWidth="2.5" />
+                <rect x="105" y="80" width="70" height="24" rx="4" fill="#FFF3EC" />
+                <text x="140" y="96" textAnchor="middle" fill="#E05326" fontSize="12" fontWeight="900" fontFamily="sans-serif">
+                  4 WAITING
+                </text>
+                <text x="140" y="118" textAnchor="middle" fill="#783F0F" fontSize="9" fontWeight="800" fontFamily="sans-serif">
+                  ~15 MIN WAIT
+                </text>
+
+                {/* Live Floating Pulse Beacon */}
+                <circle cx="140" cy="46" r="16" fill="#10B981" fillOpacity="0.15" />
+                <circle cx="140" cy="46" r="10" fill="#10B981" fillOpacity="0.3" />
+                <circle cx="140" cy="46" r="5" fill="#10B981" />
+              </svg>
+            </div>
+
+            <div className="mt-8 space-y-2 max-w-md">
+              <h2 className="text-xl sm:text-2xl font-black text-stone-900 tracking-tight leading-snug">
+                Real-Time Walk-In{' '}
+                <span style={{ color: accentColor }}>Queue Control</span>
+              </h2>
+              <p className="text-xs sm:text-sm text-stone-600 font-medium leading-relaxed">
+                Eliminate waiting room chaos. Call the next customer, track live chair occupancy, and notify clients before their turn.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* =========================================================
+            STEP 2: 0% COMMISSION & DIRECT PAYMENTS
+            ========================================================= */}
+        {currentStep === 2 && (
+          <div className="w-full flex flex-col items-center justify-center animate-in fade-in duration-300">
+            <div className="w-full max-w-[280px] sm:max-w-[320px] aspect-square rounded-full flex items-center justify-center relative p-4">
+              <div
+                className="absolute inset-0 rounded-full"
+                style={{ background: bgLightIllustration }}
+              />
+
+              {/* Clean Vector 0% Commission Scene */}
+              <svg viewBox="0 0 280 280" className="w-full h-full relative z-10" fill="none">
+                <circle cx="140" cy="140" r="120" fill="#FFF2E8" />
+
+                {/* Big 0% Badge */}
+                <circle cx="140" cy="130" r="64" fill="#FFFFFF" stroke="#10B981" strokeWidth="4" />
+                <text x="140" y="125" textAnchor="middle" fill="#10B981" fontSize="36" fontWeight="900" fontFamily="sans-serif">
+                  0%
+                </text>
+                <text x="140" y="148" textAnchor="middle" fill="#047857" fontSize="10" fontWeight="900" fontFamily="sans-serif">
+                  COMMISSION
+                </text>
+
+                {/* Floating Shield */}
+                <g transform="translate(60, 50)">
+                  <rect width="40" height="40" rx="20" fill="#E05326" />
+                  <path d="M 20 12 L 28 16 V 23 C 28 27 20 31 20 31 C 20 31 12 27 12 23 V 16 Z" fill="#FFFFFF" />
+                </g>
+
+                {/* Floating Settlement Tag */}
+                <g transform="translate(180, 170)">
+                  <rect width="65" height="28" rx="8" fill="#1C1917" />
+                  <text x="32" y="18" textAnchor="middle" fill="#FEF08A" fontSize="9" fontWeight="900" fontFamily="sans-serif">
+                    100% YOURS
+                  </text>
+                </g>
+              </svg>
+            </div>
+
+            <div className="mt-8 space-y-2 max-w-md">
+              <h2 className="text-xl sm:text-2xl font-black text-stone-900 tracking-tight leading-snug">
+                Keep 100% Of Earnings —{' '}
+                <span style={{ color: '#10B981' }}>0% Platform Cut</span>
+              </h2>
+              <p className="text-xs sm:text-sm text-stone-600 font-medium leading-relaxed">
+                Zero commission on walk-ins and direct customer payments. Keep all revenue where it belongs: in your salon.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* =========================================================
+            STEP 3: MASTER STYLISTS & CHAIR MANAGEMENT
+            ========================================================= */}
+        {currentStep === 3 && (
+          <div className="w-full flex flex-col items-center justify-center animate-in fade-in duration-300">
+            <div className="w-full max-w-[280px] sm:max-w-[320px] aspect-square rounded-full flex items-center justify-center relative p-4">
+              <div
+                className="absolute inset-0 rounded-full"
+                style={{ background: bgLightIllustration }}
+              />
+
+              {/* Clean Vector Staff & Chair Scene */}
+              <svg viewBox="0 0 280 280" className="w-full h-full relative z-10" fill="none">
+                <circle cx="140" cy="140" r="120" fill="#FFF2E8" />
+
+                {/* Three Salon Chairs */}
+                {[-50, 0, 50].map((offset, i) => (
+                  <g key={i} transform={`translate(${140 + offset}, 145)`}>
+                    <rect x="-16" y="-20" width="32" height="28" rx="6" fill="#FFFFFF" stroke="#783F0F" strokeWidth="2" />
+                    <rect x="-10" y="8" width="20" height="18" rx="3" fill="#A8A29E" />
+                    <circle cx="0" cy="-32" r="10" fill={i === 1 ? '#E05326' : '#10B981'} />
+                    <text x="0" y="-3" textAnchor="middle" fill="#783F0F" fontSize="8" fontWeight="800" fontFamily="sans-serif">
+                      C{i + 1}
+                    </text>
+                  </g>
+                ))}
+
+                {/* Floating QR Standee */}
+                <g transform="translate(180, 55)">
+                  <rect width="44" height="44" rx="8" fill="#FFFFFF" stroke="#E05326" strokeWidth="2" />
+                  <rect x="8" y="8" width="10" height="10" fill="#1C1917" />
+                  <rect x="26" y="8" width="10" height="10" fill="#1C1917" />
+                  <rect x="8" y="26" width="10" height="10" fill="#1C1917" />
+                  <rect x="22" y="22" width="14" height="14" fill="#E05326" />
+                </g>
+              </svg>
+            </div>
+
+            <div className="mt-8 space-y-2 max-w-md">
+              <h2 className="text-xl sm:text-2xl font-black text-stone-900 tracking-tight leading-snug">
+                Master Stylists &amp;{' '}
+                <span style={{ color: accentColor }}>Dynamic Chairs</span>
+              </h2>
+              <p className="text-xs sm:text-sm text-stone-600 font-medium leading-relaxed">
+                Assign clients to available chairs, manage staff attendance, and optimize turnover so no chair stays idle.
+              </p>
+            </div>
+          </div>
+        )}
+      </main>
+
+      {/* Universal Responsive Bottom Actions & Indicators */}
+      <footer className="w-full max-w-md mx-auto px-6 pb-6 sm:pb-10 pt-2 shrink-0 space-y-4">
+        {/* Progress Indicators */}
+        <div className="flex items-center justify-center gap-2">
+          {[1, 2, 3].map((step) => (
+            <button
+              key={step}
+              type="button"
+              onClick={() => setCurrentStep(step)}
+              className={`h-2 rounded-full transition-all duration-300 cursor-pointer ${
+                currentStep === step
+                  ? 'w-8'
+                  : 'w-2 bg-stone-300 hover:bg-stone-400'
+              }`}
+              style={{
+                backgroundColor: currentStep === step ? accentColor : undefined,
+              }}
+              aria-label={`Go to step ${step}`}
+            />
+          ))}
+        </div>
+
+        {/* Primary Action Button */}
+        {currentStep === 0 ? (
+          <button
+            type="button"
+            onClick={() => setCurrentStep(1)}
+            className="w-full py-3.5 px-6 rounded-full text-white font-black text-sm tracking-wide shadow-md hover:shadow-lg transition-all transform active:scale-98 cursor-pointer flex items-center justify-center gap-2"
+            style={{ backgroundColor: accentColor }}
+          >
+            <span>Explore Partner Desk</span>
+            <ArrowRight className="w-4 h-4 stroke-[2.5]" />
+          </button>
+        ) : currentStep < 3 ? (
+          <button
+            type="button"
+            onClick={handleNext}
+            className="w-full py-3.5 px-6 rounded-full text-white font-black text-sm tracking-wide shadow-md hover:shadow-lg transition-all transform active:scale-98 cursor-pointer flex items-center justify-center gap-2"
+            style={{ backgroundColor: accentColor }}
+          >
+            <span>Continue</span>
+            <ArrowRight className="w-4 h-4 stroke-[2.5]" />
+          </button>
+        ) : (
           <button
             type="button"
             onClick={onFinish}
-            className="text-[11px] font-bold text-stone-500 hover:text-stone-900 px-2 py-0.5 rounded hover:bg-white/70 transition-colors cursor-pointer"
+            className="w-full py-3.5 px-6 rounded-full text-white font-black text-sm tracking-wide shadow-md hover:shadow-lg transition-all transform active:scale-98 cursor-pointer flex items-center justify-center gap-2"
+            style={{ backgroundColor: accentColor }}
           >
-            Skip
+            <span>Enter Partner Desk</span>
+            <ArrowRight className="w-4 h-4 stroke-[2.5]" />
           </button>
-        </div>
-
-        {/* Screen Content Router */}
-        <div className="w-full h-full flex flex-col">
-          {currentStep === 0 && renderPhone1Splash()}
-          {currentStep === 1 && renderPhone2Queue()}
-          {currentStep === 2 && renderPhone3Commission()}
-          {currentStep === 3 && renderPhone4Chairs()}
-        </div>
-      </div>
+        )}
+      </footer>
     </div>
   );
 };

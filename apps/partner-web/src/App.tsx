@@ -7,17 +7,17 @@ import { NotificationToast } from './components/common/NotificationToast';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { LanguageSelectorButton } from './components/common/LanguageSelectorButton';
 import { MandatoryLanguageModal } from './components/common/MandatoryLanguageModal';
-import { Store, LogOut, User, LogIn, Bell, Sparkles } from 'lucide-react';
+import { Store, LogOut, User, LogIn, Bell } from 'lucide-react';
 import logoTransparent from './assets/logo-transparent.png';
 import logoFallback from './assets/logo.png';
 
 const PartnerMainContent: React.FC = () => {
-  const { partnerUser, isAuthenticated, logout, showOnboarding, completeOnboarding, setShowOnboarding } = usePartner();
+  const { partnerUser, isAuthenticated, logout, showOnboarding, completeOnboarding } = usePartner();
   const { t, hasChosenLanguage } = useLanguage();
 
   return (
     <div className="min-h-screen bg-[#FAF7F2] text-stone-900 flex flex-col font-sans selection:bg-orange-500/20 selection:text-orange-950 w-full max-w-full overflow-x-hidden">
-      {/* 4-Step Interactive Mobile Onboarding Experience (Matching Reference) */}
+      {/* 4-Step Fluid Full-Screen Partner Onboarding Experience */}
       {showOnboarding && (
         <PartnerOnboardingScreen onFinish={completeOnboarding} />
       )}
@@ -41,17 +41,6 @@ const PartnerMainContent: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3 text-xs shrink-0">
-            {/* Quick Tour / Onboarding Replay Button */}
-            <button
-              type="button"
-              onClick={() => setShowOnboarding(true)}
-              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-[#E8E2D8] text-stone-700 hover:text-[#E05326] hover:border-orange-300 text-[11px] font-bold shadow-2xs transition-colors cursor-pointer"
-              title="Replay Partner Onboarding Tour"
-            >
-              <Sparkles className="w-3 h-3 text-[#E05326]" />
-              <span className="hidden sm:inline">Tour</span>
-            </button>
-
             {/* Quick Language Selector Pill Button */}
             <LanguageSelectorButton />
 

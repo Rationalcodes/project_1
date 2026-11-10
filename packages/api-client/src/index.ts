@@ -914,25 +914,14 @@ export class KumbhakaranApiClient {
   async getDeviceProfile(deviceId: string): Promise<any | null> {
     return this.cachedFetch(`device-profile-${deviceId}`, 120000, async () => {
       try {
-        if (!this.isBackendHealthy && Date.now() < this.nextHealthRetry) {
-          return null;
-        }
-        const res = await fetch(`${this.baseUrl}/auth/device-profile/${encodeURIComponent(deviceId)}`, {
+        const res = await this.safeFetch(`${this.baseUrl}/auth/device-profile/${encodeURIComponent(deviceId)}`, {
           headers: this.getHeaders(),
         });
-        if (!res.ok) {
-          if (res.status >= 500) {
-            this.isBackendHealthy = false;
-            this.nextHealthRetry = Date.now() + 30000;
-          }
+        if (!res || !res.ok) {
           return null;
         }
-        this.isBackendHealthy = true;
         return await res.json();
       } catch {
-        // Network / SSL failure: back off for 30s to avoid repeated console errors
-        this.isBackendHealthy = false;
-        this.nextHealthRetry = Date.now() + 30000;
         return null;
       }
     });
@@ -951,28 +940,18 @@ export class KumbhakaranApiClient {
     preferredLocality?: string;
   }): Promise<any | null> {
     try {
-      if (!this.isBackendHealthy && Date.now() < this.nextHealthRetry) {
-        return null;
-      }
-      const res = await fetch(`${this.baseUrl}/auth/device-profile`, {
+      const res = await this.safeFetch(`${this.baseUrl}/auth/device-profile`, {
         method: 'POST',
         headers: this.getHeaders({
           'Content-Type': 'application/json',
         }),
         body: JSON.stringify(profile),
       });
-      if (!res.ok) {
-        if (res.status >= 500) {
-          this.isBackendHealthy = false;
-          this.nextHealthRetry = Date.now() + 30000;
-        }
+      if (!res || !res.ok) {
         return null;
       }
-      this.isBackendHealthy = true;
       return await res.json();
     } catch {
-      this.isBackendHealthy = false;
-      this.nextHealthRetry = Date.now() + 30000;
       return null;
     }
   }
@@ -986,10 +965,10 @@ export class KumbhakaranApiClient {
    */
   async getQueueEntries(salonId: string): Promise<any[]> {
     try {
-      const res = await fetch(`${this.baseUrl}/salons/${encodeURIComponent(salonId)}/queue-entries`, {
+      const res = await this.safeFetch(`${this.baseUrl}/salons/${encodeURIComponent(salonId)}/queue-entries`, {
         headers: this.getHeaders(),
       });
-      if (!res.ok) {
+      if (!res || !res.ok) {
         return [];
       }
       return await res.json();

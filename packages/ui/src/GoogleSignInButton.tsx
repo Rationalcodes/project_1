@@ -1,6 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 import './types/google.d';
 
+// Global GIS singleton registry across all mounted button instances
+// Google Identity Services warns when google.accounts.id.initialize() is called multiple times
+let globalGsiInitializedClientId: string | null = null;
+const activeGsiListeners = new Set<(credential: string, clientId?: string) => void>();
+
 export interface GoogleSignInButtonProps {
   clientId?: string;
   onSuccess: (credential: string, clientId?: string) => void | Promise<any>;
@@ -37,7 +42,18 @@ export const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
     onErrorRef.current = onError;
   }, [onSuccess, onError]);
 
-  const initializedClientIdRef = useRef<string | null>(null);
+  // Register this button's success listener in the global GIS dispatcher
+  useEffect(() => {
+    const listener = (credential: string, clientId?: string) => {
+      if (onSuccessRef.current) {
+        onSuccessRef.current(credential, clientId);
+      }
+    };
+    activeGsiListeners.add(listener);
+    return () => {
+      activeGsiListeners.delete(listener);
+    };
+  }, []);
 
   // Read client ID from prop, Vite environment, or standard process.env
   const effectiveClientId =
@@ -100,12 +116,19 @@ export const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
     }
 
     try {
-      if (initializedClientIdRef.current !== effectiveClientId) {
+      // Initialize GIS exactly ONCE globally to prevent "[GSI_LOGGER]: google.accounts.id.initialize() is called multiple times"
+      if (globalGsiInitializedClientId !== effectiveClientId) {
         window.google!.accounts.id.initialize({
           client_id: effectiveClientId,
           callback: (response) => {
             if (response?.credential) {
-              onSuccessRef.current(response.credential, effectiveClientId);
+              activeGsiListeners.forEach((cb) => {
+                try {
+                  cb(response.credential, effectiveClientId);
+                } catch (e) {
+                  console.error('Error in GSI listener callback:', e);
+                }
+              });
             } else {
               const err = 'Google response did not contain credential';
               setInitError(err);
@@ -115,7 +138,7 @@ export const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
           auto_select: false,
           cancel_on_tap_outside: true,
         });
-        initializedClientIdRef.current = effectiveClientId;
+        globalGsiInitializedClientId = effectiveClientId;
       }
 
       // Clear any previous render inside container
