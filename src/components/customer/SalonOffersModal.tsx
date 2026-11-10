@@ -13,6 +13,7 @@ import {
   Lock,
 } from 'lucide-react';
 import { Salon, SalonOffer, DEFAULT_SALON_OFFERS } from '@kumbhakaran/shared-types';
+import { SalonToolsWheel } from '@kumbhakaran/ui';
 
 interface SalonOffersModalProps {
   salon: Salon;
@@ -74,9 +75,11 @@ export const SalonOffersModal: React.FC<SalonOffersModalProps> = ({
   const [showConfetti, setShowConfetti] = useState(false);
   const [activeFilter, setActiveFilter] = useState<'all' | 'wheel' | 'percent' | 'flat'>('all');
   const [viewTab, setViewTab] = useState<'wheel' | 'all'>('wheel');
+  const [wheelStyle, setWheelStyle] = useState<'tools' | 'classic'>('tools');
 
   const storageKey = `sloon_spin_cooldown_v1_${salon.id}`;
 
+  // Check 15-day cooldown limit whenever modal opens or salon changes
   useEffect(() => {
     if (!isOpen) return;
 
@@ -103,10 +106,12 @@ export const SalonOffersModal: React.FC<SalonOffersModalProps> = ({
       } catch {}
     }
 
+    // 15 days elapsed or never spun
     setCanSpin(true);
     setRemainingCooldownText('');
   }, [isOpen, salon.id, storageKey]);
 
+  // Load active offers for this salon, falling back to default rich offers if none defined
   const allOffers: SalonOffer[] = useMemo(() => {
     if (Array.isArray(salon.offers) && salon.offers.length > 0) {
       return salon.offers.filter((o) => o.isActive !== false);
@@ -114,6 +119,7 @@ export const SalonOffersModal: React.FC<SalonOffersModalProps> = ({
     return DEFAULT_SALON_OFFERS;
   }, [salon.offers]);
 
+  // Wheel slices (ensures 6 to 8 slices for authentic wheel proportions)
   const wheelSlices: SalonOffer[] = useMemo(() => {
     const rawWheelOffers = allOffers.filter((o) => o.inSpinWheel && o.isActive !== false);
     let base = rawWheelOffers.length > 0 ? rawWheelOffers : allOffers;
@@ -129,6 +135,7 @@ export const SalonOffersModal: React.FC<SalonOffersModalProps> = ({
   const numSlices = wheelSlices.length;
   const sliceAngle = 360 / numSlices;
 
+  // Filtered list of vouchers below
   const filteredOffers = useMemo(() => {
     if (activeFilter === 'wheel') return allOffers.filter((o) => o.inSpinWheel);
     if (activeFilter === 'percent') return allOffers.filter((o) => o.discountType === 'percentage');
@@ -136,6 +143,7 @@ export const SalonOffersModal: React.FC<SalonOffersModalProps> = ({
     return allOffers;
   }, [allOffers, activeFilter]);
 
+  // Handle spin action with 15-day cooldown persistence
   const handleSpin = () => {
     if (isSpinning || !canSpin) return;
     setIsSpinning(true);
@@ -145,6 +153,7 @@ export const SalonOffersModal: React.FC<SalonOffersModalProps> = ({
     const winningIdx = Math.floor(Math.random() * numSlices);
     const winningSlice = wheelSlices[winningIdx];
 
+    // Compute target angle so winningIdx lands directly at top needle (270° / 12 o'clock)
     const sliceCenter = winningIdx * sliceAngle + sliceAngle / 2;
     const targetRemainder = ((270 - sliceCenter) % 360 + 360) % 360;
 
@@ -162,6 +171,7 @@ export const SalonOffersModal: React.FC<SalonOffersModalProps> = ({
       setWonOffer(winningSlice);
       setShowConfetti(true);
 
+      // Lock spin for exactly 15 days
       const now = Date.now();
       const formattedDate = new Date().toLocaleDateString('en-IN', {
         day: 'numeric',
@@ -204,6 +214,7 @@ export const SalonOffersModal: React.FC<SalonOffersModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-5 bg-black/85 backdrop-blur-md animate-in fade-in duration-200">
+      {/* Dynamic Celebration Confetti */}
       {showConfetti && (
         <div className="absolute inset-0 pointer-events-none z-60 overflow-hidden">
           {Array.from({ length: 45 }).map((_, i) => {
@@ -228,9 +239,11 @@ export const SalonOffersModal: React.FC<SalonOffersModalProps> = ({
         </div>
       )}
 
+      {/* Main Luxury Modal Card */}
       <div className="relative w-full max-w-2xl max-h-[92vh] flex flex-col bg-[#110D0B] border border-amber-500/30 rounded-[32px] shadow-[0_25px_60px_-15px_rgba(0,0,0,0.9)] text-white overflow-hidden animate-in zoom-in-95 duration-200">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-96 h-48 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
 
+        {/* 1. Header Bar */}
         <div className="flex items-center justify-between px-5 sm:px-7 py-4 border-b border-amber-500/20 bg-[#191310]/80 backdrop-blur-md shrink-0 relative z-10">
           <div className="flex items-center gap-3">
             <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-amber-600 via-amber-500 to-yellow-300 p-0.5 shadow-md shadow-amber-500/20 flex items-center justify-center">
@@ -264,6 +277,7 @@ export const SalonOffersModal: React.FC<SalonOffersModalProps> = ({
           </button>
         </div>
 
+        {/* 2. Mode Selector Pill Tabs */}
         <div className="px-5 sm:px-7 pt-3 pb-1 shrink-0 bg-[#16100E] border-b border-amber-500/10 flex items-center justify-between gap-3">
           <div className="flex items-center gap-1.5 p-1 bg-stone-950/80 rounded-2xl border border-stone-800/80">
             <button
@@ -307,6 +321,7 @@ export const SalonOffersModal: React.FC<SalonOffersModalProps> = ({
           </div>
         </div>
 
+        {/* 3. Scrollable Content Body */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
           {viewTab === 'wheel' && (
             <div className="space-y-5">
@@ -338,143 +353,188 @@ export const SalonOffersModal: React.FC<SalonOffersModalProps> = ({
                   </p>
                 </div>
 
-                <div className="relative w-68 h-68 sm:w-76 sm:h-76 mx-auto flex items-center justify-center my-4 select-none">
-                  <div className="absolute inset-[-6px] rounded-full border-[6px] border-amber-500/50 shadow-[0_0_35px_rgba(245,158,11,0.25)] pointer-events-none z-10" />
-
-                  <div className="absolute -top-4 left-1/2 -translate-x-1/2 z-30 flex flex-col items-center filter drop-shadow-[0_5px_8px_rgba(0,0,0,0.9)]">
-                    <div className="w-7 h-8 bg-gradient-to-b from-amber-200 via-amber-400 to-amber-600 [clip-path:polygon(50%_100%,0%_0%,100%_0%)] border-t border-amber-200" />
-                    <div className="w-3.5 h-3.5 rounded-full bg-rose-600 border-2 border-amber-300 -mt-8 shadow-inner" />
-                  </div>
-
-                  <div
-                    className="w-full h-full rounded-full overflow-hidden shadow-2xl relative border-4 border-amber-400/80"
-                    style={{
-                      transform: `rotate(${rotationAngle}deg)`,
-                      transition: isSpinning
-                        ? 'transform 4.5s cubic-bezier(0.12, 0.95, 0.18, 1)'
-                        : 'none',
-                    }}
-                  >
-                    <svg viewBox="0 0 300 300" className="w-full h-full">
-                      <defs>
-                        <radialGradient id="sliceGleamModal" cx="50%" cy="50%" r="50%">
-                          <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.25" />
-                          <stop offset="100%" stopColor="#000000" stopOpacity="0.4" />
-                        </radialGradient>
-                      </defs>
-
-                      {wheelSlices.map((slice, i) => {
-                        const startAngle = (i * sliceAngle * Math.PI) / 180;
-                        const endAngle = (((i + 1) * sliceAngle) * Math.PI) / 180;
-                        const midAngleDeg = i * sliceAngle + sliceAngle / 2;
-
-                        const r = 148;
-                        const cx = 150;
-                        const cy = 150;
-
-                        const x1 = cx + r * Math.cos(startAngle);
-                        const y1 = cy + r * Math.sin(startAngle);
-                        const x2 = cx + r * Math.cos(endAngle);
-                        const y2 = cy + r * Math.sin(endAngle);
-
-                        const color = slice.color || LUXURY_COLORS[i % LUXURY_COLORS.length];
-
-                        const shortLabel =
-                          slice.discountType === 'percentage'
-                            ? `${slice.discountValue}% OFF`
-                            : slice.discountType === 'flat'
-                            ? `₹${slice.discountValue} OFF`
-                            : 'FREE PERK';
-
-                        return (
-                          <g key={slice.id || i}>
-                            <path
-                              d={`M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 0 1 ${x2} ${y2} Z`}
-                              fill={color}
-                              stroke="#1E1511"
-                              strokeWidth="2"
-                            />
-                            <path
-                              d={`M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 0 1 ${x2} ${y2} Z`}
-                              fill="url(#sliceGleamModal)"
-                              opacity="0.35"
-                            />
-                            <g
-                              transform={`translate(${cx}, ${cy}) rotate(${midAngleDeg}) translate(${r * 0.63}, 0)`}
-                            >
-                              <text
-                                x="0"
-                                y="4"
-                                fill="#FFFFFF"
-                                fontSize="11"
-                                fontWeight="900"
-                                textAnchor="middle"
-                                transform="rotate(90)"
-                                style={{
-                                  textShadow: '0 2px 4px rgba(0,0,0,0.9)',
-                                  letterSpacing: '0.6px',
-                                  fontFamily: 'system-ui, sans-serif',
-                                }}
-                              >
-                                {shortLabel}
-                              </text>
-                            </g>
-                          </g>
-                        );
-                      })}
-
-                      {Array.from({ length: 24 }).map((_, idx) => {
-                        const angle = (idx * (360 / 24) * Math.PI) / 180;
-                        const sx = 150 + 142 * Math.cos(angle);
-                        const sy = 150 + 142 * Math.sin(angle);
-                        const isEven = idx % 2 === 0;
-                        return (
-                          <circle
-                            key={idx}
-                            cx={sx}
-                            cy={sy}
-                            r="2.5"
-                            fill={isEven ? '#FEF08A' : '#F59E0B'}
-                            stroke="#78350F"
-                            strokeWidth="0.5"
-                          />
-                        );
-                      })}
-                    </svg>
-                  </div>
-
+                {/* Wheel Style Switcher (Tools vs Classic) */}
+                <div className="flex items-center justify-center gap-1.5 p-1 bg-stone-950/80 rounded-2xl border border-amber-500/20 max-w-xs mx-auto my-2 relative z-10">
                   <button
                     type="button"
-                    disabled={!canSpin || isSpinning}
-                    onClick={handleSpin}
-                    className={`absolute z-20 w-18 h-18 rounded-full p-0.5 shadow-2xl flex items-center justify-center transition-transform ${
-                      !canSpin
-                        ? 'bg-gradient-to-tr from-stone-700 to-stone-500 opacity-80 cursor-not-allowed'
-                        : 'bg-gradient-to-tr from-amber-700 via-amber-400 to-yellow-100 hover:scale-105 active:scale-95 cursor-pointer'
+                    onClick={() => setWheelStyle('tools')}
+                    className={`flex items-center gap-1 px-3 py-1 rounded-xl text-[11px] font-bold transition-all cursor-pointer ${
+                      wheelStyle === 'tools'
+                        ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-stone-950 font-black shadow-xs'
+                        : 'text-stone-400 hover:text-stone-200'
                     }`}
                   >
-                    <div className="w-full h-full rounded-full bg-gradient-to-b from-[#2B1B13] to-[#120B07] border-2 border-amber-400/80 flex flex-col items-center justify-center text-amber-300 font-black shadow-inner">
-                      {!canSpin ? (
-                        <>
-                          <Clock className="w-5 h-5 text-stone-400" />
-                          <span className="text-[8px] font-black uppercase tracking-wider text-stone-400 mt-0.5">
-                            1 IN 15D
-                          </span>
-                        </>
-                      ) : (
-                        <>
-                          <RotateCw
-                            className={`w-5 h-5 ${isSpinning ? 'animate-spin text-amber-200' : 'text-amber-400 group-hover:rotate-45'} transition-transform`}
-                          />
-                          <span className="text-[9px] font-black uppercase tracking-wider mt-0.5 text-amber-200">
-                            {isSpinning ? 'SPINNING' : 'TAP SPIN'}
-                          </span>
-                        </>
-                      )}
-                    </div>
+                    <span>💈 Salon Tools Wheel</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setWheelStyle('classic')}
+                    className={`flex items-center gap-1 px-3 py-1 rounded-xl text-[11px] font-bold transition-all cursor-pointer ${
+                      wheelStyle === 'classic'
+                        ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-stone-950 font-black shadow-xs'
+                        : 'text-stone-400 hover:text-stone-200'
+                    }`}
+                  >
+                    <span>🎯 Classic Wheel</span>
                   </button>
                 </div>
 
+                {wheelStyle === 'tools' ? (
+                  <div className="my-4 flex items-center justify-center">
+                    <SalonToolsWheel
+                      offers={wheelSlices}
+                      isSpinning={isSpinning}
+                      rotationAngle={rotationAngle}
+                      canSpin={canSpin}
+                      remainingCooldownText={remainingCooldownText}
+                      onSpin={handleSpin}
+                      size={310}
+                      logoSrc="/logo-white.png"
+                      autoRotateWhenIdle={true}
+                    />
+                  </div>
+                ) : (
+                  /* THE 3D CASINO-GRADE WHEEL */
+                  <div className="relative w-68 h-68 sm:w-76 sm:h-76 mx-auto flex items-center justify-center my-4 select-none">
+                    <div className="absolute inset-[-6px] rounded-full border-[6px] border-amber-500/50 shadow-[0_0_35px_rgba(245,158,11,0.25)] pointer-events-none z-10" />
+
+                    <div className="absolute -top-4 left-1/2 -translate-x-1/2 z-30 flex flex-col items-center filter drop-shadow-[0_5px_8px_rgba(0,0,0,0.9)]">
+                      <div className="w-7 h-8 bg-gradient-to-b from-amber-200 via-amber-400 to-amber-600 [clip-path:polygon(50%_100%,0%_0%,100%_0%)] border-t border-amber-200" />
+                      <div className="w-3.5 h-3.5 rounded-full bg-rose-600 border-2 border-amber-300 -mt-8 shadow-inner" />
+                    </div>
+
+                    <div
+                      className="w-full h-full rounded-full overflow-hidden shadow-2xl relative border-4 border-amber-400/80"
+                      style={{
+                        transform: `rotate(${rotationAngle}deg)`,
+                        transition: isSpinning
+                          ? 'transform 4.5s cubic-bezier(0.12, 0.95, 0.18, 1)'
+                          : 'none',
+                      }}
+                    >
+                      <svg viewBox="0 0 300 300" className="w-full h-full">
+                        <defs>
+                          <radialGradient id="sliceGleamModal" cx="50%" cy="50%" r="50%">
+                            <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.25" />
+                            <stop offset="100%" stopColor="#000000" stopOpacity="0.4" />
+                          </radialGradient>
+                        </defs>
+
+                        {wheelSlices.map((slice, i) => {
+                          const startAngle = (i * sliceAngle * Math.PI) / 180;
+                          const endAngle = (((i + 1) * sliceAngle) * Math.PI) / 180;
+                          const midAngleDeg = i * sliceAngle + sliceAngle / 2;
+
+                          const r = 148;
+                          const cx = 150;
+                          const cy = 150;
+
+                          const x1 = cx + r * Math.cos(startAngle);
+                          const y1 = cy + r * Math.sin(startAngle);
+                          const x2 = cx + r * Math.cos(endAngle);
+                          const y2 = cy + r * Math.sin(endAngle);
+
+                          const color = slice.color || LUXURY_COLORS[i % LUXURY_COLORS.length];
+
+                          const shortLabel =
+                            slice.discountType === 'percentage'
+                              ? `${slice.discountValue}% OFF`
+                              : slice.discountType === 'flat'
+                              ? `₹${slice.discountValue} OFF`
+                              : 'FREE PERK';
+
+                          return (
+                            <g key={slice.id || i}>
+                              <path
+                                d={`M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 0 1 ${x2} ${y2} Z`}
+                                fill={color}
+                                stroke="#1E1511"
+                                strokeWidth="2"
+                              />
+                              <path
+                                d={`M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 0 1 ${x2} ${y2} Z`}
+                                fill="url(#sliceGleamModal)"
+                                opacity="0.35"
+                              />
+                              <g
+                                transform={`translate(${cx}, ${cy}) rotate(${midAngleDeg}) translate(${r * 0.63}, 0)`}
+                              >
+                                <text
+                                  x="0"
+                                  y="4"
+                                  fill="#FFFFFF"
+                                  fontSize="11"
+                                  fontWeight="900"
+                                  textAnchor="middle"
+                                  transform="rotate(90)"
+                                  style={{
+                                    textShadow: '0 2px 4px rgba(0,0,0,0.9)',
+                                    letterSpacing: '0.6px',
+                                    fontFamily: 'system-ui, sans-serif',
+                                  }}
+                                >
+                                  {shortLabel}
+                                </text>
+                              </g>
+                            </g>
+                          );
+                        })}
+
+                        {Array.from({ length: 24 }).map((_, idx) => {
+                          const angle = (idx * (360 / 24) * Math.PI) / 180;
+                          const sx = 150 + 142 * Math.cos(angle);
+                          const sy = 150 + 142 * Math.sin(angle);
+                          const isEven = idx % 2 === 0;
+                          return (
+                            <circle
+                              key={idx}
+                              cx={sx}
+                              cy={sy}
+                              r="2.5"
+                              fill={isEven ? '#FEF08A' : '#F59E0B'}
+                              stroke="#78350F"
+                              strokeWidth="0.5"
+                            />
+                          );
+                        })}
+                      </svg>
+                    </div>
+
+                    {/* Center Metallic 3D Hub & Trigger */}
+                    <button
+                      type="button"
+                      disabled={!canSpin || isSpinning}
+                      onClick={handleSpin}
+                      className={`absolute z-20 w-18 h-18 rounded-full p-0.5 shadow-2xl flex items-center justify-center transition-transform ${
+                        !canSpin
+                          ? 'bg-gradient-to-tr from-stone-700 to-stone-500 opacity-80 cursor-not-allowed'
+                          : 'bg-gradient-to-tr from-amber-700 via-amber-400 to-yellow-100 hover:scale-105 active:scale-95 cursor-pointer'
+                      }`}
+                    >
+                      <div className="w-full h-full rounded-full bg-gradient-to-b from-[#2B1B13] to-[#120B07] border-2 border-amber-400/80 flex flex-col items-center justify-center text-amber-300 font-black shadow-inner">
+                        {!canSpin ? (
+                          <>
+                            <Clock className="w-5 h-5 text-stone-400" />
+                            <span className="text-[8px] font-black uppercase tracking-wider text-stone-400 mt-0.5">
+                              1 IN 15D
+                            </span>
+                          </>
+                        ) : (
+                          <>
+                            <RotateCw
+                              className={`w-5 h-5 ${isSpinning ? 'animate-spin text-amber-200' : 'text-amber-400 group-hover:rotate-45'} transition-transform`}
+                            />
+                            <span className="text-[9px] font-black uppercase tracking-wider mt-0.5 text-amber-200">
+                              {isSpinning ? 'SPINNING' : 'TAP SPIN'}
+                            </span>
+                          </>
+                        )}
+                      </div>
+                    </button>
+                  </div>
+                )}
+
+                {/* Spin CTA / Cooldown Display */}
                 <div className="pt-2 relative z-10 flex flex-col items-center gap-2">
                   {!canSpin ? (
                     <div className="w-full flex flex-col items-center gap-2">
@@ -511,6 +571,7 @@ export const SalonOffersModal: React.FC<SalonOffersModalProps> = ({
                   )}
                 </div>
 
+                {/* WINNING RESULT VIP TICKET */}
                 {wonOffer && !isSpinning && (
                   <div className="mt-5 p-4 sm:p-5 rounded-3xl bg-gradient-to-r from-[#2A180E] via-[#381F12] to-[#2A180E] border-2 border-amber-500/60 text-left animate-in zoom-in-95 duration-300 shadow-2xl relative overflow-hidden">
                     <div className="flex items-center justify-between pb-3 border-b border-amber-500/20">
