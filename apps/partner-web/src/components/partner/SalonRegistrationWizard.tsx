@@ -199,7 +199,7 @@ export const SalonRegistrationWizard: React.FC<SalonRegistrationWizardProps> = (
 
             <div>
               <label className="text-xs font-bold text-stone-700 block mb-1">
-                Salon / Studio Name *
+                Salon Name *
               </label>
               <input
                 type="text"
@@ -213,55 +213,11 @@ export const SalonRegistrationWizard: React.FC<SalonRegistrationWizardProps> = (
 
             <div>
               <label className="text-xs font-bold text-stone-700 block mb-1.5">
-                Provider Operating Model *
+                Services Offered (Select where you serve clients) *
               </label>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {[
-                  {
-                    id: 'traditional_salon',
-                    label: 'Physical Salon / Parlour',
-                    desc: 'Storefront with chairs, staff, live queue & optional home visits',
-                    defaultModes: ['at_salon', 'home_visit'] as ServiceMode[],
-                  },
-                  {
-                    id: 'freelance_pro',
-                    label: 'Freelance / Mobile Professional',
-                    desc: 'Mobile stylist traveling directly to client residences (Sloon Home)',
-                    defaultModes: ['home_visit'] as ServiceMode[],
-                  },
-                ].map((item) => (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => {
-                      setProviderType(item.id as ProviderType);
-                      setServiceModes(item.defaultModes);
-                    }}
-                    className={`p-3 rounded-2xl border text-left transition-all cursor-pointer ${
-                      providerType === item.id
-                        ? 'bg-[#FFF3EC] border-[#E05326] text-stone-900 shadow-2xs'
-                        : 'bg-[#FAF7F2] border-[#E8E2D8] text-stone-600 hover:border-stone-300'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className={`text-xs font-bold ${providerType === item.id ? 'text-[#E05326]' : 'text-stone-800'}`}>
-                        {item.label}
-                      </span>
-                      {providerType === item.id && <span className="text-[#E05326] text-xs font-bold">✓</span>}
-                    </div>
-                    <p className="text-[10px] text-stone-500 mt-0.5 leading-snug">{item.desc}</p>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <label className="text-xs font-bold text-stone-700 block mb-1.5">
-                Enabled Service Modes (Select all offered) *
-              </label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {[
-                  { id: 'at_salon' as ServiceMode, label: '🏬 At Salon (Walk-In Queue)' },
+                  { id: 'at_salon' as ServiceMode, label: '🏬 At Salon (Storefront Chairs & Live Queue)' },
                   { id: 'home_visit' as ServiceMode, label: '🏠 Home Visit (Doorstep by Salon Staff)' },
                 ].map((mode) => {
                   const isChecked = serviceModes.includes(mode.id);
