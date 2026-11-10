@@ -994,7 +994,7 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return () => {
       isMounted = false;
     };
-  }, [genderFilter]);
+  }, []);
 
   // Restore authenticated session from localStorage
   useEffect(() => {

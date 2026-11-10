@@ -30,6 +30,15 @@ export const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
   const [isGisReady, setIsGisReady] = useState(false);
   const [initError, setInitError] = useState<string | null>(null);
 
+  const onSuccessRef = useRef(onSuccess);
+  const onErrorRef = useRef(onError);
+  useEffect(() => {
+    onSuccessRef.current = onSuccess;
+    onErrorRef.current = onError;
+  }, [onSuccess, onError]);
+
+  const initializedClientIdRef = useRef<string | null>(null);
+
   // Read client ID from prop, Vite environment, or standard process.env
   const effectiveClientId =
     propClientId ||
@@ -91,20 +100,23 @@ export const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
     }
 
     try {
-      window.google!.accounts.id.initialize({
-        client_id: effectiveClientId,
-        callback: (response) => {
-          if (response?.credential) {
-            onSuccess(response.credential, effectiveClientId);
-          } else {
-            const err = 'Google response did not contain credential';
-            setInitError(err);
-            if (onError) onError(err);
-          }
-        },
-        auto_select: false,
-        cancel_on_tap_outside: true,
-      });
+      if (initializedClientIdRef.current !== effectiveClientId) {
+        window.google!.accounts.id.initialize({
+          client_id: effectiveClientId,
+          callback: (response) => {
+            if (response?.credential) {
+              onSuccessRef.current(response.credential, effectiveClientId);
+            } else {
+              const err = 'Google response did not contain credential';
+              setInitError(err);
+              if (onErrorRef.current) onErrorRef.current(err);
+            }
+          },
+          auto_select: false,
+          cancel_on_tap_outside: true,
+        });
+        initializedClientIdRef.current = effectiveClientId;
+      }
 
       // Clear any previous render inside container
       containerRef.current.innerHTML = '';
@@ -125,9 +137,9 @@ export const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
     } catch (err) {
       const msg = `GIS initialization error: ${(err as Error).message}`;
       setInitError(msg);
-      if (onError) onError(msg);
+      if (onErrorRef.current) onErrorRef.current(msg);
     }
-  }, [isGisReady, effectiveClientId, text, theme, shape, size, width, disabled, onSuccess, onError]);
+  }, [isGisReady, effectiveClientId, text, theme, shape, size, width, disabled]);
 
   if (initError) {
     return (
