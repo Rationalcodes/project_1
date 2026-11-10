@@ -50,6 +50,7 @@ import { useSalon, getEstimatedWaitMinutes, formatDuration, formatWaitTime, getQ
 import { Service, Staff } from '@kumbhakaran/shared-types';
 import { redirectToGoogleMaps, openGoogleMapsLocation, SalonMapboxView } from '@kumbhakaran/ui';
 import { SmartQueueAssist } from './SmartQueueAssist';
+import { SalonOffersModal } from './SalonOffersModal';
 
 interface SalonDetailScreenProps {
   onBack: () => void;
@@ -93,6 +94,7 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
 
   // Sub-page tab state (Page-in-Page human architecture)
   const [activeTab, setActiveTab] = useState<SalonSubPageTab>('queue');
+  const [showOffersModal, setShowOffersModal] = useState(false);
 
   // Join Live Queue & Token states
   const [showJoinQueueModal, setShowJoinQueueModal] = useState(false);
@@ -609,9 +611,48 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
                 <Navigation className="w-3.5 h-3.5 fill-white" />
                 <span>Navigate ↗</span>
               </button>
+
+              <button
+                type="button"
+                onClick={() => setShowOffersModal(true)}
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-zinc-950 font-black text-xs shadow-md shadow-amber-500/20 transition-all cursor-pointer active:scale-95 animate-pulse hover:animate-none"
+                title="Spin to Win & View Salon Offers"
+              >
+                <Sparkles className="w-3.5 h-3.5 fill-zinc-950" />
+                <span>Offers & Spin 🎁</span>
+              </button>
             </div>
           </div>
         </div>
+      </div>
+
+      {/* 2.5 EXCLUSIVE SALON DEALS & LUCKY SPIN TEASER */}
+      <div
+        onClick={() => setShowOffersModal(true)}
+        className="p-3 sm:p-3.5 rounded-2xl bg-gradient-to-r from-[#24140A] via-[#331C0E] to-[#24140A] border border-amber-500/30 hover:border-amber-400 text-white cursor-pointer shadow-sm transition-all flex items-center justify-between gap-3 group"
+      >
+        <div className="flex items-center gap-2.5">
+          <div className="w-9 h-9 rounded-xl bg-amber-500/20 border border-amber-500/30 text-amber-400 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+            <Sparkles className="w-4 h-4 fill-amber-400" />
+          </div>
+          <div>
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                Lucky Spin Available
+              </span>
+              <span className="text-xs text-amber-200 font-bold">Up to 50% OFF & Free Perks</span>
+            </div>
+            <p className="text-xs text-stone-300 font-medium mt-0.5">
+              Tap to spin the fortune wheel or claim studio discount coupons
+            </p>
+          </div>
+        </div>
+        <button
+          type="button"
+          className="px-3.5 py-1.5 rounded-full bg-amber-500 group-hover:bg-amber-400 text-zinc-950 text-xs font-black shadow-xs flex items-center gap-1 shrink-0 cursor-pointer"
+        >
+          <span>Spin Wheel ➔</span>
+        </button>
       </div>
 
       {/* 3. HUMAN EDITORIAL PAGE-IN-PAGE NAVIGATION BAR */}
@@ -1264,6 +1305,15 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
                     <Navigation className="w-3.5 h-3.5 fill-white" />
                     <span>Navigate ↗</span>
                   </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setShowOffersModal(true)}
+                    className="px-4 py-1.5 rounded-full bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-zinc-950 font-black text-xs shadow-xs transition-all cursor-pointer flex items-center gap-1.5"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 fill-zinc-950" />
+                    <span>Offers & Spin 🎁</span>
+                  </button>
                 </div>
               </div>
 
@@ -1848,6 +1898,12 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
           </div>
         </div>
       )}
+      {/* 8. INTERACTIVE FORTUNE WHEEL & OFFERS MODAL */}
+      <SalonOffersModal
+        salon={salon}
+        isOpen={showOffersModal}
+        onClose={() => setShowOffersModal(false)}
+      />
     </div>
   );
 };

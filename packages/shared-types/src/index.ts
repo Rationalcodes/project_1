@@ -67,6 +67,102 @@ export interface SalonMediaItem {
 
 export type SalonType = 'unisex' | 'men' | 'women';
 
+export interface SalonOffer {
+  id: string;
+  salonId?: string;
+  title: string;
+  code: string;
+  description: string;
+  discountType: 'percentage' | 'flat' | 'free_service';
+  discountValue: number;
+  minSpend?: number;
+  validTill?: string;
+  inSpinWheel: boolean;
+  color?: string;
+  isActive: boolean;
+}
+
+export const DEFAULT_SALON_OFFERS: SalonOffer[] = [
+  {
+    id: 'off-1',
+    title: '20% OFF on Haircut & Style',
+    code: 'SLOON20',
+    description: 'Valid on master haircut and beard styling combos.',
+    discountType: 'percentage',
+    discountValue: 20,
+    minSpend: 250,
+    validTill: 'Valid all week',
+    inSpinWheel: true,
+    color: '#FF6422',
+    isActive: true,
+  },
+  {
+    id: 'off-2',
+    title: 'Flat ₹100 OFF on Total Bill',
+    code: 'FLAT100',
+    description: 'Get instant ₹100 off on any grooming service above ₹499.',
+    discountType: 'flat',
+    discountValue: 100,
+    minSpend: 499,
+    validTill: 'Valid all month',
+    inSpinWheel: true,
+    color: '#059669',
+    isActive: true,
+  },
+  {
+    id: 'off-3',
+    title: 'Free Beard Sculpt & Oil',
+    code: 'FREEBEARD',
+    description: 'Complimentary beard trim and beard hot oil with any premium hair service.',
+    discountType: 'free_service',
+    discountValue: 0,
+    minSpend: 350,
+    validTill: 'Valid Mon-Thu',
+    inSpinWheel: true,
+    color: '#D97706',
+    isActive: true,
+  },
+  {
+    id: 'off-4',
+    title: '15% OFF Deep Facial / Spa',
+    code: 'GLOW15',
+    description: 'Refresh and relax with 15% discount on detan, face cleanup or head massage.',
+    discountType: 'percentage',
+    discountValue: 15,
+    minSpend: 400,
+    validTill: 'Valid all days',
+    inSpinWheel: true,
+    color: '#7C3AED',
+    isActive: true,
+  },
+  {
+    id: 'off-5',
+    title: 'JACKPOT: 50% OFF Haircut',
+    code: 'JACKPOT50',
+    description: 'Lucky winner special: Half-price on any signature haircut today!',
+    discountType: 'percentage',
+    discountValue: 50,
+    minSpend: 200,
+    validTill: 'Same day only',
+    inSpinWheel: true,
+    color: '#DC2626',
+    isActive: true,
+  },
+  {
+    id: 'off-6',
+    title: 'Flat ₹50 Instant Voucher',
+    code: 'SAVE50',
+    description: 'Direct ₹50 discount for your walk-in chair visit today.',
+    discountType: 'flat',
+    discountValue: 50,
+    minSpend: 200,
+    validTill: 'Valid today',
+    inSpinWheel: true,
+    color: '#2563EB',
+    isActive: true,
+  },
+];
+
 export interface Salon {
   id: string;
   name: string;
@@ -112,6 +208,7 @@ export interface Salon {
   lastQueueUpdate: string;
   services: Service[];
   staff: Staff[];
+  offers?: SalonOffer[];
   ratingBreakdown: ReviewCriteria;
   reviews: Review[];
   featured?: boolean;
@@ -175,6 +272,7 @@ export type PartnerView =
   | 'register'
   | 'live-queue'
   | 'services'
+  | 'offers'
   | 'staff'
   | 'profile'
   | 'reviews'

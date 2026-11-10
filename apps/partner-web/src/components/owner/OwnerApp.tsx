@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useSalon, getEstimatedWaitMinutes, formatDuration, formatWaitTime, getQueueDisplay, getQueueFreshness, DEFAULT_AVATAR } from '../../context/PartnerContext';
 import { useLanguage } from '../../i18n/LanguageContext';
+import { SalonOffer, DEFAULT_SALON_OFFERS } from '@kumbhakaran/shared-types';
+import { safeStorage } from '../../utils/safeStorage';
 import {
   LayoutDashboard,
   Users,
@@ -548,6 +550,141 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
   const [customerServiceInput, setCustomerServiceInput] = useState('Haircut & Styling');
   const [isSubmittingCustomer, setIsSubmittingCustomer] = useState(false);
 
+  // Offers & Spin-to-Win deals state
+  const salonOffers: SalonOffer[] = useMemo(() => {
+    if (Array.isArray(activeSalon.offers) && activeSalon.offers.length > 0) {
+      return activeSalon.offers;
+    }
+    return DEFAULT_SALON_OFFERS;
+  }, [activeSalon.offers]);
+
+  const [showOfferModal, setShowOfferModal] = useState(false);
+  const [editingOffer, setEditingOffer] = useState<SalonOffer | null>(null);
+  const [offerForm, setOfferForm] = useState<{
+    title: string;
+    code: string;
+    description: string;
+    discountType: 'percentage' | 'flat' | 'free_service';
+    discountValue: number;
+    minSpend: number;
+    validTill: string;
+    inSpinWheel: boolean;
+    color: string;
+    isActive: boolean;
+  }>({
+    title: '',
+    code: '',
+    description: '',
+    discountType: 'percentage',
+    discountValue: 20,
+    minSpend: 250,
+    validTill: 'Valid all week',
+    inSpinWheel: true,
+    color: '#FF6422',
+    isActive: true,
+  });
+
+  const handleOpenAddOffer = () => {
+    setEditingOffer(null);
+    setOfferForm({
+      title: '',
+      code: `OFFER${Math.floor(10 + Math.random() * 90)}`,
+      description: '',
+      discountType: 'percentage',
+      discountValue: 20,
+      minSpend: 250,
+      validTill: 'Valid all week',
+      inSpinWheel: true,
+      color: '#FF6422',
+      isActive: true,
+    });
+    setShowOfferModal(true);
+  };
+
+  const handleOpenEditOffer = (offer: SalonOffer) => {
+    setEditingOffer(offer);
+    setOfferForm({
+      title: offer.title,
+      code: offer.code,
+      description: offer.description,
+      discountType: offer.discountType,
+      discountValue: offer.discountValue,
+      minSpend: offer.minSpend || 0,
+      validTill: offer.validTill || 'Valid all week',
+      inSpinWheel: offer.inSpinWheel,
+      color: offer.color || '#FF6422',
+      isActive: offer.isActive,
+    });
+    setShowOfferModal(true);
+  };
+
+  const handleSaveOffer = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!offerForm.title.trim() || !offerForm.code.trim()) {
+      triggerNotification('Please enter an offer title and coupon code');
+      return;
+    }
+
+    let updatedOffers: SalonOffer[];
+    if (editingOffer) {
+      updatedOffers = salonOffers.map((o) =>
+        o.id === editingOffer.id
+          ? {
+              ...o,
+              ...offerForm,
+              code: offerForm.code.trim().toUpperCase(),
+            }
+          : o
+      );
+      triggerNotification(`Offer "${offerForm.title}" updated successfully!`);
+    } else {
+      const newOffer: SalonOffer = {
+        id: `off-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+        ...offerForm,
+        code: offerForm.code.trim().toUpperCase(),
+      };
+      updatedOffers = [newOffer, ...salonOffers];
+      triggerNotification(`New Offer "${offerForm.title}" added to salon!`);
+    }
+
+    updateSalonInfo(activeSalon.id, { offers: updatedOffers });
+    try {
+      safeStorage.setItem(`sloon_salon_offers_${activeSalon.id}`, JSON.stringify(updatedOffers));
+    } catch {}
+    setShowOfferModal(false);
+  };
+
+  const handleDeleteOffer = (offerId: string) => {
+    const updated = salonOffers.filter((o) => o.id !== offerId);
+    updateSalonInfo(activeSalon.id, { offers: updated });
+    try {
+      safeStorage.setItem(`sloon_salon_offers_${activeSalon.id}`, JSON.stringify(updated));
+    } catch {}
+    triggerNotification('Offer deleted.');
+  };
+
+  const handleToggleOfferSpinWheel = (offerId: string) => {
+    const updated = salonOffers.map((o) =>
+      o.id === offerId ? { ...o, inSpinWheel: !o.inSpinWheel } : o
+    );
+    updateSalonInfo(activeSalon.id, { offers: updated });
+    try {
+      safeStorage.setItem(`sloon_salon_offers_${activeSalon.id}`, JSON.stringify(updated));
+    } catch {}
+    triggerNotification('Updated spin wheel inclusion.');
+  };
+
+  const handleToggleOfferActive = (offerId: string) => {
+    const updated = salonOffers.map((o) =>
+      o.id === offerId ? { ...o, isActive: !o.isActive } : o
+    );
+    updateSalonInfo(activeSalon.id, { offers: updated });
+    try {
+      safeStorage.setItem(`sloon_salon_offers_${activeSalon.id}`, JSON.stringify(updated));
+    } catch {}
+    triggerNotification('Offer status updated.');
+  };
+
   // Local state for adding/editing services
   const [newServiceName, setNewServiceName] = useState('');
   const [newServicePrice, setNewServicePrice] = useState<number>(150);
@@ -665,6 +802,7 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
     { id: 'live-queue', label: t.liveQueue, icon: Users, highlight: true },
     { id: 'dashboard', label: t.dashboard, icon: LayoutDashboard },
     { id: 'services', label: t.services, icon: Scissors },
+    { id: 'offers', label: 'Offers & Deals', icon: Tag, highlight: true },
     { id: 'staff', label: t.staff, icon: UserCheck },
     { id: 'reviews', label: t.reviews, icon: Star },
     { id: 'gallery', label: t.gallery, icon: Film },
@@ -3188,6 +3326,7 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
               { id: 'live-queue' as const, label: 'Queue', icon: Users },
               { id: 'dashboard' as const, label: 'Stats', icon: LayoutDashboard },
               { id: 'services' as const, label: 'Prices', icon: Scissors },
+              { id: 'offers' as const, label: 'Offers', icon: Tag },
               { id: 'gallery' as const, label: 'Media', icon: Film },
               { id: 'staff' as const, label: 'Staff', icon: UserCheck },
               { id: 'settings' as const, label: 'Setup', icon: Settings },
