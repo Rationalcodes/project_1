@@ -16,7 +16,7 @@ import {
   IndianRupee,
   ShieldCheck
 } from 'lucide-react';
-import { SalonRegistrationInput, SalonType } from '@kumbhakaran/shared-types';
+import { SalonRegistrationInput, SalonType, ProviderType, ServiceMode } from '@kumbhakaran/shared-types';
 import logoFallback from '../../assets/logo.png';
 
 interface SalonRegistrationWizardProps {
@@ -33,6 +33,10 @@ export const SalonRegistrationWizard: React.FC<SalonRegistrationWizardProps> = (
   // Form State: Pre-fill with existing salon if available for this Gmail ID
   const [salonName, setSalonName] = useState(activeSalon?.name || '');
   const [salonType, setSalonType] = useState<SalonType>(activeSalon?.salonType || 'unisex');
+  const [providerType, setProviderType] = useState<ProviderType>(activeSalon?.providerType || 'traditional_salon');
+  const [serviceModes, setServiceModes] = useState<ServiceMode[]>(activeSalon?.serviceModes || ['at_salon']);
+  const [serviceRadiusKm, setServiceRadiusKm] = useState<number>(activeSalon?.serviceRadiusKm || 10);
+  const [experienceYears, setExperienceYears] = useState<number>(activeSalon?.experienceYears || 5);
   const [tagline, setTagline] = useState(activeSalon?.tagline || 'Premium cuts & authentic walk-in transparency');
   const [ownerName, setOwnerName] = useState(activeSalon?.ownerName || partnerUser?.name || '');
   const [phone, setPhone] = useState(activeSalon?.phone || '+91 ');
@@ -77,6 +81,10 @@ export const SalonRegistrationWizard: React.FC<SalonRegistrationWizardProps> = (
       name: salonName,
       tagline,
       salonType,
+      providerType,
+      serviceModes,
+      serviceRadiusKm,
+      experienceYears,
       ownerName,
       phone,
       email: email || `${salonName.toLowerCase().replace(/\s+/g, '')}@kumbhakaran.app`,
@@ -201,6 +209,100 @@ export const SalonRegistrationWizard: React.FC<SalonRegistrationWizardProps> = (
                 placeholder="e.g. Blade & Timber Grooming Co."
                 className="w-full p-3 bg-[#FAF7F2] border border-[#E8E2D8] rounded-2xl text-xs text-stone-900 placeholder-stone-400 focus:outline-none focus:border-[#E05326] focus:bg-white"
               />
+            </div>
+
+            <div>
+              <label className="text-xs font-bold text-stone-700 block mb-1.5">
+                Provider Operating Model *
+              </label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {[
+                  {
+                    id: 'traditional_salon',
+                    label: 'Traditional Salon',
+                    desc: 'Commercial storefront with chairs, staff & walk-in queue',
+                    defaultModes: ['at_salon'] as ServiceMode[],
+                  },
+                  {
+                    id: 'home_studio',
+                    label: 'Home Studio',
+                    desc: 'Private residential studio (appointment scheduled)',
+                    defaultModes: ['studio_visit'] as ServiceMode[],
+                  },
+                  {
+                    id: 'freelance_pro',
+                    label: 'Freelance Professional',
+                    desc: 'Mobile artist traveling directly to clients (Sloon Home)',
+                    defaultModes: ['home_visit'] as ServiceMode[],
+                  },
+                  {
+                    id: 'independent_pro',
+                    label: 'Independent Specialist',
+                    desc: 'Solo expert offering studio appointments & home visits',
+                    defaultModes: ['studio_visit', 'home_visit'] as ServiceMode[],
+                  },
+                ].map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => {
+                      setProviderType(item.id as ProviderType);
+                      setServiceModes(item.defaultModes);
+                    }}
+                    className={`p-3 rounded-2xl border text-left transition-all cursor-pointer ${
+                      providerType === item.id
+                        ? 'bg-[#FFF3EC] border-[#E05326] text-stone-900 shadow-2xs'
+                        : 'bg-[#FAF7F2] border-[#E8E2D8] text-stone-600 hover:border-stone-300'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className={`text-xs font-bold ${providerType === item.id ? 'text-[#E05326]' : 'text-stone-800'}`}>
+                        {item.label}
+                      </span>
+                      {providerType === item.id && <span className="text-[#E05326] text-xs font-bold">✓</span>}
+                    </div>
+                    <p className="text-[10px] text-stone-500 mt-0.5 leading-snug">{item.desc}</p>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="text-xs font-bold text-stone-700 block mb-1.5">
+                Enabled Service Modes (Select all offered) *
+              </label>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                {[
+                  { id: 'at_salon' as ServiceMode, label: 'At Salon (Walk-In Queue)' },
+                  { id: 'home_visit' as ServiceMode, label: 'Home Visit (Doorstep)' },
+                  { id: 'studio_visit' as ServiceMode, label: 'Studio Visit (Slot Booking)' },
+                ].map((mode) => {
+                  const isChecked = serviceModes.includes(mode.id);
+                  return (
+                    <button
+                      key={mode.id}
+                      type="button"
+                      onClick={() => {
+                        setServiceModes((prev) =>
+                          prev.includes(mode.id)
+                            ? prev.length > 1
+                              ? prev.filter((m) => m !== mode.id)
+                              : prev
+                            : [...prev, mode.id]
+                        );
+                      }}
+                      className={`p-2.5 rounded-xl border text-left text-xs font-bold transition flex items-center justify-between ${
+                        isChecked
+                          ? 'bg-amber-500/10 border-[#E05326] text-stone-900'
+                          : 'bg-stone-50 border-stone-200 text-stone-500'
+                      }`}
+                    >
+                      <span>{mode.label}</span>
+                      <span>{isChecked ? '✓' : '+'}</span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
             <div>

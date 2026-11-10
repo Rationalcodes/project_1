@@ -67,6 +67,53 @@ export interface SalonMediaItem {
 
 export type SalonType = 'unisex' | 'men' | 'women';
 
+// ==============================================================================
+// Unified Beauty & Grooming Provider Archetypes & Service Modes
+// ==============================================================================
+
+/** The 4 Core Provider Archetypes in the Sloon Ecosystem */
+export type ProviderType =
+  | 'traditional_salon' // Established physical salon with storefront & staff
+  | 'home_studio'       // Professional operating from residential studio premises
+  | 'freelance_pro'     // Mobile freelancer traveling to client residences
+  | 'independent_pro';  // Senior independent stylist offering studio and/or home visits
+
+/** The 3 Omnichannel Service Modes */
+export type ServiceMode =
+  | 'at_salon'     // Customer visits physical salon (live walk-in queue + appointments)
+  | 'home_visit'   // Stylist visits customer's residence (Sloon Home)
+  | 'studio_visit'; // Customer visits private residential studio
+
+export interface ProviderCapability {
+  hasPhysicalStorefront: boolean;
+  hasWalkInQueue: boolean;
+  hasAppointments: boolean;
+  hasHomeVisits: boolean;
+  requiresAddressPrivacy: boolean;
+  canConfigureTravelFee: boolean;
+  canManageStaff: boolean;
+}
+
+export function getProviderCapabilities(
+  providerType: ProviderType = 'traditional_salon',
+  serviceModes: ServiceMode[] = ['at_salon']
+): ProviderCapability {
+  const isSalon = providerType === 'traditional_salon';
+  const isHomeStudio = providerType === 'home_studio';
+  const isFreelance = providerType === 'freelance_pro';
+  const isIndependent = providerType === 'independent_pro';
+
+  return {
+    hasPhysicalStorefront: isSalon,
+    hasWalkInQueue: isSalon && serviceModes.includes('at_salon'),
+    hasAppointments: isHomeStudio || isIndependent || serviceModes.includes('studio_visit'),
+    hasHomeVisits: serviceModes.includes('home_visit') || isFreelance,
+    requiresAddressPrivacy: isHomeStudio || isIndependent,
+    canConfigureTravelFee: serviceModes.includes('home_visit') || isFreelance,
+    canManageStaff: isSalon,
+  };
+}
+
 export interface SalonOffer {
   id: string;
   salonId?: string;
@@ -368,12 +415,32 @@ export interface Salon {
   homeServiceMinOrder?: number;
   homeServiceCategories?: HomeVisitCategory[];
   marketingConfig?: SalonMarketingConfig;
+  providerType?: ProviderType;
+  serviceModes?: ServiceMode[];
+  serviceRadiusKm?: number;
+  baseTravelFee?: number;
+  travelFeePerKm?: number;
+  experienceYears?: number;
+  qualifications?: string[];
+  specializations?: string[];
+  portfolioImages?: string[];
+  approximateLocality?: string;
+  cancellationPolicy?: string;
+  verificationStatus?: 'unverified' | 'pending' | 'verified' | 'rejected';
 }
 
 export interface SalonRegistrationInput {
   name: string;
   tagline?: string;
   salonType?: SalonType;
+  providerType?: ProviderType;
+  serviceModes?: ServiceMode[];
+  serviceRadiusKm?: number;
+  baseTravelFee?: number;
+  experienceYears?: number;
+  qualifications?: string[];
+  specializations?: string[];
+  approximateLocality?: string;
   ownerName: string;
   phone: string;
   email: string;
@@ -845,4 +912,190 @@ export const HOME_VISIT_SERVICE_CATALOG: HomeVisitServiceItem[] = [
     popular: true,
   },
 ];
+
+// ==============================================================================
+// 8 Master Beauty & Grooming Domains (Unified Ecosystem Standard)
+// ==============================================================================
+
+export type MasterBeautyDomain =
+  | 'bridal'           // A. Bridal & Wedding
+  | 'womens_beauty'    // B. Women's Beauty
+  | 'mens_grooming'    // C. Men's Grooming
+  | 'kids_grooming'    // D. Kids Grooming
+  | 'senior_grooming'  // E. Senior Grooming
+  | 'makeup_occasions' // F. Makeup & Special Occasions
+  | 'nail_care'        // G. Nail Care
+  | 'spa_relaxation';  // H. Spa & Relaxation
+
+export interface MasterDomainMeta {
+  id: MasterBeautyDomain;
+  title: string;
+  subtitle: string;
+  badge: string;
+  iconName: string;
+  gradient: string;
+  accentColor: string;
+  description: string;
+  applicableModes: ServiceMode[];
+  servicesCount: number;
+}
+
+export const MASTER_BEAUTY_DOMAINS: MasterDomainMeta[] = [
+  {
+    id: 'bridal',
+    title: 'Bridal & Wedding Artistry',
+    subtitle: 'HD Makeup, Airbrush, Trousseau & Saree Draping',
+    badge: 'Luxury Suite',
+    iconName: 'Crown',
+    gradient: 'from-rose-500 via-pink-600 to-rose-700',
+    accentColor: '#E11D48',
+    description: 'Bespoke bridal styling delivered to wedding suites, venues, or private studios.',
+    applicableModes: ['home_visit', 'studio_visit', 'at_salon'],
+    servicesCount: 10,
+  },
+  {
+    id: 'womens_beauty',
+    title: "Women's Beauty & Esthetics",
+    subtitle: 'Organic Facials, Rica Waxing, Threading, Hair Spa & Blowouts',
+    badge: 'Certified Organic',
+    iconName: 'Sparkles',
+    gradient: 'from-purple-600 via-indigo-600 to-violet-800',
+    accentColor: '#7C3AED',
+    description: 'Complete beauty parlour and skincare services with disposable single-use sheets.',
+    applicableModes: ['at_salon', 'studio_visit', 'home_visit'],
+    servicesCount: 10,
+  },
+  {
+    id: 'mens_grooming',
+    title: "Men's Grooming & Barbershop",
+    subtitle: 'Precision Fades, Hot Towel Beard Sculpting & Charcoal De-Tan',
+    badge: 'Executive',
+    iconName: 'Scissors',
+    gradient: 'from-[#C85322] via-amber-700 to-stone-900',
+    accentColor: '#C85322',
+    description: 'Classic barbershop fades, beard geometry, steamed towels, and skin detox.',
+    applicableModes: ['at_salon', 'home_visit', 'studio_visit'],
+    servicesCount: 8,
+  },
+  {
+    id: 'kids_grooming',
+    title: 'Kids & Toddlers Gentle Care',
+    subtitle: 'Tear-Free Haircuts, Sacred Mundan & Playful Styles',
+    badge: 'Tear-Free',
+    iconName: 'Smile',
+    gradient: 'from-amber-500 via-orange-500 to-amber-700',
+    accentColor: '#D97706',
+    description: 'Patience-first haircuts with rounded safety blades, cartoon bibs, and soothing care.',
+    applicableModes: ['at_salon', 'home_visit', 'studio_visit'],
+    servicesCount: 4,
+  },
+  {
+    id: 'senior_grooming',
+    title: 'Senior Citizen & Assisted Care',
+    subtitle: 'Gentle Haircuts, Low-Mobility & Bedside Grooming',
+    badge: 'Compassionate',
+    iconName: 'HeartHandshake',
+    gradient: 'from-emerald-600 via-teal-600 to-emerald-800',
+    accentColor: '#059669',
+    description: 'Patient, gentle grooming for elders and bed-bound parents in comfortable settings.',
+    applicableModes: ['home_visit', 'at_salon', 'studio_visit'],
+    servicesCount: 6,
+  },
+  {
+    id: 'makeup_occasions',
+    title: 'Makeup & Special Occasions',
+    subtitle: 'Party Glam, Cocktail Events, Photoshoots & Festive Looks',
+    badge: 'Glamour Pro',
+    iconName: 'Eye',
+    gradient: 'from-fuchsia-600 via-pink-600 to-rose-600',
+    accentColor: '#C026D3',
+    description: 'Long-lasting professional makeup and hair updos for events and photo sessions.',
+    applicableModes: ['studio_visit', 'home_visit', 'at_salon'],
+    servicesCount: 5,
+  },
+  {
+    id: 'nail_care',
+    title: 'Nail Art & Extensions',
+    subtitle: 'Gel Polish, Acrylic Extensions, Nail Art & Luxury Spa Pedicures',
+    badge: 'High Precision',
+    iconName: 'Palette',
+    gradient: 'from-cyan-600 via-teal-600 to-emerald-700',
+    accentColor: '#0891B2',
+    description: 'Autoclaved precision tools, imported gel formulations, and custom nail designs.',
+    applicableModes: ['studio_visit', 'at_salon', 'home_visit'],
+    servicesCount: 5,
+  },
+  {
+    id: 'spa_relaxation',
+    title: 'Spa & Holistic Relaxation',
+    subtitle: 'Ayurvedic Champi, Foot Reflexology, Body Polishing & Stress Relief',
+    badge: 'Therapeutic',
+    iconName: 'Flame',
+    gradient: 'from-amber-600 via-rose-600 to-orange-800',
+    accentColor: '#EA580C',
+    description: 'Restorative wellness treatments with warm aromatherapy essential oils.',
+    applicableModes: ['at_salon', 'home_visit', 'studio_visit'],
+    servicesCount: 5,
+  },
+];
+
+// ==============================================================================
+// Unified Omnichannel Booking Lifecycle Engine
+// ==============================================================================
+
+export type BookingStatus =
+  | 'pending'               // Customer submitted request
+  | 'accepted'              // Provider accepted booking
+  | 'rejected'              // Provider rejected booking
+  | 'confirmed'             // Slot / Deposit locked
+  | 'on_the_way'            // Freelance/Salon stylist traveling
+  | 'arrived'               // Stylist arrived at destination / studio
+  | 'in_progress'           // Service actively underway
+  | 'completed'             // Service finished, bill settled
+  | 'cancelled'             // Cancelled by customer or provider
+  | 'no_show';              // Customer did not show up
+
+export interface UnifiedBookingItem {
+  id: string;
+  serviceId?: string;
+  serviceName: string;
+  category: string;
+  price: number;
+  durationMinutes: number;
+}
+
+export interface UnifiedBooking {
+  id: string;
+  bookingNumber: string;
+  providerId: string;
+  providerName: string;
+  providerType: ProviderType;
+  serviceMode: ServiceMode;
+  category: string;
+  status: BookingStatus;
+  customerId?: string;
+  customerName: string;
+  customerPhone: string;
+  scheduledDate: string; // YYYY-MM-DD
+  timeSlot: string;      // e.g. "10:00 AM - 12:00 PM"
+  serviceAddress?: string; // Protected: shown only to assigned professional for confirmed booking!
+  serviceLocality?: string; // Visible for general scheduling
+  serviceCoordinates?: {
+    lat: number;
+    lng: number;
+  };
+  items: UnifiedBookingItem[];
+  servicesSubtotal: number;
+  travelCharge: number;
+  platformFee: number;
+  totalAmount: number;
+  advanceDeposit: number;
+  specialInstructions?: string;
+  specialCareRequirements?: string[];
+  technicianName?: string;
+  technicianPhone?: string;
+  cancellationReason?: string;
+  createdAt: string;
+  updatedAt: string;
+}
 

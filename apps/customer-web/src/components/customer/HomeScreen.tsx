@@ -39,7 +39,7 @@ import {
   matchesGenderFilter,
   getSalonType,
 } from '../../context/CustomerContext';
-import { Salon, HomeBanner, DEFAULT_HOME_BANNERS, HomeVisitCategory, HOME_VISIT_CATEGORIES } from '@kumbhakaran/shared-types';
+import { Salon, HomeBanner, DEFAULT_HOME_BANNERS, HomeVisitCategory, HOME_VISIT_CATEGORIES, ServiceMode, MASTER_BEAUTY_DOMAINS } from '@kumbhakaran/shared-types';
 import { defaultApiClient } from '@kumbhakaran/api-client';
 import { HomeVisitModal } from './HomeVisitModal';
 
@@ -118,6 +118,7 @@ export const HomeScreen: React.FC = () => {
   // Home Visit / Doorstep Salon Service Modal State
   const [isHomeVisitOpen, setIsHomeVisitOpen] = useState(false);
   const [homeVisitCategory, setHomeVisitCategory] = useState<HomeVisitCategory>('senior_care');
+  const [selectedServiceMode, setSelectedServiceMode] = useState<ServiceMode>('at_salon');
   const [touchDeltaX, setTouchDeltaX] = useState<number>(0);
   const [isSwiping, setIsSwiping] = useState(false);
   const [showHowItWorksModal, setShowHowItWorksModal] = useState(false);
@@ -238,11 +239,24 @@ export const HomeScreen: React.FC = () => {
     [salons, genderFilter],
   );
 
-  // Filter salons if a category is clicked
+  // Filter salons if a category or service mode is selected
   const displayedSalons = useMemo(() => {
     return genderMatchedSalons.filter((salon) => {
+      // Service Mode Filter
+      if (selectedServiceMode === 'home_visit') {
+        const offersHome = Boolean(salon.hasHomeService || salon.serviceModes?.includes('home_visit'));
+        if (!offersHome) return false;
+      } else if (selectedServiceMode === 'studio_visit') {
+        const offersStudio = Boolean(
+          salon.providerType === 'home_studio' ||
+          salon.providerType === 'independent_pro' ||
+          salon.serviceModes?.includes('studio_visit')
+        );
+        if (!offersStudio) return false;
+      }
+
+      // Service Category Filter
       if (selectedServiceFilter === 'All' || !selectedServiceFilter) return true;
-      // Check salon services
       if (Array.isArray(salon.services) && salon.services.length > 0) {
         return salon.services.some(
           (svc) =>
@@ -252,7 +266,7 @@ export const HomeScreen: React.FC = () => {
       }
       return true;
     });
-  }, [genderMatchedSalons, selectedServiceFilter]);
+  }, [genderMatchedSalons, selectedServiceFilter, selectedServiceMode]);
 
   const handleSalonCardClick = (salon: Salon) => {
     addToRecentlyViewed(salon.id);
@@ -457,6 +471,93 @@ export const HomeScreen: React.FC = () => {
             />
           ))}
         </div>
+      </section>
+
+      {/* 1.5 OMNICHANNEL SERVICE MODE ENTRY POINTS */}
+      <section className="grid grid-cols-3 gap-2.5 sm:gap-3.5">
+        {[
+          {
+            id: 'at_salon' as ServiceMode,
+            title: 'Visit a Salon',
+            subtitle: 'Live Walk-In Queue & Wait Times',
+            icon: Store,
+            badge: 'Live Status',
+            accent: 'from-amber-600 to-orange-600',
+          },
+          {
+            id: 'studio_visit' as ServiceMode,
+            title: 'Book Studio Slot',
+            subtitle: 'Private Appointment Booking',
+            icon: Sparkles,
+            badge: 'No Waiting',
+            accent: 'from-purple-600 to-indigo-700',
+          },
+          {
+            id: 'home_visit' as ServiceMode,
+            title: 'Home Services',
+            subtitle: 'Sloon Home Doorstep Visits',
+            icon: Home,
+            badge: 'Doorstep',
+            accent: 'from-emerald-600 to-teal-700',
+          },
+        ].map((item) => {
+          const isSelected = selectedServiceMode === item.id;
+          const Icon = item.icon;
+          return (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => {
+                setSelectedServiceMode(item.id);
+                if (item.id === 'home_visit') {
+                  setHomeVisitCategory('bridal');
+                  setIsHomeVisitOpen(true);
+                }
+              }}
+              className={`p-3 sm:p-4 rounded-3xl border text-left transition-all relative overflow-hidden flex flex-col justify-between group cursor-pointer ${
+                isSelected
+                  ? isWomen
+                    ? 'bg-[#FFF0F3] border-[#F47B70] shadow-md shadow-pink-900/10'
+                    : 'bg-[#FFF5ED] border-[#FF6422] shadow-md shadow-orange-950/10'
+                  : 'bg-white border-stone-200/90 hover:border-stone-300 shadow-2xs hover:bg-stone-50/60'
+              }`}
+            >
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <div
+                    className={`w-8 h-8 sm:w-9 sm:h-9 rounded-2xl flex items-center justify-center text-white bg-gradient-to-tr ${item.accent} shadow-xs`}
+                  >
+                    <Icon className="w-4 h-4" />
+                  </div>
+                  <span
+                    className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${
+                      isSelected
+                        ? isWomen
+                          ? 'bg-[#F47B70] text-white'
+                          : 'bg-[#FF6422] text-white'
+                        : 'bg-stone-100 text-stone-600'
+                    }`}
+                  >
+                    {item.badge}
+                  </span>
+                </div>
+                <h4 className="text-xs sm:text-sm font-black text-stone-900 leading-tight">
+                  {item.title}
+                </h4>
+                <p className="text-[10px] sm:text-[11px] text-stone-500 mt-0.5 line-clamp-1 leading-snug">
+                  {item.subtitle}
+                </p>
+              </div>
+
+              <div className="mt-2.5 pt-2 border-t border-stone-100 flex items-center justify-between text-[10px] font-bold">
+                <span className={isSelected ? (isWomen ? 'text-[#F47B70]' : 'text-[#FF6422]') : 'text-stone-400'}>
+                  {isSelected ? 'Active Mode' : 'Select'}
+                </span>
+                <ArrowRight className="w-3 h-3 text-stone-400 group-hover:translate-x-0.5 transition-transform" />
+              </div>
+            </button>
+          );
+        })}
       </section>
 
       {/* 2. CATEGORIES SECTION (ROUND PHOTO AVATARS) */}
