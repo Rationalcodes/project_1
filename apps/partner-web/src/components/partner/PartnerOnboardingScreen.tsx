@@ -2,19 +2,13 @@ import React, { useState, useEffect } from 'react';
 import {
   ChevronLeft,
   ArrowRight,
-  Scissors,
   Sparkles,
-  Clock,
-  QrCode,
-  ShieldCheck,
-  Store,
-  Users,
-  CheckCircle2,
-  TrendingUp,
+  Zap,
 } from 'lucide-react';
 import { SalonToolsWheel } from '@kumbhakaran/ui';
 import logoFallback from '../../assets/logo.png';
 import logoTransparent from '../../assets/logo-transparent.png';
+import logoWhite from '../../assets/logo-white.png';
 
 export interface PartnerOnboardingScreenProps {
   onFinish: () => void;
@@ -23,17 +17,17 @@ export interface PartnerOnboardingScreenProps {
 export const PartnerOnboardingScreen: React.FC<PartnerOnboardingScreenProps> = ({
   onFinish,
 }) => {
-  // Step 0 = Welcome Splash, Steps 1..3 = Partner Pillars
+  // Step 0 = Luxury Splash with 3D Wheel, Steps 1..3 = Partner Pillars
   const [currentStep, setCurrentStep] = useState<number>(0);
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
   const [touchDeltaX, setTouchDeltaX] = useState<number>(0);
 
-  // Auto-advance from splash screen after 2.6s if untouched
+  // Auto-advance from splash screen after 3.2s if untouched
   useEffect(() => {
     if (currentStep === 0) {
       const timer = setTimeout(() => {
         setCurrentStep(1);
-      }, 2600);
+      }, 3200);
       return () => clearTimeout(timer);
     }
   }, [currentStep]);
@@ -103,10 +97,23 @@ export const PartnerOnboardingScreen: React.FC<PartnerOnboardingScreenProps> = (
 
   const accentColor = '#E05326';
   const bgLightIllustration = '#FFF9F5';
+  const isDarkSplash = currentStep === 0;
 
   return (
     <div
-      className="fixed inset-0 z-50 flex flex-col justify-between bg-[#FAF7F2] text-stone-900 overflow-y-auto select-none animate-in fade-in duration-300"
+      className={`fixed inset-0 z-50 flex flex-col justify-between overflow-y-auto select-none transition-colors duration-500 ${
+        isDarkSplash
+          ? 'bg-[#120508] text-stone-100'
+          : 'bg-[#FAF7F2] text-stone-900'
+      }`}
+      style={
+        isDarkSplash
+          ? {
+              background:
+                'radial-gradient(ellipse at 50% 38%, #360D17 0%, #1A060B 52%, #0A0204 100%)',
+            }
+          : undefined
+      }
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
@@ -127,16 +134,22 @@ export const PartnerOnboardingScreen: React.FC<PartnerOnboardingScreenProps> = (
         )}
 
         {/* Brand Center Pill */}
-        <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-white border border-[#E8E2D8] shadow-2xs">
+        <div
+          className={`flex items-center gap-1.5 px-3 py-1 rounded-full border shadow-2xs transition-colors ${
+            isDarkSplash
+              ? 'bg-black/40 border-amber-500/30 text-amber-300'
+              : 'bg-white border-[#E8E2D8] text-[#E05326]'
+          }`}
+        >
           <img
-            src={logoFallback}
+            src={isDarkSplash ? logoWhite : logoFallback}
             alt="SLOON"
             className="h-4 sm:h-4.5 w-auto object-contain"
             onError={(e) => {
               (e.currentTarget as HTMLImageElement).src = logoTransparent;
             }}
           />
-          <span className="text-[9px] font-black tracking-widest text-[#E05326] uppercase">
+          <span className="text-[9px] font-black tracking-widest uppercase">
             PARTNER DESK
           </span>
         </div>
@@ -145,7 +158,11 @@ export const PartnerOnboardingScreen: React.FC<PartnerOnboardingScreenProps> = (
         <button
           type="button"
           onClick={onFinish}
-          className="text-xs sm:text-sm font-bold text-stone-500 hover:text-stone-900 transition-colors px-2 py-1 cursor-pointer"
+          className={`text-xs sm:text-sm font-bold transition-colors px-2 py-1 cursor-pointer ${
+            isDarkSplash
+              ? 'text-stone-400 hover:text-white'
+              : 'text-stone-500 hover:text-stone-900'
+          }`}
         >
           Skip
         </button>
@@ -154,43 +171,60 @@ export const PartnerOnboardingScreen: React.FC<PartnerOnboardingScreenProps> = (
       {/* Main Dynamic Step Area */}
       <main className="flex-1 w-full max-w-2xl mx-auto px-4 py-2 sm:py-6 flex flex-col items-center justify-center text-center">
         {/* =========================================================
-            STEP 0: LUXURY SPLASH SCREEN WITH ANIMATED SALON TOOLS WHEEL
+            STEP 0: FLAGSHIP LUXURY SPLASH WITH ROTATING SALON TOOLS WHEEL
             ========================================================= */}
         {currentStep === 0 && (
           <div
-            className="flex-1 w-full flex flex-col items-center justify-center p-4 sm:p-8 cursor-pointer animate-in zoom-in-95 duration-500"
+            className="flex-1 w-full flex flex-col items-center justify-center p-2 sm:p-6 cursor-pointer animate-in zoom-in-95 duration-500"
             onClick={() => setCurrentStep(1)}
           >
+            {/* Top Quality Badge */}
+            <div className="mb-4 inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-amber-500/10 border border-amber-400/30 text-amber-300 shadow-sm animate-pulse">
+              <Sparkles className="w-3.5 h-3.5 fill-amber-300" />
+              <span className="text-[10px] sm:text-[11px] font-black tracking-widest uppercase">
+                INTELLIGENT SALON PLATFORM
+              </span>
+            </div>
+
             {/* The Animated Rotating Salon Tools Wheel with SLOON Logo */}
-            <div className="transform transition-transform hover:scale-105 duration-300">
+            <div className="transform transition-transform hover:scale-105 active:scale-95 duration-300 drop-shadow-[0_20px_50px_rgba(0,0,0,0.8)]">
               <SalonToolsWheel
-                size={290}
+                size={320}
                 autoRotateWhenIdle={true}
                 showPointer={false}
                 showSlices={false}
                 badgeSubtitle="PARTNER OS"
-                logoSrc={logoFallback}
+                logoSrc={logoWhite}
               />
             </div>
 
-            <div className="mt-8 space-y-2">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#FFF3EC] text-[#E05326] border border-[#FED7CC]">
-                <Sparkles className="w-3.5 h-3.5" />
-                <span className="text-xs font-black tracking-widest uppercase">
-                  SMART SALON PLATFORM
+            <div className="mt-8 space-y-2.5 max-w-md mx-auto">
+              <h1 className="text-2xl sm:text-4xl font-black tracking-tight text-white drop-shadow-md">
+                The Smart Way To{' '}
+                <span className="bg-gradient-to-r from-amber-300 via-orange-300 to-amber-200 bg-clip-text text-transparent">
+                  Run Your Salon
                 </span>
-              </div>
-              <h1 className="text-2xl sm:text-3xl font-black text-stone-900 tracking-tight">
-                Welcome to SLOON Partner
               </h1>
-              <p className="text-xs sm:text-sm text-stone-600 font-medium max-w-sm mx-auto">
-                Real-time walk-in queue control, zero commissions, and seamless client flow for modern salons.
+              <p className="text-xs sm:text-sm text-stone-300 font-medium leading-relaxed max-w-sm mx-auto">
+                Real-time walk-in queue control, 0% commission, and seamless customer turnover for modern grooming salons.
               </p>
             </div>
 
-            <div className="mt-8">
-              <span className="text-[11px] font-bold text-stone-400 tracking-wider uppercase animate-pulse">
-                Tap anywhere or press Enter to begin
+            <div className="mt-7 flex flex-wrap items-center justify-center gap-2 text-[10px] sm:text-[11px] font-bold text-amber-200/90">
+              <span className="px-2.5 py-0.5 rounded-full bg-white/5 border border-white/10">
+                ✓ 0% Platform Commission
+              </span>
+              <span className="px-2.5 py-0.5 rounded-full bg-white/5 border border-white/10">
+                ✓ Live Waiting Queue
+              </span>
+              <span className="px-2.5 py-0.5 rounded-full bg-white/5 border border-white/10">
+                ✓ Direct Payouts
+              </span>
+            </div>
+
+            <div className="mt-6">
+              <span className="text-[10.5px] font-bold text-stone-400 tracking-wider uppercase animate-pulse">
+                Tap anywhere or press Enter to continue
               </span>
             </div>
           </div>
@@ -363,10 +397,12 @@ export const PartnerOnboardingScreen: React.FC<PartnerOnboardingScreenProps> = (
               className={`h-2 rounded-full transition-all duration-300 cursor-pointer ${
                 currentStep === step
                   ? 'w-8'
-                  : 'w-2 bg-stone-300 hover:bg-stone-400'
+                  : isDarkSplash
+                    ? 'w-2 bg-stone-700 hover:bg-stone-500'
+                    : 'w-2 bg-stone-300 hover:bg-stone-400'
               }`}
               style={{
-                backgroundColor: currentStep === step ? accentColor : undefined,
+                backgroundColor: currentStep === step ? (isDarkSplash ? '#F59E0B' : accentColor) : undefined,
               }}
               aria-label={`Go to step ${step}`}
             />
@@ -378,8 +414,7 @@ export const PartnerOnboardingScreen: React.FC<PartnerOnboardingScreenProps> = (
           <button
             type="button"
             onClick={() => setCurrentStep(1)}
-            className="w-full py-3.5 px-6 rounded-full text-white font-black text-sm tracking-wide shadow-md hover:shadow-lg transition-all transform active:scale-98 cursor-pointer flex items-center justify-center gap-2"
-            style={{ backgroundColor: accentColor }}
+            className="w-full py-3.5 px-6 rounded-full text-stone-950 font-black text-sm tracking-wide bg-gradient-to-r from-amber-400 via-amber-300 to-yellow-400 hover:from-amber-300 hover:to-yellow-300 shadow-lg shadow-amber-500/25 transition-all transform active:scale-98 cursor-pointer flex items-center justify-center gap-2"
           >
             <span>Explore Partner Desk</span>
             <ArrowRight className="w-4 h-4 stroke-[2.5]" />

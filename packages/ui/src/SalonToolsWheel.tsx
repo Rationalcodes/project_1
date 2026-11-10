@@ -99,36 +99,41 @@ export const SalonToolsWheel: React.FC<SalonToolsWheelProps> = ({
     >
       {/* 1. Atmospheric Luxury Mandala SVG Backdrop (Matching User Reference Image) */}
       <svg
-        className="absolute inset-[-18%] w-[136%] h-[136%] text-amber-500/20 pointer-events-none stroke-current"
+        className="absolute inset-[-22%] w-[144%] h-[144%] text-amber-500/25 pointer-events-none stroke-current"
         viewBox="0 0 200 200"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
+        style={{
+          transform: `rotate(-${ambientAngle * 0.35}deg)`,
+          transition: isSpinning ? 'transform 4.5s ease-out' : 'none',
+        }}
       >
-        <circle cx="100" cy="100" r="95" strokeWidth="0.75" strokeDasharray="3 3" opacity="0.4" />
-        <circle cx="100" cy="100" r="82" strokeWidth="0.75" opacity="0.6" />
-        {/* 12 Mandala Petals */}
-        {Array.from({ length: 12 }).map((_, i) => (
+        <circle cx="100" cy="100" r="96" strokeWidth="0.8" strokeDasharray="3 3" opacity="0.4" />
+        <circle cx="100" cy="100" r="88" strokeWidth="0.6" opacity="0.5" />
+        <circle cx="100" cy="100" r="76" strokeWidth="0.8" strokeDasharray="2 4" opacity="0.35" />
+        {/* 16 Sacred Mandala Petals */}
+        {Array.from({ length: 16 }).map((_, i) => (
           <path
             key={i}
-            d="M 100 10 C 112 50, 112 75, 100 100 C 88 75, 88 50, 100 10 Z"
+            d="M 100 8 C 114 45, 114 75, 100 100 C 86 75, 86 45, 100 8 Z"
             strokeWidth="0.75"
-            transform={`rotate(${i * 30} 100 100)`}
-            opacity="0.5"
+            transform={`rotate(${i * 22.5} 100 100)`}
+            opacity="0.55"
           />
         ))}
-        {Array.from({ length: 12 }).map((_, i) => (
+        {Array.from({ length: 16 }).map((_, i) => (
           <path
             key={`inner-${i}`}
-            d="M 100 35 C 108 65, 108 80, 100 100 C 92 80, 92 65, 100 35 Z"
+            d="M 100 28 C 109 60, 109 78, 100 100 C 91 78, 91 60, 100 28 Z"
             strokeWidth="0.5"
-            transform={`rotate(${i * 30 + 15} 100 100)`}
-            opacity="0.4"
+            transform={`rotate(${i * 22.5 + 11.25} 100 100)`}
+            opacity="0.45"
           />
         ))}
       </svg>
 
       {/* Atmospheric Luxury Warm Glow Backdrop */}
-      <div className="absolute inset-[-12px] rounded-full bg-gradient-to-tr from-rose-950/40 via-amber-600/20 to-orange-500/30 blur-2xl pointer-events-none animate-pulse duration-1000" />
+      <div className="absolute inset-[-18px] rounded-full bg-gradient-to-tr from-rose-950/60 via-amber-600/30 to-orange-500/40 blur-3xl pointer-events-none animate-pulse duration-1000" />
 
       {/* 2. Outer Studded Golden Bezel with Jewels */}
       <div className="absolute inset-0 rounded-full border-[5px] border-amber-400/70 shadow-[0_0_35px_rgba(245,158,11,0.35)] pointer-events-none z-20 overflow-hidden">
@@ -241,7 +246,7 @@ export const SalonToolsWheel: React.FC<SalonToolsWheelProps> = ({
       {/* 5. CENTER LUXURY MEDALLION WITH SLOON LOGO */}
       <div
         onClick={isInteractive ? onSpin : undefined}
-        className={`absolute z-30 rounded-full p-[3px] shadow-[0_10px_35px_rgba(0,0,0,0.8)] transition-all duration-300 ${
+        className={`absolute z-30 rounded-full p-[3.5px] shadow-[0_12px_40px_rgba(0,0,0,0.85)] transition-all duration-300 ${
           isInteractive
             ? !canSpin
               ? 'cursor-not-allowed opacity-90'
@@ -249,25 +254,27 @@ export const SalonToolsWheel: React.FC<SalonToolsWheelProps> = ({
             : 'pointer-events-none'
         }`}
         style={{
-          width: `${Math.round(size * 0.38)}px`,
-          height: `${Math.round(size * 0.38)}px`,
-          background: 'linear-gradient(135deg, #FDE68A 0%, #D97706 35%, #78350F 70%, #F59E0B 100%)',
+          width: `${Math.round(size * 0.44)}px`,
+          height: `${Math.round(size * 0.44)}px`,
+          background: 'linear-gradient(135deg, #FEF08A 0%, #F59E0B 28%, #B45309 60%, #78350F 85%, #FDE047 100%)',
         }}
         title={isInteractive ? (canSpin ? 'Tap to Spin the Salon Wheel!' : `Next spin in ${remainingCooldownText}`) : 'SLOON'}
       >
-        <div className="w-full h-full rounded-full bg-gradient-to-b from-[#251711] via-[#160E0A] to-[#0D0705] border-[2px] border-amber-400/90 flex flex-col items-center justify-center p-2 relative overflow-hidden shadow-inner">
+        <div className="w-full h-full rounded-full bg-gradient-to-b from-[#241316] via-[#14080B] to-[#0A0305] border-[2.5px] border-amber-300/90 ring-1 ring-amber-600/60 flex flex-col items-center justify-center p-2 relative overflow-hidden shadow-inner">
           {/* Subtle gold specular beam across center badge */}
-          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-amber-300/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 pointer-events-none" />
+          <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-amber-200/15 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 pointer-events-none" />
 
-          {/* SLOON Official Brand Logo */}
-          <div className="flex items-center justify-center relative z-10 px-1.5 py-0.5">
+          {/* SLOON Official Brand Logo with Gold Drop Glow */}
+          <div className="flex items-center justify-center relative z-10 px-2 py-0.5">
             <img
-              src={logoSrc}
+              src={logoSrc || '/logo-white.png'}
               alt="SLOON"
-              className="h-6 sm:h-7 w-auto max-w-[85px] object-contain drop-shadow-[0_2px_8px_rgba(245,158,11,0.6)] select-none pointer-events-none"
+              className="h-6 sm:h-7.5 w-auto max-w-[92px] object-contain drop-shadow-[0_2px_10px_rgba(245,158,11,0.65)] select-none pointer-events-none filter brightness-110"
               onError={(e) => {
                 const target = e.currentTarget as HTMLImageElement;
-                if (!target.src.includes('logo.png')) {
+                if (!target.src.includes('logo-white.png')) {
+                  target.src = '/logo-white.png';
+                } else if (!target.src.includes('logo.png')) {
                   target.src = '/logo.png';
                 } else {
                   target.style.display = 'none';
@@ -279,12 +286,13 @@ export const SalonToolsWheel: React.FC<SalonToolsWheelProps> = ({
           {/* Interactive Status Indicator or Custom Subtitle below logo */}
           <div className="relative z-10 mt-1 flex items-center justify-center">
             {badgeSubtitle ? (
-              <div className="flex items-center gap-1 text-[7.5px] sm:text-[8px] font-black uppercase tracking-widest text-[#E05326] bg-[#FFF3EC] px-2 py-0.5 rounded-full border border-[#FED7CC]">
+              <div className="flex items-center gap-1 text-[7.5px] sm:text-[8px] font-black uppercase tracking-widest text-amber-200 bg-amber-950/80 px-2.5 py-0.5 rounded-full border border-amber-500/50 shadow-xs">
                 <span>{badgeSubtitle}</span>
               </div>
             ) : !isInteractive ? (
               <div className="flex items-center gap-1 text-[7.5px] sm:text-[8px] font-black uppercase tracking-widest text-amber-300/90">
-                <span>EXCLUSIVE</span>
+                <Sparkles className="w-2 h-2 text-amber-400 fill-amber-400" />
+                <span>OFFICIAL</span>
               </div>
             ) : !canSpin ? (
               <div className="flex items-center gap-1 text-[7.5px] sm:text-[8px] font-black uppercase tracking-wider text-stone-400 bg-stone-900/80 px-2 py-0.5 rounded-full border border-stone-700/60">
