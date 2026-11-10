@@ -17,6 +17,9 @@ const AdminApp = lazy(() =>
 const ExploreScreen = lazy(() =>
   import('./components/customer/ExploreScreen').then((m) => ({ default: m.ExploreScreen })),
 );
+const MapScreen = lazy(() =>
+  import('./components/customer/MapScreen').then((m) => ({ default: m.MapScreen })),
+);
 const SalonDetailScreen = lazy(() =>
   import('./components/customer/SalonDetailScreen').then((m) => ({ default: m.SalonDetailScreen })),
 );
@@ -52,6 +55,7 @@ const MainContent: React.FC = () => {
   const {
     portal,
     customerTab,
+    setCustomerTab,
     selectedSalonForDetail,
     setSelectedSalonForDetail,
     genderFilter,
@@ -125,7 +129,11 @@ const MainContent: React.FC = () => {
           </Suspense>
         );
       case 'map':
-        return <HomeScreen />;
+        return (
+          <Suspense fallback={<ScreenFallback />}>
+            <MapScreen onClose={() => setCustomerTab('explore')} />
+          </Suspense>
+        );
       case 'favourites':
         return (
           <Suspense fallback={<ScreenFallback />}>

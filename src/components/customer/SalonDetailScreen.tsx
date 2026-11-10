@@ -54,6 +54,7 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
     userLocation
   } = useSalon();
 
+  const [isMapFullscreen, setIsMapFullscreen] = useState(false);
   const [activeTab, setActiveTab] = useState<'services' | 'staff' | 'reviews' | 'gallery'>('services');
   const [selectedServiceCategory, setSelectedServiceCategory] = useState<string>('All');
   const [activeGalleryIndex, setActiveGalleryIndex] = useState(0);
@@ -418,22 +419,35 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
 
       {/* Interactive Mapbox Studio Location */}
       <section className="bg-white border border-[#E8E2D8] rounded-3xl p-4 sm:p-5 space-y-3 shadow-xs">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between flex-wrap gap-2">
           <div className="flex items-center gap-2">
             <MapPin className="w-4 h-4 text-[#FF6422]" />
             <h3 className="text-sm font-bold text-stone-900">
               Studio Location & Map
             </h3>
           </div>
-          <span className="text-[11px] text-stone-500 font-medium">
-            {salon.distanceKm} km away • {salon.locality}
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] text-stone-500 font-medium hidden sm:inline">
+              {salon.distanceKm} km away • {salon.locality}
+            </span>
+            <button
+              type="button"
+              onClick={() => setIsMapFullscreen(true)}
+              className="px-3 py-1.5 rounded-full bg-stone-900 hover:bg-black text-white text-xs font-bold transition-all shadow-xs cursor-pointer flex items-center gap-1.5"
+              title="Open Fullscreen Interactive Map (Pinch to Zoom)"
+            >
+              <Maximize2 className="w-3.5 h-3.5 text-orange-400" />
+              <span>Full Screen Map ⛶</span>
+            </button>
+          </div>
         </div>
 
         <SalonMapboxView
           salon={salon}
           userLocation={userLocation}
           height="280px"
+          isFullscreen={isMapFullscreen}
+          onToggleFullscreen={() => setIsMapFullscreen((prev) => !prev)}
         />
       </section>
 

@@ -1,5 +1,20 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { MapPin, Navigation, Plus, Minus, Crosshair, Layers, ExternalLink, Check, Copy, Car } from 'lucide-react';
+import {
+  MapPin,
+  Navigation,
+  Plus,
+  Minus,
+  Crosshair,
+  Layers,
+  ExternalLink,
+  Check,
+  Copy,
+  Car,
+  Maximize2,
+  Minimize2,
+  X,
+  Compass,
+} from 'lucide-react';
 import { loadMapboxScript, isMapboxLoaded, getMapboxToken, MAPBOX_DARK_STYLE, MAPBOX_SATELLITE_STYLE } from './mapbox';
 import { loadLeafletScript, redirectToGoogleMaps, openGoogleMapsLocation } from './googleMaps';
 import { fetchDrivingRoute, DrivingRouteResult } from './routing';
@@ -23,6 +38,9 @@ export interface SalonMapboxViewProps {
   } | null;
   className?: string;
   height?: string;
+  initialFullscreen?: boolean;
+  isFullscreen?: boolean;
+  onToggleFullscreen?: () => void;
 }
 
 export const SalonMapboxView: React.FC<SalonMapboxViewProps> = ({
@@ -30,12 +48,17 @@ export const SalonMapboxView: React.FC<SalonMapboxViewProps> = ({
   userLocation,
   className = '',
   height = '320px',
+  initialFullscreen = false,
+  isFullscreen: propIsFullscreen,
+  onToggleFullscreen,
 }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const [mapEngine, setMapEngine] = useState<'mapbox' | 'leaflet' | 'loading'>('loading');
   const [mapStyle, setMapStyle] = useState<'dark' | 'satellite'>('dark');
   const [copiedAddress, setCopiedAddress] = useState(false);
   const [drivingRoute, setDrivingRoute] = useState<DrivingRouteResult | null>(null);
+  const [internalFullscreen, setInternalFullscreen] = useState(initialFullscreen);
+  const isFullscreen = propIsFullscreen !== undefined ? propIsFullscreen : internalFullscreen;
 
   const mapboxInstanceRef = useRef<any>(null);
   const mapboxMarkerRef = useRef<any>(null);
@@ -47,57 +70,87 @@ export const SalonMapboxView: React.FC<SalonMapboxViewProps> = ({
   const lat = Number.isFinite(Number(rawLat)) ? Number(rawLat) : 12.9716;
   const lng = Number.isFinite(Number(rawLng)) ? Number(rawLng) : 77.5946;
 
+  // Toggle Full Screen View & Invalidate Map Sizes
+  const toggleFullscreen = () => {
+    if (onToggleFullscreen) {
+      onToggleFullscreen();
+    } else {
+      setInternalFullscreen((prev) => !prev);
+    }
+    setTimeout(() => {
+      if (leafletInstanceRef.current) {
+        try { leafletInstanceRef.current.invalidateSize(); } catch {}
+      }
+      if (mapboxInstanceRef.current) {
+        try { mapboxInstanceRef.current.resize(); } catch {}
+      }
+    }, 100);
+    setTimeout(() => {
+      if (leafletInstanceRef.current) {
+        try { leafletInstanceRef.current.invalidateSize(); } catch {}
+      }
+      if (mapboxInstanceRef.current) {
+        try { mapboxInstanceRef.current.resize(); } catch {}
+      }
+    }, 350);
+  };
+
+  // Close on Escape when in fullscreen
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isFullscreen) {
+        toggleFullscreen();
+      }
+    };
+    if (isFullscreen) {
+      window.addEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = 'hidden';
+    }
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = 'auto';
+    };
+  }, [isFullscreen]);
+
   // Fetch real road route (like Google Maps) when user location is available
   useEffect(() => {
     let isCancelled = false;
-    if (userLocation && Number.isFinite(userLocation.lat) && Number.isFinite(userLocation.lng)) {
-      fetchDrivingRoute(
-        { lat: userLocation.lat, lng: userLocation.lng },
-        { lat, lng }
-      ).then((route) => {
+    if (userLocation && salon.coordinates) {
+      fetchDrivingRoute(userLocation, salon.coordinates).then((result) => {
         if (!isCancelled) {
-          setDrivingRoute(route);
+          setDrivingRoute(result);
         }
       });
     } else {
       setDrivingRoute(null);
     }
-
     return () => {
       isCancelled = true;
     };
-  }, [userLocation?.lat, userLocation?.lng, lat, lng]);
+  }, [userLocation?.lat, userLocation?.lng, salon.coordinates?.lat, salon.coordinates?.lng]);
 
+  // Load Map Engine (Mapbox if token is configured; otherwise fallback to Leaflet)
   useEffect(() => {
     let isMounted = true;
     const token = getMapboxToken();
-    const hasValidToken = token && !token.includes('dummy_fallback');
 
-    if (!hasValidToken) {
-      // Leaflet is the primary high-speed engine when mapbox token is absent
+    if (!token) {
       loadLeafletScript().then((leafletSuccess) => {
-        if (!isMounted) return;
-        if (leafletSuccess || Boolean((window as any).L)) {
-          setMapEngine('leaflet');
+        if (isMounted) {
+          setMapEngine(leafletSuccess ? 'leaflet' : 'loading');
         }
       });
-      return () => {
-        isMounted = false;
-      };
+      return;
     }
 
-    // First attempt to load Mapbox GL JS if token is configured
-    loadMapboxScript().then((mapboxSuccess) => {
+    loadMapboxScript().then((success) => {
       if (!isMounted) return;
-
-      if (mapboxSuccess && isMapboxLoaded()) {
+      if (success && (window as any).mapboxgl) {
         setMapEngine('mapbox');
       } else {
-        // Fallback to high-contrast Leaflet tiles
         loadLeafletScript().then((leafletSuccess) => {
-          if (!isMounted) return;
-          if (leafletSuccess || Boolean((window as any).L)) {
-            setMapEngine('leaflet');
+          if (isMounted) {
+            setMapEngine(leafletSuccess ? 'leaflet' : 'loading');
           }
         });
       }
@@ -108,7 +161,7 @@ export const SalonMapboxView: React.FC<SalonMapboxViewProps> = ({
     };
   }, []);
 
-  // Mount Mapbox GL Map
+  // Mount Mapbox GL
   useEffect(() => {
     if (mapEngine !== 'mapbox' || !mapContainerRef.current) return;
     const mapboxgl = (window as any).mapboxgl;
@@ -121,11 +174,22 @@ export const SalonMapboxView: React.FC<SalonMapboxViewProps> = ({
         const map = new mapboxgl.Map({
           container: mapContainerRef.current,
           style: mapStyle === 'dark' ? MAPBOX_DARK_STYLE : MAPBOX_SATELLITE_STYLE,
-          center: [lng, lat], // Mapbox uses [lng, lat]
+          center: [lng, lat],
           zoom: 15,
-          pitch: 30, // 3D perspective
+          pitch: 30,
           attributionControl: false,
+          touchZoomRotate: true,
+          dragPan: true,
+          scrollZoom: true,
+          doubleClickZoom: true,
+          touchPitch: false,
         });
+
+        // Ensure pinch-to-zoom is active
+        try {
+          if (map.touchZoomRotate) map.touchZoomRotate.enable();
+          if (map.dragPan) map.dragPan.enable();
+        } catch {}
 
         // Add 3D Salon Custom Marker
         const el = document.createElement('div');
@@ -161,7 +225,6 @@ export const SalonMapboxView: React.FC<SalonMapboxViewProps> = ({
         mapboxInstanceRef.current.setStyle(mapStyle === 'dark' ? MAPBOX_DARK_STYLE : MAPBOX_SATELLITE_STYLE);
       }
     } catch {
-      // Fallback to Leaflet if Mapbox initialization encounters issues
       setMapEngine('leaflet');
     }
 
@@ -186,7 +249,20 @@ export const SalonMapboxView: React.FC<SalonMapboxViewProps> = ({
         zoom: 15,
         zoomControl: false,
         attributionControl: false,
+        touchZoom: true,
+        dragging: true,
+        tap: false, // Critical for iOS and Android two-finger pinch zoom
+        scrollWheelZoom: true,
+        doubleClickZoom: true,
+        boxZoom: true,
+        bounceAtZoomLimits: false,
       });
+
+      // Explicitly enable touch zoom & dragging for all finger gestures
+      try {
+        if (map.touchZoom) map.touchZoom.enable();
+        if (map.dragging) map.dragging.enable();
+      } catch {}
 
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
@@ -219,29 +295,19 @@ export const SalonMapboxView: React.FC<SalonMapboxViewProps> = ({
 
       leafletInstanceRef.current = map;
 
-      const triggerResize = () => {
+      setTimeout(() => {
         try { map.invalidateSize(); } catch (_) {}
-      };
-      setTimeout(triggerResize, 60);
-      setTimeout(triggerResize, 200);
-      setTimeout(triggerResize, 500);
-
-      if (typeof ResizeObserver !== 'undefined' && mapContainerRef.current) {
-        const ro = new ResizeObserver(() => triggerResize());
-        ro.observe(mapContainerRef.current);
-        (map as any)._customResizeObserver = ro;
-      }
-    } else {
-      leafletInstanceRef.current.setView([lat, lng], 15);
+      }, 100);
+      setTimeout(() => {
+        try { map.invalidateSize(); } catch (_) {}
+      }, 350);
     }
 
     return () => {
       if (leafletInstanceRef.current) {
-        if ((leafletInstanceRef.current as any)._customResizeObserver) {
-          (leafletInstanceRef.current as any)._customResizeObserver.disconnect();
-        }
         leafletInstanceRef.current.remove();
         leafletInstanceRef.current = null;
+        leafletRouteLayerRef.current = null;
       }
     };
   }, [mapEngine, lat, lng]);
@@ -249,182 +315,166 @@ export const SalonMapboxView: React.FC<SalonMapboxViewProps> = ({
   // Draw real driving road route on Leaflet map
   useEffect(() => {
     if (mapEngine !== 'leaflet' || !leafletInstanceRef.current) return;
+    const map = leafletInstanceRef.current;
     const L = (window as any).L;
     if (!L) return;
 
-    const map = leafletInstanceRef.current;
-
-    // Remove previous route layer
     if (leafletRouteLayerRef.current) {
       map.removeLayer(leafletRouteLayerRef.current);
       leafletRouteLayerRef.current = null;
     }
 
-    if (userLocation && drivingRoute && drivingRoute.coordinates.length > 0) {
-      const routeGroup = L.layerGroup();
-      const isWalking = drivingRoute.travelMode === 'walking';
+    if (!drivingRoute || !userLocation) return;
 
-      if (drivingRoute.isRoadRoute && drivingRoute.roadCoordinates.length > 0) {
-        if (isWalking) {
-          // Walking Mode (Google Maps style as in Image 2)
-          // 1. Dotted walking connector from user/building to pathway (if applicable)
-          if (drivingRoute.userDisplacement && drivingRoute.userDisplacement.length > 1) {
-            L.polyline(drivingRoute.userDisplacement, {
-              color: '#6366F1',
-              weight: 4,
-              dashArray: '2, 8',
-              opacity: 0.85,
-              lineCap: 'round',
-            }).addTo(routeGroup);
-          }
+    const layerGroup = L.layerGroup().addTo(map);
 
-          // 2. Main walking route along campus walkway / footpath (crisp purple circular dots)
-          L.polyline(drivingRoute.roadCoordinates, {
-            color: '#4338CA',
-            weight: 6,
-            dashArray: '2, 10',
-            opacity: 0.95,
-            lineCap: 'round',
-          }).addTo(routeGroup);
+    if (drivingRoute.hasUserDisplacement && drivingRoute.userDisplacement && drivingRoute.userDisplacement.length >= 2) {
+      L.polyline(drivingRoute.userDisplacement, {
+        color: '#3b82f6',
+        weight: 4,
+        dashArray: '6, 6',
+        opacity: 0.85,
+      }).addTo(layerGroup);
+    }
+    if (drivingRoute.hasShopDisplacement && drivingRoute.shopDisplacement && drivingRoute.shopDisplacement.length >= 2) {
+      L.polyline(drivingRoute.shopDisplacement, {
+        color: '#FF6422',
+        weight: 4,
+        dashArray: '6, 6',
+        opacity: 0.85,
+      }).addTo(layerGroup);
+    }
 
-          // 3. Dotted walking connector from pathway to destination building (if applicable)
-          if (drivingRoute.shopDisplacement && drivingRoute.shopDisplacement.length > 1) {
-            L.polyline(drivingRoute.shopDisplacement, {
-              color: '#6366F1',
-              weight: 4,
-              dashArray: '2, 8',
-              opacity: 0.85,
-              lineCap: 'round',
-            }).addTo(routeGroup);
-          }
-        } else {
-          // Driving Mode (Via Road)
-          // 1. Off-road displacement from user -> road entrance
-          if (drivingRoute.userDisplacement && drivingRoute.userDisplacement.length > 1) {
-            L.polyline(drivingRoute.userDisplacement, {
-              color: '#FF6422',
-              weight: 3.5,
-              dashArray: '5, 7',
-              opacity: 0.9,
-              lineCap: 'round',
-            }).addTo(routeGroup);
-          }
+    const activePoints = (drivingRoute.roadCoordinates && drivingRoute.roadCoordinates.length >= 2)
+      ? drivingRoute.roadCoordinates
+      : drivingRoute.coordinates;
 
-          // 2. Road route along actual streets (white casing + solid orange route)
-          L.polyline(drivingRoute.roadCoordinates, {
-            color: '#FFFFFF',
-            weight: 7,
-            opacity: 0.95,
-            lineCap: 'round',
-            lineJoin: 'round',
-          }).addTo(routeGroup);
+    if (activePoints && activePoints.length >= 2) {
+      L.polyline(activePoints, {
+        color: '#ffffff',
+        weight: 7,
+        opacity: 0.9,
+      }).addTo(layerGroup);
 
-          L.polyline(drivingRoute.roadCoordinates, {
-            color: '#FF6422',
-            weight: 4.5,
-            opacity: 0.95,
-            lineCap: 'round',
-            lineJoin: 'round',
-          }).addTo(routeGroup);
+      L.polyline(activePoints, {
+        color: '#FF6422',
+        weight: 4.5,
+        opacity: 1.0,
+      }).addTo(layerGroup);
+    }
 
-          // 3. Off-road displacement from road exit -> shop pin
-          if (drivingRoute.shopDisplacement && drivingRoute.shopDisplacement.length > 1) {
-            L.polyline(drivingRoute.shopDisplacement, {
-              color: '#FF6422',
-              weight: 3.5,
-              dashArray: '5, 7',
-              opacity: 0.9,
-              lineCap: 'round',
-            }).addTo(routeGroup);
-          }
-        }
-      } else {
-        // Direct displacement fallback when no road/path exists on map
-        L.polyline(drivingRoute.coordinates, {
-          color: isWalking ? '#4338CA' : '#FF6422',
-          weight: 4,
-          dashArray: '3, 8',
-          opacity: 0.95,
-          lineCap: 'round',
-        }).addTo(routeGroup);
-      }
+    leafletRouteLayerRef.current = layerGroup;
 
-      // Route midpoint distance/duration badge matching Google Maps
-      const midIdx = Math.floor(drivingRoute.coordinates.length / 2);
-      const [midLat, midLng] = drivingRoute.coordinates[midIdx] || [(userLocation.lat + lat) / 2, (userLocation.lng + lng) / 2];
+    try {
+      const bounds = L.latLngBounds([
+        [userLocation.lat, userLocation.lng],
+        [lat, lng],
+      ]);
+      map.fitBounds(bounds, { padding: [60, 60], maxZoom: 16 });
+    } catch (_) {}
+  }, [drivingRoute, mapEngine, userLocation, lat, lng]);
 
-      const midHtml = isWalking ? `
-        <div style="
-          display: inline-flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          background: #1D4ED8;
-          color: #FFFFFF;
-          padding: 3px 8px;
-          border-radius: 6px;
-          border: 1.5px solid #FFFFFF;
-          box-shadow: 0 4px 14px rgba(29, 78, 216, 0.45);
-          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-          white-space: nowrap;
-          pointer-events: none;
-          transform: translate(-50%, -50%);
-        ">
-          <div style="display: flex; align-items: center; gap: 3px; font-size: 11px; font-weight: 800; line-height: 1.2;">
-            <span>🚶</span>
-            <span>${drivingRoute.durationFormatted}</span>
-          </div>
-          <div style="font-size: 9px; font-weight: 700; opacity: 0.95; line-height: 1.2;">
-            ${drivingRoute.distanceFormatted}
-          </div>
-        </div>
-      ` : `
-        <div style="
-          display: inline-flex;
-          align-items: center;
-          gap: 4px;
-          background: #18181B;
-          color: #FFFFFF;
-          padding: 2.5px 8px;
-          border-radius: 9999px;
-          border: 1.5px solid #FFFFFF;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-          font-size: 10px;
-          font-weight: 800;
-          white-space: nowrap;
-          pointer-events: none;
-          transform: translate(-50%, -50%);
-        ">
-          <span style="color: #FF6422;">🚗</span>
-          <span>${drivingRoute.distanceFormatted}</span>
-          <span style="color: #A1A1AA; font-size: 9px;">(${drivingRoute.durationFormatted})</span>
-        </div>
-      `;
+  // Draw real driving road route on Mapbox map
+  useEffect(() => {
+    if (mapEngine !== 'mapbox' || !mapboxInstanceRef.current) return;
+    const map = mapboxInstanceRef.current;
 
-      const midIcon = L.divIcon({
-        className: 'route-dist-pill',
-        html: midHtml,
-        iconSize: isWalking ? [70, 32] : [110, 24],
-        iconAnchor: isWalking ? [35, 16] : [55, 12],
+    const applyRoute = () => {
+      if (!map.isStyleLoaded()) return;
+
+      ['user-displacement', 'user-displacement-case', 'shop-displacement', 'shop-displacement-case', 'road-route', 'road-route-case'].forEach((id) => {
+        if (map.getLayer(id)) map.removeLayer(id);
+        if (map.getSource(id)) map.removeSource(id);
       });
 
-      L.marker([midLat, midLng], { icon: midIcon, interactive: false }).addTo(routeGroup);
+      if (!drivingRoute || !userLocation) return;
 
-      routeGroup.addTo(map);
-      leafletRouteLayerRef.current = routeGroup;
+      const toLngLat = (pts: [number, number][]) => pts.map(([pLat, pLng]) => [pLng, pLat]);
 
-      // Fit map bounds to show complete driving route
-      try {
-        const bounds = L.latLngBounds([
-          [userLocation.lat, userLocation.lng],
-          [lat, lng],
-          ...drivingRoute.coordinates.filter((_, idx) => idx % 5 === 0),
-        ]);
-        map.fitBounds(bounds, { padding: [40, 40], maxZoom: 16 });
-      } catch (_) {}
+      if (drivingRoute.hasUserDisplacement && drivingRoute.userDisplacement && drivingRoute.userDisplacement.length >= 2) {
+        map.addSource('user-displacement', {
+          type: 'geojson',
+          data: {
+            type: 'Feature',
+            properties: {},
+            geometry: { type: 'LineString', coordinates: toLngLat(drivingRoute.userDisplacement) },
+          },
+        });
+        map.addLayer({
+          id: 'user-displacement',
+          type: 'line',
+          source: 'user-displacement',
+          layout: { 'line-join': 'round', 'line-cap': 'round' },
+          paint: { 'line-color': '#3b82f6', 'line-width': 3.5, 'line-dasharray': [2, 2] },
+        });
+      }
+
+      if (drivingRoute.hasShopDisplacement && drivingRoute.shopDisplacement && drivingRoute.shopDisplacement.length >= 2) {
+        map.addSource('shop-displacement', {
+          type: 'geojson',
+          data: {
+            type: 'Feature',
+            properties: {},
+            geometry: { type: 'LineString', coordinates: toLngLat(drivingRoute.shopDisplacement) },
+          },
+        });
+        map.addLayer({
+          id: 'shop-displacement',
+          type: 'line',
+          source: 'shop-displacement',
+          layout: { 'line-join': 'round', 'line-cap': 'round' },
+          paint: { 'line-color': '#FF6422', 'line-width': 3.5, 'line-dasharray': [2, 2] },
+        });
+      }
+
+      const activeRoadPts = (drivingRoute.roadCoordinates && drivingRoute.roadCoordinates.length >= 2)
+        ? drivingRoute.roadCoordinates
+        : drivingRoute.coordinates;
+
+      if (activeRoadPts && activeRoadPts.length >= 2) {
+        const coords = toLngLat(activeRoadPts);
+
+        map.addSource('road-route-case', {
+          type: 'geojson',
+          data: { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: coords } },
+        });
+        map.addLayer({
+          id: 'road-route-case',
+          type: 'line',
+          source: 'road-route-case',
+          layout: { 'line-join': 'round', 'line-cap': 'round' },
+          paint: { 'line-color': '#ffffff', 'line-width': 6.5, 'line-opacity': 0.9 },
+        });
+
+        map.addSource('road-route', {
+          type: 'geojson',
+          data: { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: coords } },
+        });
+        map.addLayer({
+          id: 'road-route',
+          type: 'line',
+          source: 'road-route',
+          layout: { 'line-join': 'round', 'line-cap': 'round' },
+          paint: { 'line-color': '#FF6422', 'line-width': 4.5 },
+        });
+
+        const mapboxgl = (window as any).mapboxgl;
+        if (mapboxgl) {
+          const bounds = new mapboxgl.LngLatBounds();
+          bounds.extend([userLocation.lng, userLocation.lat]);
+          bounds.extend([lng, lat]);
+          map.fitBounds(bounds, { padding: 60, maxZoom: 16 });
+        }
+      }
+    };
+
+    if (map.isStyleLoaded()) {
+      applyRoute();
+    } else {
+      map.once('load', applyRoute);
+      map.once('styledata', applyRoute);
     }
-  }, [mapEngine, userLocation, drivingRoute, lat, lng]);
+  }, [drivingRoute, mapEngine, userLocation, lat, lng]);
 
   const handleZoom = (delta: number) => {
     if (mapEngine === 'mapbox' && mapboxInstanceRef.current) {
@@ -444,16 +494,27 @@ export const SalonMapboxView: React.FC<SalonMapboxViewProps> = ({
     }
   };
 
-  const handleCopyAddress = () => {
-    navigator.clipboard.writeText(`${salon.name}, ${salon.address}, ${salon.locality}`);
-    setCopiedAddress(true);
-    setTimeout(() => setCopiedAddress(false), 2000);
+  const handleRecenterUser = () => {
+    if (!userLocation) return;
+    if (mapEngine === 'mapbox' && mapboxInstanceRef.current) {
+      mapboxInstanceRef.current.flyTo({ center: [userLocation.lng, userLocation.lat], zoom: 16, pitch: 30 });
+    } else if (mapEngine === 'leaflet' && leafletInstanceRef.current) {
+      leafletInstanceRef.current.setView([userLocation.lat, userLocation.lng], 16);
+    }
   };
 
   return (
     <div
-      className={`relative rounded-3xl overflow-hidden border border-[#E8E2D8] bg-[#FAF7F2] shadow-sm flex flex-col ${className}`}
-      style={{ width: '100%', height: height || '100%', minHeight: '300px' }}
+      className={`relative overflow-hidden bg-[#FAF7F2] flex flex-col transition-all ${
+        isFullscreen
+          ? 'fixed inset-0 z-[9999] w-screen h-[100dvh] rounded-none border-0 shadow-none'
+          : `rounded-3xl border border-[#E8E2D8] shadow-sm ${className}`
+      }`}
+      style={{
+        width: '100%',
+        height: isFullscreen ? '100dvh' : height || '100%',
+        minHeight: isFullscreen ? '100dvh' : '300px',
+      }}
     >
       <style>{`
         .osm-dark-tiles {
@@ -463,10 +524,28 @@ export const SalonMapboxView: React.FC<SalonMapboxViewProps> = ({
           background-color: #FAF7F2 !important;
           width: 100% !important;
           height: 100% !important;
+          touch-action: none !important;
+          user-select: none !important;
+          -webkit-user-select: none !important;
+        }
+        .leaflet-pane, .leaflet-tile-pane, .leaflet-layer, .leaflet-marker-pane {
+          touch-action: none !important;
+        }
+        .mapboxgl-canvas-container, .mapboxgl-canvas {
+          touch-action: none !important;
         }
       `}</style>
-      {/* Map Canvas */}
-      <div ref={mapContainerRef} className="w-full flex-1 min-h-[300px]" style={{ width: '100%', height: '100%', minHeight: '300px' }} />
+
+      {/* Map Canvas with direct touch-action delegation */}
+      <div
+        ref={mapContainerRef}
+        className="w-full flex-1"
+        style={{
+          width: '100%',
+          height: '100%',
+          touchAction: 'none',
+        }}
+      />
 
       {/* Loading Indicator */}
       {mapEngine === 'loading' && (
@@ -477,12 +556,12 @@ export const SalonMapboxView: React.FC<SalonMapboxViewProps> = ({
       )}
 
       {/* Top Header Badge */}
-      <div className="absolute top-3 left-3 z-10 flex items-center gap-2">
-        <div className="px-3 py-1 rounded-xl bg-white/95 backdrop-blur-md border border-[#E2DDD5] text-[11px] font-bold text-stone-800 flex items-center gap-1.5 shadow-xs">
-          <span className="w-2 h-2 rounded-full bg-[#FF6422] animate-pulse"></span>
-          <span>{salon.name}</span>
+      <div className="absolute top-3 left-3 z-20 flex items-center gap-2 max-w-[85%] sm:max-w-none">
+        <div className="px-3 py-1.5 rounded-2xl bg-white/95 backdrop-blur-md border border-[#E2DDD5] text-xs font-bold text-stone-800 flex items-center gap-2 shadow-sm">
+          <span className="w-2.5 h-2.5 rounded-full bg-[#FF6422] animate-pulse shrink-0"></span>
+          <span className="truncate">{salon.name}</span>
           {drivingRoute && (
-            <span className="text-[#FF6422] font-black border-l border-stone-200 pl-1.5 flex items-center gap-1">
+            <span className="text-[#FF6422] font-black border-l border-stone-200 pl-2 hidden sm:flex items-center gap-1 shrink-0">
               <span>{drivingRoute.travelMode === 'walking' ? '🚶' : '🚗'}</span>
               <span>{drivingRoute.distanceFormatted} ({drivingRoute.durationFormatted})</span>
             </span>
@@ -493,56 +572,101 @@ export const SalonMapboxView: React.FC<SalonMapboxViewProps> = ({
           <button
             type="button"
             onClick={() => setMapStyle(mapStyle === 'dark' ? 'satellite' : 'dark')}
-            className="px-2.5 py-1 rounded-xl bg-white/90 backdrop-blur-md border border-[#E2DDD5] text-[10px] font-semibold text-stone-700 hover:text-stone-900 flex items-center gap-1 transition-colors shadow-xs"
+            className="px-2.5 py-1.5 rounded-2xl bg-white/95 backdrop-blur-md border border-[#E2DDD5] text-[11px] font-semibold text-stone-700 hover:text-stone-900 flex items-center gap-1 transition-colors shadow-xs cursor-pointer shrink-0"
             title="Toggle map style"
           >
-            <Layers className="w-3 h-3 text-[#FF6422]" />
+            <Layers className="w-3.5 h-3.5 text-[#FF6422]" />
             <span className="capitalize">{mapStyle === 'dark' ? 'Satellite' : 'Light'}</span>
           </button>
         )}
       </div>
 
-      {/* Top Right: Open in Navigation */}
-      <div className="absolute top-3 right-3 z-10 flex items-center gap-1.5">
+      {/* Top Right Controls: Directions & Fullscreen Toggle */}
+      <div className="absolute top-3 right-3 z-20 flex items-center gap-2">
         <button
           type="button"
           onClick={() => redirectToGoogleMaps(salon.coordinates, userLocation)}
-          className="px-3 py-1.5 rounded-xl bg-[#FF6422] hover:bg-orange-600 text-white font-extrabold text-[11px] flex items-center gap-1.5 shadow-md shadow-orange-500/20 transition-all active:scale-95"
+          className="px-3.5 py-1.5 rounded-2xl bg-[#FF6422] hover:bg-orange-600 text-white font-extrabold text-xs flex items-center gap-1.5 shadow-md shadow-orange-500/25 transition-all active:scale-95 cursor-pointer"
           title="Open turn-by-turn navigation in Google Maps"
         >
           <Navigation className="w-3.5 h-3.5 fill-white" />
-          <span>Directions ↗</span>
+          <span className="hidden sm:inline">Directions ↗</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={toggleFullscreen}
+          className="p-2 rounded-2xl bg-white/95 backdrop-blur-md border border-[#E2DDD5] text-stone-800 hover:text-stone-950 shadow-md transition-all active:scale-90 cursor-pointer"
+          title={isFullscreen ? 'Exit Full Screen' : 'Open Full Screen (Pinch to Zoom)'}
+        >
+          {isFullscreen ? (
+            <X className="w-4 h-4 text-stone-800" />
+          ) : (
+            <Maximize2 className="w-4 h-4 text-stone-800" />
+          )}
         </button>
       </div>
 
-      {/* Bottom Floating Control Buttons */}
-      <div className="absolute bottom-3 right-3 z-10 flex flex-col gap-1.5">
+      {/* Bottom Floating Control Buttons (Zoom, Recenter, Finger-zoom hint) */}
+      <div className="absolute bottom-4 right-4 z-20 flex flex-col gap-2">
+        {userLocation && (
+          <button
+            type="button"
+            onClick={handleRecenterUser}
+            className="w-9 h-9 rounded-2xl bg-white/95 backdrop-blur-md border border-[#E2DDD5] text-blue-600 hover:text-blue-700 flex items-center justify-center shadow-md transition-transform active:scale-90 cursor-pointer"
+            title="Center on my location"
+          >
+            <Navigation className="w-4 h-4 fill-blue-600 rotate-45" />
+          </button>
+        )}
+
         <button
           type="button"
           onClick={handleRecenter}
-          className="w-8 h-8 rounded-xl bg-white/90 backdrop-blur-md border border-[#E2DDD5] text-stone-700 hover:text-[#FF6422] flex items-center justify-center shadow-xs transition-transform active:scale-90 cursor-pointer"
+          className="w-9 h-9 rounded-2xl bg-white/95 backdrop-blur-md border border-[#E2DDD5] text-stone-700 hover:text-[#FF6422] flex items-center justify-center shadow-md transition-transform active:scale-90 cursor-pointer"
           title="Recenter on studio"
         >
           <Crosshair className="w-4 h-4" />
         </button>
 
-        <button
-          type="button"
-          onClick={() => handleZoom(1)}
-          className="w-8 h-8 rounded-xl bg-white/90 backdrop-blur-md border border-[#E2DDD5] text-stone-700 hover:text-stone-950 flex items-center justify-center shadow-xs transition-transform active:scale-90 cursor-pointer"
-          title="Zoom In"
-        >
-          <Plus className="w-4 h-4" />
-        </button>
+        <div className="flex flex-col bg-white/95 backdrop-blur-md border border-[#E2DDD5] rounded-2xl shadow-md overflow-hidden">
+          <button
+            type="button"
+            onClick={() => handleZoom(1)}
+            className="w-9 h-9 text-stone-700 hover:text-stone-950 hover:bg-stone-50 flex items-center justify-center transition-colors active:scale-90 cursor-pointer border-b border-[#E2DDD5]"
+            title="Zoom In (or pinch fingers on screen)"
+          >
+            <Plus className="w-4 h-4" />
+          </button>
 
-        <button
-          type="button"
-          onClick={() => handleZoom(-1)}
-          className="w-8 h-8 rounded-xl bg-white/90 backdrop-blur-md border border-[#E2DDD5] text-stone-700 hover:text-stone-950 flex items-center justify-center shadow-xs transition-transform active:scale-90 cursor-pointer"
-          title="Zoom Out"
-        >
-          <Minus className="w-4 h-4" />
-        </button>
+          <button
+            type="button"
+            onClick={() => handleZoom(-1)}
+            className="w-9 h-9 text-stone-700 hover:text-stone-950 hover:bg-stone-50 flex items-center justify-center transition-colors active:scale-90 cursor-pointer"
+            title="Zoom Out (or pinch fingers on screen)"
+          >
+            <Minus className="w-4 h-4" />
+          </button>
+        </div>
+
+        {!isFullscreen && (
+          <button
+            type="button"
+            onClick={toggleFullscreen}
+            className="w-9 h-9 rounded-2xl bg-[#FF6422] hover:bg-orange-600 text-white flex items-center justify-center shadow-md shadow-orange-500/25 transition-transform active:scale-90 cursor-pointer"
+            title="Open Fullscreen Map"
+          >
+            <Maximize2 className="w-4 h-4" />
+          </button>
+        )}
+      </div>
+
+      {/* Floating Touch / Pinch Hint for Mobile */}
+      <div className="absolute bottom-4 left-4 z-20 pointer-events-none">
+        <div className="px-3 py-1.5 rounded-xl bg-black/75 backdrop-blur-md text-[11px] font-bold text-white border border-white/10 shadow-lg flex items-center gap-1.5">
+          <span>🤌</span>
+          <span>Pinch with two fingers to zoom in & out</span>
+        </div>
       </div>
     </div>
   );

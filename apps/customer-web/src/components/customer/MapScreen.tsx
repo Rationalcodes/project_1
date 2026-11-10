@@ -46,7 +46,7 @@ export interface MapScreenProps {
   isFullScreen?: boolean;
 }
 
-export const MapScreen: React.FC<MapScreenProps> = ({ onClose, isFullScreen = false }) => {
+export const MapScreen: React.FC<MapScreenProps> = ({ onClose, isFullScreen = true }) => {
   const {
     salons,
     userLocation,
@@ -54,7 +54,16 @@ export const MapScreen: React.FC<MapScreenProps> = ({ onClose, isFullScreen = fa
     requestDeviceLocation,
     triggerNotification,
     genderFilter,
+    setCustomerTab,
   } = useCustomer();
+
+  const handleClose = () => {
+    if (onClose) {
+      onClose();
+    } else {
+      setCustomerTab('explore');
+    }
+  };
 
   const isWomen = genderFilter === 'women';
   const primaryHex = isWomen ? '#F47B70' : '#FF6422';
@@ -79,10 +88,10 @@ export const MapScreen: React.FC<MapScreenProps> = ({ onClose, isFullScreen = fa
 
   // Escape key handler for full screen
   useEffect(() => {
-    if (!isFullScreen || !onClose) return;
+    if (!isFullScreen) return;
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        onClose();
+        handleClose();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -510,7 +519,19 @@ export const MapScreen: React.FC<MapScreenProps> = ({ onClose, isFullScreen = fa
         zoom: 14,
         zoomControl: false,
         attributionControl: false,
+        touchZoom: true,
+        dragging: true,
+        tap: false,
+        scrollWheelZoom: true,
+        doubleClickZoom: true,
+        boxZoom: true,
+        bounceAtZoomLimits: false,
       });
+
+      try {
+        if (map.touchZoom) map.touchZoom.enable();
+        if (map.dragging) map.dragging.enable();
+      } catch {}
 
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
@@ -898,28 +919,32 @@ export const MapScreen: React.FC<MapScreenProps> = ({ onClose, isFullScreen = fa
           }
           .leaflet-container {
             background-color: ${isWomen ? '#FFF8F5' : '#FAF7F2'} !important;
+            touch-action: none !important;
+            user-select: none !important;
+            -webkit-user-select: none !important;
+          }
+          .leaflet-pane, .leaflet-tile-pane, .leaflet-layer, .leaflet-marker-pane {
+            touch-action: none !important;
           }
         `}</style>
 
         {/* 1. True Full Screen Map Viewport taking 100% */}
         <div className="relative w-full h-full flex-1">
-          <div ref={mapContainerRef} className="w-full h-full absolute inset-0" style={{ zIndex: 1 }} />
+          <div ref={mapContainerRef} className="w-full h-full absolute inset-0 select-none" style={{ zIndex: 1, touchAction: 'none' }} />
 
           {/* Top Floating Controls Bar */}
           <div className="absolute top-3 left-3 right-3 z-30 flex items-center justify-between gap-2 pointer-events-none">
             {/* Left: Back to List View Button + Zoom Out & Zoom In Controls */}
             <div className="pointer-events-auto flex items-center gap-1.5 shrink-0">
-              {onClose && (
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-2xl bg-white/95 backdrop-blur-md border border-stone-200 shadow-md text-xs font-black text-stone-900 hover:bg-white active:scale-95 transition-all cursor-pointer"
-                  title="Return to List View"
-                >
-                  <ArrowLeft className="w-4 h-4 text-stone-700" />
-                  <span>List View</span>
-                </button>
-              )}
+              <button
+                type="button"
+                onClick={handleClose}
+                className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-2xl bg-white/95 backdrop-blur-md border border-stone-200 shadow-md text-xs font-black text-stone-900 hover:bg-white active:scale-95 transition-all cursor-pointer"
+                title="Return to List View"
+              >
+                <ArrowLeft className="w-4 h-4 text-stone-700" />
+                <span>List View</span>
+              </button>
 
               {/* Zoom Out & Zoom In Buttons beside List View */}
               <div className="flex items-center bg-white/95 backdrop-blur-md border border-stone-200 rounded-2xl shadow-md overflow-hidden p-0.5">
@@ -1130,6 +1155,14 @@ export const MapScreen: React.FC<MapScreenProps> = ({ onClose, isFullScreen = fa
               >
                 <Minus className="w-4 h-4" />
               </button>
+            </div>
+          </div>
+
+          {/* Floating Pinch-To-Zoom Touch Indicator for Mobile */}
+          <div className="absolute bottom-28 left-3.5 z-20 pointer-events-none">
+            <div className="px-3 py-1.5 rounded-2xl bg-black/80 backdrop-blur-md text-[11px] font-bold text-white border border-white/10 shadow-xl flex items-center gap-1.5">
+              <span>🤌</span>
+              <span>Pinch with two fingers to zoom in & out</span>
             </div>
           </div>
 

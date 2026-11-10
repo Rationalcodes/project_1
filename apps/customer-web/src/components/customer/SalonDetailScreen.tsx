@@ -119,6 +119,7 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
   const [showLocationRequiredPopup, setShowLocationRequiredPopup] = useState(false);
 
   // Gallery & media state
+  const [isMapFullscreen, setIsMapFullscreen] = useState(false);
   const [selectedServiceCategory, setSelectedServiceCategory] = useState<string>('All');
   const [activeGalleryIndex, setActiveGalleryIndex] = useState(0);
   const [showVideoInHero, setShowVideoInHero] = useState(true);
@@ -1299,14 +1300,12 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
-                    onClick={() => {
-                      setSelectedSalonForDetail(null);
-                      setCustomerTab('map');
-                    }}
-                    className="px-3.5 py-1.5 rounded-full bg-stone-100 hover:bg-stone-200 text-stone-800 text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5"
+                    onClick={() => setIsMapFullscreen(true)}
+                    className="px-3.5 py-1.5 rounded-full bg-stone-900 hover:bg-black text-white text-xs font-bold transition-all shadow-xs cursor-pointer flex items-center gap-1.5"
+                    title="Open Fullscreen Interactive Map (Pinch to Zoom)"
                   >
-                    <MapIcon className="w-3.5 h-3.5 text-[#C85322]" />
-                    <span>Explore Map</span>
+                    <Maximize2 className="w-3.5 h-3.5 text-orange-400" />
+                    <span>Full Screen Map ⛶</span>
                   </button>
 
                   <button
@@ -1341,6 +1340,8 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
                   userLocation={userLocation}
                   height="100%"
                   className="w-full h-full"
+                  isFullscreen={isMapFullscreen}
+                  onToggleFullscreen={() => setIsMapFullscreen((prev) => !prev)}
                 />
               </div>
 

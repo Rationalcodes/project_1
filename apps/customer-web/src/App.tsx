@@ -48,6 +48,7 @@ const ScreenFallback = () => (
 const CustomerMainContent: React.FC = () => {
   const {
     customerTab,
+    setCustomerTab,
     selectedSalonForDetail,
     setSelectedSalonForDetail,
     genderFilter,
@@ -99,7 +100,7 @@ const CustomerMainContent: React.FC = () => {
       case 'map':
         return (
           <Suspense fallback={<ScreenFallback />}>
-            <MapScreen />
+            <MapScreen onClose={() => setCustomerTab('explore')} />
           </Suspense>
         );
       case 'favourites':
