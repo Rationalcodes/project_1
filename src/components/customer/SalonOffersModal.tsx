@@ -13,7 +13,6 @@ import {
   Lock,
 } from 'lucide-react';
 import { Salon, SalonOffer, DEFAULT_SALON_OFFERS } from '@kumbhakaran/shared-types';
-import { SalonToolsWheel } from '@kumbhakaran/ui';
 
 interface SalonOffersModalProps {
   salon: Salon;
@@ -75,7 +74,6 @@ export const SalonOffersModal: React.FC<SalonOffersModalProps> = ({
   const [showConfetti, setShowConfetti] = useState(false);
   const [activeFilter, setActiveFilter] = useState<'all' | 'wheel' | 'percent' | 'flat'>('all');
   const [viewTab, setViewTab] = useState<'wheel' | 'all'>('wheel');
-  const [wheelStyle, setWheelStyle] = useState<'tools' | 'classic'>('tools');
 
   const storageKey = `sloon_spin_cooldown_v1_${salon.id}`;
 
@@ -353,49 +351,8 @@ export const SalonOffersModal: React.FC<SalonOffersModalProps> = ({
                   </p>
                 </div>
 
-                {/* Wheel Style Switcher (Tools vs Classic) */}
-                <div className="flex items-center justify-center gap-1.5 p-1 bg-stone-950/80 rounded-2xl border border-amber-500/20 max-w-xs mx-auto my-2 relative z-10">
-                  <button
-                    type="button"
-                    onClick={() => setWheelStyle('tools')}
-                    className={`flex items-center gap-1 px-3 py-1 rounded-xl text-[11px] font-bold transition-all cursor-pointer ${
-                      wheelStyle === 'tools'
-                        ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-stone-950 font-black shadow-xs'
-                        : 'text-stone-400 hover:text-stone-200'
-                    }`}
-                  >
-                    <span>💈 Salon Tools Wheel</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setWheelStyle('classic')}
-                    className={`flex items-center gap-1 px-3 py-1 rounded-xl text-[11px] font-bold transition-all cursor-pointer ${
-                      wheelStyle === 'classic'
-                        ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-stone-950 font-black shadow-xs'
-                        : 'text-stone-400 hover:text-stone-200'
-                    }`}
-                  >
-                    <span>🎯 Classic Wheel</span>
-                  </button>
-                </div>
-
-                {wheelStyle === 'tools' ? (
-                  <div className="my-4 flex items-center justify-center">
-                    <SalonToolsWheel
-                      offers={wheelSlices}
-                      isSpinning={isSpinning}
-                      rotationAngle={rotationAngle}
-                      canSpin={canSpin}
-                      remainingCooldownText={remainingCooldownText}
-                      onSpin={handleSpin}
-                      size={310}
-                      logoSrc="/logo-white.png"
-                      autoRotateWhenIdle={true}
-                    />
-                  </div>
-                ) : (
-                  /* THE 3D CASINO-GRADE WHEEL */
-                  <div className="relative w-68 h-68 sm:w-76 sm:h-76 mx-auto flex items-center justify-center my-4 select-none">
+                {/* THE 3D CASINO-GRADE WHEEL */}
+                <div className="relative w-68 h-68 sm:w-76 sm:h-76 mx-auto flex items-center justify-center my-4 select-none">
                     <div className="absolute inset-[-6px] rounded-full border-[6px] border-amber-500/50 shadow-[0_0_35px_rgba(245,158,11,0.25)] pointer-events-none z-10" />
 
                     <div className="absolute -top-4 left-1/2 -translate-x-1/2 z-30 flex flex-col items-center filter drop-shadow-[0_5px_8px_rgba(0,0,0,0.9)]">
@@ -532,7 +489,6 @@ export const SalonOffersModal: React.FC<SalonOffersModalProps> = ({
                       </div>
                     </button>
                   </div>
-                )}
 
                 {/* Spin CTA / Cooldown Display */}
                 <div className="pt-2 relative z-10 flex flex-col items-center gap-2">
