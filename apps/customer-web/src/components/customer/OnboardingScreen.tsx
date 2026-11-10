@@ -3,12 +3,11 @@ import {
   ChevronLeft,
   ArrowRight,
   Sparkles,
-  Scissors,
-  Clock,
-  X,
-  MapPin,
 } from 'lucide-react';
 import { SalonToolsWheel } from '@kumbhakaran/ui';
+import logoFallback from '../../assets/logo.png';
+import logoTransparent from '../../assets/logo-transparent.png';
+import logoWhite from '../../assets/logo-white.png';
 
 export interface OnboardingScreenProps {
   onFinish: () => void;
@@ -19,17 +18,17 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
   onFinish,
   isWomen = false,
 }) => {
-  // Step 0 = Welcome Splash, Steps 1..3 = Walk-in Value Pillars
+  // Step 0 = Flagship Luxury Splash with 3D Wheel, Steps 1..3 = Walk-in Value Pillars
   const [currentStep, setCurrentStep] = useState<number>(0);
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
   const [touchDeltaX, setTouchDeltaX] = useState<number>(0);
 
-  // Auto-advance from splash screen after 2.2s if untouched
+  // Auto-advance from splash screen after 3.2s if untouched
   useEffect(() => {
     if (currentStep === 0) {
       const timer = setTimeout(() => {
         setCurrentStep(1);
-      }, 2200);
+      }, 3200);
       return () => clearTimeout(timer);
     }
   }, [currentStep]);
@@ -99,12 +98,25 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
 
   const accentColor = isWomen ? '#E11D48' : '#FF6422';
   const bgLightIllustration = isWomen ? '#FFF1F3' : '#FFF6EE';
+  const isDarkSplash = currentStep === 0;
 
   return (
     <div
-      className={`fixed inset-0 z-50 flex flex-col justify-between overflow-y-auto select-none transition-colors duration-300 ${
-        isWomen ? 'bg-[#FFF8F5] text-stone-900' : 'bg-[#FAF7F2] text-stone-900'
+      className={`fixed inset-0 z-50 flex flex-col justify-between overflow-y-auto select-none transition-colors duration-500 ${
+        isDarkSplash
+          ? 'bg-[#120508] text-stone-100'
+          : isWomen
+            ? 'bg-[#FFF8F5] text-stone-900'
+            : 'bg-[#FAF7F2] text-stone-900'
       }`}
+      style={
+        isDarkSplash
+          ? {
+              background:
+                'radial-gradient(ellipse at 50% 38%, #360D17 0%, #1A060B 52%, #0A0204 100%)',
+            }
+          : undefined
+      }
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
@@ -123,16 +135,22 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
             </button>
           )}
 
-          <div className="flex items-center gap-2">
+          <div
+            className={`flex items-center gap-2 px-3 py-1 rounded-full border shadow-2xs transition-colors ${
+              isDarkSplash
+                ? 'bg-black/40 border-amber-500/30 text-amber-300'
+                : 'bg-white border-stone-200/80 text-stone-800'
+            }`}
+          >
             <img
-              src="/logo.png"
+              src={isDarkSplash ? logoWhite : logoFallback}
               alt="SLOON"
-              className="h-7 w-auto object-contain"
+              className="h-4 sm:h-4.5 w-auto object-contain"
               onError={(e) => {
-                (e.currentTarget as HTMLImageElement).src = '/logo-transparent.png';
+                (e.currentTarget as HTMLImageElement).src = logoTransparent;
               }}
             />
-            <span className="text-[11px] font-bold text-stone-500 tracking-wider uppercase hidden sm:inline">
+            <span className="text-[10px] font-black tracking-wider uppercase">
               Walk-In Network
             </span>
           </div>
@@ -148,7 +166,11 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
           <button
             type="button"
             onClick={onFinish}
-            className="text-xs font-bold text-stone-600 hover:text-stone-900 px-3.5 py-1.5 rounded-full bg-white border border-stone-200/80 hover:bg-stone-100 shadow-xs transition-colors cursor-pointer"
+            className={`text-xs font-bold px-3.5 py-1.5 rounded-full border shadow-xs transition-colors cursor-pointer ${
+              isDarkSplash
+                ? 'bg-white/10 border-white/20 text-stone-300 hover:text-white hover:bg-white/15'
+                : 'bg-white border-stone-200/80 text-stone-600 hover:text-stone-900 hover:bg-stone-100'
+            }`}
           >
             Skip
           </button>
@@ -156,45 +178,70 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
       </header>
 
       {/* Main Interactive Screen Content */}
-      <main className="flex-1 w-full max-w-2xl mx-auto px-4 sm:px-6 py-6 sm:py-8 flex flex-col items-center justify-center text-center">
-        {/* STEP 0: WELCOME & SPLASH SCREEN */}
+      <main className="flex-1 w-full max-w-2xl mx-auto px-4 sm:px-6 py-4 sm:py-6 flex flex-col items-center justify-center text-center">
+        {/* =========================================================
+            STEP 0: FLAGSHIP LUXURY SPLASH WITH ROTATING SALON TOOLS WHEEL
+            ========================================================= */}
         {currentStep === 0 && (
           <div
             onClick={() => setCurrentStep(1)}
-            className="w-full flex-1 flex flex-col items-center justify-center cursor-pointer animate-in fade-in duration-300"
+            className="w-full flex-1 flex flex-col items-center justify-center p-2 sm:p-6 cursor-pointer animate-in zoom-in-95 duration-500"
           >
-            {/* Center Animated Salon Tools Emblem */}
-            <div className="relative flex flex-col items-center justify-center p-2 text-center">
-              <div className="transform transition-transform hover:scale-105 active:scale-95 duration-300 drop-shadow-[0_15px_35px_rgba(0,0,0,0.12)]">
-                <SalonToolsWheel
-                  size={290}
-                  autoRotateWhenIdle={true}
-                  showPointer={false}
-                  showSlices={false}
-                  badgeSubtitle="LIVE QUEUES"
-                  logoSrc="/logo-white.png"
-                />
-              </div>
+            {/* Top Quality Badge */}
+            <div className="mb-4 inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-amber-500/10 border border-amber-400/30 text-amber-300 shadow-sm animate-pulse">
+              <Sparkles className="w-3.5 h-3.5 fill-amber-300" />
+              <span className="text-[10px] sm:text-[11px] font-black tracking-widest uppercase">
+                REAL-TIME SALON DISCOVERY
+              </span>
+            </div>
 
-              <div className="mt-8 space-y-2 max-w-sm">
-                <h1 className="text-2xl sm:text-3xl font-black text-stone-900 tracking-tight">
-                  Live Walk-In Queues
-                </h1>
-                <p className="text-xs sm:text-sm text-stone-600 font-medium">
-                  Know physical waiting lines in your neighbourhood before you walk out the door.
-                </p>
-                <div className="pt-2">
-                  <span className="inline-flex items-center gap-1.5 text-xs font-bold text-stone-500 bg-white px-3.5 py-1.5 rounded-full border border-stone-200/80 shadow-xs">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                    Tap anywhere to begin
-                  </span>
-                </div>
-              </div>
+            {/* The Animated Rotating Salon Tools Wheel with SLOON Logo */}
+            <div className="transform transition-transform hover:scale-105 active:scale-95 duration-300 drop-shadow-[0_20px_50px_rgba(0,0,0,0.8)]">
+              <SalonToolsWheel
+                size={320}
+                autoRotateWhenIdle={true}
+                showPointer={false}
+                showSlices={false}
+                badgeSubtitle="LIVE QUEUES"
+                logoSrc={logoWhite}
+              />
+            </div>
+
+            <div className="mt-8 space-y-2.5 max-w-md mx-auto">
+              <h1 className="text-2xl sm:text-4xl font-black tracking-tight text-white drop-shadow-md">
+                Skip The Wait •{' '}
+                <span className="bg-gradient-to-r from-amber-300 via-orange-300 to-amber-200 bg-clip-text text-transparent">
+                  Look Your Best
+                </span>
+              </h1>
+              <p className="text-xs sm:text-sm text-stone-300 font-medium leading-relaxed max-w-sm mx-auto">
+                Know physical waiting lines in your neighbourhood before you walk out the door. Instant chair seats with zero wasted time.
+              </p>
+            </div>
+
+            <div className="mt-7 flex flex-wrap items-center justify-center gap-2 text-[10px] sm:text-[11px] font-bold text-amber-200/90">
+              <span className="px-2.5 py-0.5 rounded-full bg-white/5 border border-white/10">
+                ✓ Live Waiting Counts
+              </span>
+              <span className="px-2.5 py-0.5 rounded-full bg-white/5 border border-white/10">
+                ✓ 0-Min Walk-In Timing
+              </span>
+              <span className="px-2.5 py-0.5 rounded-full bg-white/5 border border-white/10">
+                ✓ Verified Neighborhood Salons
+              </span>
+            </div>
+
+            <div className="mt-6">
+              <span className="text-[10.5px] font-bold text-stone-400 tracking-wider uppercase animate-pulse">
+                Tap anywhere or press Enter to continue
+              </span>
             </div>
           </div>
         )}
 
-        {/* STEP 1: LIVE WAITING TRANSPARENCY */}
+        {/* =========================================================
+            STEP 1: LIVE WAITING TRANSPARENCY
+            ========================================================= */}
         {currentStep === 1 && (
           <div className="w-full flex-1 flex flex-col items-center justify-center animate-in fade-in zoom-in-98 duration-300">
             <div className="w-48 h-48 sm:w-60 sm:h-60 md:w-68 md:h-68 aspect-square rounded-full flex items-center justify-center relative shadow-xs">
@@ -246,17 +293,19 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
 
             <div className="mt-8 space-y-2 max-w-md">
               <h2 className="text-xl sm:text-2xl font-black text-stone-900 tracking-tight leading-snug">
-                Check Live Waiting Counts{' '}
-                <span style={{ color: accentColor }}>Before You Walk In</span>
+                Know The Real Waiting Time{' '}
+                <span style={{ color: accentColor }}>Before You Leave</span>
               </h2>
               <p className="text-xs sm:text-sm text-stone-600 font-medium leading-relaxed">
-                See real-time physical waiting lines and active chairs at neighbourhood salons directly from your phone.
+                Check verified live crowd levels and active barbers in real-time. Never walk into a crowded salon blindly again.
               </p>
             </div>
           </div>
         )}
 
-        {/* STEP 2: VERIFIED STYLISTS & DISCOVERY */}
+        {/* =========================================================
+            STEP 2: EXPRESS WALK-IN JOINING
+            ========================================================= */}
         {currentStep === 2 && (
           <div className="w-full flex-1 flex flex-col items-center justify-center animate-in fade-in zoom-in-98 duration-300">
             <div className="w-48 h-48 sm:w-60 sm:h-60 md:w-68 md:h-68 aspect-square rounded-full flex items-center justify-center relative shadow-xs">
@@ -271,50 +320,49 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
                 xmlns="http://www.w3.org/2000/svg"
                 className="w-full h-full relative z-10"
               >
-                {/* Salon Mirror / Frame */}
-                <rect x="70" y="45" width="135" height="155" rx="67.5" fill="#FFFFFF" stroke="#E7DED5" strokeWidth="3.5" />
-                <path d="M85 70C85 70 120 58 160 82" stroke={accentColor} strokeWidth="3" strokeLinecap="round" />
+                {/* Smartphone Device Mockup */}
+                <rect x="75" y="45" width="130" height="195" rx="20" fill="#1C1917" />
+                <rect x="83" y="55" width="114" height="175" rx="14" fill="#FFFFFF" />
 
-                {/* Stylist Silhouette */}
-                <circle cx="137" cy="115" r="26" fill="#1E130D" />
-                <path d="M105 178C105 148 120 142 137 142C154 142 169 148 169 178H105Z" fill="#78716C" />
+                {/* Speaker Notch */}
+                <rect x="120" y="50" width="40" height="4" rx="2" fill="#44403C" />
 
-                {/* Verified Badge */}
-                <g filter="drop-shadow(0px 8px 16px rgba(0,0,0,0.12))">
-                  <rect x="150" y="140" width="94" height="42" rx="12" fill="#FFFFFF" stroke="#E7DED5" strokeWidth="1.5" />
-                  <circle cx="168" cy="161" r="8" fill="#10B981" />
-                  <path d="M165 161L167 163L172 158" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" />
-                  <text x="183" y="160" fill="#1C1917" fontSize="10" fontWeight="900" fontFamily="sans-serif">
-                    VERIFIED
-                  </text>
-                  <text x="183" y="173" fill="#78716C" fontSize="8.5" fontWeight="800" fontFamily="sans-serif">
-                    Salon &amp; Rates
-                  </text>
-                </g>
+                {/* Queue Ticket Card */}
+                <rect x="95" y="80" width="90" height="50" rx="8" fill={accentColor} />
+                <text x="140" y="102" textAnchor="middle" fill="#FFFFFF" fontSize="12" fontWeight="900" fontFamily="sans-serif">
+                  TICKET #04
+                </text>
+                <text x="140" y="118" textAnchor="middle" fill="#FED7AA" fontSize="9" fontWeight="700" fontFamily="sans-serif">
+                  Estimated 12 mins
+                </text>
 
-                {/* Transparent Pricing Pill */}
-                <g filter="drop-shadow(0px 6px 12px rgba(0,0,0,0.08))">
-                  <rect x="35" y="65" width="90" height="38" rx="10" fill="#FFFFFF" stroke="#E7DED5" strokeWidth="1.5" />
-                  <text x="80" y="88" textAnchor="middle" fill={accentColor} fontSize="12" fontWeight="900" fontFamily="sans-serif">
-                    ₹150 Cut
-                  </text>
-                </g>
+                {/* Action Button */}
+                <rect x="95" y="145" width="90" height="28" rx="6" fill="#10B981" />
+                <text x="140" y="162" textAnchor="middle" fill="#FFFFFF" fontSize="9" fontWeight="900" fontFamily="sans-serif">
+                  JOIN QUEUE
+                </text>
+
+                {/* Floating GPS Icon */}
+                <circle cx="195" cy="85" r="16" fill="#FFFFFF" filter="drop-shadow(0px 4px 10px rgba(0,0,0,0.15))" />
+                <circle cx="195" cy="85" r="8" fill={accentColor} />
               </svg>
             </div>
 
             <div className="mt-8 space-y-2 max-w-md">
               <h2 className="text-xl sm:text-2xl font-black text-stone-900 tracking-tight leading-snug">
-                Transparent Prices &amp;{' '}
-                <span style={{ color: accentColor }}>Verified Stylists</span>
+                Join The Live Queue{' '}
+                <span style={{ color: accentColor }}>From Anywhere</span>
               </h2>
               <p className="text-xs sm:text-sm text-stone-600 font-medium leading-relaxed">
-                Browse genuine service menus, clear walk-in pricing, and authentic customer feedback with zero hidden costs.
+                Take your digital token while you are on your way or enjoying coffee nearby. Arrive right when your barber is ready.
               </p>
             </div>
           </div>
         )}
 
-        {/* STEP 3: LOOK SHARP & SAVE HOURS */}
+        {/* =========================================================
+            STEP 3: LOOK SHARP WITH ZERO WAITING
+            ========================================================= */}
         {currentStep === 3 && (
           <div className="w-full flex-1 flex flex-col items-center justify-center animate-in fade-in zoom-in-98 duration-300">
             <div className="w-48 h-48 sm:w-60 sm:h-60 md:w-68 md:h-68 aspect-square rounded-full flex items-center justify-center relative shadow-xs">
@@ -329,14 +377,22 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
                 xmlns="http://www.w3.org/2000/svg"
                 className="w-full h-full relative z-10"
               >
-                {/* Modern Haircut Profile Silhouette */}
-                <ellipse cx="140" cy="115" rx="34" ry="40" fill="#FBBF24" />
-                <path d="M106 100C106 65 130 52 165 60C175 62 180 72 178 85C175 90 170 94 165 92C155 88 140 92 135 104C132 110 120 115 110 112L106 100Z" fill="#1C1917" />
-                <path d="M118 118C118 110 130 108 142 108C154 108 166 110 166 118L174 205H110L118 118Z" fill="#1C1917" />
+                {/* Mirror Frame */}
+                <rect x="80" y="40" width="120" height="155" rx="60" fill="#FFFFFF" stroke="#E7DED5" strokeWidth="3" />
+                <rect x="90" y="50" width="100" height="135" rx="50" fill="#FEF3C7" fillOpacity="0.4" />
 
-                {/* Speech Bubble: "LOOK SHARP" */}
+                {/* Mirror Reflection Accent */}
+                <path d="M 105 70 L 125 70 L 105 130 Z" fill="#FFFFFF" fillOpacity="0.4" />
+
+                {/* Comb / Scissors Accent */}
+                <g transform="translate(140, 165)">
+                  <circle cx="0" cy="0" r="28" fill="#1C1917" />
+                  <path d="M -10 -10 L 10 10 M 10 -10 L -10 10" stroke="#FFFFFF" strokeWidth="2.5" strokeLinecap="round" />
+                </g>
+
+                {/* Floating Rating Pill */}
                 <g filter="drop-shadow(0px 8px 16px rgba(0,0,0,0.12))">
-                  <rect x="155" y="45" width="100" height="38" rx="10" fill={accentColor} />
+                  <rect x="155" y="50" width="100" height="34" rx="10" fill={accentColor} />
                   <polygon points="160,83 170,83 162,91" fill={accentColor} />
                   <text x="205" y="68" textAnchor="middle" fill="#FFFFFF" fontSize="10.5" fontWeight="900" fontFamily="sans-serif">
                     LOOK SHARP
@@ -381,10 +437,12 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
               className={`h-2 rounded-full transition-all duration-300 cursor-pointer ${
                 currentStep === step
                   ? 'w-8'
-                  : 'w-2 bg-stone-300 hover:bg-stone-400'
+                  : isDarkSplash
+                    ? 'w-2 bg-stone-700 hover:bg-stone-500'
+                    : 'w-2 bg-stone-300 hover:bg-stone-400'
               }`}
               style={{
-                backgroundColor: currentStep === step ? accentColor : undefined,
+                backgroundColor: currentStep === step ? (isDarkSplash ? '#F59E0B' : accentColor) : undefined,
               }}
               aria-label={`Go to step ${step}`}
             />
@@ -396,8 +454,7 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
           <button
             type="button"
             onClick={() => setCurrentStep(1)}
-            className="w-full py-3.5 px-6 rounded-full text-white font-black text-sm tracking-wide shadow-md hover:shadow-lg transition-all transform active:scale-98 cursor-pointer flex items-center justify-center gap-2"
-            style={{ backgroundColor: accentColor }}
+            className="w-full py-3.5 px-6 rounded-full text-stone-950 font-black text-sm tracking-wide bg-gradient-to-r from-amber-400 via-amber-300 to-yellow-400 hover:from-amber-300 hover:to-yellow-300 shadow-lg shadow-amber-500/25 transition-all transform active:scale-98 cursor-pointer flex items-center justify-center gap-2"
           >
             <span>Explore Walk-In Queues</span>
             <ArrowRight className="w-4 h-4 stroke-[2.5]" />
