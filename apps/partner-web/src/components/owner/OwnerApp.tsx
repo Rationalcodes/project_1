@@ -57,7 +57,8 @@ import {
   ShieldCheck
 } from 'lucide-react';
 import QRCode from 'qrcode';
-import { OwnerTab, Service, Staff, QueueEntry, HOME_VISIT_CATEGORIES, HomeVisitBookingRequest, HomeVisitCategory } from '@kumbhakaran/shared-types';
+import { OwnerTab, Service, Staff, QueueEntry, HOME_VISIT_CATEGORIES, HomeVisitBookingRequest, HomeVisitCategory, SalonMarketingConfig } from '@kumbhakaran/shared-types';
+import { SalonGrowthMarketingManager } from './SalonGrowthMarketingManager';
 import { openGoogleMapsLocation } from '@kumbhakaran/ui';
 import { SalonLocationPicker, LocationPickerResult } from '../partner/SalonLocationPicker';
 import { PendingApprovalScreen } from '../partner/PendingApprovalScreen';
@@ -684,6 +685,14 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
       safeStorage.setItem(`sloon_salon_offers_${activeSalon.id}`, JSON.stringify(updated));
     } catch {}
     triggerNotification('Updated spin wheel inclusion.');
+  };
+
+  const handleUpdateMarketingConfig = (newConfig: SalonMarketingConfig) => {
+    updateSalonInfo(activeSalon.id, { marketingConfig: newConfig });
+    try {
+      safeStorage.setItem(`sloon_salon_marketing_${activeSalon.id}`, JSON.stringify(newConfig));
+    } catch {}
+    triggerNotification('Salon revenue & marketing campaigns published!');
   };
 
   const handleToggleOfferActive = (offerId: string) => {
@@ -2245,6 +2254,22 @@ export const OwnerApp: React.FC<OwnerAppProps> = ({ onOpenWalkthrough }) => {
             )}
           </div>
         </div>
+      )}
+
+      {/* TAB 2.5: OFFERS, REWARDS & REVENUE MARKETING ENGINE */}
+      {ownerTab === 'offers' && (
+        <SalonGrowthMarketingManager
+          activeSalon={activeSalon}
+          onUpdateMarketingConfig={handleUpdateMarketingConfig}
+          salonOffers={salonOffers}
+          onUpdateOffers={(updated) => {
+            updateSalonInfo(activeSalon.id, { offers: updated });
+            try {
+              safeStorage.setItem(`sloon_salon_offers_${activeSalon.id}`, JSON.stringify(updated));
+            } catch {}
+          }}
+          triggerNotification={triggerNotification}
+        />
       )}
 
       {/* TAB 3: SERVICES & PRICING MANAGEMENT */}

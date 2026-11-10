@@ -28,6 +28,7 @@ import {
   HeartHandshake,
   Smile,
   Users,
+  Zap,
 } from 'lucide-react';
 import {
   useSalon,
@@ -794,6 +795,13 @@ export const HomeScreen: React.FC = () => {
                           </a>
                         )}
                       </div>
+
+                      {salon.marketingConfig?.quietHours?.enabled && (
+                        <div className="flex items-center gap-1.5 text-[10px] font-black text-amber-900 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md mt-1 w-fit">
+                          <Zap className="w-3 h-3 text-amber-600 fill-amber-600" />
+                          <span>{salon.marketingConfig.quietHours.discountValue}% OFF Happy Hours</span>
+                        </div>
+                      )}
                     </div>
 
                     <div className="pt-2.5 border-t border-stone-100 flex items-center justify-between text-xs">

@@ -163,6 +163,149 @@ export const DEFAULT_SALON_OFFERS: SalonOffer[] = [
   },
 ];
 
+// ==============================================================================
+// Salon Growth & Revenue Marketing Engine (Partner Portal Configuration)
+// ==============================================================================
+
+/** 1. Weekday Happy Hours / Quiet Hours Promotions */
+export interface QuietHoursPromotion {
+  enabled: boolean;
+  days: string[]; // ['Mon', 'Tue', 'Wed', 'Thu']
+  startTime: string; // '11:00'
+  endTime: string;   // '16:00'
+  discountType: 'percentage' | 'flat';
+  discountValue: number; // 20 (%) or 100 (₹)
+  badgeText: string;
+  autoApplyInQueue: boolean;
+}
+
+/** 2. Digital Loyalty Rewards (Stamp Card) */
+export interface LoyaltyProgramConfig {
+  enabled: boolean;
+  visitsRequired: number; // e.g. 5
+  rewardType: 'percentage' | 'flat' | 'free_service';
+  rewardValue: string | number; // e.g. '50% OFF' or 'Free Beard Sculpting'
+  minSpendPerVisit: number; // e.g. 150
+  programName: string;
+  terms: string;
+}
+
+/** 3. Repeat Visit & Customer Retention Win-Back Engine */
+export interface RepeatVisitConfig {
+  enabled: boolean;
+  targetDays: number; // Return within e.g. 21 days
+  incentiveDiscount: number; // ₹50 or 15%
+  winbackLapsedDays: number; // Missed return after e.g. 35 days
+  winbackDiscount: number; // ₹100 or 25% off
+  reminderWhatsAppTemplate: string;
+}
+
+/** 4. Premium Service Upsell & VIP Upgrade Prompts */
+export interface PremiumUpsellConfig {
+  enabled: boolean;
+  triggerServiceName: string; // e.g. 'Haircut & Styling'
+  upsellServiceName: string;  // e.g. 'Activated Charcoal De-Tan'
+  originalPrice: number;      // e.g. 600
+  upsellPrice: number;        // e.g. 299
+  headline: string;           // e.g. 'Add Charcoal De-Tan for ₹299 (Save 50%)'
+  description: string;
+}
+
+/** 5. Bundled Grooming Packages & Combos */
+export interface GroomingPackage {
+  id: string;
+  title: string;
+  subtitle: string;
+  includedServices: string[];
+  originalTotal: number;
+  bundlePrice: number;
+  savingsAmount: number;
+  badge?: string; // 'Best Value' | 'Most Popular' | 'Weekend Special'
+  isActive: boolean;
+}
+
+export interface SalonMarketingConfig {
+  quietHours: QuietHoursPromotion;
+  loyaltyProgram: LoyaltyProgramConfig;
+  repeatVisit: RepeatVisitConfig;
+  premiumUpsell: PremiumUpsellConfig;
+  groomingPackages: GroomingPackage[];
+}
+
+export const DEFAULT_SALON_MARKETING_CONFIG: SalonMarketingConfig = {
+  quietHours: {
+    enabled: true,
+    days: ['Mon', 'Tue', 'Wed', 'Thu'],
+    startTime: '11:00',
+    endTime: '16:00',
+    discountType: 'percentage',
+    discountValue: 20,
+    badgeText: '⚡ Quiet Hours Flash Deal: 20% OFF Mon-Thu 11am-4pm',
+    autoApplyInQueue: true,
+  },
+  loyaltyProgram: {
+    enabled: true,
+    visitsRequired: 5,
+    rewardType: 'percentage',
+    rewardValue: 50,
+    minSpendPerVisit: 150,
+    programName: 'SLOON VIP Club: Every 5th Visit 50% OFF',
+    terms: 'Valid on haircut and styling services. Digital stamp awarded automatically upon bill completion.',
+  },
+  repeatVisit: {
+    enabled: true,
+    targetDays: 21,
+    incentiveDiscount: 50,
+    winbackLapsedDays: 35,
+    winbackDiscount: 100,
+    reminderWhatsAppTemplate: 'Hi {name}! Your fresh look from {salon} is due for a touch-up. Visit within {days} days to enjoy ₹{discount} OFF your haircut!',
+  },
+  premiumUpsell: {
+    enabled: true,
+    triggerServiceName: 'Haircut & Styling',
+    upsellServiceName: 'Charcoal De-Tan Facial Cleanse',
+    originalPrice: 600,
+    upsellPrice: 299,
+    headline: 'Upgrade to Charcoal De-Tan for ₹299 (Save ₹301!)',
+    description: 'Deep pore detox, blackhead removal & instant sun-tan clearance paired with your haircut.',
+  },
+  groomingPackages: [
+    {
+      id: 'pkg-1',
+      title: 'The Executive Gentleman Suite',
+      subtitle: 'Complete hair, beard, hot steamed towel & relaxing scalp revive',
+      includedServices: ['Master Haircut & Style', 'Precision Beard Fade & Lineup', 'Hot Steamed Peppermint Towel', 'Ayurvedic Scalp Massage'],
+      originalTotal: 750,
+      bundlePrice: 499,
+      savingsAmount: 251,
+      badge: 'Best Value',
+      isActive: true,
+    },
+    {
+      id: 'pkg-2',
+      title: 'Wedding & Celebration Ready Combo',
+      subtitle: 'Head-to-toe festive grooming for parties, receptions & groom entourage',
+      includedServices: ['Skin Fade Haircut', 'Charcoal De-Tan Facial Cleanse', 'Beard Styling & Razor Finish', 'Deep Nourish Hair Spa'],
+      originalTotal: 1400,
+      bundlePrice: 899,
+      savingsAmount: 501,
+      badge: 'Most Popular',
+      isActive: true,
+    },
+    {
+      id: 'pkg-3',
+      title: 'Father & Son Weekend Cut Duo',
+      subtitle: 'Two signature haircuts with beard grooming and fun junior styling',
+      includedServices: ['2x Master Haircuts', '1x Beard Shaping & Trim', '2x Relaxing Head Wash & Blowdry'],
+      originalTotal: 900,
+      bundlePrice: 599,
+      savingsAmount: 301,
+      badge: 'Family Saver',
+      isActive: true,
+    },
+  ],
+};
+
 export interface Salon {
   id: string;
   name: string;
@@ -224,6 +367,7 @@ export interface Salon {
   homeServiceRadiusKm?: number;
   homeServiceMinOrder?: number;
   homeServiceCategories?: HomeVisitCategory[];
+  marketingConfig?: SalonMarketingConfig;
 }
 
 export interface SalonRegistrationInput {

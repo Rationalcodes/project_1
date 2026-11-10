@@ -1,5 +1,5 @@
 import { InstagramGradientIcon } from '../common/InstagramIcon';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   ArrowLeft,
   Star,
@@ -43,11 +43,15 @@ import {
   Sparkles,
   ShieldCheck,
   Compass,
-  Map as MapIcon
+  Map as MapIcon,
+  Zap,
+  Crown,
+  Layers,
+  Gift,
 } from 'lucide-react';
 import QRCode from 'qrcode';
 import { useSalon, getEstimatedWaitMinutes, formatDuration, formatWaitTime, getQueueDisplay, getQueueFreshness, getTargetSalonFromUrl } from '../../context/CustomerContext';
-import { Service, Staff } from '@kumbhakaran/shared-types';
+import { Service, Staff, DEFAULT_SALON_MARKETING_CONFIG } from '@kumbhakaran/shared-types';
 import { redirectToGoogleMaps, openGoogleMapsLocation, SalonMapboxView } from '@kumbhakaran/ui';
 import { SmartQueueAssist } from './SmartQueueAssist';
 import { SalonOffersModal } from './SalonOffersModal';
@@ -315,6 +319,25 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
   if (!selectedSalonForDetail) return null;
 
   const salon = selectedSalonForDetail;
+
+  // Salon Growth & Marketing Config
+  const marketingConfig = salon.marketingConfig || DEFAULT_SALON_MARKETING_CONFIG;
+
+  const isQuietHoursActive = useMemo(() => {
+    if (!marketingConfig?.quietHours?.enabled) return false;
+    const now = new Date();
+    const daysMap = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const currentDay = daysMap[now.getDay()];
+    if (!marketingConfig.quietHours.days?.includes(currentDay)) return false;
+
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+    const [startH, startM] = (marketingConfig.quietHours.startTime || '11:00').split(':').map(Number);
+    const [endH, endM] = (marketingConfig.quietHours.endTime || '16:00').split(':').map(Number);
+    const startTotal = (startH || 11) * 60 + (startM || 0);
+    const endTotal = (endH || 16) * 60 + (endM || 0);
+
+    return currentMinutes >= startTotal && currentMinutes <= endTotal;
+  }, [marketingConfig]);
   const isSaved = userProfile.savedSalons.includes(salon.id);
   const queueInfo = getQueueDisplay(salon.currentQueue, salon.isOpen, salon.queueStatus);
   const waitTime = getEstimatedWaitMinutes(salon.currentQueue, salon.avgServiceTimeMinutes, salon.activeBarbers);
@@ -721,6 +744,70 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
         {/* SUBPAGE 1: LIVE QUEUE (LOUNGE DISPLAY & VALET PASS) */}
         {activeTab === 'queue' && (
           <div className="space-y-4">
+            {/* 1. Weekday Quiet Hours Flash Deal Alert (When Active Right Now) */}
+            {isQuietHoursActive && (
+              <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 text-stone-950 p-4 rounded-3xl font-bold flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md border border-amber-300">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-2xl bg-stone-950 text-amber-400 flex items-center justify-center shrink-0">
+                    <Zap className="w-5 h-5 fill-amber-400" />
+                  </div>
+                  <div>
+                    <div className="text-xs font-black uppercase tracking-wider">
+                      {marketingConfig.quietHours.badgeText}
+                    </div>
+                    <div className="text-[11px] text-stone-950/80 font-semibold">
+                      Walk in right now to enjoy {marketingConfig.quietHours.discountValue}% OFF your total bill at the counter!
+                    </div>
+                  </div>
+                </div>
+                <span className="text-[10px] font-black uppercase bg-stone-950 text-amber-300 px-3 py-1 rounded-full shrink-0 self-start sm:self-auto">
+                  ⚡ Flash Deal Active
+                </span>
+              </div>
+            )}
+
+            {/* 2. Digital Loyalty Rewards Card Banner */}
+            {marketingConfig.loyaltyProgram?.enabled && (
+              <div className="bg-gradient-to-br from-stone-950 via-[#1C120B] to-stone-950 text-white p-4 sm:p-5 rounded-3xl border border-amber-600/40 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-amber-500/20 border border-amber-500/40 text-amber-400 flex items-center justify-center shrink-0">
+                    <Crown className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-black text-amber-300">
+                        {marketingConfig.loyaltyProgram.programName}
+                      </span>
+                      <span className="text-[9px] font-bold bg-amber-500/20 text-amber-300 px-2 py-0.2 rounded-full border border-amber-500/30">
+                        VIP Perk
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-stone-300 mt-0.5">
+                      Collect {marketingConfig.loyaltyProgram.visitsRequired} stamps to unlock {marketingConfig.loyaltyProgram.rewardValue}% OFF your haircut!
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-1.5 shrink-0">
+                  {Array.from({ length: marketingConfig.loyaltyProgram.visitsRequired || 5 }).map((_, i) => (
+                    <div
+                      key={i}
+                      className={`w-7 h-7 rounded-xl flex items-center justify-center text-[10px] font-black border ${
+                        i === 0
+                          ? 'bg-amber-500 border-amber-400 text-stone-950'
+                          : i === (marketingConfig.loyaltyProgram.visitsRequired || 5) - 1
+                          ? 'bg-rose-950 border-rose-500 text-rose-300 animate-pulse'
+                          : 'bg-stone-900 border-stone-800 text-stone-500'
+                      }`}
+                      title={i === 0 ? 'Stamp 1 Earned' : i === (marketingConfig.loyaltyProgram.visitsRequired || 5) - 1 ? 'Reward Unlock!' : `Stamp #${i + 1}`}
+                    >
+                      {i === 0 ? '✓' : i === (marketingConfig.loyaltyProgram.visitsRequired || 5) - 1 ? '🎁' : `#${i + 1}`}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Live Queue Concierge Board */}
             <div className="bg-white border border-[#E8E0D5] rounded-3xl p-6 shadow-xs space-y-5">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-[#E8E0D5]">
@@ -933,6 +1020,106 @@ export const SalonDetailScreen: React.FC<SalonDetailScreenProps> = ({
         {/* SUBPAGE 2: SERVICES & RATES (BESPOKE MENU) */}
         {activeTab === 'services' && (
           <div className="space-y-4">
+            {/* VIP Upsell Deal Card (When Configured) */}
+            {marketingConfig.premiumUpsell?.enabled && (
+              <div className="p-4 rounded-3xl bg-gradient-to-r from-rose-950 via-stone-900 to-amber-950 text-white border border-rose-500/40 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-rose-500/20 border border-rose-500/40 text-rose-300 flex items-center justify-center shrink-0">
+                    <Sparkles className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-black uppercase tracking-wider text-rose-300 bg-rose-950/80 px-2 py-0.5 rounded-full border border-rose-800/40">
+                      VIP Add-On Deal
+                    </span>
+                    <h4 className="text-sm font-black text-white mt-1">
+                      {marketingConfig.premiumUpsell.headline}
+                    </h4>
+                    <p className="text-xs text-stone-300 mt-0.5">
+                      {marketingConfig.premiumUpsell.description}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="text-right shrink-0 flex items-center gap-3">
+                  <div>
+                    <span className="text-xs text-stone-400 line-through">₹{marketingConfig.premiumUpsell.originalPrice}</span>
+                    <div className="text-base font-black text-rose-400">₹{marketingConfig.premiumUpsell.upsellPrice}</div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowJoinQueueModal(true)}
+                    className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-rose-500 to-amber-500 text-stone-950 font-black text-xs shadow-md transition active:scale-95"
+                  >
+                    Get Deal in Line
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Bundled Grooming Packages & Combos (When Available) */}
+            {marketingConfig.groomingPackages && marketingConfig.groomingPackages.filter((p) => p.isActive).length > 0 && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Layers className="w-4 h-4 text-[#C85322]" />
+                    <h3 className="text-sm font-black text-stone-900 uppercase tracking-wider">
+                      Signature Bundled Grooming Suites
+                    </h3>
+                  </div>
+                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                    Save up to 40%
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {marketingConfig.groomingPackages.filter((p) => p.isActive).map((pkg) => (
+                    <div
+                      key={pkg.id}
+                      className="p-4 rounded-2xl bg-white border border-[#E8E0D5] shadow-xs flex flex-col justify-between space-y-3 relative overflow-hidden group hover:border-amber-400 transition"
+                    >
+                      <div>
+                        <div className="flex items-center justify-between mb-1.5">
+                          <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-orange-50 text-[#C85322] border border-orange-200">
+                            {pkg.badge || 'Suite'}
+                          </span>
+                          <span className="text-[11px] font-black text-emerald-700">
+                            Save ₹{pkg.savingsAmount}
+                          </span>
+                        </div>
+                        <h4 className="text-sm font-black text-stone-900 group-hover:text-[#C85322] transition">
+                          {pkg.title}
+                        </h4>
+                        <p className="text-xs text-stone-500 mt-0.5 leading-snug">{pkg.subtitle}</p>
+
+                        <div className="mt-2.5 pt-2 border-t border-stone-100 space-y-1">
+                          {pkg.includedServices.map((svc, i) => (
+                            <div key={i} className="text-[11px] text-stone-700 flex items-center gap-1.5">
+                              <Check className="w-3 h-3 text-emerald-600 shrink-0" />
+                              <span>{svc}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="pt-2 border-t border-stone-100 flex items-center justify-between">
+                        <div>
+                          <span className="text-xs text-stone-400 line-through">₹{pkg.originalTotal}</span>
+                          <div className="text-base font-black text-[#C85322]">₹{pkg.bundlePrice}</div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setShowJoinQueueModal(true)}
+                          className="px-3 py-1.5 rounded-xl bg-stone-900 hover:bg-stone-800 text-white font-bold text-xs transition"
+                        >
+                          Book Combo
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Category Filter Pills */}
             <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
               {serviceCategories.map((cat) => (
