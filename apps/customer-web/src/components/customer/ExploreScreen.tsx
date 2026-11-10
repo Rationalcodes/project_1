@@ -122,9 +122,6 @@ export const ExploreScreen: React.FC = () => {
         if (selectedCategory === 'home_services') {
           return salon.hasHomeService || salon.providerType === 'freelance_pro' || (salon.serviceModes && salon.serviceModes.includes('home_visit'));
         }
-        if (selectedCategory === 'home_studio') {
-          return salon.providerType === 'home_studio';
-        }
         if (selectedCategory === 'independent') {
           return salon.providerType === 'independent_pro' || salon.providerType === 'freelance_pro';
         }
@@ -397,12 +394,10 @@ export const ExploreScreen: React.FC = () => {
                   salon.marketingConfig.quietHours.discountValue > 0;
 
                 const providerTypeLabel =
-                  salon.providerType === 'home_studio'
-                    ? 'Private Studio'
-                    : salon.providerType === 'freelance_pro'
+                  salon.providerType === 'freelance_pro'
                     ? 'Freelance Stylist'
-                    : salon.providerType === 'independent_pro'
-                    ? 'Master Stylist'
+                    : salon.hasHomeService || salon.serviceModes?.includes('home_visit')
+                    ? 'Salon & Doorstep'
                     : 'Physical Salon';
 
                 return (

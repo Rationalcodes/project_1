@@ -72,9 +72,9 @@ export const SloonBusinessInsightsView: React.FC<SloonBusinessInsightsViewProps>
       completedServicesCount: Math.max(completedEntries.length, custToday),
       queueNoShowRate: 4.2,
       walkInVsBookingRatio: {
-        walkIn: 78,
-        appointment: 16,
-        homeVisit: 6,
+        walkIn: 84,
+        appointment: 0,
+        homeVisit: 16,
       },
     };
   }, [salon, realCustomersServed, realTodayRevenue, realMonthlyRevenue, completedEntries.length]);
@@ -469,56 +469,41 @@ export const SloonBusinessInsightsView: React.FC<SloonBusinessInsightsViewProps>
               <Store className="w-4 h-4 text-stone-400" />
             </div>
 
-            <div className="space-y-3.5 pt-4">
+            <div className="space-y-4 pt-4">
               {/* Channel 1: In-Salon Walk-Ins */}
               <div>
-                <div className="flex items-center justify-between text-xs font-medium mb-1">
+                <div className="flex items-center justify-between text-xs font-medium mb-1.5">
                   <span className="flex items-center gap-1.5 text-stone-800">
                     <Store className="w-3.5 h-3.5 text-[#E05326]" />
-                    <span>In-Salon Digital Queue</span>
+                    <span>In-Salon Digital Queue & Chairs</span>
                   </span>
                   <span className="font-bold text-stone-900">{metrics.walkInVsBookingRatio.walkIn}%</span>
                 </div>
-                <div className="w-full bg-stone-100 h-2.5 rounded-full overflow-hidden">
+                <div className="w-full bg-stone-100 h-3 rounded-full overflow-hidden">
                   <div
                     className="bg-[#E05326] h-full rounded-full"
                     style={{ width: `${metrics.walkInVsBookingRatio.walkIn}%` }}
                   />
                 </div>
+                <span className="text-[10px] text-stone-400 mt-1 block">Walk-in clients joining your digital queue</span>
               </div>
 
-              {/* Channel 2: Scheduled Appointments */}
+              {/* Channel 2: Doorstep Home Visits */}
               <div>
-                <div className="flex items-center justify-between text-xs font-medium mb-1">
-                  <span className="flex items-center gap-1.5 text-stone-800">
-                    <Calendar className="w-3.5 h-3.5 text-indigo-600" />
-                    <span>Advance Studio Appointments</span>
-                  </span>
-                  <span className="font-bold text-stone-900">{metrics.walkInVsBookingRatio.appointment}%</span>
-                </div>
-                <div className="w-full bg-stone-100 h-2.5 rounded-full overflow-hidden">
-                  <div
-                    className="bg-indigo-600 h-full rounded-full"
-                    style={{ width: `${metrics.walkInVsBookingRatio.appointment}%` }}
-                  />
-                </div>
-              </div>
-
-              {/* Channel 3: Doorstep Home Visits */}
-              <div>
-                <div className="flex items-center justify-between text-xs font-medium mb-1">
+                <div className="flex items-center justify-between text-xs font-medium mb-1.5">
                   <span className="flex items-center gap-1.5 text-stone-800">
                     <Home className="w-3.5 h-3.5 text-emerald-600" />
-                    <span>Doorstep Home Services</span>
+                    <span>Doorstep Home Visits (Salon Stylists)</span>
                   </span>
                   <span className="font-bold text-stone-900">{metrics.walkInVsBookingRatio.homeVisit}%</span>
                 </div>
-                <div className="w-full bg-stone-100 h-2.5 rounded-full overflow-hidden">
+                <div className="w-full bg-stone-100 h-3 rounded-full overflow-hidden">
                   <div
                     className="bg-emerald-600 h-full rounded-full"
                     style={{ width: `${metrics.walkInVsBookingRatio.homeVisit}%` }}
                   />
                 </div>
+                <span className="text-[10px] text-stone-400 mt-1 block">High-ticket home grooming dispatched by your salon</span>
               </div>
             </div>
           </div>

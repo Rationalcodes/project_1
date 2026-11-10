@@ -1110,7 +1110,6 @@ export type DiscoveryCategory =
   | 'professional'
   | 'premium'
   | 'independent'
-  | 'home_studio'
   | 'home_services'
   | 'bridal'
   | 'top_rated'
@@ -1129,7 +1128,7 @@ export const DISCOVERY_CATEGORIES: DiscoveryCategoryMeta[] = [
     id: 'all',
     label: 'All Partners',
     iconName: 'Compass',
-    subtitle: 'All trusted salons & beauty studios',
+    subtitle: 'All trusted salons & beauty pros',
   },
   {
     id: 'available_now',
@@ -1156,26 +1155,14 @@ export const DISCOVERY_CATEGORIES: DiscoveryCategoryMeta[] = [
     id: 'professional',
     label: 'Salons & Parlours',
     iconName: 'Store',
-    subtitle: 'Traditional brick-and-mortar salons',
+    subtitle: 'Established brick-and-mortar salons',
   },
   {
     id: 'home_services',
     label: 'Home Service',
     iconName: 'Home',
     badge: 'Doorstep',
-    subtitle: 'Certified professionals visiting your doorstep',
-  },
-  {
-    id: 'home_studio',
-    label: 'Home Studios',
-    iconName: 'Sparkles',
-    subtitle: 'Private curated spaces & certified solo artists',
-  },
-  {
-    id: 'independent',
-    label: 'Independent Pros',
-    iconName: 'UserCheck',
-    subtitle: 'Freelance & master stylists',
+    subtitle: 'Certified salon stylists & pros visiting your doorstep',
   },
   {
     id: 'bridal',
@@ -1183,6 +1170,12 @@ export const DISCOVERY_CATEGORIES: DiscoveryCategoryMeta[] = [
     iconName: 'Crown',
     badge: 'Specialist',
     subtitle: 'Weddings, sangeet, and festive styling packages',
+  },
+  {
+    id: 'independent',
+    label: 'Freelance Artists',
+    iconName: 'UserCheck',
+    subtitle: 'Mobile makeup artists & freelance stylists',
   },
 ];
 

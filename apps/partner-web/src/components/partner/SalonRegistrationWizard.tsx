@@ -219,27 +219,15 @@ export const SalonRegistrationWizard: React.FC<SalonRegistrationWizardProps> = (
                 {[
                   {
                     id: 'traditional_salon',
-                    label: 'Traditional Salon',
-                    desc: 'Commercial storefront with chairs, staff & walk-in queue',
-                    defaultModes: ['at_salon'] as ServiceMode[],
-                  },
-                  {
-                    id: 'home_studio',
-                    label: 'Home Studio',
-                    desc: 'Private residential studio (appointment scheduled)',
-                    defaultModes: ['studio_visit'] as ServiceMode[],
+                    label: 'Physical Salon / Parlour',
+                    desc: 'Storefront with chairs, staff, live queue & optional home visits',
+                    defaultModes: ['at_salon', 'home_visit'] as ServiceMode[],
                   },
                   {
                     id: 'freelance_pro',
-                    label: 'Freelance Professional',
-                    desc: 'Mobile artist traveling directly to clients (Sloon Home)',
+                    label: 'Freelance / Mobile Professional',
+                    desc: 'Mobile stylist traveling directly to client residences (Sloon Home)',
                     defaultModes: ['home_visit'] as ServiceMode[],
-                  },
-                  {
-                    id: 'independent_pro',
-                    label: 'Independent Specialist',
-                    desc: 'Solo expert offering studio appointments & home visits',
-                    defaultModes: ['studio_visit', 'home_visit'] as ServiceMode[],
                   },
                 ].map((item) => (
                   <button
@@ -271,11 +259,10 @@ export const SalonRegistrationWizard: React.FC<SalonRegistrationWizardProps> = (
               <label className="text-xs font-bold text-stone-700 block mb-1.5">
                 Enabled Service Modes (Select all offered) *
               </label>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {[
-                  { id: 'at_salon' as ServiceMode, label: 'At Salon (Walk-In Queue)' },
-                  { id: 'home_visit' as ServiceMode, label: 'Home Visit (Doorstep)' },
-                  { id: 'studio_visit' as ServiceMode, label: 'Studio Visit (Slot Booking)' },
+                  { id: 'at_salon' as ServiceMode, label: '🏬 At Salon (Walk-In Queue)' },
+                  { id: 'home_visit' as ServiceMode, label: '🏠 Home Visit (Doorstep by Salon Staff)' },
                 ].map((mode) => {
                   const isChecked = serviceModes.includes(mode.id);
                   return (
