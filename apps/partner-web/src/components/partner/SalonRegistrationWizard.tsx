@@ -213,43 +213,6 @@ export const SalonRegistrationWizard: React.FC<SalonRegistrationWizardProps> = (
 
             <div>
               <label className="text-xs font-bold text-stone-700 block mb-1.5">
-                Services Offered (Select where you serve clients) *
-              </label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {[
-                  { id: 'at_salon' as ServiceMode, label: '🏬 At Salon (Storefront Chairs & Live Queue)' },
-                  { id: 'home_visit' as ServiceMode, label: '🏠 Home Visit (Doorstep by Salon Staff)' },
-                ].map((mode) => {
-                  const isChecked = serviceModes.includes(mode.id);
-                  return (
-                    <button
-                      key={mode.id}
-                      type="button"
-                      onClick={() => {
-                        setServiceModes((prev) =>
-                          prev.includes(mode.id)
-                            ? prev.length > 1
-                              ? prev.filter((m) => m !== mode.id)
-                              : prev
-                            : [...prev, mode.id]
-                        );
-                      }}
-                      className={`p-2.5 rounded-xl border text-left text-xs font-bold transition flex items-center justify-between ${
-                        isChecked
-                          ? 'bg-amber-500/10 border-[#E05326] text-stone-900'
-                          : 'bg-stone-50 border-stone-200 text-stone-500'
-                      }`}
-                    >
-                      <span>{mode.label}</span>
-                      <span>{isChecked ? '✓' : '+'}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div>
-              <label className="text-xs font-bold text-stone-700 block mb-1.5">
                 Studio Category / Client Type *
               </label>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">

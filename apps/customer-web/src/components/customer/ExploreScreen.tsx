@@ -16,7 +16,6 @@ import {
   Map as MapIcon,
   ArrowRight,
   Percent,
-  Home,
   UserCheck,
   Crown,
   ShieldCheck,
@@ -119,15 +118,11 @@ export const ExploreScreen: React.FC = () => {
         if (selectedCategory === 'professional') {
           return !salon.providerType || salon.providerType === 'traditional_salon';
         }
-        if (selectedCategory === 'home_services') {
-          return salon.hasHomeService || salon.providerType === 'freelance_pro' || (salon.serviceModes && salon.serviceModes.includes('home_visit'));
-        }
         if (selectedCategory === 'independent') {
           return salon.providerType === 'independent_pro' || salon.providerType === 'freelance_pro';
         }
         if (selectedCategory === 'bridal') {
           return (
-            salon.homeServiceCategories?.includes('bridal') ||
             salon.services?.some((s) => s.category === 'Combos' || s.name.toLowerCase().includes('bridal'))
           );
         }
@@ -166,8 +161,6 @@ export const ExploreScreen: React.FC = () => {
         return <Star className={`w-3.5 h-3.5 ${active ? 'fill-white text-white' : 'fill-amber-400 text-amber-500'}`} />;
       case 'Store':
         return <Store className={iconClass} />;
-      case 'Home':
-        return <Home className={iconClass} />;
       case 'Sparkles':
         return <Sparkles className={iconClass} />;
       case 'UserCheck':
@@ -192,7 +185,7 @@ export const ExploreScreen: React.FC = () => {
               </span>
             </h1>
             <p className="text-[11px] text-stone-500 font-medium">
-              Transparent local discovery for physical salons, studios, and home beauty pros.
+              Transparent local discovery for physical salons and grooming parlours.
             </p>
           </div>
 
@@ -277,8 +270,8 @@ export const ExploreScreen: React.FC = () => {
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder={
                 isWomen
-                  ? 'Search parlours, home studios, or bridal artists...'
-                  : 'Search salons, barbers, or home grooming pros...'
+                  ? 'Search parlours, styling studios, or bridal specialists...'
+                  : 'Search salons, barbers, or grooming specialists...'
               }
               className={`w-full pl-10 pr-9 py-2.5 bg-white border ${
                 isWomen
@@ -393,12 +386,7 @@ export const ExploreScreen: React.FC = () => {
                   salon.marketingConfig?.quietHours?.enabled &&
                   salon.marketingConfig.quietHours.discountValue > 0;
 
-                const providerTypeLabel =
-                  salon.providerType === 'freelance_pro'
-                    ? 'Freelance Stylist'
-                    : salon.hasHomeService || salon.serviceModes?.includes('home_visit')
-                    ? 'Salon & Doorstep'
-                    : 'Physical Salon';
+                const providerTypeLabel = 'Physical Salon';
 
                 return (
                   <div
@@ -565,12 +553,6 @@ export const ExploreScreen: React.FC = () => {
                             <Store className="w-3 h-3 text-[#FF6422]" />
                             <span>In-Salon Queue</span>
                           </span>
-                          {(salon.hasHomeService || salon.serviceModes?.includes('home_visit')) && (
-                            <span className="text-[10px] font-semibold text-stone-600 bg-emerald-50 text-emerald-800 border border-emerald-200/60 px-2 py-0.5 rounded-md flex items-center gap-1">
-                              <Home className="w-3 h-3 text-emerald-600" />
-                              <span>Doorstep Available</span>
-                            </span>
-                          )}
                         </div>
                       </div>
 

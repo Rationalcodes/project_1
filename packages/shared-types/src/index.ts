@@ -497,8 +497,7 @@ export type PartnerView =
   | 'billing'
   | 'settings'
   | 'help'
-  | 'gallery'
-  | 'doorstep';
+  | 'gallery';
 export type OwnerTab = PartnerView;
 
 export type AdminTab = 'overview' | 'salons' | 'customers' | 'verification' | 'reviews' | 'subscriptions' | 'analytics' | 'banners' | 'settings';
@@ -1110,7 +1109,6 @@ export type DiscoveryCategory =
   | 'professional'
   | 'premium'
   | 'independent'
-  | 'home_services'
   | 'bridal'
   | 'top_rated'
   | 'available_now';
@@ -1156,13 +1154,6 @@ export const DISCOVERY_CATEGORIES: DiscoveryCategoryMeta[] = [
     label: 'Salons & Parlours',
     iconName: 'Store',
     subtitle: 'Established brick-and-mortar salons',
-  },
-  {
-    id: 'home_services',
-    label: 'Home Service',
-    iconName: 'Home',
-    badge: 'Doorstep',
-    subtitle: 'Certified salon stylists & pros visiting your doorstep',
   },
   {
     id: 'bridal',

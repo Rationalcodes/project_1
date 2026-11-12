@@ -23,11 +23,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Image as ImageIcon,
-  Home,
-  Crown,
-  HeartHandshake,
-  Smile,
-  Users,
   Zap,
 } from 'lucide-react';
 import {
@@ -39,9 +34,8 @@ import {
   matchesGenderFilter,
   getSalonType,
 } from '../../context/CustomerContext';
-import { Salon, HomeBanner, DEFAULT_HOME_BANNERS, HomeVisitCategory, HOME_VISIT_CATEGORIES, ServiceMode, MASTER_BEAUTY_DOMAINS } from '@kumbhakaran/shared-types';
+import { Salon, HomeBanner, DEFAULT_HOME_BANNERS, MASTER_BEAUTY_DOMAINS } from '@kumbhakaran/shared-types';
 import { defaultApiClient } from '@kumbhakaran/api-client';
-import { HomeVisitModal } from './HomeVisitModal';
 
 export const HomeScreen: React.FC = () => {
   const {
@@ -114,11 +108,6 @@ export const HomeScreen: React.FC = () => {
   // Banner carousel state & touch/swipe handlers
   const [currentSlide, setCurrentSlide] = useState(0);
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
-
-  // Home Visit / Doorstep Salon Service Modal State
-  const [isHomeVisitOpen, setIsHomeVisitOpen] = useState(false);
-  const [homeVisitCategory, setHomeVisitCategory] = useState<HomeVisitCategory>('senior_care');
-  const [selectedServiceMode, setSelectedServiceMode] = useState<ServiceMode>('at_salon');
   const [touchDeltaX, setTouchDeltaX] = useState<number>(0);
   const [isSwiping, setIsSwiping] = useState(false);
   const [showHowItWorksModal, setShowHowItWorksModal] = useState(false);
@@ -239,15 +228,9 @@ export const HomeScreen: React.FC = () => {
     [salons, genderFilter],
   );
 
-  // Filter salons if a category or service mode is selected
+  // Filter salons if a category is selected
   const displayedSalons = useMemo(() => {
     return genderMatchedSalons.filter((salon) => {
-      // Service Mode Filter
-      if (selectedServiceMode === 'home_visit') {
-        const offersHome = Boolean(salon.hasHomeService || salon.serviceModes?.includes('home_visit'));
-        if (!offersHome) return false;
-      }
-
       // Service Category Filter
       if (selectedServiceFilter === 'All' || !selectedServiceFilter) return true;
       if (Array.isArray(salon.services) && salon.services.length > 0) {
@@ -259,7 +242,7 @@ export const HomeScreen: React.FC = () => {
       }
       return true;
     });
-  }, [genderMatchedSalons, selectedServiceFilter, selectedServiceMode]);
+  }, [genderMatchedSalons, selectedServiceFilter]);
 
   const handleSalonCardClick = (salon: Salon) => {
     addToRecentlyViewed(salon.id);
@@ -466,85 +449,6 @@ export const HomeScreen: React.FC = () => {
         </div>
       </section>
 
-      {/* 1.5 OMNICHANNEL SERVICE MODE ENTRY POINTS (Visit a Salon vs Home Doorstep) */}
-      <section className="grid grid-cols-2 gap-3 sm:gap-4">
-        {[
-          {
-            id: 'at_salon' as ServiceMode,
-            title: 'Visit a Salon',
-            subtitle: 'Live Walk-In Queue & Current Wait Times',
-            icon: Store,
-            badge: 'Live Queue',
-            accent: 'from-amber-600 to-orange-600',
-          },
-          {
-            id: 'home_visit' as ServiceMode,
-            title: 'Home Services',
-            subtitle: 'Salons & Pros at Your Doorstep',
-            icon: Home,
-            badge: 'Doorstep',
-            accent: 'from-emerald-600 to-teal-700',
-          },
-        ].map((item) => {
-          const isSelected = selectedServiceMode === item.id;
-          const Icon = item.icon;
-          return (
-            <button
-              key={item.id}
-              type="button"
-              onClick={() => {
-                setSelectedServiceMode(item.id);
-                if (item.id === 'home_visit') {
-                  setHomeVisitCategory('bridal');
-                  setIsHomeVisitOpen(true);
-                }
-              }}
-              className={`p-3.5 sm:p-4 rounded-3xl border text-left transition-all relative overflow-hidden flex flex-col justify-between group cursor-pointer ${
-                isSelected
-                  ? isWomen
-                    ? 'bg-[#FFF0F3] border-[#F47B70] shadow-md shadow-pink-900/10'
-                    : 'bg-[#FFF5ED] border-[#FF6422] shadow-md shadow-orange-950/10'
-                  : 'bg-white border-stone-200/90 hover:border-stone-300 shadow-2xs hover:bg-stone-50/60'
-              }`}
-            >
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <div
-                    className={`w-9 h-9 sm:w-10 sm:h-10 rounded-2xl flex items-center justify-center text-white bg-gradient-to-tr ${item.accent} shadow-xs`}
-                  >
-                    <Icon className="w-5 h-5" />
-                  </div>
-                  <span
-                    className={`text-[9px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full ${
-                      isSelected
-                        ? isWomen
-                          ? 'bg-[#F47B70] text-white'
-                          : 'bg-[#FF6422] text-white'
-                        : 'bg-stone-100 text-stone-600'
-                    }`}
-                  >
-                    {item.badge}
-                  </span>
-                </div>
-                <h4 className="text-sm sm:text-base font-black text-stone-900 leading-tight">
-                  {item.title}
-                </h4>
-                <p className="text-[11px] text-stone-500 mt-1 line-clamp-1 leading-snug">
-                  {item.subtitle}
-                </p>
-              </div>
-
-              <div className="mt-3 pt-2.5 border-t border-stone-100 flex items-center justify-between text-[11px] font-bold">
-                <span className={isSelected ? (isWomen ? 'text-[#F47B70]' : 'text-[#FF6422]') : 'text-stone-400'}>
-                  {isSelected ? 'Active Mode' : 'Select'}
-                </span>
-                <ArrowRight className="w-3.5 h-3.5 text-stone-400 group-hover:translate-x-0.5 transition-transform" />
-              </div>
-            </button>
-          );
-        })}
-      </section>
-
       {/* 2. CATEGORIES SECTION (ROUND PHOTO AVATARS) */}
       <section className="space-y-3">
         <div className="flex items-center justify-between px-1">
@@ -605,92 +509,6 @@ export const HomeScreen: React.FC = () => {
               </button>
             );
           })}
-        </div>
-      </section>
-
-      {/* 2.5 SLOON AT-HOME: DOORSTEP SALON & GROOMING SERVICES */}
-      <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#1E130D] via-[#2A160E] to-[#120A06] text-white p-5 sm:p-6 shadow-xl border border-amber-900/40">
-        {/* Ambient background glow */}
-        <div className="absolute -top-16 -right-16 w-48 h-48 rounded-full bg-amber-500/15 blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-16 -left-16 w-48 h-48 rounded-full bg-rose-600/15 blur-3xl pointer-events-none" />
-
-        <div className="relative z-10 space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-gradient-to-r from-amber-500 to-rose-600 text-stone-950 shadow-xs">
-                  <Home className="w-3 h-3 text-stone-950" />
-                  Sloon At-Home
-                </span>
-                <span className="text-[10px] font-bold text-amber-300/90 tracking-wide uppercase">
-                  Doorstep Salon
-                </span>
-              </div>
-              <h3 className="text-lg sm:text-xl font-black tracking-tight text-white mt-1">
-                Professional Salon & Grooming at Your Door
-              </h3>
-              <p className="text-xs text-stone-300 max-w-xl mt-0.5 leading-relaxed">
-                Hospital-grade sanitized tools, single-use capes & certified specialists for elders, kids, brides, and personal grooming.
-              </p>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => {
-                setHomeVisitCategory('senior_care');
-                setIsHomeVisitOpen(true);
-              }}
-              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-stone-950 font-black text-xs shadow-lg shadow-amber-950/40 transition active:scale-95 shrink-0"
-            >
-              <Sparkles className="w-3.5 h-3.5 fill-stone-950" />
-              <span>Book Doorstep Visit</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
-
-          {/* Industry Visiting Category Cards (6 Authentic Categories) */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 pt-1">
-            {HOME_VISIT_CATEGORIES.map((cat) => (
-              <button
-                key={cat.id}
-                type="button"
-                onClick={() => {
-                  setHomeVisitCategory(cat.id);
-                  setIsHomeVisitOpen(true);
-                }}
-                className="p-3 rounded-2xl bg-stone-900/80 hover:bg-stone-800/90 border border-stone-800 hover:border-amber-500/50 transition-all text-left flex flex-col justify-between group relative overflow-hidden"
-              >
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <div
-                      className={`w-7 h-7 rounded-xl flex items-center justify-center bg-gradient-to-tr ${cat.gradient} text-white shadow-xs`}
-                    >
-                      {cat.id === 'bridal' && <Crown className="w-3.5 h-3.5" />}
-                      {cat.id === 'senior_care' && <HeartHandshake className="w-3.5 h-3.5" />}
-                      {cat.id === 'kids' && <Smile className="w-3.5 h-3.5" />}
-                      {cat.id === 'mens_grooming' && <Scissors className="w-3.5 h-3.5" />}
-                      {cat.id === 'womens_spa' && <Sparkles className="w-3.5 h-3.5" />}
-                      {cat.id === 'festive_group' && <Users className="w-3.5 h-3.5" />}
-                    </div>
-                    <span className="text-[9px] font-bold uppercase tracking-wider text-amber-400/90">
-                      {cat.badge}
-                    </span>
-                  </div>
-                  <h4 className="text-xs font-black text-white group-hover:text-amber-300 transition leading-tight">
-                    {cat.title}
-                  </h4>
-                  <p className="text-[10px] text-stone-400 mt-1 line-clamp-2 leading-snug">
-                    {cat.subtitle}
-                  </p>
-                </div>
-
-                <div className="mt-3 pt-2 border-t border-stone-800/60 flex items-center justify-between text-[10px] text-amber-400/80 font-bold">
-                  <span>Explore</span>
-                  <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
-                </div>
-              </button>
-            ))}
-          </div>
         </div>
       </section>
 
@@ -1051,13 +869,6 @@ export const HomeScreen: React.FC = () => {
           </div>
         </div>
       )}
-
-      {/* Doorstep Home Visit Booking Modal */}
-      <HomeVisitModal
-        isOpen={isHomeVisitOpen}
-        onClose={() => setIsHomeVisitOpen(false)}
-        initialCategory={homeVisitCategory}
-      />
     </div>
   );
 };

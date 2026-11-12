@@ -12,7 +12,6 @@ import {
   Tag,
   Gift,
   Store,
-  Home,
   CheckCircle2,
   AlertCircle,
   HelpCircle,
@@ -72,9 +71,9 @@ export const SloonBusinessInsightsView: React.FC<SloonBusinessInsightsViewProps>
       completedServicesCount: Math.max(completedEntries.length, custToday),
       queueNoShowRate: 4.2,
       walkInVsBookingRatio: {
-        walkIn: 84,
-        appointment: 0,
-        homeVisit: 16,
+        walkIn: 92,
+        appointment: 8,
+        homeVisit: 0,
       },
     };
   }, [salon, realCustomersServed, realTodayRevenue, realMonthlyRevenue, completedEntries.length]);
@@ -146,12 +145,12 @@ export const SloonBusinessInsightsView: React.FC<SloonBusinessInsightsViewProps>
         growthPercent: 38,
       },
       {
-        serviceName: 'Doorstep Senior / Home Visit Cut',
-        category: 'Home Visit',
+        serviceName: 'Bridal & Festive Glam Package',
+        category: 'Combos',
         orderCount: Math.round(metrics.totalCustomersToday * 0.10) || 2,
-        totalRevenue: Math.round(metrics.grossRevenueToday * 0.13) || 1040,
+        totalRevenue: Math.round(metrics.grossRevenueToday * 0.20) || 1600,
         marginTier: 'high',
-        growthPercent: 45,
+        growthPercent: 42,
       },
     ];
   }, [metrics]);
@@ -193,12 +192,12 @@ export const SloonBusinessInsightsView: React.FC<SloonBusinessInsightsViewProps>
     },
     {
       id: 'rec-4',
-      title: 'Enable Doorstep Grooming for Seniors & Kids',
+      title: 'Promote Weekend Family & Group Grooming Packages',
       category: 'package',
       description:
-        'Local families search for gentle home visits for elders and kids on Sunday mornings. Assign a senior stylist to capture this high-ticket revenue.',
-      impactEstimate: '+₹2,200 avg ticket size',
-      actionLabel: 'Manage Home Service Radius',
+        'Local families visit together on Saturday and Sunday afternoons. Bundled father-son or festive group packages increase your Average Transaction Value by up to 40%.',
+      impactEstimate: '+₹1,800 avg ticket size',
+      actionLabel: 'Configure Package Deals',
       actionTargetTab: 'offers',
       priority: 'medium',
     },
@@ -488,22 +487,22 @@ export const SloonBusinessInsightsView: React.FC<SloonBusinessInsightsViewProps>
                 <span className="text-[10px] text-stone-400 mt-1 block">Walk-in clients joining your digital queue</span>
               </div>
 
-              {/* Channel 2: Doorstep Home Visits */}
+              {/* Channel 2: Advance Scheduled Appointments */}
               <div>
                 <div className="flex items-center justify-between text-xs font-medium mb-1.5">
                   <span className="flex items-center gap-1.5 text-stone-800">
-                    <Home className="w-3.5 h-3.5 text-emerald-600" />
-                    <span>Doorstep Home Visits (Salon Stylists)</span>
+                    <Calendar className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>Advance Chair Appointments</span>
                   </span>
-                  <span className="font-bold text-stone-900">{metrics.walkInVsBookingRatio.homeVisit}%</span>
+                  <span className="font-bold text-stone-900">{metrics.walkInVsBookingRatio.appointment}%</span>
                 </div>
                 <div className="w-full bg-stone-100 h-3 rounded-full overflow-hidden">
                   <div
                     className="bg-emerald-600 h-full rounded-full"
-                    style={{ width: `${metrics.walkInVsBookingRatio.homeVisit}%` }}
+                    style={{ width: `${Math.max(metrics.walkInVsBookingRatio.appointment, 8)}%` }}
                   />
                 </div>
-                <span className="text-[10px] text-stone-400 mt-1 block">High-ticket home grooming dispatched by your salon</span>
+                <span className="text-[10px] text-stone-400 mt-1 block">VIP chair reservations booked via Sloon</span>
               </div>
             </div>
           </div>
